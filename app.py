@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
-from pathlib import Path
 from typing import Dict
 
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
+from data_import.utils import load_trade_data
 from analytics import compute_basic_stats
 from risk_tool import assess_risk
 from payment import PaymentGateway
@@ -15,25 +15,29 @@ st.caption("Smarter Decisions. Safer Trades.")
 
 st.sidebar.header("Upload Trade History")
 
-sample_file = Path('sample_data/futures_sample.csv')
-if sample_file.exists():
-    if st.sidebar.checkbox('Use sample data'):
-        uploaded_file = open(sample_file, 'rb')
-    else:
-        uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
+sample_file = "sample_data/futures_sample.csv"
+use_sample = st.sidebar.checkbox("Use sample data", value=True)
+uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
+
+if use_sample:
+    selected_file = sample_file
+elif uploaded_file is not None:
+    selected_file = uploaded_file
 else:
-    uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
+    selected_file = None
 
 importer = FuturesImporter()
 
-if uploaded_file:
+if selected_file:
     try:
-        df = importer.load(uploaded_file)
+        df = load_trade_data(selected_file)
     except Exception as e:
         st.error(f"Error reading file: {e}")
         st.stop()
 
-    if not importer.validate_columns(df):
+    if importer.validate_columns(df):
+        df = df[REQUIRED_COLUMNS]
+    else:
         st.warning('Columns do not match required fields. Map them below:')
         mapping: Dict[str, str] = {}
         for col in REQUIRED_COLUMNS:
@@ -72,5 +76,5 @@ if uploaded_file:
 
     st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
 else:
-    st.info('Upload a trade history file to begin or use the sample data.')
+    st.info('Upload a trade history file to begin.')
 

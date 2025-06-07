@@ -48,9 +48,17 @@ if selected_file:
             st.error(str(e))
             st.stop()
 
-    # Parse datetimes
-    df['entry_time'] = pd.to_datetime(df['entry_time'])
-    df['exit_time'] = pd.to_datetime(df['exit_time'])
+    # Parse datetimes with coercion and ISO8601 format
+    df['entry_time'] = pd.to_datetime(
+        df['entry_time'], errors='coerce', format='ISO8601'
+    )
+    df['exit_time'] = pd.to_datetime(
+        df['exit_time'], errors='coerce', format='ISO8601'
+    )
+
+    if df['entry_time'].isna().any() or df['exit_time'].isna().any():
+        st.warning("Some rows had invalid dates and were dropped.")
+        df = df.dropna(subset=['entry_time', 'exit_time'])
 
     stats = compute_basic_stats(df)
 

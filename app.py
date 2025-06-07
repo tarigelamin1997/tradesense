@@ -16,13 +16,11 @@ st.caption("Smarter Decisions. Safer Trades.")
 st.sidebar.header("Upload Trade History")
 
 sample_file = Path('sample_data/futures_sample.csv')
-if sample_file.exists():
-    if st.sidebar.checkbox('Use sample data'):
-        uploaded_file = open(sample_file, 'rb')
-    else:
-        uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
-else:
-    uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
+uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
+
+if not uploaded_file and sample_file.exists():
+    st.sidebar.info('Using bundled sample data')
+    uploaded_file = open(sample_file, 'rb')
 
 importer = FuturesImporter()
 
@@ -72,5 +70,5 @@ if uploaded_file:
 
     st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
 else:
-    st.info('Upload a trade history file to begin or use the sample data.')
+    st.info('Upload a trade history file to begin.')
 

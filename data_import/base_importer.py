@@ -1,5 +1,6 @@
 import pandas as pd
 from abc import ABC, abstractmethod
+from typing import Union, IO, Any
 
 REQUIRED_COLUMNS = [
     'symbol', 'entry_time', 'exit_time', 'entry_price',
@@ -10,8 +11,8 @@ class BaseImporter(ABC):
     """Abstract base class for trade data importers."""
 
     @abstractmethod
-    def load(self, file_path: str) -> pd.DataFrame:
-        """Load and normalize trade data from a file."""
+    def load(self, file_obj: Union[str, IO[Any]]) -> pd.DataFrame:
+        """Load and normalize trade data from a file path or file-like object."""
         pass
 
     def validate_columns(self, df: pd.DataFrame) -> bool:

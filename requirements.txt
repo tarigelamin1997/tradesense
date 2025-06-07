@@ -7,3 +7,5 @@ fpdf
 # payment placeholders
 stripe
 paypalrestsdk
+pytest
+

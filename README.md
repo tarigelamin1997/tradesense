@@ -6,7 +6,7 @@ TradeSense is a modular trading analytics and risk management app built with Str
 
 ## Features
 
-- Upload CSV/Excel trade history from any broker.
+- Upload CSV/Excel trade history from any broker. Both file paths and file-like uploads are supported.
 - Map custom column names to required fields.
 - Universal trade model works across asset classes.
 - Core analytics: win rate, expectancy, drawdown, Sharpe ratio, and more.
@@ -22,6 +22,12 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+## Testing
+
+```bash
+pytest
+```
+
 
 ## Running the App
 
@@ -29,7 +35,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Upload your trade history or try the sample file in `sample_data/`.
+Upload your trade history or simply run the app without a file to see the built‑in
+sample data from `sample_data/futures_sample.csv`.
 
 ## Extending
 
@@ -40,3 +47,4 @@ Upload your trade history or try the sample file in `sample_data/`.
 ## License
 
 MIT
+

@@ -1,0 +1,4 @@
+symbol,entry_time,exit_time,entry_price,exit_price,qty,direction,pnl,trade_type,broker
+ES,2023-01-01 09:30:00,2023-01-01 10:00:00,3900,3910,1,long,500,daytrade,DemoBroker
+ES,2023-01-02 09:30:00,2023-01-02 11:00:00,3920,3910,1,short,-500,daytrade,DemoBroker
+ES,2023-01-03 09:30:00,2023-01-03 10:15:00,3890,3905,1,long,750,daytrade,DemoBroker

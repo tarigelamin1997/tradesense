@@ -1,0 +1,9 @@
+pandas
+numpy
+plotly
+streamlit
+openpyxl
+fpdf
+# payment placeholders
+stripe
+paypalrestsdk

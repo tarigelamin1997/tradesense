@@ -1,7 +1,7 @@
 import pandas as pd
-from pathlib import Path
 from typing import Union, IO, Any
 from .base_importer import BaseImporter, REQUIRED_COLUMNS
+from .utils import load_trade_data
 
 class FuturesImporter(BaseImporter):
     """Importer for futures trade history CSV/Excel files."""
@@ -15,22 +15,7 @@ class FuturesImporter(BaseImporter):
             Path to the file or an object with a ``read`` method.
         """
         try:
-            if isinstance(file_obj, str):
-                file_name = file_obj.lower()
-                if file_name.endswith(('.csv', '.txt')):
-                    df = pd.read_csv(file_obj)
-                elif file_name.endswith(('.xlsx', '.xls')):
-                    df = pd.read_excel(file_obj)
-                else:
-                    raise ValueError(f"Unsupported file format: {file_name}")
-            else:
-                file_name = getattr(file_obj, 'name', '').lower()
-                if file_name.endswith(('.csv', '.txt')):
-                    df = pd.read_csv(file_obj)
-                elif file_name.endswith(('.xlsx', '.xls')):
-                    df = pd.read_excel(file_obj)
-                else:
-                    raise ValueError(f"Unsupported file format: {file_name}")
+            df = load_trade_data(file_obj)
         except Exception as e:
             raise ValueError(f"Failed to read file: {e}") from e
 

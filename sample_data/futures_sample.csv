@@ -1,4 +1,12 @@
 symbol,entry_time,exit_time,entry_price,exit_price,qty,direction,pnl,trade_type,broker
-ES,2023-01-01 09:30:00,2023-01-01 10:00:00,3900,3910,1,long,500,daytrade,DemoBroker
-ES,2023-01-02 09:30:00,2023-01-02 11:00:00,3920,3910,1,short,-500,daytrade,DemoBroker
-ES,2023-01-03 09:30:00,2023-01-03 10:15:00,3890,3905,1,long,750,daytrade,DemoBroker
+ES,2024-06-01T09:15:00,2024-06-01T09:20:00,5275.25,5280,2,long,475,futures,NinjaTrader
+NQ,2024-06-01T10:00:00,2024-06-01T10:25:00,18950.5,18930.25,1,short,405,futures,Tradovate
+CL,2024-06-01T11:10:00,2024-06-01T11:22:00,78.8,78.25,3,short,165,futures,NinjaTrader
+GC,2024-06-02T09:05:00,2024-06-02T09:14:00,2370.5,2372,1,long,150,futures,Tradovate
+ES,2024-06-02T09:40:00,2024-06-02T09:47:00,5290,5285,2,short,-500,futures,NinjaTrader
+NQ,2024-06-02T11:25:00,2024-06-02T11:29:00,19000,19025,1,long,500,futures,Tradovate
+CL,2024-06-03T09:13:00,2024-06-03T09:32:00,78.95,79.45,2,long,100,futures,NinjaTrader
+GC,2024-06-03T10:00:00,2024-06-03T10:18:00,2376,2368.5,1,short,750,futures,Tradovate
+ES,2024-06-03T10:32:00,2024-06-03T11:10:00,5275.25,5265,1,short,255,futures,NinjaTrader
+NQ,2024-06-03T12:01:00,2024-06-03T12:40:00,18985.25,18990.25,2,long,-350,futures,Tradovate
+…,…,...,...,...,...,...,...,...,...

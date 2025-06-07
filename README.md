@@ -29,7 +29,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Upload your trade history or try the sample file in `sample_data/`.
+Upload your trade history or simply run the app without a file to see the built‑in
+sample data from `sample_data/futures_sample.csv`.
 
 ## Extending
 

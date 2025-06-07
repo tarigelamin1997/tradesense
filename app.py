@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 from typing import Dict
+import io
 
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
@@ -20,7 +21,9 @@ uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xls
 
 if not uploaded_file and sample_file.exists():
     st.sidebar.info('Using bundled sample data')
-    uploaded_file = open(sample_file, 'rb')
+    with open(sample_file, 'rb') as f:
+        uploaded_file = io.BytesIO(f.read())
+        uploaded_file.name = sample_file.name
 
 importer = FuturesImporter()
 

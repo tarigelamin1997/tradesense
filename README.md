@@ -22,6 +22,12 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+## Testing
+
+```bash
+pytest
+```
+
 
 ## Running the App
 
@@ -41,3 +47,4 @@ sample data from `sample_data/futures_sample.csv`.
 ## License
 
 MIT
+

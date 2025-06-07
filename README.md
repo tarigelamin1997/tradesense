@@ -6,7 +6,7 @@ TradeSense is a modular trading analytics and risk management app built with Str
 
 ## Features
 
-- Upload CSV/Excel trade history from any broker.
+- Upload CSV/Excel trade history from any broker. Both file paths and file-like uploads are supported.
 - Map custom column names to required fields.
 - Universal trade model works across asset classes.
 - Core analytics: win rate, expectancy, drawdown, Sharpe ratio, and more.

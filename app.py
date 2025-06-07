@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
-from pathlib import Path
 from typing import Dict
-import io
 
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
+from data_import.utils import load_trade_data
 from analytics import compute_basic_stats
 from risk_tool import assess_risk
 from payment import PaymentGateway
@@ -16,25 +15,29 @@ st.caption("Smarter Decisions. Safer Trades.")
 
 st.sidebar.header("Upload Trade History")
 
-sample_file = Path('sample_data/futures_sample.csv')
+sample_file = "sample_data/futures_sample.csv"
+use_sample = st.sidebar.checkbox("Use sample data", value=True)
 uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
 
-if not uploaded_file and sample_file.exists():
-    st.sidebar.info('Using bundled sample data')
-    with open(sample_file, 'rb') as f:
-        uploaded_file = io.BytesIO(f.read())
-        uploaded_file.name = sample_file.name
+if use_sample:
+    selected_file = sample_file
+elif uploaded_file is not None:
+    selected_file = uploaded_file
+else:
+    selected_file = None
 
 importer = FuturesImporter()
 
-if uploaded_file:
+if selected_file:
     try:
-        df = importer.load(uploaded_file)
+        df = load_trade_data(selected_file)
     except Exception as e:
         st.error(f"Error reading file: {e}")
         st.stop()
 
-    if not importer.validate_columns(df):
+    if importer.validate_columns(df):
+        df = df[REQUIRED_COLUMNS]
+    else:
         st.warning('Columns do not match required fields. Map them below:')
         mapping: Dict[str, str] = {}
         for col in REQUIRED_COLUMNS:

@@ -1,2 +1,42 @@
 # TradeSense
-Universal Trading Analytics & Risk Manager.
+
+**Smarter Decisions. Safer Trades.**
+
+TradeSense is a modular trading analytics and risk management app built with Streamlit. Upload your trading history, analyze performance, and manage risk with actionable insights.
+
+## Features
+
+- Upload CSV/Excel trade history from any broker.
+- Map custom column names to required fields.
+- Universal trade model works across asset classes.
+- Core analytics: win rate, expectancy, drawdown, Sharpe ratio, and more.
+- Interactive dashboards with Plotly charts.
+- Risk assessment and position sizing recommendations.
+- Sample futures data included for quick start.
+- Placeholders for Stripe/PayPal integration.
+
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Running the App
+
+```bash
+streamlit run app.py
+```
+
+Upload your trade history or try the sample file in `sample_data/`.
+
+## Extending
+
+- Add new importers in `data_import/` for forex, options, stocks, etc.
+- Integrate payment systems via `payment.py`.
+- Customize branding in `app.py` and assets.
+
+## License
+
+MIT

@@ -24,6 +24,7 @@ pip install -r requirements.txt  # install pinned versions
 ```
 Dependencies are pinned in `requirements.txt` to ensure reproducible installations.
 Interactive tables are powered by `streamlit-aggrid` pinned at version 1.1.5.
+Python 3.11 or 3.12 is recommended. Installing with Python 3.13 may fail because pre-built wheels for some packages (e.g. pandas) are not yet available.
 ## Testing
 
 First create a virtual environment and install the required packages:

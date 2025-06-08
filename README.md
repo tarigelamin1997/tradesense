@@ -34,7 +34,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Then run the test suite:
+Run `pip install -r requirements.txt` before executing `pytest` to ensure all
+dependencies are available. Then run the test suite:
 
 ```bash
 pytest

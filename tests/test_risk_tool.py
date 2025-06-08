@@ -65,3 +65,24 @@ def test_empty_dataframe():
 
     assert stats['recommended_position_size'] == 0
     assert stats['warning'] == ''
+
+
+def test_all_winning_trades():
+    data = [
+        ['ES', '2024-01-01', '2024-01-01', 100, 110, 1, 'long', 10, 'daytrade', 'Demo'],
+        ['ES', '2024-01-02', '2024-01-02', 100, 115, 1, 'long', 15, 'daytrade', 'Demo'],
+    ]
+    cols = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'qty', 'direction', 'pnl', 'trade_type', 'broker']
+    df = pd.DataFrame(data, columns=cols)
+    df['entry_time'] = pd.to_datetime(df['entry_time'])
+    df['exit_time'] = pd.to_datetime(df['exit_time'])
+
+    stats = assess_risk(
+        df,
+        account_size=10000,
+        risk_per_trade=0.02,
+        max_daily_loss=500,
+    )
+
+    assert stats['recommended_position_size'] == 0
+    assert stats['warning'] == ''

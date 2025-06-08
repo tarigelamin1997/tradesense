@@ -115,6 +115,10 @@ if selected_file:
         st.warning("Some rows had invalid dates and were dropped.")
         df = df.dropna(subset=['entry_time', 'exit_time'])
 
+    if df.empty:
+        st.error("No valid rows remain after cleaning.")
+        st.stop()
+
     st.sidebar.subheader("Filters")
     symbols = st.sidebar.multiselect('Symbol', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
     directions = st.sidebar.multiselect('Direction', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())

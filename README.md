@@ -20,8 +20,9 @@ TradeSense is a modular trading analytics and risk management app built with Str
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt  # install pinned versions
 ```
+Dependencies are pinned in `requirements.txt` to ensure reproducible installations.
 ## Testing
 
 ```bash

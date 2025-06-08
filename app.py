@@ -1,19 +1,56 @@
 import streamlit as st
 import pandas as pd
 from typing import Dict
+from fpdf import FPDF
 
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
 from data_import.utils import load_trade_data
-from analytics import compute_basic_stats
+from analytics import compute_basic_stats, performance_over_time
 from risk_tool import assess_risk
 from payment import PaymentGateway
+
+
+def generate_pdf(stats: Dict[str, float], risk: Dict[str, float]) -> bytes:
+    """Create a simple PDF report with core stats."""
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "TradeSense Analytics Report", ln=1)
+    for k, v in stats.items():
+        if k == "equity_curve":
+            continue
+        pdf.cell(0, 10, f"{k}: {v}", ln=1)
+    for k, v in risk.items():
+        pdf.cell(0, 10, f"{k}: {v}", ln=1)
+    return pdf.output(dest="S").encode("latin1")
 
 st.set_page_config(page_title="TradeSense", layout="wide")
 st.title("TradeSense")
 st.caption("Smarter Decisions. Safer Trades.")
 
+# Onboarding message shown only on first load
+if "show_tour" not in st.session_state:
+    st.session_state.show_tour = True
+if st.session_state.show_tour:
+    with st.expander("Getting Started", expanded=True):
+        st.markdown(
+            "1. Upload a CSV/Excel file or use the sample data.\n"
+            "2. Review performance metrics and risk stats.\n"
+            "3. Filter trades and download reports."
+        )
+        if st.button("Got it", key="close_tour"):
+            st.session_state.show_tour = False
+
+theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=0)
+if theme == "Dark":
+    st.markdown(
+        "<style>body {background-color: #111;color: #eee;}</style>",
+        unsafe_allow_html=True,
+    )
+
 st.sidebar.header("Upload Trade History")
+st.sidebar.caption("We do not store or share your uploaded trade data.")
 
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)
@@ -32,7 +69,10 @@ if selected_file:
     try:
         df = load_trade_data(selected_file)
     except Exception as e:
-        st.error(f"Error reading file: {e}")
+        st.error(
+            "Failed to process file. Ensure it is a valid CSV or Excel file with the correct columns."
+        )
+        st.expander("Error details").write(str(e))
         st.stop()
 
     if importer.validate_columns(df):
@@ -60,7 +100,24 @@ if selected_file:
         st.warning("Some rows had invalid dates and were dropped.")
         df = df.dropna(subset=['entry_time', 'exit_time'])
 
-    stats = compute_basic_stats(df)
+    st.sidebar.subheader("Filters")
+    symbols = st.sidebar.multiselect('Symbol', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
+    directions = st.sidebar.multiselect('Direction', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())
+    brokers = st.sidebar.multiselect('Broker', options=df['broker'].unique().tolist(), default=df['broker'].unique().tolist())
+    date_range = st.sidebar.date_input(
+        'Date range',
+        value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
+    )
+
+    filtered_df = df[
+        df['symbol'].isin(symbols)
+        & df['direction'].isin(directions)
+        & df['broker'].isin(brokers)
+        & (df['entry_time'].dt.date >= date_range[0])
+        & (df['exit_time'].dt.date <= date_range[1])
+    ]
+
+    stats = compute_basic_stats(filtered_df)
 
     st.subheader('Performance Metrics')
     col1, col2, col3 = st.columns(3)
@@ -74,13 +131,36 @@ if selected_file:
     st.subheader('Equity Curve')
     st.line_chart(stats['equity_curve'])
 
+    perf = performance_over_time(filtered_df, freq='M')
+    st.subheader('Performance Over Time')
+    st.bar_chart(perf.set_index('period')['pnl'])
+
+    st.subheader('Trades')
+    st.dataframe(filtered_df, use_container_width=True)
+
     st.subheader('Risk Assessment')
-    account_size = st.number_input('Account Size', value=10000.0)
-    risk_per_trade = st.number_input('Risk % per Trade', value=0.01)
-    max_daily_loss = st.number_input('Max Daily Loss', value=500.0)
+
+    if 'account_size' not in st.session_state:
+        st.session_state.account_size = 10000.0
+    if 'risk_per_trade' not in st.session_state:
+        st.session_state.risk_per_trade = 0.01
+    if 'max_daily_loss' not in st.session_state:
+        st.session_state.max_daily_loss = 500.0
+
+    account_size = st.number_input('Account Size', value=st.session_state.account_size, key='account_size')
+    risk_per_trade = st.number_input('Risk % per Trade', value=st.session_state.risk_per_trade, key='risk_per_trade')
+    max_daily_loss = st.number_input('Max Daily Loss', value=st.session_state.max_daily_loss, key='max_daily_loss')
+
+    risk = {}
     if st.button('Assess Risk'):
-        risk = assess_risk(df, account_size, risk_per_trade, max_daily_loss)
+        risk = assess_risk(filtered_df, account_size, risk_per_trade, max_daily_loss)
+        if risk['risk_alert']:
+            st.error(risk['risk_alert'])
         st.write(risk)
+
+    if risk:
+        pdf_bytes = generate_pdf(stats, risk)
+        st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
     st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
 else:

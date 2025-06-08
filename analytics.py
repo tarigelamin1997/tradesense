@@ -34,3 +34,21 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
         "sharpe_ratio": sharpe,
         "equity_curve": equity_curve,
     }
+
+
+def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
+    """Return P&L and win rate aggregated by period."""
+    if df.empty:
+        return pd.DataFrame(columns=["period", "pnl", "win_rate"])
+
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl", "exit_time"])
+
+    period = df["exit_time"].dt.to_period(freq).dt.to_timestamp()
+    grouped = df.groupby(period)
+    pnl = grouped["pnl"].sum()
+    win_rate = grouped.apply(lambda g: (g["pnl"] > 0).mean() * 100)
+
+    result = pd.DataFrame({"period": pnl.index, "pnl": pnl.values, "win_rate": win_rate.values})
+    return result

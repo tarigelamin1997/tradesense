@@ -16,9 +16,17 @@ def assess_risk(
 
     stats["recommended_position_size"] = recommended_size
     stats["max_daily_loss"] = max_daily_loss
+    stats["risk_per_trade"] = risk_per_trade
     daily_pnl = df.groupby(df["exit_time"].dt.date)["pnl"].sum()
     if any(daily_pnl < -max_daily_loss):
         stats["warning"] = "Historical trades exceed your max daily loss."
     else:
         stats["warning"] = ""
+
+    if risk_per_trade > 0.02:
+        stats["risk_alert"] = "Risk per trade exceeds 2% guideline"
+    elif max_daily_loss > account_size * 0.05:
+        stats["risk_alert"] = "Max daily loss exceeds 5% of account size"
+    else:
+        stats["risk_alert"] = ""
     return stats

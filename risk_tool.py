@@ -10,7 +10,10 @@ def assess_risk(
     df = df.dropna(subset=["pnl"])
     stats = {}
     avg_loss = df[df["pnl"] < 0]["pnl"].mean() if not df.empty else 0
-    recommended_size = account_size * risk_per_trade / abs(avg_loss) if avg_loss else 0
+    if pd.isna(avg_loss) or avg_loss == 0:
+        recommended_size = 0
+    else:
+        recommended_size = account_size * risk_per_trade / abs(avg_loss)
     if recommended_size > account_size:
         recommended_size = account_size
 

@@ -1,5 +1,5 @@
 # Core data analysis
-pandas==2.1.4
+pandas==2.2.2
 numpy==1.26.4
 
 # Visualization and app framework

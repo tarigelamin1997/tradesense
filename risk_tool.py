@@ -7,7 +7,8 @@ def assess_risk(
     """Simple risk assessment based on historical PnL."""
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
-    df = df.dropna(subset=["pnl"])
+    df["exit_time"] = pd.to_datetime(df["exit_time"], errors="coerce")
+    df = df.dropna(subset=["pnl", "exit_time"])
     stats = {}
     avg_loss = df[df["pnl"] < 0]["pnl"].mean() if not df.empty else 0
     if pd.isna(avg_loss) or avg_loss == 0:

@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Union, IO, Any
-from .base_importer import BaseImporter, REQUIRED_COLUMNS
+from .base_importer import BaseImporter, REQUIRED_COLUMNS, OPTIONAL_COLUMNS
 from .utils import load_trade_data
 
 class FuturesImporter(BaseImporter):
@@ -23,4 +23,5 @@ class FuturesImporter(BaseImporter):
             # return raw df for mapping step
             return df
 
-        return df[REQUIRED_COLUMNS]
+        cols = REQUIRED_COLUMNS + [c for c in OPTIONAL_COLUMNS if c in df.columns]
+        return df[cols]

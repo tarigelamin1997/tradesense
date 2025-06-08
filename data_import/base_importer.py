@@ -7,6 +7,8 @@ REQUIRED_COLUMNS = [
     'exit_price', 'qty', 'direction', 'pnl', 'trade_type', 'broker'
 ]
 
+OPTIONAL_COLUMNS = ['notes']
+
 class BaseImporter(ABC):
     """Abstract base class for trade data importers."""
 
@@ -25,4 +27,5 @@ class BaseImporter(ABC):
         if not self.validate_columns(df):
             missing = set(REQUIRED_COLUMNS) - set(df.columns)
             raise ValueError(f"Missing required columns: {missing}")
-        return df[REQUIRED_COLUMNS]
+        cols = REQUIRED_COLUMNS + [c for c in OPTIONAL_COLUMNS if c in df.columns]
+        return df[cols]

@@ -52,3 +52,22 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
 
     result = pd.DataFrame({"period": pnl.index, "pnl": pnl.values, "win_rate": win_rate.values})
     return result
+
+
+def histogram_data(df: pd.DataFrame, column: str, bins: int = 20) -> pd.DataFrame:
+    """Return histogram counts for a numeric column."""
+    if column not in df.columns or df.empty:
+        return pd.DataFrame({"bin": [], "count": []})
+
+    data = pd.to_numeric(df[column], errors="coerce").dropna()
+    counts, edges = np.histogram(data, bins=bins)
+    midpoints = (edges[:-1] + edges[1:]) / 2
+    return pd.DataFrame({"bin": midpoints, "count": counts})
+
+
+def heatmap_data(df: pd.DataFrame, x_col: str, y_col: str) -> pd.DataFrame:
+    """Return a pivot table counting occurrences for heatmap display."""
+    if df.empty or x_col not in df.columns or y_col not in df.columns:
+        return pd.DataFrame()
+
+    return pd.crosstab(df[y_col], df[x_col])

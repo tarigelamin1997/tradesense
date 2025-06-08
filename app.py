@@ -6,7 +6,13 @@ from fpdf import FPDF
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
 from data_import.utils import load_trade_data
-from analytics import compute_basic_stats, performance_over_time
+from analytics import (
+    compute_basic_stats,
+    performance_over_time,
+    histogram_data,
+    heatmap_data,
+)
+import plotly.express as px
 from risk_tool import assess_risk
 from payment import PaymentGateway
 
@@ -118,49 +124,67 @@ if selected_file:
     ]
 
     stats = compute_basic_stats(filtered_df)
-
-    st.subheader('Performance Metrics')
-    col1, col2, col3 = st.columns(3)
-    col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
-    col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
-    col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
-    col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
-    col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
-    col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
-
-    st.subheader('Equity Curve')
-    st.line_chart(stats['equity_curve'])
-
     perf = performance_over_time(filtered_df, freq='M')
-    st.subheader('Performance Over Time')
-    st.bar_chart(perf.set_index('period')['pnl'])
+    hist_df = histogram_data(filtered_df, 'pnl')
+    heat_df = heatmap_data(filtered_df, 'symbol', 'direction')
 
-    st.subheader('Trades')
-    st.dataframe(filtered_df, use_container_width=True)
+    tab_metrics, tab_visuals, tab_risk = st.tabs(['Performance', 'Visuals', 'Risk'])
 
-    st.subheader('Risk Assessment')
+    with tab_metrics:
+        st.subheader('Performance Metrics')
+        col1, col2, col3 = st.columns(3)
+        col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
+        col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
+        col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
+        col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
+        col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
+        col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
 
-    if 'account_size' not in st.session_state:
-        st.session_state.account_size = 10000.0
-    if 'risk_per_trade' not in st.session_state:
-        st.session_state.risk_per_trade = 0.01
-    if 'max_daily_loss' not in st.session_state:
-        st.session_state.max_daily_loss = 500.0
+        st.subheader('Equity Curve')
+        st.line_chart(stats['equity_curve'])
 
-    account_size = st.number_input('Account Size', value=st.session_state.account_size, key='account_size')
-    risk_per_trade = st.number_input('Risk % per Trade', value=st.session_state.risk_per_trade, key='risk_per_trade')
-    max_daily_loss = st.number_input('Max Daily Loss', value=st.session_state.max_daily_loss, key='max_daily_loss')
+        st.subheader('Performance Over Time')
+        st.bar_chart(perf.set_index('period')['pnl'])
 
-    risk = {}
-    if st.button('Assess Risk'):
-        risk = assess_risk(filtered_df, account_size, risk_per_trade, max_daily_loss)
-        if risk['risk_alert']:
-            st.error(risk['risk_alert'])
-        st.write(risk)
+        st.subheader('Trades')
+        st.dataframe(filtered_df, use_container_width=True)
 
-    if risk:
-        pdf_bytes = generate_pdf(stats, risk)
-        st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
+    with tab_visuals:
+        st.subheader('PnL Distribution')
+        fig_hist = px.bar(hist_df, x='bin', y='count', labels={'bin': 'PnL', 'count': 'Count'})
+        st.plotly_chart(fig_hist, use_container_width=True)
+
+        st.subheader('Trades Heatmap')
+        if not heat_df.empty:
+            fig_heat = px.imshow(heat_df, text_auto=True, aspect='auto')
+            st.plotly_chart(fig_heat, use_container_width=True)
+        else:
+            st.info('Not enough data for heatmap')
+
+    with tab_risk:
+        st.subheader('Risk Assessment')
+
+        if 'account_size' not in st.session_state:
+            st.session_state.account_size = 10000.0
+        if 'risk_per_trade' not in st.session_state:
+            st.session_state.risk_per_trade = 0.01
+        if 'max_daily_loss' not in st.session_state:
+            st.session_state.max_daily_loss = 500.0
+
+        account_size = st.number_input('Account Size', value=st.session_state.account_size, key='account_size')
+        risk_per_trade = st.number_input('Risk % per Trade', value=st.session_state.risk_per_trade, key='risk_per_trade')
+        max_daily_loss = st.number_input('Max Daily Loss', value=st.session_state.max_daily_loss, key='max_daily_loss')
+
+        risk = {}
+        if st.button('Assess Risk'):
+            risk = assess_risk(filtered_df, account_size, risk_per_trade, max_daily_loss)
+            if risk['risk_alert']:
+                st.error(risk['risk_alert'])
+            st.write(risk)
+
+        if risk:
+            pdf_bytes = generate_pdf(stats, risk)
+            st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
     st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
 else:

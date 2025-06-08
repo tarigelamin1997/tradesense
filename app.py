@@ -9,6 +9,7 @@ from data_import.utils import load_trade_data
 from analytics import compute_basic_stats, performance_over_time
 from risk_tool import assess_risk
 from payment import PaymentGateway
+from ai_insights import detect_outliers_zscore, summarize_trades
 
 
 def generate_pdf(stats: Dict[str, float], risk: Dict[str, float]) -> bytes:
@@ -118,51 +119,68 @@ if selected_file:
     ]
 
     stats = compute_basic_stats(filtered_df)
+    flagged = detect_outliers_zscore(filtered_df)
+    notes = summarize_trades(flagged[flagged['outlier']])
 
-    st.subheader('Performance Metrics')
-    col1, col2, col3 = st.columns(3)
-    col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
-    col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
-    col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
-    col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
-    col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
-    col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
+    analytics_tab, journal_tab = st.tabs(["Analytics", "Journal"])
 
-    st.subheader('Equity Curve')
-    st.line_chart(stats['equity_curve'])
+    with analytics_tab:
+        st.subheader('Performance Metrics')
+        col1, col2, col3 = st.columns(3)
+        col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
+        col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
+        col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
+        col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
+        col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
+        col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
 
-    perf = performance_over_time(filtered_df, freq='M')
-    st.subheader('Performance Over Time')
-    st.bar_chart(perf.set_index('period')['pnl'])
+        st.subheader('Equity Curve')
+        st.line_chart(stats['equity_curve'])
 
-    st.subheader('Trades')
-    st.dataframe(filtered_df, use_container_width=True)
+        perf = performance_over_time(filtered_df, freq='M')
+        st.subheader('Performance Over Time')
+        st.bar_chart(perf.set_index('period')['pnl'])
 
-    st.subheader('Risk Assessment')
+        st.subheader('Trades')
+        st.dataframe(filtered_df, use_container_width=True)
 
-    if 'account_size' not in st.session_state:
-        st.session_state.account_size = 10000.0
-    if 'risk_per_trade' not in st.session_state:
-        st.session_state.risk_per_trade = 0.01
-    if 'max_daily_loss' not in st.session_state:
-        st.session_state.max_daily_loss = 500.0
+        st.subheader('Risk Assessment')
 
-    account_size = st.number_input('Account Size', value=st.session_state.account_size, key='account_size')
-    risk_per_trade = st.number_input('Risk % per Trade', value=st.session_state.risk_per_trade, key='risk_per_trade')
-    max_daily_loss = st.number_input('Max Daily Loss', value=st.session_state.max_daily_loss, key='max_daily_loss')
+        if 'account_size' not in st.session_state:
+            st.session_state.account_size = 10000.0
+        if 'risk_per_trade' not in st.session_state:
+            st.session_state.risk_per_trade = 0.01
+        if 'max_daily_loss' not in st.session_state:
+            st.session_state.max_daily_loss = 500.0
 
-    risk = {}
-    if st.button('Assess Risk'):
-        risk = assess_risk(filtered_df, account_size, risk_per_trade, max_daily_loss)
-        if risk['risk_alert']:
-            st.error(risk['risk_alert'])
-        st.write(risk)
+        account_size = st.number_input('Account Size', value=st.session_state.account_size, key='account_size')
+        risk_per_trade = st.number_input('Risk % per Trade', value=st.session_state.risk_per_trade, key='risk_per_trade')
+        max_daily_loss = st.number_input('Max Daily Loss', value=st.session_state.max_daily_loss, key='max_daily_loss')
 
-    if risk:
-        pdf_bytes = generate_pdf(stats, risk)
-        st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
+        risk = {}
+        if st.button('Assess Risk'):
+            risk = assess_risk(filtered_df, account_size, risk_per_trade, max_daily_loss)
+            if risk['risk_alert']:
+                st.error(risk['risk_alert'])
+            st.write(risk)
 
-    st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
+        if risk:
+            pdf_bytes = generate_pdf(stats, risk)
+            st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
+
+        st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
+
+    with journal_tab:
+        st.subheader('Flagged Trades (Outliers)')
+        outliers = flagged[flagged['outlier']]
+        if outliers.empty:
+            st.write('No outlier trades detected.')
+        else:
+            st.dataframe(outliers, use_container_width=True)
+
+        if notes:
+            st.subheader('Generated Notes')
+            st.write(notes)
 else:
     st.info('Upload a trade history file to begin.')
 

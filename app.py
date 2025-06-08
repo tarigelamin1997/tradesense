@@ -12,7 +12,15 @@ from fpdf import FPDF
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
 from data_import.utils import load_trade_data
-from analytics import compute_basic_stats, performance_over_time
+from analytics import (
+    compute_basic_stats,
+    performance_over_time,
+    median_results,
+    profit_factor_by_symbol,
+    trade_duration_stats,
+    max_streaks,
+    rolling_metrics,
+)
 from risk_tool import assess_risk
 from payment import PaymentGateway
 
@@ -140,6 +148,27 @@ if selected_file:
     perf = performance_over_time(filtered_df, freq='M')
     st.subheader('Performance Over Time')
     st.bar_chart(perf.set_index('period')['pnl'])
+
+    med = median_results(filtered_df)
+    st.subheader('Median Results')
+    st.write(med)
+
+    pf_sym = profit_factor_by_symbol(filtered_df)
+    st.subheader('Profit Factor by Symbol')
+    st.dataframe(pf_sym, use_container_width=True)
+
+    duration = trade_duration_stats(filtered_df)
+    st.subheader('Trade Duration Stats (minutes)')
+    st.write(duration)
+
+    streak = max_streaks(filtered_df)
+    st.subheader('Max Streaks')
+    st.write(streak)
+
+    rolling = rolling_metrics(filtered_df, window=10)
+    if not rolling.empty:
+        st.subheader('Rolling Metrics (10 trades)')
+        st.line_chart(rolling.set_index('end_index')[['win_rate', 'profit_factor']])
 
     st.subheader('Trades')
     table_df = compute_trade_result(filtered_df)

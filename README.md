@@ -25,6 +25,16 @@ pip install -r requirements.txt  # install pinned versions
 Dependencies are pinned in `requirements.txt` to ensure reproducible installations.
 ## Testing
 
+First create a virtual environment and install the required packages:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Then run the test suite:
+
 ```bash
 pytest
 ```

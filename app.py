@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from typing import Dict
 from st_aggrid import AgGrid, GridUpdateMode
 from interactive_table import (
@@ -132,68 +133,116 @@ if selected_file:
     ]
 
     stats = compute_basic_stats(filtered_df)
-
-    st.subheader('Performance Metrics')
-    col1, col2, col3 = st.columns(3)
-    col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
-    col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
-    col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
-    col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
-    col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
-    col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
-
-    st.subheader('Equity Curve')
-    st.line_chart(stats['equity_curve'])
-
     perf = performance_over_time(filtered_df, freq='M')
-    st.subheader('Performance Over Time')
-    st.bar_chart(perf.set_index('period')['pnl'])
 
-    med = median_results(filtered_df)
-    st.subheader('Median Results')
-    st.write(med)
-
-    pf_sym = profit_factor_by_symbol(filtered_df)
-    st.subheader('Profit Factor by Symbol')
-    st.dataframe(pf_sym, use_container_width=True)
-
-    duration = trade_duration_stats(filtered_df)
-    st.subheader('Trade Duration Stats (minutes)')
-    st.write(duration)
-
-    streak = max_streaks(filtered_df)
-    st.subheader('Max Streaks')
-    st.write(streak)
-
-    rolling = rolling_metrics(filtered_df, window=10)
-    if not rolling.empty:
-        st.subheader('Rolling Metrics (10 trades)')
-        st.line_chart(rolling.set_index('end_index')[['win_rate', 'profit_factor']])
-
-    st.subheader('Trades')
-    table_df = compute_trade_result(filtered_df)
-    options = get_grid_options(table_df)
-    grid = AgGrid(
-        table_df,
-        gridOptions=options,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=True,
+    overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab = st.tabs(
+        ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal"]
     )
 
-    if grid['selected_rows']:
-        row = pd.Series(grid['selected_rows'][0])
-        details = trade_detail(row)
-        with st.modal('Trade Details'):
-            chart_df = pd.DataFrame({
-                'time': [row['entry_time'], row['exit_time']],
-                'price': [row['entry_price'], row['exit_price']],
-            })
-            st.line_chart(chart_df.set_index('time'))
-            st.write(f"Duration: {details['duration']}")
-            st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
-            if details['notes']:
-                st.write(details['notes'])
+    with overview_tab:
+        st.subheader('Performance Metrics')
+        col1, col2, col3 = st.columns(3)
+        col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
+        col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
+        col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
+        col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
+        col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
+        col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
+
+        st.subheader('Equity Curve')
+        st.line_chart(stats['equity_curve'])
+
+        st.subheader('Performance Over Time')
+        st.bar_chart(perf.set_index('period')['pnl'])
+
+        med = median_results(filtered_df)
+        st.subheader('Median Results')
+        st.write(med)
+
+        pf_sym = profit_factor_by_symbol(filtered_df)
+        st.subheader('Profit Factor by Symbol')
+        st.dataframe(pf_sym, use_container_width=True)
+
+        duration = trade_duration_stats(filtered_df)
+        st.subheader('Trade Duration Stats (minutes)')
+        st.write(duration)
+
+        streak = max_streaks(filtered_df)
+        st.subheader('Max Streaks')
+        st.write(streak)
+
+        rolling = rolling_metrics(filtered_df, window=10)
+        if not rolling.empty:
+            st.subheader('Rolling Metrics (10 trades)')
+            st.line_chart(rolling.set_index('end_index')[['win_rate', 'profit_factor']])
+
+        st.subheader('Trades')
+        table_df = compute_trade_result(filtered_df)
+        options = get_grid_options(table_df)
+        grid = AgGrid(
+            table_df,
+            gridOptions=options,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            allow_unsafe_jscode=True,
+            fit_columns_on_grid_load=True,
+        )
+
+        if grid['selected_rows']:
+            row = pd.Series(grid['selected_rows'][0])
+            details = trade_detail(row)
+            with st.modal('Trade Details'):
+                chart_df = pd.DataFrame({
+                    'time': [row['entry_time'], row['exit_time']],
+                    'price': [row['entry_price'], row['exit_price']],
+                })
+                st.line_chart(chart_df.set_index('time'))
+                st.write(f"Duration: {details['duration']}")
+                st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
+                if details['notes']:
+                    st.write(details['notes'])
+
+    with symbol_tab:
+        grp = filtered_df.groupby('symbol')
+        symbol_stats = pd.DataFrame({
+            'Trades': grp['pnl'].count(),
+            'Total PnL': grp['pnl'].sum(),
+            'Avg PnL': grp['pnl'].mean(),
+            'Win Rate %': grp.apply(lambda g: (g['pnl'] > 0).mean() * 100),
+        })
+        st.dataframe(symbol_stats, use_container_width=True)
+
+    with drawdown_tab:
+        equity = stats['equity_curve']
+        drawdown = equity.cummax() - equity
+        fig = px.area(x=drawdown.index, y=drawdown.values,
+                      labels={'x': 'Trade', 'y': 'Drawdown'})
+        st.plotly_chart(fig, use_container_width=True)
+
+    with calendar_tab:
+        daily_pnl = filtered_df.groupby(filtered_df['exit_time'].dt.date)['pnl'].sum()
+        cal_df = daily_pnl.reset_index()
+        cal_df.columns = ['date', 'pnl']
+        cal_df['date'] = pd.to_datetime(cal_df['date'])
+        cal_df['month'] = cal_df['date'].dt.month
+        cal_df['day'] = cal_df['date'].dt.day
+        pivot = cal_df.pivot(index='day', columns='month', values='pnl')
+        fig = px.imshow(pivot, labels={'x': 'Month', 'y': 'Day', 'color': 'PnL'},
+                        aspect='auto')
+        st.plotly_chart(fig, use_container_width=True)
+
+    with journal_tab:
+        if 'journal_entries' not in st.session_state:
+            st.session_state.journal_entries = []
+        note = st.text_area('New Journal Entry', key='journal_input')
+        if st.button('Add Entry'):
+            if note:
+                st.session_state.journal_entries.append({
+                    'date': pd.Timestamp.now().date(),
+                    'note': note,
+                })
+                st.success('Entry added')
+        if st.session_state.journal_entries:
+            st.dataframe(pd.DataFrame(st.session_state.journal_entries))
 
     st.subheader('Risk Assessment')
 

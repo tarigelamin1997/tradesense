@@ -3,9 +3,17 @@ from st_aggrid import GridOptionsBuilder
 
 
 def compute_trade_result(df: pd.DataFrame) -> pd.DataFrame:
-    """Add trade_result column indicating win or loss."""
+    """Add trade_result column indicating win or loss.
+
+    PnL values may come in as strings from uploaded CSV files. We coerce to
+    numeric so comparisons don't raise type errors. Invalid values become ``NaN``
+    and are treated as losses to avoid misleading results.
+    """
     df = df.copy()
-    df["trade_result"] = df["pnl"].apply(lambda x: "Win" if x >= 0 else "Loss")
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df["trade_result"] = df["pnl"].apply(
+        lambda x: "Win" if pd.notna(x) and x >= 0 else "Loss"
+    )
     return df
 
 

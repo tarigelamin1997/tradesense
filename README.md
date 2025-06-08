@@ -57,5 +57,5 @@ sample data from `sample_data/futures_sample.csv`.
 
 ## License
 
-MIT
+[MIT](LICENSE)
 

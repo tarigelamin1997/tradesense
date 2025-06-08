@@ -149,3 +149,40 @@ def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(results)
+
+
+def histogram_data(df: pd.DataFrame, column: str, bins: int = 10) -> pd.DataFrame:
+    """Return histogram counts for a numeric column."""
+    if df.empty or column not in df.columns:
+        return pd.DataFrame(columns=["bin", "count"])
+
+    values = pd.to_numeric(df[column], errors="coerce").dropna()
+    if values.empty:
+        return pd.DataFrame(columns=["bin", "count"])
+
+    counts, edges = np.histogram(values, bins=bins)
+    labels = [f"{edges[i]}-{edges[i+1]}" for i in range(len(edges) - 1)]
+    return pd.DataFrame({"bin": labels, "count": counts})
+
+
+def heatmap_data(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    value_col: str = "pnl",
+    aggfunc: str = "sum",
+) -> pd.DataFrame:
+    """Pivot dataframe for heatmap plotting."""
+    required = {x_col, y_col, value_col}
+    if df.empty or not required.issubset(df.columns):
+        return pd.DataFrame()
+
+    pivot = pd.pivot_table(
+        df,
+        values=value_col,
+        index=y_col,
+        columns=x_col,
+        aggfunc=aggfunc,
+        fill_value=0,
+    )
+    return pivot

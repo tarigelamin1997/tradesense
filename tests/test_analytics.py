@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from analytics import compute_basic_stats
+from analytics import compute_basic_stats, histogram_data, heatmap_data
 
 
 def test_compute_basic_stats_known_data():
@@ -25,4 +25,16 @@ def test_compute_basic_stats_known_data():
     assert stats['max_drawdown'] == 100
     # approximate due to floating point operations
     assert stats['sharpe_ratio'] == pytest.approx(6.3835034744, rel=1e-6)
+
+
+def test_histogram_missing_column_returns_empty():
+    df = pd.DataFrame({'pnl': [1, 2, 3]})
+    hist = histogram_data(df, 'nonexistent')
+    assert hist.empty
+
+
+def test_heatmap_empty_dataframe_returns_empty():
+    df = pd.DataFrame(columns=['x', 'y', 'val'])
+    heat = heatmap_data(df, 'x', 'y', 'val')
+    assert heat.empty
 

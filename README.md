@@ -23,6 +23,7 @@ source .venv/bin/activate
 pip install -r requirements.txt  # install pinned versions
 ```
 Dependencies are pinned in `requirements.txt` to ensure reproducible installations.
+Interactive tables are powered by `streamlit-aggrid` pinned at version 1.1.5.
 ## Testing
 
 First create a virtual environment and install the required packages:

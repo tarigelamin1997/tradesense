@@ -52,3 +52,19 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
 
     result = pd.DataFrame({"period": pnl.index, "pnl": pnl.values, "win_rate": win_rate.values})
     return result
+
+
+def aggregate_by_account(df: pd.DataFrame) -> pd.DataFrame:
+    """Return total P&L and win rate for each account."""
+    if df.empty or 'account' not in df.columns:
+        return pd.DataFrame(columns=["account", "pnl", "win_rate"])
+
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl"])
+
+    grouped = df.groupby("account")
+    pnl = grouped["pnl"].sum()
+    win_rate = grouped.apply(lambda g: (g["pnl"] > 0).mean() * 100)
+
+    return pd.DataFrame({"account": pnl.index, "pnl": pnl.values, "win_rate": win_rate.values})

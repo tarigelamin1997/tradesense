@@ -7,7 +7,7 @@ REQUIRED_COLUMNS = [
     'exit_price', 'qty', 'direction', 'pnl', 'trade_type', 'broker'
 ]
 
-OPTIONAL_COLUMNS = ['notes']
+OPTIONAL_COLUMNS = ['notes', 'account']
 
 class BaseImporter(ABC):
     """Abstract base class for trade data importers."""

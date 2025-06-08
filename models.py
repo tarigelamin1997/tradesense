@@ -13,6 +13,7 @@ class Trade:
     pnl: float
     trade_type: str
     broker: str
+    account: str = ""
 
     @property
     def duration(self) -> float:
@@ -38,5 +39,6 @@ class Trade:
             direction=s['direction'],
             pnl=s['pnl'],
             trade_type=s['trade_type'],
-            broker=s['broker']
+            broker=s['broker'],
+            account=s.get('account', '')
         )

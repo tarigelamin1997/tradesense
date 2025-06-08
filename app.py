@@ -6,7 +6,7 @@ from fpdf import FPDF
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
 from data_import.utils import load_trade_data
-from analytics import compute_basic_stats, performance_over_time
+from analytics import compute_basic_stats, performance_over_time, aggregate_by_account
 from risk_tool import assess_risk
 from payment import PaymentGateway
 
@@ -134,6 +134,11 @@ if selected_file:
     perf = performance_over_time(filtered_df, freq='M')
     st.subheader('Performance Over Time')
     st.bar_chart(perf.set_index('period')['pnl'])
+
+    if 'account' in filtered_df.columns and filtered_df['account'].nunique() > 0:
+        acct_perf = aggregate_by_account(filtered_df)
+        st.subheader('Performance by Account')
+        st.bar_chart(acct_perf.set_index('account')['pnl'])
 
     st.subheader('Trades')
     st.dataframe(filtered_df, use_container_width=True)

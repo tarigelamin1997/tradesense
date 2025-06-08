@@ -21,7 +21,14 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     equity_curve = df["pnl"].cumsum()
     max_drawdown = (equity_curve.cummax() - equity_curve).max()
     returns = equity_curve.pct_change().dropna()
-    sharpe = np.sqrt(252) * returns.mean() / returns.std() if not returns.empty else 0
+    if returns.empty:
+        sharpe = 0
+    else:
+        std = returns.std()
+        if std == 0 or np.isnan(std):
+            sharpe = 0
+        else:
+            sharpe = np.sqrt(252) * returns.mean() / std
 
     return {
         "win_rate": win_rate,

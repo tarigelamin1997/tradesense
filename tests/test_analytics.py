@@ -26,3 +26,13 @@ def test_compute_basic_stats_known_data():
     # approximate due to floating point operations
     assert stats['sharpe_ratio'] == pytest.approx(6.3835034744, rel=1e-6)
 
+
+def test_sharpe_ratio_single_trade_is_zero():
+    df = pd.DataFrame([
+        ['ES', '2024-01-01', '2024-01-01', 1, 1, 1, 'long', 10, 'daytrade', 'Demo']
+    ], columns=['symbol','entry_time','exit_time','entry_price','exit_price','qty','direction','pnl','trade_type','broker'])
+
+    stats = compute_basic_stats(df)
+
+    assert stats['sharpe_ratio'] == 0
+

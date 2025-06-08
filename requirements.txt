@@ -1,11 +1,19 @@
-pandas
-numpy
-plotly
-streamlit
-openpyxl
-fpdf
-# payment placeholders
-stripe
-paypalrestsdk
-pytest
+# Core data analysis
+pandas==2.1.4
+numpy==1.26.4
+
+# Visualization and app framework
+plotly==6.1.2
+streamlit==1.31.1
+
+# File handling and PDF export
+openpyxl==3.1.2
+fpdf==1.7.2
+
+# Payment placeholders
+stripe==7.8.0
+paypalrestsdk==1.13.3
+
+# Testing
+pytest==8.0.2
 

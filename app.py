@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
 from typing import Dict
+from st_aggrid import AgGrid, GridUpdateMode
+from interactive_table import (
+    compute_trade_result,
+    get_grid_options,
+    trade_detail,
+)
 from fpdf import FPDF
 
 from data_import.futures_importer import FuturesImporter
@@ -136,7 +142,29 @@ if selected_file:
     st.bar_chart(perf.set_index('period')['pnl'])
 
     st.subheader('Trades')
-    st.dataframe(filtered_df, use_container_width=True)
+    table_df = compute_trade_result(filtered_df)
+    options = get_grid_options(table_df)
+    grid = AgGrid(
+        table_df,
+        gridOptions=options,
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        allow_unsafe_jscode=True,
+        fit_columns_on_grid_load=True,
+    )
+
+    if grid['selected_rows']:
+        row = pd.Series(grid['selected_rows'][0])
+        details = trade_detail(row)
+        with st.modal('Trade Details'):
+            chart_df = pd.DataFrame({
+                'time': [row['entry_time'], row['exit_time']],
+                'price': [row['entry_price'], row['exit_price']],
+            })
+            st.line_chart(chart_df.set_index('time'))
+            st.write(f"Duration: {details['duration']}")
+            st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
+            if details['notes']:
+                st.write(details['notes'])
 
     st.subheader('Risk Assessment')
 

@@ -52,3 +52,100 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
 
     result = pd.DataFrame({"period": pnl.index, "pnl": pnl.values, "win_rate": win_rate.values})
     return result
+
+
+def median_results(df: pd.DataFrame) -> dict:
+    """Return median PnL statistics."""
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl"])
+    wins = df[df["pnl"] > 0]
+    losses = df[df["pnl"] <= 0]
+    return {
+        "median_pnl": df["pnl"].median() if not df.empty else 0,
+        "median_win": wins["pnl"].median() if not wins.empty else 0,
+        "median_loss": losses["pnl"].median() if not losses.empty else 0,
+    }
+
+
+def profit_factor_by_symbol(df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate profit factor for each trading symbol."""
+    if df.empty:
+        return pd.DataFrame(columns=["symbol", "profit_factor"])
+
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl", "symbol"])
+
+    def _pf(group: pd.DataFrame) -> float:
+        wins = group[group["pnl"] > 0]["pnl"].sum()
+        losses = group[group["pnl"] <= 0]["pnl"].sum()
+        return wins / abs(losses) if losses != 0 else np.inf
+
+    result = (
+        df.groupby("symbol")
+        .apply(_pf)
+        .reset_index(name="profit_factor")
+        .sort_values("symbol")
+    )
+    return result
+
+
+def trade_duration_stats(df: pd.DataFrame) -> dict:
+    """Calculate statistics on trade durations in minutes."""
+    if df.empty:
+        return {"average_minutes": 0, "max_minutes": 0, "min_minutes": 0, "median_minutes": 0}
+
+    df = df.copy()
+    df["entry_time"] = pd.to_datetime(df["entry_time"], errors="coerce")
+    df["exit_time"] = pd.to_datetime(df["exit_time"], errors="coerce")
+    df = df.dropna(subset=["entry_time", "exit_time"])
+    durations = (df["exit_time"] - df["entry_time"]).dt.total_seconds() / 60
+    return {
+        "average_minutes": durations.mean() if not durations.empty else 0,
+        "max_minutes": durations.max() if not durations.empty else 0,
+        "min_minutes": durations.min() if not durations.empty else 0,
+        "median_minutes": durations.median() if not durations.empty else 0,
+    }
+
+
+def max_streaks(df: pd.DataFrame) -> dict:
+    """Return the longest consecutive win and loss streaks."""
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl"])
+
+    max_win = 0
+    max_loss = 0
+    current_win = 0
+    current_loss = 0
+    for pnl in df["pnl"]:
+        if pnl > 0:
+            current_win += 1
+            current_loss = 0
+        else:
+            current_loss += 1
+            current_win = 0
+        max_win = max(max_win, current_win)
+        max_loss = max(max_loss, current_loss)
+
+    return {"max_win_streak": max_win, "max_loss_streak": max_loss}
+
+
+def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
+    """Compute rolling win rate and profit factor over a trade window."""
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl"])
+    results = []
+    for end in range(window, len(df) + 1):
+        window_df = df.iloc[end - window : end]
+        stats = compute_basic_stats(window_df)
+        results.append(
+            {
+                "end_index": end - 1,
+                "win_rate": stats["win_rate"],
+                "profit_factor": stats["profit_factor"],
+            }
+        )
+    return pd.DataFrame(results)

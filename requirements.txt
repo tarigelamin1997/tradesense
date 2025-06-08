@@ -5,6 +5,7 @@ numpy==1.26.4
 # Visualization and app framework
 plotly==6.1.2
 streamlit==1.31.1
+streamlit-aggrid==1.1.5
 
 # File handling and PDF export
 openpyxl==3.1.2

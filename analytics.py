@@ -8,36 +8,57 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
     df = df.dropna(subset=["pnl"])
+    
+    if df.empty:
+        return {
+            "win_rate": 0,
+            "average_win": 0,
+            "average_loss": 0,
+            "reward_risk": 0,
+            "expectancy": 0,
+            "max_drawdown": 0,
+            "profit_factor": 0,
+            "sharpe_ratio": 0,
+            "equity_curve": pd.Series(dtype=float),
+        }
+    
     wins = df[df["pnl"] > 0]
     losses = df[df["pnl"] <= 0]
     win_rate = len(wins) / len(df) * 100 if len(df) else 0
-    avg_win = wins["pnl"].mean() if not wins.empty else 0
-    avg_loss = losses["pnl"].mean() if not losses.empty else 0
-    reward_risk = abs(avg_win / avg_loss) if avg_loss != 0 else np.inf
+    
+    # Handle edge cases with safe numeric operations
+    avg_win = float(wins["pnl"].mean()) if not wins.empty and not wins["pnl"].isna().all() else 0
+    avg_loss = float(losses["pnl"].mean()) if not losses.empty and not losses["pnl"].isna().all() else 0
+    
+    reward_risk = abs(avg_win / avg_loss) if avg_loss != 0 and not np.isnan(avg_loss) else np.inf
     expectancy = (win_rate / 100) * avg_win + (1 - win_rate / 100) * avg_loss
-    profit_factor = (
-        wins["pnl"].sum() / abs(losses["pnl"].sum()) if not losses.empty else np.inf
-    )
+    
+    wins_sum = float(wins["pnl"].sum()) if not wins.empty else 0
+    losses_sum = float(abs(losses["pnl"].sum())) if not losses.empty else 0
+    profit_factor = wins_sum / losses_sum if losses_sum != 0 else np.inf
+    
     equity_curve = df["pnl"].cumsum()
-    max_drawdown = (equity_curve.cummax() - equity_curve).max()
+    max_drawdown = float((equity_curve.cummax() - equity_curve).max()) if not equity_curve.empty else 0
+    
     returns = equity_curve.pct_change().dropna()
-    if returns.empty:
+    if returns.empty or returns.isna().all():
         sharpe = 0
     else:
         std = returns.std()
-        if std == 0 or np.isnan(std):
+        mean_return = returns.mean()
+        if std == 0 or np.isnan(std) or np.isnan(mean_return):
             sharpe = 0
         else:
-            sharpe = np.sqrt(252) * returns.mean() / std
+            sharpe = float(np.sqrt(252) * mean_return / std)
 
     return {
-        "win_rate": win_rate,
+        "win_rate": float(win_rate) if not np.isnan(win_rate) else 0,
         "average_win": avg_win,
         "average_loss": avg_loss,
-        "reward_risk": reward_risk,
-        "expectancy": expectancy,
+        "reward_risk": float(reward_risk) if not np.isinf(reward_risk) and not np.isnan(reward_risk) else 0,
+        "expectancy": float(expectancy) if not np.isnan(expectancy) else 0,
         "max_drawdown": max_drawdown,
-        "profit_factor": profit_factor,
+        "profit_factor": float(profit_factor) if not np.isinf(profit_factor) and not np.isnan(profit_factor) else 0,
         "sharpe_ratio": sharpe,
         "equity_curve": equity_curve,
     }
@@ -50,15 +71,30 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
 
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df["exit_time"] = pd.to_datetime(df["exit_time"], errors="coerce")
     df = df.dropna(subset=["pnl", "exit_time"])
+    
+    if df.empty:
+        return pd.DataFrame(columns=["period", "pnl", "win_rate"])
 
-    period = df["exit_time"].dt.to_period(freq).dt.to_timestamp()
-    grouped = df.groupby(period)
-    pnl = grouped["pnl"].sum()
-    win_rate = grouped.apply(lambda g: (g["pnl"] > 0).mean() * 100)
+    try:
+        period = df["exit_time"].dt.to_period(freq).dt.to_timestamp()
+        grouped = df.groupby(period)
+        pnl = grouped["pnl"].sum()
+        win_rate = grouped.apply(lambda g: float((g["pnl"] > 0).mean() * 100))
 
-    result = pd.DataFrame({"period": pnl.index, "pnl": pnl.values, "win_rate": win_rate.values})
-    return result
+        # Ensure no infinite or NaN values
+        pnl = pnl.fillna(0)
+        win_rate = win_rate.fillna(0)
+        
+        result = pd.DataFrame({
+            "period": pnl.index, 
+            "pnl": [float(x) for x in pnl.values], 
+            "win_rate": [float(x) for x in win_rate.values]
+        })
+        return result
+    except Exception:
+        return pd.DataFrame(columns=["period", "pnl", "win_rate"])
 
 
 def median_results(df: pd.DataFrame) -> dict:
@@ -144,15 +180,24 @@ def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
     df = df.dropna(subset=["pnl"])
+    
+    if df.empty or len(df) < window:
+        return pd.DataFrame(columns=["end_index", "win_rate", "profit_factor"])
+    
     results = []
     for end in range(window, len(df) + 1):
         window_df = df.iloc[end - window : end]
         stats = compute_basic_stats(window_df)
+        
+        # Ensure finite values
+        win_rate = stats["win_rate"] if np.isfinite(stats["win_rate"]) else 0
+        profit_factor = stats["profit_factor"] if np.isfinite(stats["profit_factor"]) else 0
+        
         results.append(
             {
-                "end_index": end - 1,
-                "win_rate": stats["win_rate"],
-                "profit_factor": stats["profit_factor"],
+                "end_index": float(end - 1),
+                "win_rate": float(win_rate),
+                "profit_factor": float(profit_factor),
             }
         )
     return pd.DataFrame(results)

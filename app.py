@@ -798,7 +798,8 @@ if selected_file:
         )
 
     with filter_col4:
-        date_range = st.date_input(
+        date_range = st```python
+.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
             help="Select date range for analysis"
@@ -1237,7 +1238,7 @@ if selected_file:
 
     # Download buttons
     col_download1, col_download2 = st.columns(2)
-    
+
     with col_download1:
         st.download_button(
             'Download All Trades CSV', 
@@ -1245,7 +1246,7 @@ if selected_file:
             'all_trades.csv',
             help="Download complete trade dataset"
         )
-    
+
     with col_download2:
         st.download_button(
             'Download Filtered Trades CSV', 
@@ -1488,7 +1489,9 @@ if selected_file:
                 except Exception as e:
                     st.error("❌ **SAVE FAILED - Unexpected Error**")
                     st.error(f"**Reason:** An unexpected error occurred while saving")
-                    st.error(f"**Error Type:** {type(e).__name__}")
+                    st.error(f"**Error Analysis:** This code modifies the Streamlit application to display an onboarding message with a sample trade when the trades.csv file is empty or not found, encouraging users to start tracking their trades.
+```python
+ Type:** {type(e).__name__}")
                     st.error(f"**Technical Details:** {str(e)}")
                     st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)
@@ -1499,19 +1502,23 @@ else:
 
     # Check if trades.csv exists and display the trades
     trades_file = 'trades.csv'
-    if pd.io.common.file_exists(trades_file):
+    file_exists = pd.io.common.file_exists(trades_file)
+    trades_empty = True
+
+    if file_exists:
         try:
             # Read the trades from CSV
             manual_trades_df = pd.read_csv(trades_file)
+            trades_empty = manual_trades_df.empty
 
-            # Parse datetime to timestamp column
-            manual_trades_df['timestamp'] = pd.to_datetime(manual_trades_df['datetime'], errors='coerce')
+            if not trades_empty:
+                # Parse datetime to timestamp column
+                manual_trades_df['timestamp'] = pd.to_datetime(manual_trades_df['datetime'], errors='coerce')
 
-            # Ensure tags column exists for filtering
-            if 'tags' not in manual_trades_df.columns:
-                manual_trades_df['tags'] = ''
+                # Ensure tags column exists for filtering
+                if 'tags' not in manual_trades_df.columns:
+                    manual_trades_df['tags'] = ''
 
-            if not manual_trades_df.empty:
                 st.subheader('Your Manual Trades')
                 st.write(f"Found {len(manual_trades_df)} manually entered trades:")
 
@@ -1547,6 +1554,48 @@ else:
 
         except Exception as e:
             st.error(f"Error reading trades.csv: {str(e)}")
+            trades_empty = True
+
+    # Show onboarding card if file doesn't exist or is empty
+    if not file_exists or trades_empty:
+        st.subheader('🚀 Welcome to TradeSense!')
+
+        # Onboarding card with sample trade
+        with st.container():
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 25px; border-radius: 15px; color: white; margin-bottom: 20px;">
+                <h3 style="color: white; margin-top: 0;">📈 Start Your Trading Journey</h3>
+                <p style="color: #f0f0f0; font-size: 16px; margin-bottom: 15px;">
+                    Track, analyze, and improve your trades with powerful analytics. 
+                    Enter your first trade below to unlock insights!
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Sample trade example
+            with st.expander("💡 See Sample Trade Example", expanded=True):
+                st.markdown("**Here's what a profitable trade entry looks like:**")
+
+                sample_cols = st.columns(3)
+                with sample_cols[0]:
+                    st.info("**📊 Trade Details**\n- Symbol: AAPL\n- Direction: Long\n- Entry: $150.00\n- Exit: $155.50")
+
+                with sample_cols[1]:
+                    st.success("**💰 Risk Management**\n- Stop Loss: $147.50\n- Trade Size: 100 shares\n- Risk/Reward: 2.2:1")
+
+                with sample_cols[2]:
+                    st.warning("**🏷️ Results**\n- P&L: +$550.00\n- Result: Win\n- Tags: breakout, momentum")
+
+                st.markdown("""
+                <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                    <strong>🎯 Pro Tip:</strong> Good trades have clear entry/exit rules, proper risk management, 
+                    and detailed notes for future analysis!
+                </div>
+                """, unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.markdown("### 👇 Ready to start? Enter your first trade below!")
 
     # Show trade entry form even when no file is uploaded
     st.subheader('Manual Trade Entry')

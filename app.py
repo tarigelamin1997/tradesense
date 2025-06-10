@@ -57,7 +57,7 @@ if st.session_state.show_tour:
         if st.button("Got it", key="close_tour"):
             st.session_state.show_tour = False
 
-theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=0)
+theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=1)
 if theme == "Dark":
     st.markdown(
         """
@@ -535,6 +535,7 @@ else:
         }
         [data-baseweb="tag"] button:hover {
             background-color: #dee2e6 !important;
+            color: #262730 !important;
         }
 
         /* Additional overrides for BaseWeb components */
@@ -1010,7 +1011,72 @@ if selected_file:
         submitted = st.form_submit_button("Submit Trade")
 
         if submitted:
-            if symbol and entry_price > 0 and exit_price > 0 and trade_size > 0:
+            # Comprehensive validation with specific error messages
+            validation_errors = []
+
+            # Check symbol
+            if not symbol or symbol.strip() == '':
+                validation_errors.append("❌ Symbol is required and cannot be empty")
+            elif len(symbol.strip()) < 1:
+                validation_errors.append("❌ Symbol must be at least 1 character long")
+
+            # Check entry price
+            if entry_price <= 0:
+                validation_errors.append("❌ Entry price must be greater than 0")
+            elif entry_price > 1000000:
+                validation_errors.append("❌ Entry price seems unrealistically high (> $1,000,000)")
+
+            # Check exit price
+            if exit_price <= 0:
+                validation_errors.append("❌ Exit price must be greater than 0")
+            elif exit_price > 1000000:
+                validation_errors.append("❌ Exit price seems unrealistically high (> $1,000,000)")
+
+            # Check stop loss
+            if stop_loss < 0:
+                validation_errors.append("❌ Stop loss cannot be negative")
+            elif stop_loss > 1000000:
+                validation_errors.append("❌ Stop loss seems unrealistically high (> $1,000,000)")
+
+            # Check trade size
+            if trade_size <= 0:
+                validation_errors.append("❌ Trade size must be greater than 0")
+            elif trade_size > 1000000:
+                validation_errors.append("❌ Trade size seems unrealistically high (> 1,000,000 shares/contracts)")
+
+            # Check direction
+            if direction not in ['long', 'short']:
+                validation_errors.append("❌ Direction must be either 'long' or 'short'")
+
+            # Check result
+            if result not in ['win', 'loss']:
+                validation_errors.append("❌ Result must be either 'win' or 'loss'")
+
+            # Logical validation checks
+            if entry_price > 0 and exit_price > 0:
+                if direction == 'long' and exit_price < entry_price and result == 'win':
+                    validation_errors.append("❌ Long position with exit price lower than entry price should be marked as 'loss', not 'win'")
+                elif direction == 'short' and exit_price > entry_price and result == 'win':
+                    validation_errors.append("❌ Short position with exit price higher than entry price should be marked as 'loss', not 'win'")
+                elif direction == 'long' and exit_price > entry_price and result == 'loss':
+                    validation_errors.append("❌ Long position with exit price higher than entry price should be marked as 'win', not 'loss'")
+                elif direction == 'short' and exit_price < entry_price and result == 'loss':
+                    validation_errors.append("❌ Short position with exit price lower than entry price should be marked as 'win', not 'loss'")
+
+            # Stop loss validation
+            if stop_loss > 0 and entry_price > 0:
+                if direction == 'long' and stop_loss > entry_price:
+                    validation_errors.append("❌ For long positions, stop loss should be below entry price")
+                elif direction == 'short' and stop_loss < entry_price:
+                    validation_errors.append("❌ For short positions, stop loss should be above entry price")
+
+            # Display validation errors
+            if validation_errors:
+                st.error("Please fix the following issues before submitting:")
+                for error in validation_errors:
+                    st.error(error)
+            else:
+                # All validation passed, proceed with saving
                 # Calculate PnL based on direction
                 if direction == 'long':
                     pnl = (exit_price - entry_price) * trade_size
@@ -1020,7 +1086,7 @@ if selected_file:
                 # Store the trade entry with current datetime
                 trade_entry = {
                     'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'symbol': symbol,
+                    'symbol': symbol.strip().upper(),
                     'entry_price': entry_price,
                     'exit_price': exit_price,
                     'stop_loss': stop_loss,
@@ -1028,7 +1094,7 @@ if selected_file:
                     'direction': direction,
                     'result': result,
                     'pnl': pnl,
-                    'notes': notes,
+                    'notes': notes.strip() if notes else '',
                     'tags': ', '.join(tags) if tags else ''
                 }
 
@@ -1045,14 +1111,12 @@ if selected_file:
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, mode='a', header=False, index=False)
 
-                    st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
-                    st.success(f"Trade saved to {trades_file}")
+                    st.success(f"✅ Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                    st.success(f"💾 Trade saved to {trades_file}")
                     st.json(trade_entry)
                 except Exception as e:
-                    st.error(f"Error saving trade to file: {str(e)}")
+                    st.error(f"💥 Error saving trade to file: {str(e)}")
                     st.json(trade_entry)
-            else:
-                st.error("Please fill in all required fields (symbol, entry price, exit price, trade size)")
 
 else:
     st.info('Upload a trade history file to begin.')
@@ -1082,7 +1146,72 @@ else:
         submitted = st.form_submit_button("Submit Trade")
 
         if submitted:
-            if symbol and entry_price > 0 and exit_price > 0 and trade_size > 0:
+            # Comprehensive validation with specific error messages
+            validation_errors = []
+
+            # Check symbol
+            if not symbol or symbol.strip() == '':
+                validation_errors.append("❌ Symbol is required and cannot be empty")
+            elif len(symbol.strip()) < 1:
+                validation_errors.append("❌ Symbol must be at least 1 character long")
+
+            # Check entry price
+            if entry_price <= 0:
+                validation_errors.append("❌ Entry price must be greater than 0")
+            elif entry_price > 1000000:
+                validation_errors.append("❌ Entry price seems unrealistically high (> $1,000,000)")
+
+            # Check exit price
+            if exit_price <= 0:
+                validation_errors.append("❌ Exit price must be greater than 0")
+            elif exit_price > 1000000:
+                validation_errors.append("❌ Exit price seems unrealistically high (> $1,000,000)")
+
+            # Check stop loss
+            if stop_loss < 0:
+                validation_errors.append("❌ Stop loss cannot be negative")
+            elif stop_loss > 1000000:
+                validation_errors.append("❌ Stop loss seems unrealistically high (> $1,000,000)")
+
+            # Check trade size
+            if trade_size <= 0:
+                validation_errors.append("❌ Trade size must be greater than 0")
+            elif trade_size > 1000000:
+                validation_errors.append("❌ Trade size seems unrealistically high (> 1,000,000 shares/contracts)")
+
+            # Check direction
+            if direction not in ['long', 'short']:
+                validation_errors.append("❌ Direction must be either 'long' or 'short'")
+
+            # Check result
+            if result not in ['win', 'loss']:
+                validation_errors.append("❌ Result must be either 'win' or 'loss'")
+
+            # Logical validation checks
+            if entry_price > 0 and exit_price > 0:
+                if direction == 'long' and exit_price < entry_price and result == 'win':
+                    validation_errors.append("❌ Long position with exit price lower than entry price should be marked as 'loss', not 'win'")
+                elif direction == 'short' and exit_price > entry_price and result == 'win':
+                    validation_errors.append("❌ Short position with exit price higher than entry price should be marked as 'loss', not 'win'")
+                elif direction == 'long' and exit_price > entry_price and result == 'loss':
+                    validation_errors.append("❌ Long position with exit price higher than entry price should be marked as 'win', not 'loss'")
+                elif direction == 'short' and exit_price < entry_price and result == 'loss':
+                    validation_errors.append("❌ Short position with exit price lower than entry price should be marked as 'win', not 'loss'")
+
+            # Stop loss validation
+            if stop_loss > 0 and entry_price > 0:
+                if direction == 'long' and stop_loss > entry_price:
+                    validation_errors.append("❌ For long positions, stop loss should be below entry price")
+                elif direction == 'short' and stop_loss < entry_price:
+                    validation_errors.append("❌ For short positions, stop loss should be above entry price")
+
+            # Display validation errors
+            if validation_errors:
+                st.error("Please fix the following issues before submitting:")
+                for error in validation_errors:
+                    st.error(error)
+            else:
+                # All validation passed, proceed with saving
                 # Calculate PnL based on direction
                 if direction == 'long':
                     pnl = (exit_price - entry_price) * trade_size
@@ -1092,7 +1221,7 @@ else:
                 # Store the trade entry with current datetime
                 trade_entry = {
                     'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'symbol': symbol,
+                    'symbol': symbol.strip().upper(),
                     'entry_price': entry_price,
                     'exit_price': exit_price,
                     'stop_loss': stop_loss,
@@ -1100,7 +1229,7 @@ else:
                     'direction': direction,
                     'result': result,
                     'pnl': pnl,
-                    'notes': notes,
+                    'notes': notes.strip() if notes else '',
                     'tags': ', '.join(tags) if tags else ''
                 }
 
@@ -1117,11 +1246,9 @@ else:
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, mode='a', header=False, index=False)
 
-                    st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
-                    st.success(f"Trade saved to {trades_file}")
+                    st.success(f"✅ Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                    st.success(f"💾 Trade saved to {trades_file}")
                     st.json(trade_entry)
                 except Exception as e:
-                    st.error(f"Error saving trade to file: {str(e)}")
+                    st.error(f"💥 Error saving trade to file: {str(e)}")
                     st.json(trade_entry)
-            else:
-                st.error("Please fill in all required fields (symbol, entry price, exit price, trade size)")

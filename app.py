@@ -984,6 +984,109 @@ if selected_file:
         st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
     st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
+
+    # Trade Entry Form
+    st.subheader('Manual Trade Entry')
+    with st.form("trade_entry_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            symbol = st.text_input('Symbol', placeholder='e.g. AAPL, TSLA')
+            entry_price = st.number_input('Entry Price', min_value=0.0, step=0.01, format="%.2f")
+            exit_price = st.number_input('Exit Price', min_value=0.0, step=0.01, format="%.2f")
+            stop_loss = st.number_input('Stop Loss', min_value=0.0, step=0.01, format="%.2f")
+        
+        with col2:
+            trade_size = st.number_input('Trade Size', min_value=0.0, step=0.01, format="%.2f")
+            direction = st.selectbox('Direction', options=['long', 'short'])
+            result = st.selectbox('Result', options=['win', 'loss'])
+            
+        notes = st.text_area('Notes', placeholder='Enter any trade notes...')
+        
+        # Tags multi-select
+        available_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news']
+        tags = st.multiselect('Tags', options=available_tags)
+        
+        submitted = st.form_submit_button("Submit Trade")
+        
+        if submitted:
+            if symbol and entry_price > 0 and exit_price > 0 and trade_size > 0:
+                # Calculate PnL based on direction
+                if direction == 'long':
+                    pnl = (exit_price - entry_price) * trade_size
+                else:  # short
+                    pnl = (entry_price - exit_price) * trade_size
+                
+                # Store the trade entry (you can extend this to save to database/file)
+                trade_entry = {
+                    'symbol': symbol,
+                    'entry_price': entry_price,
+                    'exit_price': exit_price,
+                    'stop_loss': stop_loss,
+                    'trade_size': trade_size,
+                    'direction': direction,
+                    'result': result,
+                    'pnl': pnl,
+                    'notes': notes,
+                    'tags': ', '.join(tags) if tags else ''
+                }
+                
+                st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                st.json(trade_entry)
+            else:
+                st.error("Please fill in all required fields (symbol, entry price, exit price, trade size)")
+
 else:
     st.info('Upload a trade history file to begin.')
+    
+    # Show trade entry form even when no file is uploaded
+    st.subheader('Manual Trade Entry')
+    with st.form("trade_entry_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            symbol = st.text_input('Symbol', placeholder='e.g. AAPL, TSLA')
+            entry_price = st.number_input('Entry Price', min_value=0.0, step=0.01, format="%.2f")
+            exit_price = st.number_input('Exit Price', min_value=0.0, step=0.01, format="%.2f")
+            stop_loss = st.number_input('Stop Loss', min_value=0.0, step=0.01, format="%.2f")
+        
+        with col2:
+            trade_size = st.number_input('Trade Size', min_value=0.0, step=0.01, format="%.2f")
+            direction = st.selectbox('Direction', options=['long', 'short'])
+            result = st.selectbox('Result', options=['win', 'loss'])
+            
+        notes = st.text_area('Notes', placeholder='Enter any trade notes...')
+        
+        # Tags multi-select
+        available_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news']
+        tags = st.multiselect('Tags', options=available_tags)
+        
+        submitted = st.form_submit_button("Submit Trade")
+        
+        if submitted:
+            if symbol and entry_price > 0 and exit_price > 0 and trade_size > 0:
+                # Calculate PnL based on direction
+                if direction == 'long':
+                    pnl = (exit_price - entry_price) * trade_size
+                else:  # short
+                    pnl = (entry_price - exit_price) * trade_size
+                
+                # Store the trade entry (you can extend this to save to database/file)
+                trade_entry = {
+                    'symbol': symbol,
+                    'entry_price': entry_price,
+                    'exit_price': exit_price,
+                    'stop_loss': stop_loss,
+                    'trade_size': trade_size,
+                    'direction': direction,
+                    'result': result,
+                    'pnl': pnl,
+                    'notes': notes,
+                    'tags': ', '.join(tags) if tags else ''
+                }
+                
+                st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                st.json(trade_entry)
+            else:
+                st.error("Please fill in all required fields (symbol, entry price, exit price, trade size)")
 

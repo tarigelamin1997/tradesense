@@ -938,6 +938,38 @@ if selected_file:
         st.subheader('Performance Over Time')
         st.bar_chart(perf.set_index('period')['pnl'])
 
+        st.subheader('Trading Activity - Trades Per Week')
+        
+        # Create weekly trade count chart
+        trades_per_week = filtered_df.copy()
+        trades_per_week['week'] = trades_per_week['exit_time'].dt.to_period('W').dt.start_time
+        weekly_counts = trades_per_week.groupby('week').size().reset_index(name='trade_count')
+        
+        if not weekly_counts.empty:
+            fig_weekly = px.bar(
+                weekly_counts,
+                x='week',
+                y='trade_count',
+                title='Number of Trades Per Week',
+                labels={
+                    'week': 'Week Starting',
+                    'trade_count': 'Number of Trades'
+                }
+            )
+            fig_weekly.update_layout(
+                xaxis_title='Week Starting',
+                yaxis_title='Number of Trades',
+                showlegend=False
+            )
+            fig_weekly.update_traces(
+                marker_color='#636EFA',
+                hovertemplate='<b>Week:</b> %{x}<br><b>Trades:</b> %{y}<extra></extra>'
+            )
+            
+            st.plotly_chart(fig_weekly, use_container_width=True)
+        else:
+            st.info("No weekly trade data available.")
+
         med = median_results(filtered_df)
         st.subheader('Median Results')
         st.write(med)

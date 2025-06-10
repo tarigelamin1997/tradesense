@@ -891,6 +891,71 @@ if selected_file:
         col_b.metric('Total Commission', f"${kpis['total_commission']:,.2f}")
         col_c.metric('Commission per Trade', "$3.50")
 
+    # Daily Loss Limit Section
+    st.subheader('📊 Daily Loss Limit Analysis')
+    
+    # User input for daily loss limit
+    daily_loss_limit = st.number_input(
+        'Daily Loss Limit ($)', 
+        min_value=0.0, 
+        value=1000.0, 
+        step=50.0,
+        help="Set your maximum acceptable loss per day"
+    )
+    
+    # Calculate daily PnL and violations
+    daily_pnl = filtered_df.groupby(filtered_df['exit_time'].dt.date)['pnl'].sum().reset_index()
+    daily_pnl.columns = ['date', 'net_pnl']
+    daily_pnl['violation'] = daily_pnl['net_pnl'] < -daily_loss_limit
+    
+    # Count violation days
+    violation_days = len(daily_pnl[daily_pnl['violation']])
+    total_trading_days = len(daily_pnl)
+    
+    # Display KPI
+    violation_col1, violation_col2 = st.columns(2)
+    violation_col1.metric(
+        label='Daily Loss Limit Violations', 
+        value=f"{violation_days}",
+        delta=f"out of {total_trading_days} trading days",
+        help=f"Days where net loss exceeded ${daily_loss_limit:,.2f}"
+    )
+    
+    if violation_days > 0:
+        violation_percentage = (violation_days / total_trading_days) * 100
+        violation_col2.metric(
+            label='Violation Rate', 
+            value=f"{violation_percentage:.1f}%",
+            help="Percentage of trading days with losses exceeding limit"
+        )
+    
+    # Display violation details if any exist
+    if violation_days > 0:
+        st.subheader('🚨 Daily Loss Limit Violations')
+        st.caption(f'Days where net loss exceeded ${daily_loss_limit:,.2f}')
+        
+        violation_details = daily_pnl[daily_pnl['violation']].copy()
+        violation_details['net_pnl_formatted'] = violation_details['net_pnl'].apply(lambda x: f"${x:,.2f}")
+        violation_details['excess_loss'] = violation_details['net_pnl'] + daily_loss_limit
+        violation_details['excess_loss_formatted'] = violation_details['excess_loss'].apply(lambda x: f"${x:,.2f}")
+        
+        # Display violations table
+        display_violations = violation_details[['date', 'net_pnl_formatted', 'excess_loss_formatted']].copy()
+        display_violations.columns = ['Date', 'Net P&L', 'Excess Loss']
+        display_violations = display_violations.sort_values('Date', ascending=False)
+        
+        st.dataframe(display_violations, use_container_width=True, hide_index=True)
+        
+        # Summary stats for violations
+        worst_day_loss = violation_details['net_pnl'].min()
+        total_excess_loss = violation_details['excess_loss'].sum()
+        
+        viol_col1, viol_col2 = st.columns(2)
+        viol_col1.metric('Worst Day Loss', f"${worst_day_loss:,.2f}")
+        viol_col2.metric('Total Excess Loss', f"${total_excess_loss:,.2f}")
+    else:
+        st.success(f"✅ No days exceeded the daily loss limit of ${daily_loss_limit:,.2f}")
+
     st.divider()
 
     overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab = st.tabs(

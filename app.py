@@ -60,7 +60,66 @@ if st.session_state.show_tour:
 theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=0)
 if theme == "Dark":
     st.markdown(
-        "<style>body {background-color: #111;color: #eee;}</style>",
+        """
+        <style>
+        .stApp {
+            background-color: #0e1117;
+            color: #fafafa;
+        }
+        .stSidebar {
+            background-color: #262730;
+        }
+        .stSelectbox > div > div {
+            background-color: #262730;
+            color: #fafafa;
+        }
+        .stTextInput > div > div > input {
+            background-color: #262730;
+            color: #fafafa;
+        }
+        .stNumberInput > div > div > input {
+            background-color: #262730;
+            color: #fafafa;
+        }
+        .stTextArea > div > div > textarea {
+            background-color: #262730;
+            color: #fafafa;
+        }
+        .stDataFrame {
+            background-color: #262730;
+        }
+        .stMetric {
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .stExpander {
+            background-color: #262730;
+            border: 1px solid #4a4a4a;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background-color: #ffffff;
+            color: #262730;
+        }
+        .stSidebar {
+            background-color: #f0f2f6;
+        }
+        .stMetric {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        </style>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -136,6 +195,15 @@ if selected_file:
         & (df['exit_time'].dt.date <= date_range[1])
     ]
 
+    # Ensure PnL is numeric for all analytics
+    filtered_df = filtered_df.copy()
+    filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+    filtered_df = filtered_df.dropna(subset=['pnl'])
+    
+    if filtered_df.empty:
+        st.error("No valid trade data found after filtering. Please check your data.")
+        st.stop()
+    
     stats = compute_basic_stats(filtered_df)
     perf = performance_over_time(filtered_df, freq='M')
 
@@ -217,7 +285,7 @@ if selected_file:
                 'Trades': grp['pnl'].count(),
                 'Total PnL': grp['pnl'].sum(),
                 'Avg PnL': grp['pnl'].mean(),
-                'Win Rate %': grp.apply(lambda g: (g['pnl'] > 0).mean() * 100),
+                'Win Rate %': grp['pnl'].apply(lambda x: (x > 0).mean() * 100),
             })
             st.dataframe(symbol_stats, use_container_width=True)
         else:

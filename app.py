@@ -278,9 +278,16 @@ else:
         [data-testid="stSidebar"] [data-baseweb="select"] {
             background-color: #ffffff !important;
             color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
         [data-testid="stSidebar"] [data-baseweb="select"] span {
             color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] div {
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] svg {
+            fill: #262730 !important;
         }
         [data-testid="stSidebar"] input {
             background-color: #ffffff !important;
@@ -291,11 +298,21 @@ else:
         /* Fix dropdown menus in sidebar */
         [data-testid="stSidebar"] [data-baseweb="popover"] {
             background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
         }
         [data-testid="stSidebar"] [data-baseweb="menu"] {
             background-color: #ffffff !important;
         }
         [data-testid="stSidebar"] [data-baseweb="menu"] li {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="menu"] li:hover {
+            background-color: #e3f2fd !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="menu"] li[aria-selected="true"] {
+            background-color: #bbdefb !important;
             color: #262730 !important;
         }
         
@@ -303,9 +320,16 @@ else:
         [data-baseweb="select"] {
             background-color: #ffffff !important;
             color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
         [data-baseweb="select"] span {
             color: #262730 !important;
+        }
+        [data-baseweb="select"] div {
+            color: #262730 !important;
+        }
+        [data-baseweb="select"] svg {
+            fill: #262730 !important;
         }
         input[type="text"], input[type="number"], textarea {
             background-color: #ffffff !important;
@@ -337,6 +361,7 @@ else:
         }
         [data-baseweb="tab"][aria-selected="true"] {
             color: #262730 !important;
+            background-color: #ffffff !important;
         }
         
         /* Fix buttons */
@@ -347,6 +372,7 @@ else:
         }
         .stButton button:hover {
             background-color: #f8f9fa !important;
+            color: #262730 !important;
         }
         
         /* Fix expanders */
@@ -371,14 +397,25 @@ else:
             fill: #262730 !important;
         }
         
-        /* Fix dropdown options */
+        /* CRITICAL FIX: Dropdown options with proper contrast */
         [data-baseweb="popover"] {
             background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
         }
         [data-baseweb="menu"] {
             background-color: #ffffff !important;
         }
         [data-baseweb="menu"] li {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="menu"] li:hover {
+            background-color: #e3f2fd !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="menu"] li[aria-selected="true"] {
+            background-color: #bbdefb !important;
             color: #262730 !important;
         }
         
@@ -391,37 +428,48 @@ else:
         [data-baseweb="tag"] span {
             color: #262730 !important;
         }
+        [data-baseweb="tag"] svg {
+            fill: #262730 !important;
+        }
         
         /* Fix multi-select container and input */
         [data-baseweb="select"] [data-baseweb="input"] {
             background-color: #ffffff !important;
             color: #262730 !important;
         }
+        [data-baseweb="select"] [data-baseweb="input"] input {
+            color: #262730 !important;
+        }
         
         /* Fix multi-select dropdown options */
         [data-baseweb="list"] {
             background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
         }
         [data-baseweb="list-item"] {
             background-color: #ffffff !important;
             color: #262730 !important;
         }
         [data-baseweb="list-item"]:hover {
-            background-color: #f8f9fa !important;
+            background-color: #e3f2fd !important;
             color: #262730 !important;
         }
         [data-baseweb="list-item"][aria-selected="true"] {
-            background-color: #e9ecef !important;
+            background-color: #bbdefb !important;
             color: #262730 !important;
         }
         
         /* Fix checkbox in multi-select */
         [data-baseweb="checkbox"] {
             border-color: #cccccc !important;
+            background-color: #ffffff !important;
         }
         [data-baseweb="checkbox"]:checked {
             background-color: #007bff !important;
             border-color: #007bff !important;
+        }
+        [data-baseweb="checkbox"] svg {
+            fill: #ffffff !important;
         }
         
         /* Fix single select dropdown options */
@@ -434,15 +482,15 @@ else:
             color: #262730 !important;
         }
         [data-baseweb="popover"] [data-baseweb="list-item"]:hover {
-            background-color: #f8f9fa !important;
+            background-color: #e3f2fd !important;
             color: #262730 !important;
         }
         [data-baseweb="popover"] [data-baseweb="list-item"][aria-selected="true"] {
-            background-color: #e9ecef !important;
+            background-color: #bbdefb !important;
             color: #262730 !important;
         }
         
-        /* File uploader */
+        /* File uploader - Fix drag and drop area */
         [data-testid="stFileUploader"] {
             background-color: #ffffff !important;
             color: #262730 !important;
@@ -450,9 +498,69 @@ else:
         [data-testid="stFileUploader"] * {
             color: #262730 !important;
         }
+        [data-testid="stFileUploader"] section {
+            background-color: #f8f9fa !important;
+            border: 2px dashed #cccccc !important;
+            color: #262730 !important;
+        }
+        [data-testid="stFileUploader"] section * {
+            color: #262730 !important;
+        }
+        [data-testid="stFileUploader"] button {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
         
         /* Checkbox */
         [data-testid="stCheckbox"] label {
+            color: #262730 !important;
+        }
+        [data-testid="stCheckbox"] input[type="checkbox"] {
+            accent-color: #007bff !important;
+        }
+        
+        /* Fix clear buttons and X buttons */
+        button[aria-label*="Clear"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        button[aria-label*="Clear"]:hover {
+            background-color: #f8f9fa !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="tag"] button {
+            color: #262730 !important;
+        }
+        [data-baseweb="tag"] button:hover {
+            background-color: #dee2e6 !important;
+        }
+        
+        /* Additional overrides for BaseWeb components */
+        div[data-baseweb="base-input"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+        }
+        div[data-baseweb="base-input"] input {
+            color: #262730 !important;
+        }
+        
+        /* Fix for theme selector specifically */
+        [data-testid="stSidebar"] div[role="listbox"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-testid="stSidebar"] div[role="option"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] div[role="option"]:hover {
+            background-color: #e3f2fd !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] div[role="option"][aria-selected="true"] {
+            background-color: #bbdefb !important;
             color: #262730 !important;
         }
         </style>

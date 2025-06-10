@@ -1026,7 +1026,14 @@ if selected_file:
                 
                 # Get PnL value (handle string values from CSV)
                 pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
+                
+                # Get RR value and ensure it's numeric
                 rr_val = row.get('rr_ratio', 0)
+                if isinstance(rr_val, str):
+                    try:
+                        rr_val = float(rr_val) if rr_val != "N/A" else 0
+                    except (ValueError, TypeError):
+                        rr_val = 0
                 
                 # Highlight entire row based on conditions
                 if not pd.isna(pnl_val) and pnl_val > 100:
@@ -1051,10 +1058,10 @@ if selected_file:
         
         # Format numeric columns
         if 'rr_ratio' in display_df.columns:
-            display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
+            display_df.loc[:, 'rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
         if 'pnl' in display_df.columns:
-            display_df['pnl'] = pd.to_numeric(display_df['pnl'], errors='coerce')
-            display_df['pnl'] = display_df['pnl'].apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
+            display_df.loc[:, 'pnl'] = pd.to_numeric(display_df['pnl'], errors='coerce')
+            display_df.loc[:, 'pnl'] = display_df['pnl'].apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
         
         # Apply styling and display
         styled_df = style_trades(display_df)

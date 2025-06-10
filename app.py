@@ -797,7 +797,7 @@ if selected_file:
             help="Filter by trade tags (e.g., scalp, swing, breakout)"
         )
 
-    with filter_col4:
+    with filter_col4:```python
         date_range = st.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
@@ -1460,9 +1460,48 @@ if selected_file:
                     with st.expander("📋 View Complete Trade Data"):
                         st.json(trade_entry)
 
-                    # Risk warning if applicable
+                    # Rule-based feedback logic
+                    feedback_messages = []
+
+                    # Rule 1: Check RR ratio
                     if 0 < rr_ratio < 1:
-                        st.warning("⚠️ **Risk Alert**: This trade has a Risk/Reward ratio below 1.0. Consider reviewing your risk management strategy.")
+                        feedback_messages.append("⚠️ **Low RR**: Consider setting better reward targets. Your current Risk/Reward ratio is below 1.0.")
+
+                    # Rule 2: Check win rate for last 20 trades
+                    try:
+                        # Read existing trades to calculate recent win rate
+                        if pd.io.common.file_exists(trades_file):
+                            existing_trades = pd.read_csv(trades_file)
+                            if len(existing_trades) >= 20:  # Only check if we have at least 20 trades
+                                # Get last 20 trades (including the one we just added)
+                                last_20_trades = existing_trades.tail(20)
+                                last_20_trades['pnl'] = pd.to_numeric(last_20_trades['pnl'], errors='coerce')
+                                last_20_trades = last_20_trades.dropna(subset=['pnl'])
+
+                                if len(last_20_trades) >= 20:
+                                    winning_trades = len(last_20_trades[last_20_trades['pnl'] > 0])
+                                    recent_win_rate = (winning_trades / len(last_20_trades)) * 100
+
+                                    if recent_win_rate < 50:
+                                        feedback_messages.append(f"📊 **Low Recent Win Rate**: Your win rate over the last 20 trades is {recent_win_rate:.1f}%. Consider reviewing your losing trades to identify patterns.")
+                    except Exception:
+                        pass  # Silently skip win rate analysis if there's an error
+
+                    # Display feedback messages
+                    if feedback_messages:
+                        st.subheader("🤖 Trading Feedback")
+                        for message in feedback_messages:
+                            st.warning(message)
+                    else:
+                        # Positive feedback when rules pass
+                        positive_feedback = []
+                        if rr_ratio >= 1:
+                            positive_feedback.append("✅ **Good Risk/Reward**: Your R:R ratio meets the 1:1 minimum threshold.")
+
+                        if positive_feedback:
+                            st.subheader("🤖 Trading Feedback")
+                            for message in positive_feedback:
+                                st.success(message)
 
                 except FileNotFoundError as e:
                     st.error("❌ **SAVE FAILED - File System Error**")
@@ -1800,9 +1839,48 @@ else:
                     with st.expander("📋 View Complete Trade Data"):
                         st.json(trade_entry)
 
-                    # Risk warning if applicable
+                    # Rule-based feedback logic
+                    feedback_messages = []
+
+                    # Rule 1: Check RR ratio
                     if 0 < rr_ratio < 1:
-                        st.warning("⚠️ **Risk Alert**: This trade has a Risk/Reward ratio below 1.0. Consider reviewing your risk management strategy.")
+                        feedback_messages.append("⚠️ **Low RR**: Consider setting better reward targets. Your current Risk/Reward ratio is below 1.0.")
+
+                    # Rule 2: Check win rate for last 20 trades
+                    try:
+                        # Read existing trades to calculate recent win rate
+                        if pd.io.common.file_exists(trades_file):
+                            existing_trades = pd.read_csv(trades_file)
+                            if len(existing_trades) >= 20:  # Only check if we have at least 20 trades
+                                # Get last 20 trades (including the one we just added)
+                                last_20_trades = existing_trades.tail(20)
+                                last_20_trades['pnl'] = pd.to_numeric(last_20_trades['pnl'], errors='coerce')
+                                last_20_trades = last_20_trades.dropna(subset=['pnl'])
+
+                                if len(last_20_trades) >= 20:
+                                    winning_trades = len(last_20_trades[last_20_trades['pnl'] > 0])
+                                    recent_win_rate = (winning_trades / len(last_20_trades)) * 100
+
+                                    if recent_win_rate < 50:
+                                        feedback_messages.append(f"📊 **Low Recent Win Rate**: Your win rate over the last 20 trades is {recent_win_rate:.1f}%. Consider reviewing your losing trades to identify patterns.")
+                    except Exception:
+                        pass  # Silently skip win rate analysis if there's an error
+
+                    # Display feedback messages
+                    if feedback_messages:
+                        st.subheader("🤖 Trading Feedback")
+                        for message in feedback_messages:
+                            st.warning(message)
+                    else:
+                        # Positive feedback when rules pass
+                        positive_feedback = []
+                        if rr_ratio >= 1:
+                            positive_feedback.append("✅ **Good Risk/Reward**: Your R:R ratio meets the 1:1 minimum threshold.")
+
+                        if positive_feedback:
+                            st.subheader("🤖 Trading Feedback")
+                            for message in positive_feedback:
+                                st.success(message)
 
                 except FileNotFoundError as e:
                     st.error("❌ **SAVE FAILED - File System Error**")

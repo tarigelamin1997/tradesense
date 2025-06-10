@@ -1492,7 +1492,7 @@ else:
 
             # Get existing tags from current trades if file exists
             existing_tags = set(suggested_tags)
-            trades_file = 'python
+            trades_file = 'trades.csv'
             if pd.io.common.file_exists(trades_file):
                 try:
                     existing_trades = pd.read_csv(trades_file)

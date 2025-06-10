@@ -74,6 +74,194 @@ def generate_pdf(stats: Dict[str, float], risk: Dict[str, float]) -> bytes:
         pdf.cell(0, 10, f"{k}: {v}", ln=1)
     return pdf.output(dest="S").encode("latin1")
 
+
+def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dict) -> bytes:
+    """Generate a comprehensive PDF report with filtered trades, KPIs, and analytics."""
+    import io
+    import base64
+    from datetime import datetime
+    
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Title and Header
+    pdf.set_font("Arial", "B", 20)
+    pdf.cell(0, 15, "TradeSense - Comprehensive Trading Report", ln=1, align='C')
+    
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 8, f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=1, align='C')
+    pdf.cell(0, 8, f"Filtered Dataset: {len(filtered_df)} trades", ln=1, align='C')
+    pdf.ln(5)
+    
+    # Executive Summary Section
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Executive Summary", ln=1)
+    pdf.set_font("Arial", "", 10)
+    
+    # Summary metrics in a clean format
+    summary_data = [
+        ("Total Trades", f"{kpis['total_trades']:,}"),
+        ("Net P&L (After Commission)", f"${kpis['net_pnl_after_commission']:,.2f}"),
+        ("Win Rate", f"{kpis['win_rate_percent']:.1f}%"),
+        ("Average R:R Ratio", f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞"),
+        ("Best Single Trade", f"${kpis['max_single_trade_win']:,.2f}"),
+        ("Worst Single Trade", f"${kpis['max_single_trade_loss']:,.2f}"),
+        ("Total Commission Paid", f"${kpis['total_commission']:,.2f}")
+    ]
+    
+    for label, value in summary_data:
+        pdf.cell(95, 6, f"{label}:", border=0)
+        pdf.cell(95, 6, value, border=0, ln=1)
+    
+    pdf.ln(5)
+    
+    # Detailed Performance Metrics
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Detailed Performance Metrics", ln=1)
+    pdf.set_font("Arial", "", 10)
+    
+    performance_data = [
+        ("Profit Factor", f"{stats['profit_factor']:.2f}"),
+        ("Expectancy", f"${stats['expectancy']:.2f}"),
+        ("Max Drawdown", f"${stats['max_drawdown']:.2f}"),
+        ("Sharpe Ratio", f"{stats['sharpe_ratio']:.2f}"),
+        ("Average Win", f"${stats['average_win']:.2f}"),
+        ("Average Loss", f"${stats['average_loss']:.2f}"),
+        ("Reward:Risk Ratio", f"{stats['reward_risk']:.2f}")
+    ]
+    
+    for label, value in performance_data:
+        pdf.cell(95, 6, f"{label}:", border=0)
+        pdf.cell(95, 6, value, border=0, ln=1)
+    
+    pdf.ln(10)
+    
+    # Symbol Breakdown
+    if not filtered_df.empty:
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, "Performance by Symbol", ln=1)
+        pdf.set_font("Arial", "", 9)
+        
+        # Group by symbol
+        symbol_stats = filtered_df.groupby('symbol').agg({
+            'pnl': ['count', 'sum', 'mean'],
+            'direction': lambda x: (filtered_df.loc[x.index, 'pnl'] > 0).mean() * 100
+        }).round(2)
+        
+        symbol_stats.columns = ['Trades', 'Total_PnL', 'Avg_PnL', 'Win_Rate']
+        symbol_stats = symbol_stats.reset_index()
+        
+        # Table headers
+        pdf.cell(30, 8, "Symbol", border=1, align='C')
+        pdf.cell(25, 8, "Trades", border=1, align='C')
+        pdf.cell(35, 8, "Total P&L", border=1, align='C')
+        pdf.cell(35, 8, "Avg P&L", border=1, align='C')
+        pdf.cell(30, 8, "Win Rate %", border=1, align='C', ln=1)
+        
+        # Table data
+        for _, row in symbol_stats.head(10).iterrows():  # Limit to top 10 symbols
+            pdf.cell(30, 6, str(row['symbol']), border=1, align='C')
+            pdf.cell(25, 6, str(int(row['Trades'])), border=1, align='C')
+            pdf.cell(35, 6, f"${row['Total_PnL']:,.2f}", border=1, align='C')
+            pdf.cell(35, 6, f"${row['Avg_PnL']:,.2f}", border=1, align='C')
+            pdf.cell(30, 6, f"{row['Win_Rate']:.1f}%", border=1, align='C', ln=1)
+    
+    pdf.ln(10)
+    
+    # Recent Trade Performance
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Recent Trade History (Last 10 Trades)", ln=1)
+    pdf.set_font("Arial", "", 8)
+    
+    if not filtered_df.empty:
+        recent_trades = filtered_df.tail(10).copy()
+        recent_trades['pnl_formatted'] = recent_trades['pnl'].apply(lambda x: f"${x:,.2f}")
+        recent_trades['date_formatted'] = pd.to_datetime(recent_trades['exit_time']).dt.strftime('%Y-%m-%d')
+        
+        # Table headers for recent trades
+        pdf.cell(25, 6, "Date", border=1, align='C')
+        pdf.cell(20, 6, "Symbol", border=1, align='C')
+        pdf.cell(18, 6, "Direction", border=1, align='C')
+        pdf.cell(25, 6, "Entry", border=1, align='C')
+        pdf.cell(25, 6, "Exit", border=1, align='C')
+        pdf.cell(25, 6, "P&L", border=1, align='C')
+        pdf.cell(20, 6, "Result", border=1, align='C', ln=1)
+        
+        # Table data for recent trades
+        for _, trade in recent_trades.iterrows():
+            result = "Win" if trade['pnl'] > 0 else "Loss"
+            pdf.cell(25, 5, trade['date_formatted'], border=1, align='C')
+            pdf.cell(20, 5, str(trade['symbol'])[:8], border=1, align='C')  # Truncate long symbols
+            pdf.cell(18, 5, str(trade['direction'])[:6], border=1, align='C')
+            pdf.cell(25, 5, f"${trade['entry_price']:.2f}", border=1, align='C')
+            pdf.cell(25, 5, f"${trade['exit_price']:.2f}", border=1, align='C')
+            pdf.cell(25, 5, trade['pnl_formatted'], border=1, align='C')
+            pdf.cell(20, 5, result, border=1, align='C', ln=1)
+    
+    # Add new page for additional analysis
+    pdf.add_page()
+    
+    # Trading Patterns Analysis
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Trading Patterns & Insights", ln=1)
+    pdf.set_font("Arial", "", 10)
+    
+    if not filtered_df.empty:
+        # Direction analysis
+        direction_stats = filtered_df.groupby('direction').agg({
+            'pnl': ['count', 'sum', lambda x: (x > 0).mean() * 100]
+        }).round(2)
+        direction_stats.columns = ['Trades', 'Total_PnL', 'Win_Rate']
+        
+        pdf.cell(0, 8, "Performance by Direction:", ln=1)
+        for direction, row in direction_stats.iterrows():
+            pdf.cell(0, 6, f"  {direction.upper()}: {int(row['Trades'])} trades, ${row['Total_PnL']:,.2f} P&L, {row['Win_Rate']:.1f}% win rate", ln=1)
+        
+        pdf.ln(5)
+        
+        # Monthly performance if data spans multiple months
+        monthly_perf = filtered_df.copy()
+        monthly_perf['month'] = pd.to_datetime(monthly_perf['exit_time']).dt.to_period('M')
+        monthly_stats = monthly_perf.groupby('month')['pnl'].agg(['count', 'sum']).round(2)
+        
+        if len(monthly_stats) > 1:
+            pdf.cell(0, 8, "Monthly Performance:", ln=1)
+            for month, row in monthly_stats.head(6).iterrows():  # Show last 6 months
+                pdf.cell(0, 6, f"  {month}: {int(row['count'])} trades, ${row['sum']:,.2f} P&L", ln=1)
+    
+    pdf.ln(10)
+    
+    # Risk Management Summary
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Risk Management Summary", ln=1)
+    pdf.set_font("Arial", "", 10)
+    
+    if not filtered_df.empty:
+        # Calculate risk metrics
+        losing_trades = filtered_df[filtered_df['pnl'] < 0]
+        winning_trades = filtered_df[filtered_df['pnl'] > 0]
+        
+        risk_metrics = [
+            ("Largest Loss", f"${filtered_df['pnl'].min():,.2f}"),
+            ("Average Loss", f"${losing_trades['pnl'].mean():,.2f}" if not losing_trades.empty else "$0.00"),
+            ("Largest Win", f"${filtered_df['pnl'].max():,.2f}"),
+            ("Average Win", f"${winning_trades['pnl'].mean():,.2f}" if not winning_trades.empty else "$0.00"),
+            ("Win/Loss Ratio", f"{len(winning_trades)}:{len(losing_trades)}" if not losing_trades.empty else f"{len(winning_trades)}:0")
+        ]
+        
+        for label, value in risk_metrics:
+            pdf.cell(95, 6, f"{label}:", border=0)
+            pdf.cell(95, 6, value, border=0, ln=1)
+    
+    pdf.ln(10)
+    
+    # Footer
+    pdf.set_font("Arial", "I", 8)
+    pdf.cell(0, 10, "Generated by TradeSense - Professional Trading Analytics Platform", ln=1, align='C')
+    pdf.cell(0, 5, "This report contains confidential trading information and should be handled accordingly.", ln=1, align='C')
+    
+    return pdf.output(dest="S").encode("latin1")
+
 st.set_page_config(page_title="TradeSense", layout="wide")
 
 # Initialize session ID for feedback tracking
@@ -1306,7 +1494,7 @@ if selected_file:
         st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
     # Download buttons
-    col_download1, col_download2 = st.columns(2)
+    col_download1, col_download2, col_download3 = st.columns(3)
 
     with col_download1:
         st.download_button(
@@ -1323,6 +1511,24 @@ if selected_file:
             'filtered_trades.csv',
             help=f"Download {len(filtered_df)} filtered trades"
         )
+
+    with col_download3:
+        # Generate comprehensive PDF report
+        try:
+            comprehensive_pdf_bytes = generate_comprehensive_pdf(filtered_df, kpis, stats)
+            st.download_button(
+                '📄 Download PDF Report',
+                comprehensive_pdf_bytes,
+                f'tradesense_report_{pd.Timestamp.now().strftime("%Y%m%d_%H%M")}.pdf',
+                help=f"Download comprehensive PDF report with {len(filtered_df)} filtered trades, KPIs, and analytics",
+                type="primary"
+            )
+        except Exception as e:
+            st.error(f"Error generating PDF report: {str(e)}")
+            # Fallback to basic PDF
+            if risk:
+                pdf_bytes = generate_pdf(stats, risk)
+                st.download_button('📄 Download Basic PDF Report', pdf_bytes, 'basic_analytics_report.pdf')
 
     # Trade Entry Form
     st.subheader('Manual Trade Entry')

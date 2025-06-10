@@ -15,3 +15,15 @@ externalPort = 80
 [[ports]]
 localPort = 8502
 externalPort = 3000
+
+[workflows]
+runButton = "Run"
+
+[[workflows.workflow]]
+name = "Run"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"

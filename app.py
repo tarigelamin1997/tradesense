@@ -674,6 +674,85 @@ else:
         [data-baseweb] [role="button"] svg {
             fill: #262730 !important;
         }
+        
+        /* ULTRA-SPECIFIC FIX for Theme dropdown - nuclear option */
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] > div {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] input {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] span {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        
+        /* Fix the actual display text in select boxes */
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] {
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] span {
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] div {
+            color: #262730 !important;
+        }
+        
+        /* Ultra-specific targeting for Streamlit's selectbox container */
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div > div {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div > div > div {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] span {
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] div {
+            color: #262730 !important;
+        }
+        
+        /* Target any remaining BaseWeb elements in sidebar with brute force */
+        [data-testid="stSidebar"] div[class*="baseweb"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] div[class*="baseweb"] span {
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] div[class*="baseweb"] div {
+            color: #262730 !important;
+        }
+        
+        /* Emergency override - target everything in sidebar selectbox */
+        [data-testid="stSidebar"] div[data-baseweb] * {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        
+        /* Final override for any remaining invisible elements */
+        [data-testid="stSidebar"] * {
+            color: #262730 !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,

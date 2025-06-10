@@ -797,7 +797,7 @@ if selected_file:
             help="Filter by trade tags (e.g., scalp, swing, breakout)"
         )
 
-    with filter_col4:```python
+    with filter_col4:
         date_range = st.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],

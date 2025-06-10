@@ -790,10 +790,11 @@ if selected_file:
     # Add tags column if it doesn't exist
     if 'tags' not in df.columns:
         df['tags'] = ''
-    
+
     if importer.validate_columns(df):
         # Keep REQUIRED_COLUMNS plus tags if it exists
         columns_to_keep = REQUIRED_COLUMNS.copy()
+        ```python
         if 'tags' in df.columns:
             columns_to_keep.append('tags')
         df = df[[col for col in columns_to_keep if col in df.columns]]
@@ -827,10 +828,10 @@ if selected_file:
     # Filters above dashboard for better visibility
     st.header("📊 Trade Filters")
     st.caption("Filter your trades to analyze specific subsets of your trading data")
-    
+
     # Create filter columns
     filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
-    
+
     with filter_col1:
         symbols = st.multiselect(
             'Symbols', 
@@ -838,7 +839,7 @@ if selected_file:
             default=df['symbol'].unique().tolist(),
             help="Select which symbols to include in analysis"
         )
-    
+
     with filter_col2:
         directions = st.multiselect(
             'Directions', 
@@ -846,7 +847,7 @@ if selected_file:
             default=df['direction'].unique().tolist(),
             help="Filter by trade direction (long/short)"
         )
-    
+
     with filter_col3:
         # Extract unique tags from the tags column (if it exists)
         all_tags = set()
@@ -855,23 +856,23 @@ if selected_file:
                 if tag_string and str(tag_string).strip():
                     tags_list = [tag.strip() for tag in str(tag_string).split(',')]
                     all_tags.update(tags_list)
-        
+
         all_tags = sorted([tag for tag in all_tags if tag])  # Remove empty tags and sort
-        
+
         selected_tags = st.multiselect(
             'Tags',
             options=all_tags,
             default=all_tags,
             help="Filter by trade tags (e.g., scalp, swing, breakout)"
         )
-    
+
     with filter_col4:
         date_range = st.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
             help="Select date range for analysis"
         )
-    
+
     # Apply filters
     filtered_df = df[
         df['symbol'].isin(symbols)
@@ -879,7 +880,7 @@ if selected_file:
         & (df['entry_time'].dt.date >= date_range[0])
         & (df['exit_time'].dt.date <= date_range[1])
     ]
-    
+
     # Apply tag filter if tags column exists and tags are selected
     if 'tags' in df.columns and selected_tags:
         def has_selected_tag(tag_string):
@@ -887,9 +888,9 @@ if selected_file:
                 return False
             trade_tags = [tag.strip() for tag in str(tag_string).split(',')]
             return any(tag in selected_tags for tag in trade_tags)
-        
+
         filtered_df = filtered_df[filtered_df['tags'].apply(has_selected_tag)]
-    
+
     # Remove broker filter since it's not always available in manual entries
     # Keep it in sidebar for uploaded files
     if 'broker' in df.columns:
@@ -899,9 +900,9 @@ if selected_file:
 
     # Show filter results
     st.info(f"📈 Showing {len(filtered_df)} of {len(df)} total trades after applying filters")
-    
+
     st.divider()
-    
+
     # Ensure PnL is numeric for all analytics
     filtered_df = filtered_df.copy()
     filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
@@ -916,10 +917,10 @@ if selected_file:
 
     # Calculate and display KPIs at the top of the dashboard
     kpis = calculate_kpis(filtered_df, commission_per_trade=3.5)
-    
+
     st.subheader('📊 Key Performance Indicators')
     kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
-    
+
     kpi_col1.metric(
         label='Total Trades', 
         value=f"{kpis['total_trades']:,}",
@@ -951,14 +952,14 @@ if selected_file:
         value=f"${kpis['max_single_trade_loss']:,.2f}",
         help="Largest single losing trade"
     )
-    
+
     # Show commission breakdown in expandable section
     with st.expander("💰 Commission Breakdown"):
         col_a, col_b, col_c = st.columns(3)
         col_a.metric('Gross P&L', f"${kpis['gross_pnl']:,.2f}")
         col_b.metric('Total Commission', f"${kpis['total_commission']:,.2f}")
         col_c.metric('Commission per Trade', "$3.50")
-    
+
     st.divider()
 
     overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab = st.tabs(
@@ -966,7 +967,7 @@ if selected_file:
     )
 
     with overview_tab:
-        
+
         st.subheader('Additional Performance Metrics')
         col1, col2, col3 = st.columns(3)
         col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
@@ -977,11 +978,11 @@ if selected_file:
         col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
 
         st.subheader('Equity Curve')
-        
+
         # Create Plotly equity curve with timestamps
         equity_df = filtered_df.copy().sort_values('exit_time')
         equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
-        
+
         fig_equity = px.line(
             equity_df, 
             x='exit_time', 
@@ -1001,19 +1002,19 @@ if selected_file:
             line=dict(color='#00cc96', width=2),
             hovertemplate='<b>Date:</b> %{x}<br><b>Cumulative P&L:</b> $%{y:,.2f}<extra></extra>'
         )
-        
+
         st.plotly_chart(fig_equity, use_container_width=True)
 
         st.subheader('Performance Over Time')
         st.bar_chart(perf.set_index('period')['pnl'])
 
         st.subheader('Trading Activity - Trades Per Week')
-        
+
         # Create weekly trade count chart
         trades_per_week = filtered_df.copy()
         trades_per_week['week'] = trades_per_week['exit_time'].dt.to_period('W').dt.start_time
         weekly_counts = trades_per_week.groupby('week').size().reset_index(name='trade_count')
-        
+
         if not weekly_counts.empty:
             fig_weekly = px.bar(
                 weekly_counts,
@@ -1034,7 +1035,7 @@ if selected_file:
                 marker_color='#636EFA',
                 hovertemplate='<b>Week:</b> %{x}<br><b>Trades:</b> %{y}<extra></extra>'
             )
-            
+
             st.plotly_chart(fig_weekly, use_container_width=True)
         else:
             st.info("No weekly trade data available.")
@@ -1062,10 +1063,10 @@ if selected_file:
 
         st.subheader('Trades')
         table_df = compute_trade_result(filtered_df)
-        
+
         # Calculate Risk-Reward ratio for conditional formatting
         table_df_formatted = table_df.copy()
-        
+
         # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
         # Reward = exit_price - entry_price for long, entry_price - exit_price for short
         def calculate_rr(row):
@@ -1073,29 +1074,29 @@ if selected_file:
             exit = float(row['exit_price'])
             stop = float(row.get('stop_loss', 0))
             direction = row['direction']
-            
+
             if stop == 0:
                 return 0  # No stop loss set
-            
+
             if direction == 'long':
                 risk = abs(entry - stop)
                 reward = abs(exit - entry)
             else:  # short
                 risk = abs(stop - entry)
                 reward = abs(entry - exit)
-            
+
             return reward / risk if risk > 0 else 0
-        
+
         table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
-        
+
         # Create styled dataframe with conditional formatting
         def style_trades(df):
             def highlight_row(row):
                 styles = [''] * len(row)
-                
+
                 # Get PnL value (handle string values from CSV)
                 pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
-                
+
                 # Get RR value and ensure it's numeric
                 rr_val = row.get('rr_ratio', 0)
                 if isinstance(rr_val, str):
@@ -1103,7 +1104,7 @@ if selected_file:
                         rr_val = float(rr_val) if rr_val != "N/A" else 0
                     except (ValueError, TypeError):
                         rr_val = 0
-                
+
                 # Highlight entire row based on conditions
                 if not pd.isna(pnl_val) and pnl_val > 100:
                     # Green for high P&L trades
@@ -1111,20 +1112,20 @@ if selected_file:
                 elif rr_val > 0 and rr_val < 1:
                     # Red for poor RR trades
                     styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
-                
+
                 return styles
-            
+
             return df.style.apply(highlight_row, axis=1)
-        
+
         # Display formatted table
         st.subheader('Trades with Conditional Formatting')
         st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
-        
+
         # Prepare display columns
         display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
                        'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
         display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
-        
+
         # Format numeric columns properly to avoid pandas warnings
         if 'rr_ratio' in display_df.columns:
             display_df = display_df.copy()
@@ -1133,11 +1134,11 @@ if selected_file:
             display_df = display_df.copy()
             pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
             display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
-        
+
         # Apply styling and display
         styled_df = style_trades(display_df)
         st.dataframe(styled_df, use_container_width=True)
-        
+
         # Original interactive grid for selection
         st.subheader('Interactive Trades Table')
         options = get_grid_options(table_df)
@@ -1258,9 +1259,47 @@ if selected_file:
 
         notes = st.text_area('Notes', placeholder='Enter any trade notes...')
 
-        # Tags multi-select
-        available_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news']
-        tags = st.multiselect('Tags', options=available_tags)
+        # Enhanced Tags system with suggestions and custom tags
+        col_tag1, col_tag2 = st.columns([2, 1])
+
+        with col_tag1:
+            # Predefined tag suggestions
+            suggested_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news', 'gap', 'pullback', 'bounce', 'trend', 'counter-trend']
+
+            # Get existing tags from current trades if file exists
+            existing_tags = set(suggested_tags)
+            trades_file = 'trades.csv'
+            if pd.io.common.file_exists(trades_file):
+                try:
+                    existing_trades = pd.read_csv(trades_file)
+                    if 'tags' in existing_trades.columns:
+                        for tag_string in existing_trades['tags'].dropna():
+                            if tag_string and str(tag_string).strip():
+                                existing_tag_list = [tag.strip() for tag in str(tag_string).split(',')]
+                                existing_tags.update(existing_tag_list)
+                except:
+                    pass
+
+            available_tags = sorted([tag for tag in existing_tags if tag])
+
+            tags = st.multiselect(
+                'Tags', 
+                options=available_tags,
+                help="Select existing tags or add custom ones below"
+            )
+
+        with col_tag2:
+            custom_tag = st.text_input(
+                'Add Custom Tag',
+                placeholder='e.g., crypto, forex',
+                help="Enter a new tag and it will be added to your selection"
+            )
+
+            if custom_tag and custom_tag.strip():
+                clean_tag = custom_tag.strip().lower().replace(' ', '-')
+                if clean_tag not in tags:
+                    tags.append(clean_tag)
+                    st.success(f"Added '{clean_tag}' to tags")
 
         submitted = st.form_submit_button("Submit Trade")
 
@@ -1374,55 +1413,55 @@ if selected_file:
 
 else:
     st.info('Upload a trade history file to begin.')
-    
+
     # Check if trades.csv exists and display the trades
     trades_file = 'trades.csv'
     if pd.io.common.file_exists(trades_file):
         try:
             # Read the trades from CSV
             manual_trades_df = pd.read_csv(trades_file)
-            
+
             # Parse datetime to timestamp column
             manual_trades_df['timestamp'] = pd.to_datetime(manual_trades_df['datetime'], errors='coerce')
-            
+
             # Ensure tags column exists for filtering
             if 'tags' not in manual_trades_df.columns:
                 manual_trades_df['tags'] = ''
-            
+
             if not manual_trades_df.empty:
                 st.subheader('Your Manual Trades')
                 st.write(f"Found {len(manual_trades_df)} manually entered trades:")
-                
+
                 # Display the trades in a nice format
                 display_df = manual_trades_df.copy()
                 display_df['timestamp'] = display_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
                 display_df['pnl'] = display_df['pnl'].apply(lambda x: f"${x:.2f}")
-                
+
                 # Reorder columns for better display
                 column_order = ['timestamp', 'symbol', 'direction', 'entry_price', 'exit_price', 
                                'trade_size', 'pnl', 'result', 'stop_loss', 'tags', 'notes']
                 display_df = display_df[[col for col in column_order if col in display_df.columns]]
-                
+
                 st.dataframe(display_df, use_container_width=True)
-                
+
                 # Show basic stats for manual trades
                 total_pnl = manual_trades_df['pnl'].sum()
                 win_trades = len(manual_trades_df[manual_trades_df['pnl'] > 0])
                 total_trades = len(manual_trades_df)
                 win_rate = (win_trades / total_trades * 100) if total_trades > 0 else 0
-                
+
                 col1, col2, col3 = st.columns(3)
                 col1.metric('Total Trades', total_trades)
                 col2.metric('Total P&L', f"${total_pnl:.2f}")
                 col3.metric('Win Rate', f"{win_rate:.1f}%")
-                
+
                 # Option to download the manual trades
                 st.download_button(
                     'Download Manual Trades CSV', 
                     manual_trades_df.to_csv(index=False), 
                     'manual_trades.csv'
                 )
-                
+
         except Exception as e:
             st.error(f"Error reading trades.csv: {str(e)}")
 
@@ -1444,9 +1483,47 @@ else:
 
         notes = st.text_area('Notes', placeholder='Enter any trade notes...')
 
-        # Tags multi-select
-        available_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news']
-        tags = st.multiselect('Tags', options=available_tags)
+        # Enhanced Tags system with suggestions and custom tags
+        col_tag1, col_tag2 = st.columns([2, 1])
+
+        with col_tag1:
+            # Predefined tag suggestions
+            suggested_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news', 'gap', 'pullback', 'bounce', 'trend', 'counter-trend']
+
+            # Get existing tags from current trades if file exists
+            existing_tags = set(suggested_tags)
+            trades_file = 'python
+            if pd.io.common.file_exists(trades_file):
+                try:
+                    existing_trades = pd.read_csv(trades_file)
+                    if 'tags' in existing_trades.columns:
+                        for tag_string in existing_trades['tags'].dropna():
+                            if tag_string and str(tag_string).strip():
+                                existing_tag_list = [tag.strip() for tag in str(tag_string).split(',')]
+                                existing_tags.update(existing_tag_list)
+                except:
+                    pass
+
+            available_tags = sorted([tag for tag in existing_tags if tag])
+
+            tags = st.multiselect(
+                'Tags', 
+                options=available_tags,
+                help="Select existing tags or add custom ones below"
+            )
+
+        with col_tag2:
+            custom_tag = st.text_input(
+                'Add Custom Tag',
+                placeholder='e.g., crypto, forex',
+                help="Enter a new tag and it will be added to your selection"
+            )
+
+            if custom_tag and custom_tag.strip():
+                clean_tag = custom_tag.strip().lower().replace(' ', '-')
+                if clean_tag not in tags:
+                    tags.append(clean_tag)
+                    st.success(f"Added '{clean_tag}' to tags")
 
         submitted = st.form_submit_button("Submit Trade")
 

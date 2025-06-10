@@ -845,30 +845,58 @@ if selected_file:
     stats = compute_basic_stats(filtered_df)
     perf = performance_over_time(filtered_df, freq='M')
 
+    # Calculate and display KPIs at the top of the dashboard
+    kpis = calculate_kpis(filtered_df, commission_per_trade=3.5)
+    
+    st.subheader('📊 Key Performance Indicators')
+    kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
+    
+    kpi_col1.metric(
+        label='Total Trades', 
+        value=f"{kpis['total_trades']:,}",
+        help="Total number of completed trades"
+    )
+    kpi_col1.metric(
+        label='Win Rate', 
+        value=f"{kpis['win_rate_percent']:.1f}%",
+        help="Percentage of profitable trades"
+    )
+    kpi_col2.metric(
+        label='Average R:R', 
+        value=f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞",
+        help="Average reward-to-risk ratio"
+    )
+    kpi_col2.metric(
+        label='Net P&L (After Commission)', 
+        value=f"${kpis['net_pnl_after_commission']:,.2f}",
+        delta=f"${kpis['gross_pnl'] - kpis['net_pnl_after_commission']:,.2f} commission",
+        help="Total profit/loss after $3.50 commission per trade"
+    )
+    kpi_col3.metric(
+        label='Best Trade', 
+        value=f"${kpis['max_single_trade_win']:,.2f}",
+        help="Largest single winning trade"
+    )
+    kpi_col3.metric(
+        label='Worst Trade', 
+        value=f"${kpis['max_single_trade_loss']:,.2f}",
+        help="Largest single losing trade"
+    )
+    
+    # Show commission breakdown in expandable section
+    with st.expander("💰 Commission Breakdown"):
+        col_a, col_b, col_c = st.columns(3)
+        col_a.metric('Gross P&L', f"${kpis['gross_pnl']:,.2f}")
+        col_b.metric('Total Commission', f"${kpis['total_commission']:,.2f}")
+        col_c.metric('Commission per Trade', "$3.50")
+    
+    st.divider()
+
     overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab = st.tabs(
         ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal"]
     )
 
     with overview_tab:
-        # Calculate KPIs with commission
-        kpis = calculate_kpis(filtered_df, commission_per_trade=3.5)
-        
-        st.subheader('Key Performance Indicators (KPIs)')
-        kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
-        
-        kpi_col1.metric('Total Trades', f"{kpis['total_trades']:,}")
-        kpi_col1.metric('Win Rate %', f"{kpis['win_rate_percent']:.1f}%")
-        kpi_col2.metric('Average R:R', f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞")
-        kpi_col2.metric('Net P&L (After Commission)', f"${kpis['net_pnl_after_commission']:,.2f}")
-        kpi_col3.metric('Max Single Trade Win', f"${kpis['max_single_trade_win']:,.2f}")
-        kpi_col3.metric('Max Single Trade Loss', f"${kpis['max_single_trade_loss']:,.2f}")
-        
-        # Show commission breakdown
-        with st.expander("Commission Breakdown"):
-            col_a, col_b, col_c = st.columns(3)
-            col_a.metric('Gross P&L', f"${kpis['gross_pnl']:,.2f}")
-            col_b.metric('Total Commission', f"${kpis['total_commission']:,.2f}")
-            col_c.metric('Commission per Trade', "$3.50")
         
         st.subheader('Additional Performance Metrics')
         col1, col2, col3 = st.columns(3)

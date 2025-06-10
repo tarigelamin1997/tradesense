@@ -993,6 +993,75 @@ if selected_file:
 
         st.subheader('Trades')
         table_df = compute_trade_result(filtered_df)
+        
+        # Calculate Risk-Reward ratio for conditional formatting
+        table_df_formatted = table_df.copy()
+        
+        # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
+        # Reward = exit_price - entry_price for long, entry_price - exit_price for short
+        def calculate_rr(row):
+            entry = float(row['entry_price'])
+            exit = float(row['exit_price'])
+            stop = float(row.get('stop_loss', 0))
+            direction = row['direction']
+            
+            if stop == 0:
+                return 0  # No stop loss set
+            
+            if direction == 'long':
+                risk = abs(entry - stop)
+                reward = abs(exit - entry)
+            else:  # short
+                risk = abs(stop - entry)
+                reward = abs(entry - exit)
+            
+            return reward / risk if risk > 0 else 0
+        
+        table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
+        
+        # Create styled dataframe with conditional formatting
+        def style_trades(df):
+            def highlight_row(row):
+                styles = [''] * len(row)
+                
+                # Get PnL value (handle string values from CSV)
+                pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
+                rr_val = row.get('rr_ratio', 0)
+                
+                # Highlight entire row based on conditions
+                if not pd.isna(pnl_val) and pnl_val > 100:
+                    # Green for high P&L trades
+                    styles = ['background-color: #d4edda; color: #155724'] * len(row)
+                elif rr_val > 0 and rr_val < 1:
+                    # Red for poor RR trades
+                    styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
+                
+                return styles
+            
+            return df.style.apply(highlight_row, axis=1)
+        
+        # Display formatted table
+        st.subheader('Trades with Conditional Formatting')
+        st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
+        
+        # Prepare display columns
+        display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
+                       'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
+        display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
+        
+        # Format numeric columns
+        if 'rr_ratio' in display_df.columns:
+            display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
+        if 'pnl' in display_df.columns:
+            display_df['pnl'] = pd.to_numeric(display_df['pnl'], errors='coerce')
+            display_df['pnl'] = display_df['pnl'].apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
+        
+        # Apply styling and display
+        styled_df = style_trades(display_df)
+        st.dataframe(styled_df, use_container_width=True)
+        
+        # Original interactive grid for selection
+        st.subheader('Interactive Trades Table')
         options = get_grid_options(table_df)
         grid = AgGrid(
             table_df,

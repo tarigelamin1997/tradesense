@@ -68,34 +68,61 @@ if theme == "Dark":
         }
         .stSidebar {
             background-color: #262730;
-        }
-        .stSelectbox > div > div {
-            background-color: #262730;
             color: #fafafa;
         }
-        .stTextInput > div > div > input {
-            background-color: #262730;
+        .stSidebar .stSelectbox > div > div {
+            background-color: #1e1e1e;
             color: #fafafa;
+            border: 1px solid #4a4a4a;
         }
-        .stNumberInput > div > div > input {
-            background-color: #262730;
+        .stSidebar .stTextInput > div > div > input {
+            background-color: #1e1e1e;
             color: #fafafa;
+            border: 1px solid #4a4a4a;
+        }
+        .stSidebar .stNumberInput > div > div > input {
+            background-color: #1e1e1e;
+            color: #fafafa;
+            border: 1px solid #4a4a4a;
         }
         .stTextArea > div > div > textarea {
             background-color: #262730;
             color: #fafafa;
+            border: 1px solid #4a4a4a;
         }
         .stDataFrame {
             background-color: #262730;
         }
         .stMetric {
             background-color: #1e1e1e;
+            color: #fafafa;
             padding: 10px;
             border-radius: 5px;
+            border: 1px solid #4a4a4a;
         }
         .stExpander {
             background-color: #262730;
             border: 1px solid #4a4a4a;
+        }
+        .stExpander > div > div > div > div {
+            color: #fafafa;
+        }
+        .stButton > button {
+            background-color: #1e1e1e;
+            color: #fafafa;
+            border: 1px solid #4a4a4a;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #262730;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #fafafa;
+        }
+        .stMarkdown, .stText {
+            color: #fafafa;
+        }
+        .stCaption {
+            color: #b3b3b3;
         }
         </style>
         """,
@@ -111,12 +138,89 @@ else:
         }
         .stSidebar {
             background-color: #f0f2f6;
+            color: #262730;
+        }
+        .stSidebar .stSelectbox > div > div {
+            background-color: #ffffff;
+            color: #262730;
+            border: 1px solid #cccccc;
+        }
+        .stSidebar .stTextInput > div > div > input {
+            background-color: #ffffff;
+            color: #262730;
+            border: 1px solid #cccccc;
+        }
+        .stSidebar .stNumberInput > div > div > input {
+            background-color: #ffffff;
+            color: #262730;
+            border: 1px solid #cccccc;
+        }
+        .stTextArea > div > div > textarea {
+            background-color: #ffffff;
+            color: #262730;
+            border: 1px solid #cccccc;
+        }
+        .stDataFrame {
+            background-color: #ffffff;
+            color: #262730;
         }
         .stMetric {
             background-color: #f8f9fa;
+            color: #262730;
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #e9ecef;
+        }
+        .stExpander {
+            background-color: #ffffff;
+            border: 1px solid #cccccc;
+            color: #262730;
+        }
+        .stExpander > div > div > div > div {
+            color: #262730;
+        }
+        .stButton > button {
+            background-color: #ffffff;
+            color: #262730;
+            border: 1px solid #cccccc;
+        }
+        .stButton > button:hover {
+            background-color: #f8f9fa;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #f0f2f6;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #262730;
+        }
+        .stMarkdown, .stText {
+            color: #262730;
+        }
+        .stCaption {
+            color: #666666;
+        }
+        .stSubheader {
+            color: #262730;
+        }
+        .stTitle {
+            color: #262730;
+        }
+        /* Ensure chart text is visible in light mode */
+        .js-plotly-plot .plotly text {
+            fill: #262730 !important;
+        }
+        /* Fix selectbox text visibility */
+        .stSelectbox label {
+            color: #262730;
+        }
+        .stTextInput label {
+            color: #262730;
+        }
+        .stNumberInput label {
+            color: #262730;
+        }
+        .stTextArea label {
+            color: #262730;
         }
         </style>
         """,

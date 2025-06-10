@@ -156,3 +156,56 @@ def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(results)
+
+
+def calculate_kpis(df: pd.DataFrame, commission_per_trade: float = 3.5) -> dict:
+    """Calculate key performance indicators including commission costs."""
+    df = df.copy()
+    df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
+    df = df.dropna(subset=["pnl"])
+    
+    if df.empty:
+        return {
+            "total_trades": 0,
+            "win_rate_percent": 0,
+            "average_rr": 0,
+            "net_pnl_after_commission": 0,
+            "max_single_trade_loss": 0,
+            "max_single_trade_win": 0,
+            "total_commission": 0
+        }
+    
+    # Total number of trades
+    total_trades = len(df)
+    
+    # Total commission
+    total_commission = total_trades * commission_per_trade
+    
+    # Net PnL after commission
+    gross_pnl = df["pnl"].sum()
+    net_pnl_after_commission = gross_pnl - total_commission
+    
+    # Win rate %
+    winning_trades = df[df["pnl"] > 0]
+    losing_trades = df[df["pnl"] <= 0]
+    win_rate_percent = (len(winning_trades) / total_trades * 100) if total_trades > 0 else 0
+    
+    # Average RR (Reward to Risk ratio)
+    avg_win = winning_trades["pnl"].mean() if not winning_trades.empty else 0
+    avg_loss = abs(losing_trades["pnl"].mean()) if not losing_trades.empty else 0
+    average_rr = avg_win / avg_loss if avg_loss != 0 else np.inf
+    
+    # Max single trade loss and win
+    max_single_trade_loss = df["pnl"].min()
+    max_single_trade_win = df["pnl"].max()
+    
+    return {
+        "total_trades": total_trades,
+        "win_rate_percent": win_rate_percent,
+        "average_rr": average_rr,
+        "net_pnl_after_commission": net_pnl_after_commission,
+        "max_single_trade_loss": max_single_trade_loss,
+        "max_single_trade_win": max_single_trade_win,
+        "total_commission": total_commission,
+        "gross_pnl": gross_pnl
+    }

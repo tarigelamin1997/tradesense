@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 from typing import Dict
 from st_aggrid import AgGrid, GridUpdateMode
@@ -21,6 +22,7 @@ from analytics import (
     trade_duration_stats,
     max_streaks,
     rolling_metrics,
+    calculate_kpis,
 )
 from risk_tool import assess_risk
 from payment import PaymentGateway
@@ -848,7 +850,27 @@ if selected_file:
     )
 
     with overview_tab:
-        st.subheader('Performance Metrics')
+        # Calculate KPIs with commission
+        kpis = calculate_kpis(filtered_df, commission_per_trade=3.5)
+        
+        st.subheader('Key Performance Indicators (KPIs)')
+        kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
+        
+        kpi_col1.metric('Total Trades', f"{kpis['total_trades']:,}")
+        kpi_col1.metric('Win Rate %', f"{kpis['win_rate_percent']:.1f}%")
+        kpi_col2.metric('Average R:R', f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞")
+        kpi_col2.metric('Net P&L (After Commission)', f"${kpis['net_pnl_after_commission']:,.2f}")
+        kpi_col3.metric('Max Single Trade Win', f"${kpis['max_single_trade_win']:,.2f}")
+        kpi_col3.metric('Max Single Trade Loss', f"${kpis['max_single_trade_loss']:,.2f}")
+        
+        # Show commission breakdown
+        with st.expander("Commission Breakdown"):
+            col_a, col_b, col_c = st.columns(3)
+            col_a.metric('Gross P&L', f"${kpis['gross_pnl']:,.2f}")
+            col_b.metric('Total Commission', f"${kpis['total_commission']:,.2f}")
+            col_c.metric('Commission per Trade', "$3.50")
+        
+        st.subheader('Additional Performance Metrics')
         col1, col2, col3 = st.columns(3)
         col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
         col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")

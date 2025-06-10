@@ -908,7 +908,32 @@ if selected_file:
         col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
 
         st.subheader('Equity Curve')
-        st.line_chart(stats['equity_curve'])
+        
+        # Create Plotly equity curve with timestamps
+        equity_df = filtered_df.copy().sort_values('exit_time')
+        equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
+        
+        fig_equity = px.line(
+            equity_df, 
+            x='exit_time', 
+            y='cumulative_pnl',
+            title='Cumulative P&L Over Time (Equity Curve)',
+            labels={
+                'exit_time': 'Date',
+                'cumulative_pnl': 'Cumulative P&L ($)'
+            }
+        )
+        fig_equity.update_layout(
+            xaxis_title='Date',
+            yaxis_title='Cumulative P&L ($)',
+            hovermode='x unified'
+        )
+        fig_equity.update_traces(
+            line=dict(color='#00cc96', width=2),
+            hovertemplate='<b>Date:</b> %{x}<br><b>Cumulative P&L:</b> $%{y:,.2f}<extra></extra>'
+        )
+        
+        st.plotly_chart(fig_equity, use_container_width=True)
 
         st.subheader('Performance Over Time')
         st.bar_chart(perf.set_index('period')['pnl'])

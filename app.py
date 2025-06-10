@@ -794,7 +794,6 @@ if selected_file:
     if importer.validate_columns(df):
         # Keep REQUIRED_COLUMNS plus tags if it exists
         columns_to_keep = REQUIRED_COLUMNS.copy()
-        ```python
         if 'tags' in df.columns:
             columns_to_keep.append('tags')
         df = df[[col for col in columns_to_keep if col in df.columns]]

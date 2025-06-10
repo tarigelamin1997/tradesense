@@ -1120,6 +1120,53 @@ if selected_file:
 
 else:
     st.info('Upload a trade history file to begin.')
+    
+    # Check if trades.csv exists and display the trades
+    trades_file = 'trades.csv'
+    if pd.io.common.file_exists(trades_file):
+        try:
+            # Read the trades from CSV
+            manual_trades_df = pd.read_csv(trades_file)
+            
+            # Parse datetime to timestamp column
+            manual_trades_df['timestamp'] = pd.to_datetime(manual_trades_df['datetime'], errors='coerce')
+            
+            if not manual_trades_df.empty:
+                st.subheader('Your Manual Trades')
+                st.write(f"Found {len(manual_trades_df)} manually entered trades:")
+                
+                # Display the trades in a nice format
+                display_df = manual_trades_df.copy()
+                display_df['timestamp'] = display_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                display_df['pnl'] = display_df['pnl'].apply(lambda x: f"${x:.2f}")
+                
+                # Reorder columns for better display
+                column_order = ['timestamp', 'symbol', 'direction', 'entry_price', 'exit_price', 
+                               'trade_size', 'pnl', 'result', 'stop_loss', 'tags', 'notes']
+                display_df = display_df[[col for col in column_order if col in display_df.columns]]
+                
+                st.dataframe(display_df, use_container_width=True)
+                
+                # Show basic stats for manual trades
+                total_pnl = manual_trades_df['pnl'].sum()
+                win_trades = len(manual_trades_df[manual_trades_df['pnl'] > 0])
+                total_trades = len(manual_trades_df)
+                win_rate = (win_trades / total_trades * 100) if total_trades > 0 else 0
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric('Total Trades', total_trades)
+                col2.metric('Total P&L', f"${total_pnl:.2f}")
+                col3.metric('Win Rate', f"{win_rate:.1f}%")
+                
+                # Option to download the manual trades
+                st.download_button(
+                    'Download Manual Trades CSV', 
+                    manual_trades_df.to_csv(index=False), 
+                    'manual_trades.csv'
+                )
+                
+        except Exception as e:
+            st.error(f"Error reading trades.csv: {str(e)}")
 
     # Show trade entry form even when no file is uploaded
     st.subheader('Manual Trade Entry')

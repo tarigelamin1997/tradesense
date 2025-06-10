@@ -563,6 +563,117 @@ else:
             background-color: #bbdefb !important;
             color: #262730 !important;
         }
+        
+        /* CRITICAL: Fix BaseWeb dropdown visibility issues */
+        /* Target all BaseWeb popover content globally */
+        [data-baseweb="popover"] [data-baseweb="popover-content"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        /* Target BaseWeb select dropdowns specifically */
+        [data-baseweb="select"] [data-baseweb="popover"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-baseweb="select"] [data-baseweb="popover"] * {
+            color: #262730 !important;
+        }
+        
+        /* Fix dropdown arrow and controls */
+        [data-baseweb="select"] [data-baseweb="select-arrow"] {
+            fill: #262730 !important;
+        }
+        [data-baseweb="select"] [data-baseweb="select-arrow"] svg {
+            fill: #262730 !important;
+        }
+        [data-baseweb="select"] button {
+            color: #262730 !important;
+            background-color: transparent !important;
+        }
+        
+        /* Fix multiselect clear button and controls */
+        [data-baseweb="select"] [data-baseweb="tag"] button {
+            color: #262730 !important;
+            background-color: transparent !important;
+        }
+        [data-baseweb="select"] [data-baseweb="tag"] button:hover {
+            background-color: #f0f0f0 !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="select"] [data-baseweb="tag"] button svg {
+            fill: #262730 !important;
+        }
+        
+        /* Clear all button for multiselect */
+        [data-baseweb="select"] button[aria-label*="Clear all"] {
+            color: #262730 !important;
+            background-color: transparent !important;
+        }
+        [data-baseweb="select"] button[aria-label*="Clear all"]:hover {
+            background-color: #f0f0f0 !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="select"] button[aria-label*="Clear all"] svg {
+            fill: #262730 !important;
+        }
+        
+        /* Generic button fixes for select components */
+        [data-baseweb="select"] [role="button"] {
+            color: #262730 !important;
+        }
+        [data-baseweb="select"] [role="button"] svg {
+            fill: #262730 !important;
+        }
+        
+        /* Fix sidebar select component specifically */
+        [data-testid="stSidebar"] [data-baseweb="select"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] * {
+            color: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] button {
+            color: #262730 !important;
+            background-color: transparent !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] button svg {
+            fill: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-arrow"] {
+            fill: #262730 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-arrow"] svg {
+            fill: #262730 !important;
+        }
+        
+        /* Ensure dropdown text is always visible */
+        [data-baseweb="popover"] span,
+        [data-baseweb="popover"] div,
+        [data-baseweb="popover"] li,
+        [data-baseweb="menu"] span,
+        [data-baseweb="menu"] div,
+        [data-baseweb="list"] span,
+        [data-baseweb="list"] div,
+        [data-baseweb="list-item"] span {
+            color: #262730 !important;
+        }
+        
+        /* Force visibility on all interactive elements */
+        [data-baseweb] button {
+            color: #262730 !important;
+        }
+        [data-baseweb] button svg {
+            fill: #262730 !important;
+        }
+        [data-baseweb] [role="button"] {
+            color: #262730 !important;
+        }
+        [data-baseweb] [role="button"] svg {
+            fill: #262730 !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,

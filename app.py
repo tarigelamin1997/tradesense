@@ -1235,7 +1235,24 @@ if selected_file:
         pdf_bytes = generate_pdf(stats, risk)
         st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
-    st.download_button('Download Cleaned CSV', df.to_csv(index=False), 'cleaned_trades.csv')
+    # Download buttons
+    col_download1, col_download2 = st.columns(2)
+    
+    with col_download1:
+        st.download_button(
+            'Download All Trades CSV', 
+            df.to_csv(index=False), 
+            'all_trades.csv',
+            help="Download complete trade dataset"
+        )
+    
+    with col_download2:
+        st.download_button(
+            'Download Filtered Trades CSV', 
+            filtered_df.to_csv(index=False), 
+            'filtered_trades.csv',
+            help=f"Download {len(filtered_df)} filtered trades"
+        )
 
     # Trade Entry Form
     st.subheader('Manual Trade Entry')

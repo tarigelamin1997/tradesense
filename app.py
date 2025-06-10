@@ -421,77 +421,6 @@ else:
             color: #262730 !important;
         }
 
-        /* Fix multi-select tags/pills */
-        [data-baseweb="tag"] {
-            background-color: #e9ecef !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-baseweb="tag"] span {
-            color: #262730 !important;
-        }
-        [data-baseweb="tag"] svg {
-            fill: #262730 !important;
-        }
-
-        /* Fix multi-select container and input */
-        [data-baseweb="select"] [data-baseweb="input"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="select"] [data-baseweb="input"] input {
-            color: #262730 !important;
-        }
-
-        /* Fix multi-select dropdown options */
-        [data-baseweb="list"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-baseweb="list-item"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="list-item"]:hover {
-            background-color: #e3f2fd !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="list-item"][aria-selected="true"] {
-            background-color: #bbdefb !important;
-            color: #262730 !important;
-        }
-
-        /* Fix checkbox in multi-select */
-        [data-baseweb="checkbox"] {
-            border-color: #cccccc !important;
-            background-color: #ffffff !important;
-        }
-        [data-baseweb="checkbox"]:checked {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-        }
-        [data-baseweb="checkbox"] svg {
-            fill: #ffffff !important;
-        }
-
-        /* Fix single select dropdown options */
-        [data-baseweb="popover"] [data-baseweb="list"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-baseweb="popover"] [data-baseweb="list-item"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="popover"] [data-baseweb="list-item"]:hover {
-            background-color: #e3f2fd !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="popover"] [data-baseweb="list-item"][aria-selected="true"] {
-            background-color: #bbdefb !important;
-            color: #262730 !important;
-        }
-
         /* File uploader - Fix drag and drop area */
         [data-testid="stFileUploader"] {
             background-color: #ffffff !important;
@@ -538,6 +467,9 @@ else:
         [data-baseweb="tag"] button:hover {
             background-color: #dee2e6 !important;
             color: #262730 !important;
+        }
+        [data-baseweb="tag"] button svg {
+            fill: #262730 !important;
         }
 
         /* Additional overrides for BaseWeb components */
@@ -1375,7 +1307,19 @@ if selected_file:
                 else:  # short
                     pnl = (entry_price - exit_price) * trade_size
 
-                # Store the trade entry with current datetime
+                # Calculate RR ratio for the new trade
+                if stop_loss > 0:
+                    if direction == 'long':
+                        risk = abs(entry_price - stop_loss)
+                        reward = abs(exit_price - entry_price)
+                    else:  # short
+                        risk = abs(stop_loss - entry_price)
+                        reward = abs(entry_price - exit_price)
+                    rr_ratio = reward / risk if risk > 0 else 0
+                else:
+                    rr_ratio = 0
+
+                # Store the trade entry with current datetime and RR ratio
                 trade_entry = {
                     'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'symbol': symbol.strip().upper(),
@@ -1386,6 +1330,7 @@ if selected_file:
                     'direction': direction,
                     'result': result,
                     'pnl': pnl,
+                    'rr_ratio': rr_ratio,
                     'notes': notes.strip() if notes else '',
                     'tags': ', '.join(tags) if tags else ''
                 }
@@ -1403,7 +1348,9 @@ if selected_file:
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, mode='a', header=False, index=False)
 
-                    st.success(f"✅ Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                    rr_status = f"RR: {rr_ratio:.3f}" if rr_ratio > 0 else "No Stop Loss"
+                    rr_flag = " 🚨" if 0 < rr_ratio < 1 else " ✅" if rr_ratio >= 1 else ""
+                    st.success(f"✅ Trade submitted successfully! PnL: ${pnl:.2f} | {rr_status}{rr_flag}")
                     st.success(f"💾 Trade saved to {trades_file}")
                     st.json(trade_entry)
                 except Exception as e:
@@ -1544,7 +1491,7 @@ else:
 
             # Check exit price
             if exit_price <= 0:
-                validation_errors.append("❌ Exit price must be greater than 0")
+                validation_errorsappend("❌ Exit price must be greater than 0")
             elif exit_price > 1000000:
                 validation_errors.append("❌ Exit price seems unrealistically high (> $1,000,000)")
 
@@ -1599,7 +1546,19 @@ else:
                 else:  # short
                     pnl = (entry_price - exit_price) * trade_size
 
-                # Store the trade entry with current datetime
+                # Calculate RR ratio for the new trade
+                if stop_loss > 0:
+                    if direction == 'long':
+                        risk = abs(entry_price - stop_loss)
+                        reward = abs(exit_price - entry_price)
+                    else:  # short
+                        risk = abs(stop_loss - entry_price)
+                        reward = abs(entry_price - exit_price)
+                    rr_ratio = reward / risk if risk > 0 else 0
+                else:
+                    rr_ratio = 0
+
+                # Store the trade entry with current datetime and RR ratio
                 trade_entry = {
                     'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'symbol': symbol.strip().upper(),
@@ -1610,6 +1569,7 @@ else:
                     'direction': direction,
                     'result': result,
                     'pnl': pnl,
+                    'rr_ratio': rr_ratio,
                     'notes': notes.strip() if notes else '',
                     'tags': ', '.join(tags) if tags else ''
                 }
@@ -1627,7 +1587,9 @@ else:
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, mode='a', header=False, index=False)
 
-                    st.success(f"✅ Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                    rr_status = f"RR: {rr_ratio:.3f}" if rr_ratio > 0 else "No Stop Loss"
+                    rr_flag = " 🚨" if 0 < rr_ratio < 1 else " ✅" if rr_ratio >= 1 else ""
+                    st.success(f"✅ Trade submitted successfully! PnL: ${pnl:.2f} | {rr_status}{rr_flag}")
                     st.success(f"💾 Trade saved to {trades_file}")
                     st.json(trade_entry)
                 except Exception as e:

@@ -798,6 +798,7 @@ if selected_file:
         )
 
     with filter_col4:
+        ```python
         date_range = st.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
@@ -893,7 +894,7 @@ if selected_file:
 
     # Daily Loss Limit Section
     st.subheader('📊 Daily Loss Limit Analysis')
-    
+
     # User input for daily loss limit
     daily_loss_limit = st.number_input(
         'Daily Loss Limit ($)', 
@@ -902,16 +903,16 @@ if selected_file:
         step=50.0,
         help="Set your maximum acceptable loss per day"
     )
-    
+
     # Calculate daily PnL and violations
     daily_pnl = filtered_df.groupby(filtered_df['exit_time'].dt.date)['pnl'].sum().reset_index()
     daily_pnl.columns = ['date', 'net_pnl']
     daily_pnl['violation'] = daily_pnl['net_pnl'] < -daily_loss_limit
-    
+
     # Count violation days
     violation_days = len(daily_pnl[daily_pnl['violation']])
     total_trading_days = len(daily_pnl)
-    
+
     # Display KPI
     violation_col1, violation_col2 = st.columns(2)
     violation_col1.metric(
@@ -920,7 +921,7 @@ if selected_file:
         delta=f"out of {total_trading_days} trading days",
         help=f"Days where net loss exceeded ${daily_loss_limit:,.2f}"
     )
-    
+
     if violation_days > 0:
         violation_percentage = (violation_days / total_trading_days) * 100
         violation_col2.metric(
@@ -928,28 +929,28 @@ if selected_file:
             value=f"{violation_percentage:.1f}%",
             help="Percentage of trading days with losses exceeding limit"
         )
-    
+
     # Display violation details if any exist
     if violation_days > 0:
         st.subheader('🚨 Daily Loss Limit Violations')
         st.caption(f'Days where net loss exceeded ${daily_loss_limit:,.2f}')
-        
+
         violation_details = daily_pnl[daily_pnl['violation']].copy()
         violation_details['net_pnl_formatted'] = violation_details['net_pnl'].apply(lambda x: f"${x:,.2f}")
         violation_details['excess_loss'] = violation_details['net_pnl'] + daily_loss_limit
         violation_details['excess_loss_formatted'] = violation_details['excess_loss'].apply(lambda x: f"${x:,.2f}")
-        
+
         # Display violations table
         display_violations = violation_details[['date', 'net_pnl_formatted', 'excess_loss_formatted']].copy()
         display_violations.columns = ['Date', 'Net P&L', 'Excess Loss']
         display_violations = display_violations.sort_values('Date', ascending=False)
-        
+
         st.dataframe(display_violations, use_container_width=True, hide_index=True)
-        
+
         # Summary stats for violations
         worst_day_loss = violation_details['net_pnl'].min()
         total_excess_loss = violation_details['excess_loss'].sum()
-        
+
         viol_col1, viol_col2 = st.columns(2)
         viol_col1.metric('Worst Day Loss', f"${worst_day_loss:,.2f}")
         viol_col2.metric('Total Excess Loss', f"${total_excess_loss:,.2f}")
@@ -1361,11 +1362,15 @@ if selected_file:
 
             # Display validation errors
             if validation_errors:
-                st.error("Please fix the following issues before submitting:")
-                for error in validation_errors:
-                    st.error(error)
+                st.error("❌ **TRADE SUBMISSION FAILED**")
+                st.error(f"Found {len(validation_errors)} validation error(s). Please fix the following issues:")
+                for i, error in enumerate(validation_errors, 1):
+                    st.error(f"{i}. {error}")
+                st.warning("💡 **Tip**: Double-check your entry/exit prices match your trade direction and result.")
             else:
                 # All validation passed, proceed with saving
+                st.info("✅ **Validation passed** - Processing trade submission...")
+
                 # Calculate PnL based on direction
                 if direction == 'long':
                     pnl = (exit_price - entry_price) * trade_size
@@ -1404,29 +1409,81 @@ if selected_file:
                 trades_file = 'trades.csv'
                 try:
                     # Check if file exists
-                    if not pd.io.common.file_exists(trades_file):
+                    file_existed = pd.io.common.file_exists(trades_file)
+
+                    if not file_existed:
                         # Create new file with headers
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, index=False)
+                        st.info(f"📁 Created new trades file: {trades_file}")
                     else:
                         # Append to existing file
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, mode='a', header=False, index=False)
+                        st.info(f"📝 Appended to existing file: {trades_file}")
 
-                    rr_status = f"RR: {rr_ratio:.3f}" if rr_ratio > 0 else "No Stop Loss"
-                    rr_flag = " 🚨" if 0 < rr_ratio < 1 else " ✅" if rr_ratio >= 1 else ""
-                    st.success(f"✅ Trade submitted successfully! PnL: ${pnl:.2f} | {rr_status}{rr_flag}")
-                    st.success(f"💾 Trade saved to {trades_file}")
+                    # Success message with comprehensive details
+                    st.success("🎉 **TRADE SUBMISSION SUCCESSFUL!**")
+
+                    # Trade summary
+                    rr_status = f"{rr_ratio:.3f}" if rr_ratio > 0 else "N/A (No Stop Loss)"
+                    rr_flag = " 🚨 Poor Risk/Reward" if 0 < rr_ratio < 1 else " ✅ Good Risk/Reward" if rr_ratio >= 1 else ""
+
+                    st.success(f"**Trade Details:**")
+                    st.success(f"• Symbol: {symbol.strip().upper()}")
+                    st.success(f"• Direction: {direction.upper()}")
+                    st.success(f"• P&L: ${pnl:.2f}")
+                    st.success(f"• Risk/Reward Ratio: {rr_status}{rr_flag}")
+                    st.success(f"• Tags: {', '.join(tags) if tags else 'None'}")
+
+                    # File save confirmation
+                    st.success(f"**Saved to:** {trades_file}")
+                    st.success(f"**Timestamp:** {trade_entry['datetime']}")
+
+                    # Show trade data in expandable section
+                    with st.expander("📋 View Complete Trade Data"):
+                        st.json(trade_entry)
+
+                    # Risk warning if applicable
+                    if 0 < rr_ratio < 1:
+                        st.warning("⚠️ **Risk Alert**: This trade has a Risk/Reward ratio below 1.0. Consider reviewing your risk management strategy.")
+
+                except FileNotFoundError as e:
+                    st.error("❌ **SAVE FAILED - File System Error**")
+                    st.error(f"**Reason:** Could not access the trades file location")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)
+
+                except PermissionError as e:
+                    st.error("❌ **SAVE FAILED - Permission Denied**")
+                    st.error(f"**Reason:** Insufficient permissions to write to {trades_file}")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
+                    st.json(trade_entry)
+
+                except pd.errors.EmptyDataError as e:
+                    st.error("❌ **SAVE FAILED - Data Format Error**")
+                    st.error(f"**Reason:** Issue with trade data format")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
+                    st.json(trade_entry)
+
                 except Exception as e:
-                    st.error(f"💥 Error saving trade to file: {str(e)}")
+                    st.error("❌ **SAVE FAILED - Unexpected Error**")
+                    st.error(f"**Reason:** An unexpected error occurred while saving")
+                    st.error(f"**Error Type:** {type(e).__name__}")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)
+                    st.error("**Troubleshooting:** Try refreshing the page or contact support if the issue persists.")
 
 else:
     st.info('Upload a trade history file to begin.')
 
     # Check if trades.csv exists and display the trades
     trades_file = 'trades.csv'
+```python
     if pd.io.common.file_exists(trades_file):
         try:
             # Read the trades from CSV
@@ -1556,7 +1613,7 @@ else:
 
             # Check exit price
             if exit_price <= 0:
-                validation_errorsappend("❌ Exit price must be greater than 0")
+                validation_errors.append("❌ Exit price must be greater than 0")
             elif exit_price > 1000000:
                 validation_errors.append("❌ Exit price seems unrealistically high (> $1,000,000)")
 
@@ -1600,11 +1657,15 @@ else:
 
             # Display validation errors
             if validation_errors:
-                st.error("Please fix the following issues before submitting:")
-                for error in validation_errors:
-                    st.error(error)
+                st.error("❌ **TRADE SUBMISSION FAILED**")
+                st.error(f"Found {len(validation_errors)} validation error(s). Please fix the following issues:")
+                for i, error in enumerate(validation_errors, 1):
+                    st.error(f"{i}. {error}")
+                st.warning("💡 **Tip**: Double-check your entry/exit prices match your trade direction and result.")
             else:
                 # All validation passed, proceed with saving
+                st.info("✅ **Validation passed** - Processing trade submission...")
+
                 # Calculate PnL based on direction
                 if direction == 'long':
                     pnl = (exit_price - entry_price) * trade_size
@@ -1643,20 +1704,71 @@ else:
                 trades_file = 'trades.csv'
                 try:
                     # Check if file exists
-                    if not pd.io.common.file_exists(trades_file):
+                    file_existed = pd.io.common.file_exists(trades_file)
+
+                    if not file_existed:
                         # Create new file with headers
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, index=False)
+                        st.info(f"📁 Created new trades file: {trades_file}")
                     else:
                         # Append to existing file
                         trade_df = pd.DataFrame([trade_entry])
                         trade_df.to_csv(trades_file, mode='a', header=False, index=False)
+                        st.info(f"📝 Appended to existing file: {trades_file}")
 
-                    rr_status = f"RR: {rr_ratio:.3f}" if rr_ratio > 0 else "No Stop Loss"
-                    rr_flag = " 🚨" if 0 < rr_ratio < 1 else " ✅" if rr_ratio >= 1 else ""
-                    st.success(f"✅ Trade submitted successfully! PnL: ${pnl:.2f} | {rr_status}{rr_flag}")
-                    st.success(f"💾 Trade saved to {trades_file}")
+                    # Success message with comprehensive details
+                    st.success("🎉 **TRADE SUBMISSION SUCCESSFUL!**")
+
+                    # Trade summary
+                    rr_status = f"{rr_ratio:.3f}" if rr_ratio > 0 else "N/A (No Stop Loss)"
+                    rr_flag = " 🚨 Poor Risk/Reward" if 0 < rr_ratio < 1 else " ✅ Good Risk/Reward" if rr_ratio >= 1 else ""
+
+                    st.success(f"**Trade Details:**")
+                    st.success(f"• Symbol: {symbol.strip().upper()}")
+                    st.success(f"• Direction: {direction.upper()}")
+                    st.success(f"• P&L: ${pnl:.2f}")
+                    st.success(f"• Risk/Reward Ratio: {rr_status}{rr_flag}")
+                    st.success(f"• Tags: {', '.join(tags) if tags else 'None'}")
+
+                    # File save confirmation
+                    st.success(f"**Saved to:** {trades_file}")
+                    st.success(f"**Timestamp:** {trade_entry['datetime']}")
+
+                    # Show trade data in expandable section
+                    with st.expander("📋 View Complete Trade Data"):
+                        st.json(trade_entry)
+
+                    # Risk warning if applicable
+                    if 0 < rr_ratio < 1:
+                        st.warning("⚠️ **Risk Alert**: This trade has a Risk/Reward ratio below 1.0. Consider reviewing your risk management strategy.")
+
+                except FileNotFoundError as e:
+                    st.error("❌ **SAVE FAILED - File System Error**")
+                    st.error(f"**Reason:** Could not access the trades file location")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)
+
+                except PermissionError as e:
+                    st.error("❌ **SAVE FAILED - Permission Denied**")
+                    st.error(f"**Reason:** Insufficient permissions to write to {trades_file}")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
+                    st.json(trade_entry)
+
+                except pd.errors.EmptyDataError as e:
+                    st.error("❌ **SAVE FAILED - Data Format Error**")
+                    st.error(f"**Reason:** Issue with trade data format")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
+                    st.json(trade_entry)
+
                 except Exception as e:
-                    st.error(f"💥 Error saving trade to file: {str(e)}")
+                    st.error("❌ **SAVE FAILED - Unexpected Error**")
+                    st.error(f"**Reason:** An unexpected error occurred while saving")
+                    st.error(f"**Error Type:** {type(e).__name__}")
+                    st.error(f"**Technical Details:** {str(e)}")
+                    st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)
+                    st.error("**Troubleshooting:** Try refreshing the page or contact support if the issue persists.")

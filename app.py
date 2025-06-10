@@ -28,6 +28,38 @@ from risk_tool import assess_risk
 from payment import PaymentGateway
 
 
+def log_feedback(page: str, feedback: str) -> None:
+    """Log user feedback to feedback.csv with timestamp and page info."""
+    import os
+    
+    feedback_entry = {
+        'timestamp': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'page': page,
+        'feedback': feedback.strip(),
+        'session_id': st.session_state.get('session_id', 'unknown')
+    }
+    
+    feedback_file = 'feedback.csv'
+    
+    try:
+        # Check if file exists
+        file_exists = os.path.exists(feedback_file)
+        
+        if not file_exists:
+            # Create new file with headers
+            feedback_df = pd.DataFrame([feedback_entry])
+            feedback_df.to_csv(feedback_file, index=False)
+        else:
+            # Append to existing file
+            feedback_df = pd.DataFrame([feedback_entry])
+            feedback_df.to_csv(feedback_file, mode='a', header=False, index=False)
+            
+        return True
+    except Exception as e:
+        st.error(f"Failed to log feedback: {str(e)}")
+        return False
+
+
 def generate_pdf(stats: Dict[str, float], risk: Dict[str, float]) -> bytes:
     """Create a simple PDF report with core stats."""
     pdf = FPDF()
@@ -43,8 +75,71 @@ def generate_pdf(stats: Dict[str, float], risk: Dict[str, float]) -> bytes:
     return pdf.output(dest="S").encode("latin1")
 
 st.set_page_config(page_title="TradeSense", layout="wide")
-st.title("TradeSense")
-st.caption("Smarter Decisions. Safer Trades.")
+
+# Initialize session ID for feedback tracking
+if 'session_id' not in st.session_state:
+    import uuid
+    st.session_state.session_id = str(uuid.uuid4())[:8]
+
+# Header with feedback button
+header_col1, header_col2 = st.columns([4, 1])
+
+with header_col1:
+    st.title("TradeSense")
+    st.caption("Smarter Decisions. Safer Trades.")
+
+with header_col2:
+    if st.button("📝 Feedback", help="Report issues or suggest improvements"):
+        st.session_state.show_feedback_modal = True
+
+# Feedback Modal
+if st.session_state.get('show_feedback_modal', False):
+    with st.modal("📝 Feedback & Bug Reports"):
+        st.write("**Help us improve TradeSense!**")
+        st.write("Report bugs, suggest features, or share your experience.")
+        
+        # Determine current page context
+        current_page = "Main"
+        if st.session_state.get('current_tab'):
+            current_page = st.session_state.current_tab
+        elif selected_file:
+            current_page = "Analytics"
+        else:
+            current_page = "Onboarding"
+        
+        st.info(f"Current page: {current_page}")
+        
+        feedback_text = st.text_area(
+            "Your feedback:",
+            placeholder="Describe the issue, suggestion, or your experience...",
+            height=100
+        )
+        
+        feedback_type = st.selectbox(
+            "Type:",
+            ["Bug Report", "Feature Request", "General Feedback", "UI/UX Issue", "Performance Issue"]
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Submit Feedback", type="primary"):
+                if feedback_text.strip():
+                    full_feedback = f"[{feedback_type}] {feedback_text}"
+                    success = log_feedback(current_page, full_feedback)
+                    if success:
+                        st.success("✅ Feedback submitted! Thank you for helping us improve TradeSense.")
+                        st.session_state.show_feedback_modal = False
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to submit feedback. Please try again.")
+                else:
+                    st.warning("Please enter your feedback before submitting.")
+        
+        with col2:
+            if st.button("Cancel"):
+                st.session_state.show_feedback_modal = False
+                st.rerun()
 
 # Onboarding message shown only on first load
 if "show_tour" not in st.session_state:
@@ -961,8 +1056,13 @@ if selected_file:
     overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab = st.tabs(
         ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal"]
     )
+    
+    # Track current tab for feedback context
+    if 'current_tab' not in st.session_state:
+        st.session_state.current_tab = 'Overview'
 
     with overview_tab:
+        st.session_state.current_tab = 'Overview'
 
         st.subheader('Additional Performance Metrics')
         col1, col2, col3 = st.columns(3)
@@ -1161,6 +1261,7 @@ if selected_file:
                     st.write(details['notes'])
 
     with symbol_tab:
+        st.session_state.current_tab = 'Symbols'
         # Convert PnL to numeric to handle string values from CSV uploads
         symbol_df = filtered_df.copy()
         symbol_df['pnl'] = pd.to_numeric(symbol_df['pnl'], errors='coerce')
@@ -1179,6 +1280,7 @@ if selected_file:
             st.warning("No valid PnL data found for symbol analysis.")
 
     with drawdown_tab:
+        st.session_state.current_tab = 'Drawdowns'
         equity = stats['equity_curve']
         drawdown = equity.cummax() - equity
         fig = px.area(x=drawdown.index, y=drawdown.values,
@@ -1186,6 +1288,7 @@ if selected_file:
         st.plotly_chart(fig, use_container_width=True)
 
     with calendar_tab:
+        st.session_state.current_tab = 'Calendar'
         daily_pnl = filtered_df.groupby(filtered_df['exit_time'].dt.date)['pnl'].sum()
         cal_df = daily_pnl.reset_index()
         cal_df.columns = ['date', 'pnl']
@@ -1198,6 +1301,7 @@ if selected_file:
         st.plotly_chart(fig, use_container_width=True)
 
     with journal_tab:
+        st.session_state.current_tab = 'Journal'
         if 'journal_entries' not in st.session_state:
             st.session_state.journal_entries = []
         note = st.text_area('New Journal Entry', key='journal_input')

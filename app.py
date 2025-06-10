@@ -206,14 +206,22 @@ if selected_file:
                     st.write(details['notes'])
 
     with symbol_tab:
-        grp = filtered_df.groupby('symbol')
-        symbol_stats = pd.DataFrame({
-            'Trades': grp['pnl'].count(),
-            'Total PnL': grp['pnl'].sum(),
-            'Avg PnL': grp['pnl'].mean(),
-            'Win Rate %': grp.apply(lambda g: (g['pnl'] > 0).mean() * 100),
-        })
-        st.dataframe(symbol_stats, use_container_width=True)
+        # Convert PnL to numeric to handle string values from CSV uploads
+        symbol_df = filtered_df.copy()
+        symbol_df['pnl'] = pd.to_numeric(symbol_df['pnl'], errors='coerce')
+        symbol_df = symbol_df.dropna(subset=['pnl'])
+        
+        if not symbol_df.empty:
+            grp = symbol_df.groupby('symbol')
+            symbol_stats = pd.DataFrame({
+                'Trades': grp['pnl'].count(),
+                'Total PnL': grp['pnl'].sum(),
+                'Avg PnL': grp['pnl'].mean(),
+                'Win Rate %': grp.apply(lambda g: (g['pnl'] > 0).mean() * 100),
+            })
+            st.dataframe(symbol_stats, use_container_width=True)
+        else:
+            st.warning("No valid PnL data found for symbol analysis.")
 
     with drawdown_tab:
         equity = stats['equity_curve']

@@ -193,34 +193,45 @@ else:
         .stTabs [data-baseweb="tab"] {
             color: #262730;
         }
-        .stMarkdown, .stText {
-            color: #262730;
+        /* Comprehensive text color styling for light mode */
+        .stApp, .stApp * {
+            color: #262730 !important;
         }
-        .stCaption {
-            color: #666666;
+        .stMarkdown, .stMarkdown *, .stText, .stText * {
+            color: #262730 !important;
         }
-        .stSubheader {
-            color: #262730;
+        .stCaption, .stCaption * {
+            color: #666666 !important;
         }
-        .stTitle {
-            color: #262730;
+        .stSubheader, .stSubheader *, .stTitle, .stTitle * {
+            color: #262730 !important;
         }
-        /* Ensure chart text is visible in light mode */
+        .stHeader, .stHeader * {
+            color: #262730 !important;
+        }
+        /* Ensure all headings are visible */
+        h1, h2, h3, h4, h5, h6 {
+            color: #262730 !important;
+        }
+        /* Fix all form labels */
+        label, .stSelectbox label, .stTextInput label, .stNumberInput label, .stTextArea label {
+            color: #262730 !important;
+        }
+        /* Ensure chart text is visible */
         .js-plotly-plot .plotly text {
             fill: #262730 !important;
         }
-        /* Fix selectbox text visibility */
-        .stSelectbox label {
-            color: #262730;
+        /* Fix metric labels and values */
+        .stMetric label, .stMetric div {
+            color: #262730 !important;
         }
-        .stTextInput label {
-            color: #262730;
+        /* Fix tab text */
+        .stTabs [data-baseweb="tab"] {
+            color: #262730 !important;
         }
-        .stNumberInput label {
-            color: #262730;
-        }
-        .stTextArea label {
-            color: #262730;
+        /* Fix any remaining text elements */
+        p, span, div:not(.stButton):not(.stSelectbox):not(.stTextInput):not(.stNumberInput) {
+            color: #262730 !important;
         }
         </style>
         """,

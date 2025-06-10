@@ -70,7 +70,7 @@ if theme == "Dark":
         .stApp *, .stApp div, .stApp span, .stApp p {
             color: #fafafa !important;
         }
-        
+
         /* Headers and Titles */
         h1, h2, h3, h4, h5, h6, .stTitle, .stHeader, .stSubheader {
             color: #fafafa !important;
@@ -78,7 +78,7 @@ if theme == "Dark":
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
             color: #fafafa !important;
         }
-        
+
         /* Sidebar */
         .stSidebar {
             background-color: #262730 !important;
@@ -114,7 +114,7 @@ if theme == "Dark":
         .stSidebar .stDateInput > label {
             color: #fafafa !important;
         }
-        
+
         /* Form Elements */
         .stTextArea > div > div > textarea {
             background-color: #262730 !important;
@@ -136,7 +136,7 @@ if theme == "Dark":
             color: #fafafa !important;
             border: 1px solid #4a4a4a !important;
         }
-        
+
         /* Labels and Text */
         label, .stSelectbox label, .stTextInput label, .stNumberInput label, .stTextArea label {
             color: #fafafa !important;
@@ -147,13 +147,13 @@ if theme == "Dark":
         .stCaption {
             color: #b3b3b3 !important;
         }
-        
+
         /* Data and Tables */
         .stDataFrame {
             background-color: #262730 !important;
             color: #fafafa !important;
         }
-        
+
         /* Metrics */
         .stMetric {
             background-color: #1e1e1e !important;
@@ -165,7 +165,7 @@ if theme == "Dark":
         .stMetric label, .stMetric div {
             color: #fafafa !important;
         }
-        
+
         /* Expandable sections */
         .stExpander {
             background-color: #262730 !important;
@@ -175,7 +175,7 @@ if theme == "Dark":
         .stExpander * {
             color: #fafafa !important;
         }
-        
+
         /* Buttons */
         .stButton > button {
             background-color: #1e1e1e !important;
@@ -185,7 +185,7 @@ if theme == "Dark":
         .stButton > button:hover {
             background-color: #333333 !important;
         }
-        
+
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {
             background-color: #262730 !important;
@@ -196,12 +196,12 @@ if theme == "Dark":
         .stTabs [data-baseweb="tab"][aria-selected="true"] {
             color: #fafafa !important;
         }
-        
+
         /* Charts */
         .js-plotly-plot .plotly text {
             fill: #fafafa !important;
         }
-        
+
         /* Dropdown menus */
         .stSelectbox [data-baseweb="select"] {
             background-color: #1e1e1e !important;
@@ -225,7 +225,7 @@ else:
         .main .block-container {
             background-color: #ffffff !important;
         }
-        
+
         /* Fix main title and all headers */
         [data-testid="stHeader"] h1 {
             color: #262730 !important;
@@ -241,7 +241,7 @@ else:
         [data-testid="stMarkdownContainer"] h6 {
             color: #262730 !important;
         }
-        
+
         /* Fix all text content */
         [data-testid="stMarkdownContainer"] p,
         [data-testid="stMarkdownContainer"] div,
@@ -250,13 +250,13 @@ else:
         .stText div {
             color: #262730 !important;
         }
-        
+
         /* Fix caption text */
         [data-testid="stCaptionContainer"] p,
         .stCaption div {
             color: #666666 !important;
         }
-        
+
         /* Sidebar comprehensive styling */
         [data-testid="stSidebar"] {
             background-color: #f0f2f6 !important;
@@ -273,7 +273,7 @@ else:
         [data-testid="stSidebar"] label {
             color: #262730 !important;
         }
-        
+
         /* Sidebar form elements */
         [data-testid="stSidebar"] [data-baseweb="select"] {
             background-color: #ffffff !important;
@@ -294,7 +294,7 @@ else:
             color: #262730 !important;
             border: 1px solid #cccccc !important;
         }
-        
+
         /* Fix dropdown menus in sidebar */
         [data-testid="stSidebar"] [data-baseweb="popover"] {
             background-color: #ffffff !important;
@@ -315,7 +315,7 @@ else:
             background-color: #bbdefb !important;
             color: #262730 !important;
         }
-        
+
         /* Main content form elements */
         [data-baseweb="select"] {
             background-color: #ffffff !important;
@@ -336,12 +336,12 @@ else:
             color: #262730 !important;
             border: 1px solid #cccccc !important;
         }
-        
+
         /* Fix all labels */
         label {
             color: #262730 !important;
         }
-        
+
         /* Fix metrics */
         [data-testid="metric-container"] {
             background-color: #f8f9fa !important;
@@ -351,7 +351,7 @@ else:
         [data-testid="metric-container"] * {
             color: #262730 !important;
         }
-        
+
         /* Fix tabs */
         [data-baseweb="tab-list"] {
             background-color: #f0f2f6 !important;
@@ -363,7 +363,7 @@ else:
             color: #262730 !important;
             background-color: #ffffff !important;
         }
-        
+
         /* Fix buttons */
         .stButton button {
             background-color: #ffffff !important;
@@ -374,7 +374,7 @@ else:
             background-color: #f8f9fa !important;
             color: #262730 !important;
         }
-        
+
         /* Fix expanders */
         [data-testid="stExpander"] {
             background-color: #ffffff !important;
@@ -383,7 +383,7 @@ else:
         [data-testid="stExpander"] * {
             color: #262730 !important;
         }
-        
+
         /* Fix dataframes */
         [data-testid="stDataFrame"] {
             background-color: #ffffff !important;
@@ -391,12 +391,12 @@ else:
         [data-testid="stDataFrame"] * {
             color: #262730 !important;
         }
-        
+
         /* Fix charts */
         .js-plotly-plot .plotly text {
             fill: #262730 !important;
         }
-        
+
         /* CRITICAL FIX: Dropdown options with proper contrast */
         [data-baseweb="popover"] {
             background-color: #ffffff !important;
@@ -418,7 +418,7 @@ else:
             background-color: #bbdefb !important;
             color: #262730 !important;
         }
-        
+
         /* Fix multi-select tags/pills */
         [data-baseweb="tag"] {
             background-color: #e9ecef !important;
@@ -431,7 +431,7 @@ else:
         [data-baseweb="tag"] svg {
             fill: #262730 !important;
         }
-        
+
         /* Fix multi-select container and input */
         [data-baseweb="select"] [data-baseweb="input"] {
             background-color: #ffffff !important;
@@ -440,7 +440,7 @@ else:
         [data-baseweb="select"] [data-baseweb="input"] input {
             color: #262730 !important;
         }
-        
+
         /* Fix multi-select dropdown options */
         [data-baseweb="list"] {
             background-color: #ffffff !important;
@@ -458,7 +458,7 @@ else:
             background-color: #bbdefb !important;
             color: #262730 !important;
         }
-        
+
         /* Fix checkbox in multi-select */
         [data-baseweb="checkbox"] {
             border-color: #cccccc !important;
@@ -471,7 +471,7 @@ else:
         [data-baseweb="checkbox"] svg {
             fill: #ffffff !important;
         }
-        
+
         /* Fix single select dropdown options */
         [data-baseweb="popover"] [data-baseweb="list"] {
             background-color: #ffffff !important;
@@ -489,7 +489,7 @@ else:
             background-color: #bbdefb !important;
             color: #262730 !important;
         }
-        
+
         /* File uploader - Fix drag and drop area */
         [data-testid="stFileUploader"] {
             background-color: #ffffff !important;
@@ -511,7 +511,7 @@ else:
             color: #262730 !important;
             border: 1px solid #cccccc !important;
         }
-        
+
         /* Checkbox */
         [data-testid="stCheckbox"] label {
             color: #262730 !important;
@@ -519,7 +519,7 @@ else:
         [data-testid="stCheckbox"] input[type="checkbox"] {
             accent-color: #007bff !important;
         }
-        
+
         /* Fix clear buttons and X buttons */
         button[aria-label*="Clear"] {
             background-color: #ffffff !important;
@@ -536,7 +536,7 @@ else:
         [data-baseweb="tag"] button:hover {
             background-color: #dee2e6 !important;
         }
-        
+
         /* Additional overrides for BaseWeb components */
         div[data-baseweb="base-input"] {
             background-color: #ffffff !important;
@@ -545,7 +545,7 @@ else:
         div[data-baseweb="base-input"] input {
             color: #262730 !important;
         }
-        
+
         /* Fix for theme selector specifically */
         [data-testid="stSidebar"] div[role="listbox"] {
             background-color: #ffffff !important;
@@ -563,7 +563,7 @@ else:
             background-color: #bbdefb !important;
             color: #262730 !important;
         }
-        
+
         /* CRITICAL: Fix BaseWeb dropdown visibility issues */
         /* Target all BaseWeb popover content globally */
         [data-baseweb="popover"] [data-baseweb="popover-content"] {
@@ -571,7 +571,7 @@ else:
             border: 1px solid #cccccc !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
-        
+
         /* Target BaseWeb select dropdowns specifically */
         [data-baseweb="select"] [data-baseweb="popover"] {
             background-color: #ffffff !important;
@@ -580,7 +580,7 @@ else:
         [data-baseweb="select"] [data-baseweb="popover"] * {
             color: #262730 !important;
         }
-        
+
         /* Fix dropdown arrow and controls */
         [data-baseweb="select"] [data-baseweb="select-arrow"] {
             fill: #262730 !important;
@@ -592,7 +592,7 @@ else:
             color: #262730 !important;
             background-color: transparent !important;
         }
-        
+
         /* Fix multiselect clear button and controls */
         [data-baseweb="select"] [data-baseweb="tag"] button {
             color: #262730 !important;
@@ -605,7 +605,7 @@ else:
         [data-baseweb="select"] [data-baseweb="tag"] button svg {
             fill: #262730 !important;
         }
-        
+
         /* Clear all button for multiselect */
         [data-baseweb="select"] button[aria-label*="Clear all"] {
             color: #262730 !important;
@@ -618,7 +618,7 @@ else:
         [data-baseweb="select"] button[aria-label*="Clear all"] svg {
             fill: #262730 !important;
         }
-        
+
         /* Generic button fixes for select components */
         [data-baseweb="select"] [role="button"] {
             color: #262730 !important;
@@ -626,7 +626,7 @@ else:
         [data-baseweb="select"] [role="button"] svg {
             fill: #262730 !important;
         }
-        
+
         /* Fix sidebar select component specifically */
         [data-testid="stSidebar"] [data-baseweb="select"] {
             background-color: #ffffff !important;
@@ -648,7 +648,7 @@ else:
         [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-arrow"] svg {
             fill: #262730 !important;
         }
-        
+
         /* Ensure dropdown text is always visible */
         [data-baseweb="popover"] span,
         [data-baseweb="popover"] div,
@@ -660,7 +660,7 @@ else:
         [data-baseweb="list-item"] span {
             color: #262730 !important;
         }
-        
+
         /* Force visibility on all interactive elements */
         [data-baseweb] button {
             color: #262730 !important;
@@ -674,7 +674,7 @@ else:
         [data-baseweb] [role="button"] svg {
             fill: #262730 !important;
         }
-        
+
         /* ULTRA-SPECIFIC FIX for Theme dropdown - nuclear option */
         [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] {
             background-color: #ffffff !important;
@@ -693,7 +693,7 @@ else:
             background-color: #ffffff !important;
             color: #262730 !important;
         }
-        
+
         /* Fix the actual display text in select boxes */
         [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] {
             color: #262730 !important;
@@ -704,7 +704,7 @@ else:
         [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] div {
             color: #262730 !important;
         }
-        
+
         /* Ultra-specific targeting for Streamlit's selectbox container */
         [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div {
             background-color: #ffffff !important;
@@ -730,7 +730,7 @@ else:
         [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] div {
             color: #262730 !important;
         }
-        
+
         /* Target any remaining BaseWeb elements in sidebar with brute force */
         [data-testid="stSidebar"] div[class*="baseweb"] {
             background-color: #ffffff !important;
@@ -742,13 +742,13 @@ else:
         [data-testid="stSidebar"] div[class*="baseweb"] div {
             color: #262730 !important;
         }
-        
+
         /* Emergency override - target everything in sidebar selectbox */
         [data-testid="stSidebar"] div[data-baseweb] * {
             background-color: #ffffff !important;
             color: #262730 !important;
         }
-        
+
         /* Final override for any remaining invisible elements */
         [data-testid="stSidebar"] * {
             color: #262730 !important;
@@ -792,6 +792,7 @@ if selected_file:
         for col in REQUIRED_COLUMNS:
             mapping[col] = st.selectbox(f"Column for {col}", options=df.columns, key=col)
         try:
+```python
             df = importer.map_columns(df, mapping)
         except Exception as e:
             st.error(str(e))
@@ -834,11 +835,11 @@ if selected_file:
     filtered_df = filtered_df.copy()
     filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
     filtered_df = filtered_df.dropna(subset=['pnl'])
-    
+
     if filtered_df.empty:
         st.error("No valid trade data found after filtering. Please check your data.")
         st.stop()
-    
+
     stats = compute_basic_stats(filtered_df)
     perf = performance_over_time(filtered_df, freq='M')
 
@@ -913,7 +914,7 @@ if selected_file:
         symbol_df = filtered_df.copy()
         symbol_df['pnl'] = pd.to_numeric(symbol_df['pnl'], errors='coerce')
         symbol_df = symbol_df.dropna(subset=['pnl'])
-        
+
         if not symbol_df.empty:
             grp = symbol_df.groupby('symbol')
             symbol_stats = pd.DataFrame({
@@ -989,26 +990,26 @@ if selected_file:
     st.subheader('Manual Trade Entry')
     with st.form("trade_entry_form"):
         col1, col2 = st.columns(2)
-        
+
         with col1:
             symbol = st.text_input('Symbol', placeholder='e.g. AAPL, TSLA')
             entry_price = st.number_input('Entry Price', min_value=0.0, step=0.01, format="%.2f")
             exit_price = st.number_input('Exit Price', min_value=0.0, step=0.01, format="%.2f")
             stop_loss = st.number_input('Stop Loss', min_value=0.0, step=0.01, format="%.2f")
-        
+
         with col2:
             trade_size = st.number_input('Trade Size', min_value=0.0, step=0.01, format="%.2f")
             direction = st.selectbox('Direction', options=['long', 'short'])
             result = st.selectbox('Result', options=['win', 'loss'])
-            
+
         notes = st.text_area('Notes', placeholder='Enter any trade notes...')
-        
+
         # Tags multi-select
         available_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news']
         tags = st.multiselect('Tags', options=available_tags)
-        
+
         submitted = st.form_submit_button("Submit Trade")
-        
+
         if submitted:
             if symbol and entry_price > 0 and exit_price > 0 and trade_size > 0:
                 # Calculate PnL based on direction
@@ -1016,9 +1017,10 @@ if selected_file:
                     pnl = (exit_price - entry_price) * trade_size
                 else:  # short
                     pnl = (entry_price - exit_price) * trade_size
-                
-                # Store the trade entry (you can extend this to save to database/file)
+
+                # Store the trade entry with current datetime
                 trade_entry = {
+                    'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'symbol': symbol,
                     'entry_price': entry_price,
                     'exit_price': exit_price,
@@ -1030,39 +1032,56 @@ if selected_file:
                     'notes': notes,
                     'tags': ', '.join(tags) if tags else ''
                 }
-                
-                st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
-                st.json(trade_entry)
+
+                # Save to CSV file
+                trades_file = 'trades.csv'
+                try:
+                    # Check if file exists
+                    if not pd.io.common.file_exists(trades_file):
+                        # Create new file with headers
+                        trade_df = pd.DataFrame([trade_entry])
+                        trade_df.to_csv(trades_file, index=False)
+                    else:
+                        # Append to existing file
+                        trade_df = pd.DataFrame([trade_entry])
+                        trade_df.to_csv(trades_file, mode='a', header=False, index=False)
+
+                    st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                    st.success(f"Trade saved to {trades_file}")
+                    st.json(trade_entry)
+                except Exception as e:
+                    st.error(f"Error saving trade to file: {str(e)}")
+                    st.json(trade_entry)
             else:
                 st.error("Please fill in all required fields (symbol, entry price, exit price, trade size)")
 
 else:
     st.info('Upload a trade history file to begin.')
-    
+
     # Show trade entry form even when no file is uploaded
     st.subheader('Manual Trade Entry')
     with st.form("trade_entry_form"):
         col1, col2 = st.columns(2)
-        
+
         with col1:
             symbol = st.text_input('Symbol', placeholder='e.g. AAPL, TSLA')
             entry_price = st.number_input('Entry Price', min_value=0.0, step=0.01, format="%.2f")
             exit_price = st.number_input('Exit Price', min_value=0.0, step=0.01, format="%.2f")
             stop_loss = st.number_input('Stop Loss', min_value=0.0, step=0.01, format="%.2f")
-        
+
         with col2:
             trade_size = st.number_input('Trade Size', min_value=0.0, step=0.01, format="%.2f")
             direction = st.selectbox('Direction', options=['long', 'short'])
             result = st.selectbox('Result', options=['win', 'loss'])
-            
+
         notes = st.text_area('Notes', placeholder='Enter any trade notes...')
-        
+
         # Tags multi-select
         available_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news']
         tags = st.multiselect('Tags', options=available_tags)
-        
+
         submitted = st.form_submit_button("Submit Trade")
-        
+
         if submitted:
             if symbol and entry_price > 0 and exit_price > 0 and trade_size > 0:
                 # Calculate PnL based on direction
@@ -1070,9 +1089,10 @@ else:
                     pnl = (exit_price - entry_price) * trade_size
                 else:  # short
                     pnl = (entry_price - exit_price) * trade_size
-                
-                # Store the trade entry (you can extend this to save to database/file)
+
+                # Store the trade entry with current datetime
                 trade_entry = {
+                    'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'symbol': symbol,
                     'entry_price': entry_price,
                     'exit_price': exit_price,
@@ -1084,9 +1104,25 @@ else:
                     'notes': notes,
                     'tags': ', '.join(tags) if tags else ''
                 }
-                
-                st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
-                st.json(trade_entry)
+
+                # Save to CSV file
+                trades_file = 'trades.csv'
+                try:
+                    # Check if file exists
+                    if not pd.io.common.file_exists(trades_file):
+                        # Create new file with headers
+                        trade_df = pd.DataFrame([trade_entry])
+                        trade_df.to_csv(trades_file, index=False)
+                    else:
+                        # Append to existing file
+                        trade_df = pd.DataFrame([trade_entry])
+                        trade_df.to_csv(trades_file, mode='a', header=False, index=False)
+
+                    st.success(f"Trade submitted successfully! Calculated PnL: ${pnl:.2f}")
+                    st.success(f"Trade saved to {trades_file}")
+                    st.json(trade_entry)
+                except Exception as e:
+                    st.error(f"Error saving trade to file: {str(e)}")
+                    st.json(trade_entry)
             else:
                 st.error("Please fill in all required fields (symbol, entry price, exit price, trade size)")
-

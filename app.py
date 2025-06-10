@@ -1482,7 +1482,6 @@ else:
 
     # Check if trades.csv exists and display the trades
     trades_file = 'trades.csv'
-```python
     if pd.io.common.file_exists(trades_file):
         try:
             # Read the trades from CSV

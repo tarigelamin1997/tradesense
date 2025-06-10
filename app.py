@@ -315,20 +315,25 @@ else:
     st.markdown(
         """
         <style>
-        /* Light Theme - Root Application */
+        /* LIGHT THEME - HIGH CONTRAST ACCESSIBILITY */
+        
+        /* Root Application - Pure White Background */
         [data-testid="stAppViewContainer"] {
             background-color: #ffffff !important;
         }
         .main .block-container {
             background-color: #ffffff !important;
         }
-
-        /* Fix main title and all headers */
-        [data-testid="stHeader"] h1 {
-            color: #262730 !important;
+        .stApp {
+            background-color: #ffffff !important;
         }
-        h1, h2, h3, h4, h5, h6 {
-            color: #262730 !important;
+
+        /* HEADERS - Maximum Contrast Black */
+        [data-testid="stHeader"] h1,
+        h1, h2, h3, h4, h5, h6,
+        .stTitle, .stHeader, .stSubheader {
+            color: #000000 !important;
+            font-weight: 600 !important;
         }
         [data-testid="stMarkdownContainer"] h1,
         [data-testid="stMarkdownContainer"] h2,
@@ -336,30 +341,37 @@ else:
         [data-testid="stMarkdownContainer"] h4,
         [data-testid="stMarkdownContainer"] h5,
         [data-testid="stMarkdownContainer"] h6 {
-            color: #262730 !important;
+            color: #000000 !important;
+            font-weight: 600 !important;
         }
 
-        /* Fix all text content */
+        /* TEXT CONTENT - High Contrast Dark Gray */
         [data-testid="stMarkdownContainer"] p,
         [data-testid="stMarkdownContainer"] div,
         [data-testid="stText"] div,
         .stMarkdown div,
-        .stText div {
-            color: #262730 !important;
+        .stText div,
+        .stMarkdown p {
+            color: #1a1a1a !important;
+            font-weight: 400 !important;
         }
 
-        /* Fix caption text */
+        /* CAPTIONS - Medium Dark for Hierarchy */
         [data-testid="stCaptionContainer"] p,
-        .stCaption div {
-            color: #666666 !important;
+        .stCaption div,
+        .stCaption {
+            color: #404040 !important;
+            font-weight: 400 !important;
         }
 
-        /* Sidebar comprehensive styling */
+        /* SIDEBAR - Light Gray Background with Dark Text */
         [data-testid="stSidebar"] {
-            background-color: #f0f2f6 !important;
+            background-color: #f8f9fa !important;
+            border-right: 2px solid #e9ecef !important;
         }
         [data-testid="stSidebar"] * {
-            color: #262730 !important;
+            color: #000000 !important;
+            font-weight: 500 !important;
         }
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
@@ -368,420 +380,301 @@ else:
         [data-testid="stSidebar"] div,
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] label {
-            color: #262730 !important;
+            color: #000000 !important;
         }
 
-        /* Sidebar form elements */
+        /* FORM ELEMENTS - High Contrast Borders and Text */
+        [data-baseweb="select"],
         [data-testid="stSidebar"] [data-baseweb="select"] {
             background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
+            color: #000000 !important;
+            border: 2px solid #404040 !important;
+            border-radius: 4px !important;
         }
-        [data-testid="stSidebar"] [data-baseweb="select"] span {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] div {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] svg {
-            fill: #262730 !important;
-        }
-        [data-testid="stSidebar"] input {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
-        }
-
-        /* Fix dropdown menus in sidebar */
-        [data-testid="stSidebar"] [data-baseweb="popover"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="menu"] {
-            background-color: #ffffff !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="menu"] li {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="menu"] li:hover {
-            background-color: #e3f2fd !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="menu"] li[aria-selected="true"] {
-            background-color: #bbdefb !important;
-            color: #262730 !important;
-        }
-
-        /* Main content form elements */
-        [data-baseweb="select"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-baseweb="select"] span {
-            color: #262730 !important;
-        }
+        [data-baseweb="select"] span,
         [data-baseweb="select"] div {
-            color: #262730 !important;
+            color: #000000 !important;
+            font-weight: 500 !important;
         }
-        [data-baseweb="select"] svg {
-            fill: #262730 !important;
+        [data-baseweb="select"] svg,
+        [data-baseweb="select-arrow"] svg {
+            fill: #000000 !important;
         }
-        input[type="text"], input[type="number"], textarea {
+
+        /* INPUT FIELDS - Strong Borders and Dark Text */
+        input[type="text"], 
+        input[type="number"], 
+        textarea,
+        [data-testid="stTextInput"] input,
+        [data-testid="stNumberInput"] input,
+        [data-testid="stTextArea"] textarea {
             background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
+            color: #000000 !important;
+            border: 2px solid #404040 !important;
+            border-radius: 4px !important;
+            font-weight: 500 !important;
+        }
+        [data-testid="stTextInput"] input:focus,
+        [data-testid="stNumberInput"] input:focus,
+        [data-testid="stTextArea"] textarea:focus {
+            border-color: #0066cc !important;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
         }
 
-        /* Fix all labels */
-        label {
-            color: #262730 !important;
+        /* LABELS - Dark and Bold */
+        label,
+        [data-testid="stWidgetLabel"] label {
+            color: #000000 !important;
+            font-weight: 600 !important;
         }
 
-        /* Fix metrics */
-        [data-testid="metric-container"] {
-            background-color: #f8f9fa !important;
-            color: #262730 !important;
-            border: 1px solid #e9ecef !important;
-        }
-        [data-testid="metric-container"] * {
-            color: #262730 !important;
-        }
-
-        /* Fix tabs */
-        [data-baseweb="tab-list"] {
-            background-color: #f0f2f6 !important;
-        }
-        [data-baseweb="tab"] {
-            color: #262730 !important;
-        }
-        [data-baseweb="tab"][aria-selected="true"] {
-            color: #262730 !important;
-            background-color: #ffffff !important;
-        }
-
-        /* Fix buttons */
-        .stButton button {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
-        }
-        .stButton button:hover {
-            background-color: #f8f9fa !important;
-            color: #262730 !important;
-        }
-
-        /* Fix expanders */
-        [data-testid="stExpander"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-testid="stExpander"] * {
-            color: #262730 !important;
-        }
-
-        /* Fix dataframes */
-        [data-testid="stDataFrame"] {
-            background-color: #ffffff !important;
-        }
-        [data-testid="stDataFrame"] * {
-            color: #262730 !important;
-        }
-
-        /* Fix charts */
-        .js-plotly-plot .plotly text {
-            fill: #262730 !important;
-        }
-
-        /* CRITICAL FIX: Dropdown options with proper contrast */
+        /* DROPDOWN MENUS - High Contrast */
         [data-baseweb="popover"] {
             background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            border: 2px solid #404040 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
         }
         [data-baseweb="menu"] {
             background-color: #ffffff !important;
         }
         [data-baseweb="menu"] li {
             background-color: #ffffff !important;
-            color: #262730 !important;
+            color: #000000 !important;
+            font-weight: 500 !important;
         }
         [data-baseweb="menu"] li:hover {
             background-color: #e3f2fd !important;
-            color: #262730 !important;
+            color: #000000 !important;
         }
         [data-baseweb="menu"] li[aria-selected="true"] {
-            background-color: #bbdefb !important;
-            color: #262730 !important;
+            background-color: #1976d2 !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
         }
 
-        /* File uploader - Fix drag and drop area */
+        /* METRICS/KPI CARDS - High Contrast with Borders */
+        [data-testid="metric-container"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #e9ecef !important;
+            border-radius: 8px !important;
+            padding: 16px !important;
+        }
+        [data-testid="metric-container"] * {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="metric-container"] [data-testid="metric-label"] {
+            color: #404040 !important;
+            font-weight: 500 !important;
+        }
+
+        /* BUTTONS - Strong Contrast and Clear Borders */
+        .stButton button,
+        button {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #404040 !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            padding: 8px 16px !important;
+        }
+        .stButton button:hover,
+        button:hover {
+            background-color: #f0f0f0 !important;
+            color: #000000 !important;
+            border-color: #000000 !important;
+        }
+        .stButton button[kind="primary"] {
+            background-color: #1976d2 !important;
+            color: #ffffff !important;
+            border-color: #1976d2 !important;
+        }
+        .stButton button[kind="primary"]:hover {
+            background-color: #1565c0 !important;
+            color: #ffffff !important;
+        }
+
+        /* TABS - Clear Distinction */
+        [data-baseweb="tab-list"] {
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #e9ecef !important;
+        }
+        [data-baseweb="tab"] {
+            color: #404040 !important;
+            font-weight: 500 !important;
+        }
+        [data-baseweb="tab"][aria-selected="true"] {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+            font-weight: 600 !important;
+            border-bottom: 3px solid #1976d2 !important;
+        }
+
+        /* EXPANDABLE SECTIONS - Clear Borders */
+        [data-testid="stExpander"] {
+            background-color: #ffffff !important;
+            border: 2px solid #e9ecef !important;
+            border-radius: 6px !important;
+        }
+        [data-testid="stExpander"] * {
+            color: #000000 !important;
+        }
+        [data-testid="stExpander"] summary {
+            font-weight: 600 !important;
+            padding: 12px !important;
+        }
+
+        /* DATA TABLES - Alternating Rows and Clear Borders */
+        [data-testid="stDataFrame"] {
+            background-color: #ffffff !important;
+            border: 2px solid #e9ecef !important;
+            border-radius: 6px !important;
+        }
+        [data-testid="stDataFrame"] * {
+            color: #000000 !important;
+        }
+        [data-testid="stDataFrame"] table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+        [data-testid="stDataFrame"] th {
+            background-color: #f8f9fa !important;
+            color: #000000 !important;
+            font-weight: 600 !important;
+            border-bottom: 2px solid #404040 !important;
+        }
+        [data-testid="stDataFrame"] td {
+            border-bottom: 1px solid #e9ecef !important;
+        }
+        [data-testid="stDataFrame"] tr:nth-child(even) td {
+            background-color: #f8f9fa !important;
+        }
+
+        /* FILE UPLOADER - Clear Visual Cues */
         [data-testid="stFileUploader"] {
             background-color: #ffffff !important;
-            color: #262730 !important;
+            color: #000000 !important;
         }
         [data-testid="stFileUploader"] * {
-            color: #262730 !important;
+            color: #000000 !important;
         }
         [data-testid="stFileUploader"] section {
             background-color: #f8f9fa !important;
-            border: 2px dashed #cccccc !important;
-            color: #262730 !important;
-        }
-        [data-testid="stFileUploader"] section * {
-            color: #262730 !important;
+            border: 3px dashed #404040 !important;
+            border-radius: 8px !important;
+            color: #000000 !important;
+            padding: 20px !important;
         }
         [data-testid="stFileUploader"] button {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
+            background-color: #1976d2 !important;
+            color: #ffffff !important;
+            border: 2px solid #1976d2 !important;
+            font-weight: 600 !important;
         }
 
-        /* Checkbox */
+        /* CHECKBOXES AND FORM CONTROLS */
         [data-testid="stCheckbox"] label {
-            color: #262730 !important;
+            color: #000000 !important;
+            font-weight: 500 !important;
         }
         [data-testid="stCheckbox"] input[type="checkbox"] {
-            accent-color: #007bff !important;
+            accent-color: #1976d2 !important;
+            transform: scale(1.2) !important;
         }
 
-        /* Fix clear buttons and X buttons */
-        button[aria-label*="Clear"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
+        /* SUCCESS/ERROR/WARNING MESSAGES - High Contrast Colors */
+        .stSuccess {
+            background-color: #d4edda !important;
+            color: #155724 !important;
+            border: 2px solid #c3e6cb !important;
+            font-weight: 600 !important;
         }
-        button[aria-label*="Clear"]:hover {
-            background-color: #f8f9fa !important;
-            color: #262730 !important;
+        .stError {
+            background-color: #f8d7da !important;
+            color: #721c24 !important;
+            border: 2px solid #f5c6cb !important;
+            font-weight: 600 !important;
         }
+        .stWarning {
+            background-color: #fff3cd !important;
+            color: #856404 !important;
+            border: 2px solid #ffeaa7 !important;
+            font-weight: 600 !important;
+        }
+        .stInfo {
+            background-color: #d1ecf1 !important;
+            color: #0c5460 !important;
+            border: 2px solid #bee5eb !important;
+            font-weight: 600 !important;
+        }
+
+        /* CLEAR BUTTONS AND CONTROLS */
+        button[aria-label*="Clear"],
         [data-baseweb="tag"] button {
-            color: #262730 !important;
+            color: #000000 !important;
+            background-color: #f8f9fa !important;
+            border: 1px solid #404040 !important;
         }
+        button[aria-label*="Clear"]:hover,
         [data-baseweb="tag"] button:hover {
-            background-color: #dee2e6 !important;
-            color: #262730 !important;
+            background-color: #e9ecef !important;
+            color: #000000 !important;
         }
         [data-baseweb="tag"] button svg {
-            fill: #262730 !important;
+            fill: #000000 !important;
         }
 
-        /* Additional overrides for BaseWeb components */
-        div[data-baseweb="base-input"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
+        /* PLOTLY CHART TEXT - Force Dark Colors */
+        .js-plotly-plot .plotly text {
+            fill: #000000 !important;
+            font-weight: 500 !important;
         }
-        div[data-baseweb="base-input"] input {
-            color: #262730 !important;
+        .js-plotly-plot .plotly .xtick text,
+        .js-plotly-plot .plotly .ytick text {
+            fill: #000000 !important;
+            font-weight: 500 !important;
         }
-
-        /* Fix for theme selector specifically */
-        [data-testid="stSidebar"] div[role="listbox"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-testid="stSidebar"] div[role="option"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] div[role="option"]:hover {
-            background-color: #e3f2fd !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] div[role="option"][aria-selected="true"] {
-            background-color: #bbdefb !important;
-            color: #262730 !important;
+        .js-plotly-plot .plotly .g-gtitle text {
+            fill: #000000 !important;
+            font-weight: 600 !important;
         }
 
-        /* CRITICAL: Fix BaseWeb dropdown visibility issues */
-        /* Target all BaseWeb popover content globally */
-        [data-baseweb="popover"] [data-baseweb="popover-content"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        /* MOBILE RESPONSIVENESS - Maintain Contrast */
+        @media (max-width: 768px) {
+            [data-testid="metric-container"] {
+                border-width: 3px !important;
+            }
+            .stButton button {
+                padding: 12px 20px !important;
+                font-size: 16px !important;
+            }
+            [data-baseweb="select"] {
+                border-width: 3px !important;
+            }
         }
 
-        /* Target BaseWeb select dropdowns specifically */
-        [data-baseweb="select"] [data-baseweb="popover"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-baseweb="select"] [data-baseweb="popover"] * {
-            color: #262730 !important;
-        }
-
-        /* Fix dropdown arrow and controls */
-        [data-baseweb="select"] [data-baseweb="select-arrow"] {
-            fill: #262730 !important;
-        }
-        [data-baseweb="select"] [data-baseweb="select-arrow"] svg {
-            fill: #262730 !important;
-        }
-        [data-baseweb="select"] button {
-            color: #262730 !important;
-            background-color: transparent !important;
+        /* FOCUS STATES - Clear Visual Indication */
+        button:focus,
+        input:focus,
+        textarea:focus,
+        [data-baseweb="select"]:focus-within {
+            outline: 3px solid #1976d2 !important;
+            outline-offset: 2px !important;
         }
 
-        /* Fix multiselect clear button and controls */
-        [data-baseweb="select"] [data-baseweb="tag"] button {
-            color: #262730 !important;
-            background-color: transparent !important;
+        /* OVERRIDE ANY REMAINING LOW CONTRAST ELEMENTS */
+        * {
+            color: inherit !important;
         }
-        [data-baseweb="select"] [data-baseweb="tag"] button:hover {
-            background-color: #f0f0f0 !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="select"] [data-baseweb="tag"] button svg {
-            fill: #262730 !important;
-        }
-
-        /* Clear all button for multiselect */
-        [data-baseweb="select"] button[aria-label*="Clear all"] {
-            color: #262730 !important;
-            background-color: transparent !important;
-        }
-        [data-baseweb="select"] button[aria-label*="Clear all"]:hover {
-            background-color: #f0f0f0 !important;
-            color: #262730 !important;
-        }
-        [data-baseweb="select"] button[aria-label*="Clear all"] svg {
-            fill: #262730 !important;
-        }
-
-        /* Generic button fixes for select components */
-        [data-baseweb="select"] [role="button"] {
-            color: #262730 !important;
-        }
-        [data-baseweb="select"] [role="button"] svg {
-            fill: #262730 !important;
-        }
-
-        /* Fix sidebar select component specifically */
-        [data-testid="stSidebar"] [data-baseweb="select"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] * {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] button {
-            color: #262730 !important;
-            background-color: transparent !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] button svg {
-            fill: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-arrow"] {
-            fill: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-arrow"] svg {
-            fill: #262730 !important;
-        }
-
-        /* Ensure dropdown text is always visible */
-        [data-baseweb="popover"] span,
-        [data-baseweb="popover"] div,
-        [data-baseweb="popover"] li,
-        [data-baseweb="menu"] span,
-        [data-baseweb="menu"] div,
-        [data-baseweb="list"] span,
-        [data-baseweb="list"] div,
-        [data-baseweb="list-item"] span {
-            color: #262730 !important;
-        }
-
-        /* Force visibility on all interactive elements */
-        [data-baseweb] button {
-            color: #262730 !important;
-        }
-        [data-baseweb] button svg {
-            fill: #262730 !important;
-        }
-        [data-baseweb] [role="button"] {
-            color: #262730 !important;
-        }
-        [data-baseweb] [role="button"] svg {
-            fill: #262730 !important;
-        }
-
-        /* ULTRA-SPECIFIC FIX for Theme dropdown - nuclear option */
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] > div {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] input {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="input"] span {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-
-        /* Fix the actual display text in select boxes */
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] span {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="single-value"] div {
-            color: #262730 !important;
-        }
-
-        /* Ultra-specific targeting for Streamlit's selectbox container */
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div {
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div > div {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div > div > div {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-            border: 1px solid #cccccc !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] span {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] [role="combobox"] div {
-            color: #262730 !important;
-        }
-
-        /* Target any remaining BaseWeb elements in sidebar with brute force */
-        [data-testid="stSidebar"] div[class*="baseweb"] {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] div[class*="baseweb"] span {
-            color: #262730 !important;
-        }
-        [data-testid="stSidebar"] div[class*="baseweb"] div {
-            color: #262730 !important;
-        }
-
-        /* Emergency override - target everything in sidebar selectbox */
-        [data-testid="stSidebar"] div[data-baseweb] * {
-            background-color: #ffffff !important;
-            color: #262730 !important;
-        }
-
-        /* Final override for any remaining invisible elements */
         [data-testid="stSidebar"] * {
-            color: #262730 !important;
+            color: #000000 !important;
+        }
+        .main * {
+            color: #1a1a1a !important;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #000000 !important;
         }
         </style>
         """,
@@ -1079,6 +972,16 @@ if selected_file:
         equity_df = filtered_df.copy().sort_values('exit_time')
         equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
 
+        # Choose colors based on theme
+        if theme == "Light":
+            equity_color = '#1976d2'  # Strong blue for light theme
+            chart_bg = '#ffffff'
+            text_color = '#000000'
+        else:
+            equity_color = '#00cc96'  # Keep existing color for dark theme
+            chart_bg = '#0e1117'
+            text_color = '#fafafa'
+            
         fig_equity = px.line(
             equity_df, 
             x='exit_time', 
@@ -1092,10 +995,16 @@ if selected_file:
         fig_equity.update_layout(
             xaxis_title='Date',
             yaxis_title='Cumulative P&L ($)',
-            hovermode='x unified'
+            hovermode='x unified',
+            plot_bgcolor=chart_bg,
+            paper_bgcolor=chart_bg,
+            font_color=text_color,
+            title_font_color=text_color,
+            xaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a'),
+            yaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a')
         )
         fig_equity.update_traces(
-            line=dict(color='#00cc96', width=2),
+            line=dict(color=equity_color, width=3),
             hovertemplate='<b>Date:</b> %{x}<br><b>Cumulative P&L:</b> $%{y:,.2f}<extra></extra>'
         )
 
@@ -1112,6 +1021,16 @@ if selected_file:
         weekly_counts = trades_per_week.groupby('week').size().reset_index(name='trade_count')
 
         if not weekly_counts.empty:
+            # Choose colors based on theme
+            if theme == "Light":
+                bar_color = '#1976d2'  # Strong blue for light theme
+                chart_bg = '#ffffff'
+                text_color = '#000000'
+            else:
+                bar_color = '#636EFA'  # Keep existing color for dark theme
+                chart_bg = '#0e1117'
+                text_color = '#fafafa'
+                
             fig_weekly = px.bar(
                 weekly_counts,
                 x='week',
@@ -1125,10 +1044,16 @@ if selected_file:
             fig_weekly.update_layout(
                 xaxis_title='Week Starting',
                 yaxis_title='Number of Trades',
-                showlegend=False
+                showlegend=False,
+                plot_bgcolor=chart_bg,
+                paper_bgcolor=chart_bg,
+                font_color=text_color,
+                title_font_color=text_color,
+                xaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a'),
+                yaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a')
             )
             fig_weekly.update_traces(
-                marker_color='#636EFA',
+                marker_color=bar_color,
                 hovertemplate='<b>Week:</b> %{x}<br><b>Trades:</b> %{y}<extra></extra>'
             )
 
@@ -1283,8 +1208,28 @@ if selected_file:
         st.session_state.current_tab = 'Drawdowns'
         equity = stats['equity_curve']
         drawdown = equity.cummax() - equity
+        # Choose colors based on theme
+        if theme == "Light":
+            area_color = '#d32f2f'  # Strong red for drawdown in light theme
+            chart_bg = '#ffffff'
+            text_color = '#000000'
+        else:
+            area_color = '#ff6b6b'  # Keep existing red-ish for dark theme
+            chart_bg = '#0e1117'
+            text_color = '#fafafa'
+            
         fig = px.area(x=drawdown.index, y=drawdown.values,
-                      labels={'x': 'Trade', 'y': 'Drawdown'})
+                      labels={'x': 'Trade', 'y': 'Drawdown'},
+                      title='Drawdown Analysis')
+        fig.update_layout(
+            plot_bgcolor=chart_bg,
+            paper_bgcolor=chart_bg,
+            font_color=text_color,
+            title_font_color=text_color,
+            xaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a'),
+            yaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a')
+        )
+        fig.update_traces(fill='tonexty', fillcolor=area_color, line_color=area_color)
         st.plotly_chart(fig, use_container_width=True)
 
     with calendar_tab:
@@ -1296,8 +1241,29 @@ if selected_file:
         cal_df['month'] = cal_df['date'].dt.month
         cal_df['day'] = cal_df['date'].dt.day
         pivot = cal_df.pivot(index='day', columns='month', values='pnl')
-        fig = px.imshow(pivot, labels={'x': 'Month', 'y': 'Day', 'color': 'PnL'},
-                        aspect='auto')
+        # Choose color scale based on theme
+        if theme == "Light":
+            color_scale = 'RdYlGn'  # Red-Yellow-Green scale for light theme (high contrast)
+            chart_bg = '#ffffff'
+            text_color = '#000000'
+        else:
+            color_scale = 'RdYlGn'  # Same scale works for dark theme
+            chart_bg = '#0e1117'
+            text_color = '#fafafa'
+            
+        fig = px.imshow(pivot, 
+                        labels={'x': 'Month', 'y': 'Day', 'color': 'PnL'},
+                        aspect='auto',
+                        color_continuous_scale=color_scale,
+                        title='Daily P&L Calendar Heatmap')
+        fig.update_layout(
+            plot_bgcolor=chart_bg,
+            paper_bgcolor=chart_bg,
+            font_color=text_color,
+            title_font_color=text_color,
+            xaxis=dict(color=text_color),
+            yaxis=dict(color=text_color)
+        )
         st.plotly_chart(fig, use_container_width=True)
 
     with journal_tab:

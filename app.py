@@ -798,8 +798,7 @@ if selected_file:
         )
 
     with filter_col4:
-        date_range = st```python
-.date_input(
+        date_range = st.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
             help="Select date range for analysis"
@@ -1489,9 +1488,7 @@ if selected_file:
                 except Exception as e:
                     st.error("❌ **SAVE FAILED - Unexpected Error**")
                     st.error(f"**Reason:** An unexpected error occurred while saving")
-                    st.error(f"**Error Analysis:** This code modifies the Streamlit application to display an onboarding message with a sample trade when the trades.csv file is empty or not found, encouraging users to start tracking their trades.
-```python
- Type:** {type(e).__name__}")
+                    st.error(f"**Error Type:** {type(e).__name__}")
                     st.error(f"**Technical Details:** {str(e)}")
                     st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)

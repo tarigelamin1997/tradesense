@@ -9,6 +9,10 @@ packages = ["glibcLocales"]
 run = ["sh", "-c", "streamlit run app.py"]
 
 [[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
 localPort = 8501
 externalPort = 80
 

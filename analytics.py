@@ -11,54 +11,69 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     
     if df.empty:
         return {
-            "win_rate": 0,
-            "average_win": 0,
-            "average_loss": 0,
-            "reward_risk": 0,
-            "expectancy": 0,
-            "max_drawdown": 0,
-            "profit_factor": 0,
-            "sharpe_ratio": 0,
-            "equity_curve": pd.Series(dtype=float),
+            "win_rate": 0.0,
+            "average_win": 0.0,
+            "average_loss": 0.0,
+            "reward_risk": 0.0,
+            "expectancy": 0.0,
+            "max_drawdown": 0.0,
+            "profit_factor": 0.0,
+            "sharpe_ratio": 0.0,
+            "equity_curve": pd.Series([0.0], dtype=float),
         }
     
     wins = df[df["pnl"] > 0]
     losses = df[df["pnl"] <= 0]
-    win_rate = len(wins) / len(df) * 100 if len(df) else 0
+    win_rate = len(wins) / len(df) * 100 if len(df) else 0.0
     
-    # Handle edge cases with safe numeric operations
-    avg_win = float(wins["pnl"].mean()) if not wins.empty and not wins["pnl"].isna().all() else 0
-    avg_loss = float(losses["pnl"].mean()) if not losses.empty and not losses["pnl"].isna().all() else 0
+    # Handle edge cases with safe numeric operations - ensure no infinite values
+    avg_win = float(wins["pnl"].mean()) if not wins.empty and not wins["pnl"].isna().all() else 0.0
+    avg_loss = float(losses["pnl"].mean()) if not losses.empty and not losses["pnl"].isna().all() else 0.0
     
-    reward_risk = abs(avg_win / avg_loss) if avg_loss != 0 and not np.isnan(avg_loss) else np.inf
+    # Prevent infinite reward_risk
+    if avg_loss != 0 and not np.isnan(avg_loss) and not np.isnan(avg_win):
+        reward_risk = abs(avg_win / avg_loss)
+        reward_risk = min(reward_risk, 999.99)  # Cap at reasonable max
+    else:
+        reward_risk = 0.0
+    
     expectancy = (win_rate / 100) * avg_win + (1 - win_rate / 100) * avg_loss
+    expectancy = expectancy if not np.isnan(expectancy) else 0.0
     
-    wins_sum = float(wins["pnl"].sum()) if not wins.empty else 0
-    losses_sum = float(abs(losses["pnl"].sum())) if not losses.empty else 0
-    profit_factor = wins_sum / losses_sum if losses_sum != 0 else np.inf
+    wins_sum = float(wins["pnl"].sum()) if not wins.empty else 0.0
+    losses_sum = float(abs(losses["pnl"].sum())) if not losses.empty else 0.0
+    
+    # Prevent infinite profit_factor
+    if losses_sum != 0:
+        profit_factor = wins_sum / losses_sum
+        profit_factor = min(profit_factor, 999.99)  # Cap at reasonable max
+    else:
+        profit_factor = 0.0 if wins_sum == 0 else 999.99
     
     equity_curve = df["pnl"].cumsum()
-    max_drawdown = float((equity_curve.cummax() - equity_curve).max()) if not equity_curve.empty else 0
+    max_drawdown = float((equity_curve.cummax() - equity_curve).max()) if not equity_curve.empty else 0.0
     
     returns = equity_curve.pct_change().dropna()
     if returns.empty or returns.isna().all():
-        sharpe = 0
+        sharpe = 0.0
     else:
         std = returns.std()
         mean_return = returns.mean()
         if std == 0 or np.isnan(std) or np.isnan(mean_return):
-            sharpe = 0
+            sharpe = 0.0
         else:
             sharpe = float(np.sqrt(252) * mean_return / std)
+            # Cap Sharpe ratio at reasonable bounds
+            sharpe = max(min(sharpe, 10.0), -10.0)
 
     return {
-        "win_rate": float(win_rate) if not np.isnan(win_rate) else 0,
+        "win_rate": float(win_rate) if not np.isnan(win_rate) else 0.0,
         "average_win": avg_win,
         "average_loss": avg_loss,
-        "reward_risk": float(reward_risk) if not np.isinf(reward_risk) and not np.isnan(reward_risk) else 0,
-        "expectancy": float(expectancy) if not np.isnan(expectancy) else 0,
+        "reward_risk": reward_risk,
+        "expectancy": expectancy,
         "max_drawdown": max_drawdown,
-        "profit_factor": float(profit_factor) if not np.isinf(profit_factor) and not np.isnan(profit_factor) else 0,
+        "profit_factor": profit_factor,
         "sharpe_ratio": sharpe,
         "equity_curve": equity_curve,
     }
@@ -67,7 +82,13 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
 def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     """Return P&L and win rate aggregated by period."""
     if df.empty:
-        return pd.DataFrame(columns=["period", "pnl", "win_rate"])
+        # Return a DataFrame with one default row to prevent infinite extent warnings
+        default_date = pd.Timestamp.now().normalize()
+        return pd.DataFrame({
+            "period": [default_date], 
+            "pnl": [0.0], 
+            "win_rate": [0.0]
+        })
 
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
@@ -75,7 +96,13 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     df = df.dropna(subset=["pnl", "exit_time"])
     
     if df.empty:
-        return pd.DataFrame(columns=["period", "pnl", "win_rate"])
+        # Return a DataFrame with one default row to prevent infinite extent warnings
+        default_date = pd.Timestamp.now().normalize()
+        return pd.DataFrame({
+            "period": [default_date], 
+            "pnl": [0.0], 
+            "win_rate": [0.0]
+        })
 
     try:
         period = df["exit_time"].dt.to_period(freq).dt.to_timestamp()
@@ -84,17 +111,27 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
         win_rate = grouped.apply(lambda g: float((g["pnl"] > 0).mean() * 100))
 
         # Ensure no infinite or NaN values
-        pnl = pnl.fillna(0)
-        win_rate = win_rate.fillna(0)
+        pnl = pnl.fillna(0.0)
+        win_rate = win_rate.fillna(0.0)
+        
+        # Ensure finite values only
+        pnl_values = [float(x) if np.isfinite(x) else 0.0 for x in pnl.values]
+        wr_values = [float(x) if np.isfinite(x) else 0.0 for x in win_rate.values]
         
         result = pd.DataFrame({
             "period": pnl.index, 
-            "pnl": [float(x) for x in pnl.values], 
-            "win_rate": [float(x) for x in win_rate.values]
+            "pnl": pnl_values, 
+            "win_rate": wr_values
         })
         return result
     except Exception:
-        return pd.DataFrame(columns=["period", "pnl", "win_rate"])
+        # Return a DataFrame with one default row to prevent infinite extent warnings
+        default_date = pd.Timestamp.now().normalize()
+        return pd.DataFrame({
+            "period": [default_date], 
+            "pnl": [0.0], 
+            "win_rate": [0.0]
+        })
 
 
 def median_results(df: pd.DataFrame) -> dict:
@@ -102,28 +139,55 @@ def median_results(df: pd.DataFrame) -> dict:
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
     df = df.dropna(subset=["pnl"])
+    
+    if df.empty:
+        return {
+            "median_pnl": 0.0,
+            "median_win": 0.0,
+            "median_loss": 0.0,
+        }
+    
     wins = df[df["pnl"] > 0]
     losses = df[df["pnl"] <= 0]
+    
+    median_pnl = float(df["pnl"].median()) if not df.empty else 0.0
+    median_win = float(wins["pnl"].median()) if not wins.empty else 0.0
+    median_loss = float(losses["pnl"].median()) if not losses.empty else 0.0
+    
     return {
-        "median_pnl": df["pnl"].median() if not df.empty else 0,
-        "median_win": wins["pnl"].median() if not wins.empty else 0,
-        "median_loss": losses["pnl"].median() if not losses.empty else 0,
+        "median_pnl": median_pnl,
+        "median_win": median_win,
+        "median_loss": median_loss,
     }
 
 
 def profit_factor_by_symbol(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate profit factor for each trading symbol."""
     if df.empty:
-        return pd.DataFrame(columns=["symbol", "profit_factor"])
+        # Return a DataFrame with one default row to prevent infinite extent warnings
+        return pd.DataFrame({
+            "symbol": ["No Data"],
+            "profit_factor": [0.0]
+        })
 
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
     df = df.dropna(subset=["pnl", "symbol"])
 
+    if df.empty:
+        return pd.DataFrame({
+            "symbol": ["No Data"],
+            "profit_factor": [0.0]
+        })
+
     def _pf(group: pd.DataFrame) -> float:
         wins = group[group["pnl"] > 0]["pnl"].sum()
         losses = group[group["pnl"] <= 0]["pnl"].sum()
-        return wins / abs(losses) if losses != 0 else np.inf
+        if losses != 0:
+            pf = wins / abs(losses)
+            return min(pf, 999.99)  # Cap at reasonable max
+        else:
+            return 999.99 if wins > 0 else 0.0
 
     result = (
         df.groupby("symbol")
@@ -182,22 +246,27 @@ def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
     df = df.dropna(subset=["pnl"])
     
     if df.empty or len(df) < window:
-        return pd.DataFrame(columns=["end_index", "win_rate", "profit_factor"])
+        # Return a DataFrame with one default row to prevent infinite extent warnings
+        return pd.DataFrame({
+            "end_index": [0.0],
+            "win_rate": [0.0],
+            "profit_factor": [0.0]
+        })
     
     results = []
     for end in range(window, len(df) + 1):
         window_df = df.iloc[end - window : end]
         stats = compute_basic_stats(window_df)
         
-        # Ensure finite values
-        win_rate = stats["win_rate"] if np.isfinite(stats["win_rate"]) else 0
-        profit_factor = stats["profit_factor"] if np.isfinite(stats["profit_factor"]) else 0
+        # Ensure finite values only
+        win_rate = stats["win_rate"] if np.isfinite(stats["win_rate"]) else 0.0
+        profit_factor = stats["profit_factor"] if np.isfinite(stats["profit_factor"]) else 0.0
         
         results.append(
             {
                 "end_index": float(end - 1),
-                "win_rate": float(win_rate),
-                "profit_factor": float(profit_factor),
+                "win_rate": win_rate,
+                "profit_factor": profit_factor,
             }
         )
     return pd.DataFrame(results)

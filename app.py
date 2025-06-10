@@ -62,67 +62,153 @@ if theme == "Dark":
     st.markdown(
         """
         <style>
+        /* Dark Theme - Global Styles */
         .stApp {
-            background-color: #0e1117;
-            color: #fafafa;
+            background-color: #0e1117 !important;
+            color: #fafafa !important;
         }
+        .stApp *, .stApp div, .stApp span, .stApp p {
+            color: #fafafa !important;
+        }
+        
+        /* Headers and Titles */
+        h1, h2, h3, h4, h5, h6, .stTitle, .stHeader, .stSubheader {
+            color: #fafafa !important;
+        }
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
+            color: #fafafa !important;
+        }
+        
+        /* Sidebar */
         .stSidebar {
-            background-color: #262730;
-            color: #fafafa;
+            background-color: #262730 !important;
+            color: #fafafa !important;
+        }
+        .stSidebar * {
+            color: #fafafa !important;
         }
         .stSidebar .stSelectbox > div > div {
-            background-color: #1e1e1e;
-            color: #fafafa;
-            border: 1px solid #4a4a4a;
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
+        }
+        .stSidebar .stSelectbox > div > div > div {
+            color: #fafafa !important;
         }
         .stSidebar .stTextInput > div > div > input {
-            background-color: #1e1e1e;
-            color: #fafafa;
-            border: 1px solid #4a4a4a;
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
         .stSidebar .stNumberInput > div > div > input {
-            background-color: #1e1e1e;
-            color: #fafafa;
-            border: 1px solid #4a4a4a;
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
+        .stSidebar .stCheckbox > label {
+            color: #fafafa !important;
+        }
+        .stSidebar .stMultiSelect > label {
+            color: #fafafa !important;
+        }
+        .stSidebar .stDateInput > label {
+            color: #fafafa !important;
+        }
+        
+        /* Form Elements */
         .stTextArea > div > div > textarea {
-            background-color: #262730;
-            color: #fafafa;
-            border: 1px solid #4a4a4a;
+            background-color: #262730 !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
-        .stDataFrame {
-            background-color: #262730;
+        .stSelectbox > div > div {
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
-        .stMetric {
-            background-color: #1e1e1e;
-            color: #fafafa;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #4a4a4a;
+        .stTextInput > div > div > input {
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
-        .stExpander {
-            background-color: #262730;
-            border: 1px solid #4a4a4a;
+        .stNumberInput > div > div > input {
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
         }
-        .stExpander > div > div > div > div {
-            color: #fafafa;
-        }
-        .stButton > button {
-            background-color: #1e1e1e;
-            color: #fafafa;
-            border: 1px solid #4a4a4a;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            background-color: #262730;
-        }
-        .stTabs [data-baseweb="tab"] {
-            color: #fafafa;
+        
+        /* Labels and Text */
+        label, .stSelectbox label, .stTextInput label, .stNumberInput label, .stTextArea label {
+            color: #fafafa !important;
         }
         .stMarkdown, .stText {
-            color: #fafafa;
+            color: #fafafa !important;
         }
         .stCaption {
-            color: #b3b3b3;
+            color: #b3b3b3 !important;
+        }
+        
+        /* Data and Tables */
+        .stDataFrame {
+            background-color: #262730 !important;
+            color: #fafafa !important;
+        }
+        
+        /* Metrics */
+        .stMetric {
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            padding: 10px !important;
+            border-radius: 5px !important;
+            border: 1px solid #4a4a4a !important;
+        }
+        .stMetric label, .stMetric div {
+            color: #fafafa !important;
+        }
+        
+        /* Expandable sections */
+        .stExpander {
+            background-color: #262730 !important;
+            border: 1px solid #4a4a4a !important;
+            color: #fafafa !important;
+        }
+        .stExpander * {
+            color: #fafafa !important;
+        }
+        
+        /* Buttons */
+        .stButton > button {
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+            border: 1px solid #4a4a4a !important;
+        }
+        .stButton > button:hover {
+            background-color: #333333 !important;
+        }
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #262730 !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #fafafa !important;
+        }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            color: #fafafa !important;
+        }
+        
+        /* Charts */
+        .js-plotly-plot .plotly text {
+            fill: #fafafa !important;
+        }
+        
+        /* Dropdown menus */
+        .stSelectbox [data-baseweb="select"] {
+            background-color: #1e1e1e !important;
+            color: #fafafa !important;
+        }
+        .stSelectbox [data-baseweb="select"] > div {
+            color: #fafafa !important;
         }
         </style>
         """,
@@ -132,105 +218,185 @@ else:
     st.markdown(
         """
         <style>
+        /* Light Theme - Global Styles */
         .stApp {
-            background-color: #ffffff;
-            color: #262730;
+            background-color: #ffffff !important;
+            color: #262730 !important;
         }
+        .stApp *, .stApp div, .stApp span, .stApp p {
+            color: #262730 !important;
+        }
+        
+        /* Headers and Titles */
+        h1, h2, h3, h4, h5, h6, .stTitle, .stHeader, .stSubheader {
+            color: #262730 !important;
+        }
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
+            color: #262730 !important;
+        }
+        
+        /* Sidebar */
         .stSidebar {
-            background-color: #f0f2f6;
-            color: #262730;
+            background-color: #f0f2f6 !important;
+            color: #262730 !important;
+        }
+        .stSidebar * {
+            color: #262730 !important;
         }
         .stSidebar .stSelectbox > div > div {
-            background-color: #ffffff;
-            color: #262730;
-            border: 1px solid #cccccc;
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        .stSidebar .stSelectbox > div > div > div {
+            color: #262730 !important;
         }
         .stSidebar .stTextInput > div > div > input {
-            background-color: #ffffff;
-            color: #262730;
-            border: 1px solid #cccccc;
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
         .stSidebar .stNumberInput > div > div > input {
-            background-color: #ffffff;
-            color: #262730;
-            border: 1px solid #cccccc;
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
+        .stSidebar .stCheckbox > label {
+            color: #262730 !important;
+        }
+        .stSidebar .stMultiSelect > label {
+            color: #262730 !important;
+        }
+        .stSidebar .stDateInput > label {
+            color: #262730 !important;
+        }
+        
+        /* Form Elements */
         .stTextArea > div > div > textarea {
-            background-color: #ffffff;
-            color: #262730;
-            border: 1px solid #cccccc;
-        }
-        .stDataFrame {
-            background-color: #ffffff;
-            color: #262730;
-        }
-        .stMetric {
-            background-color: #f8f9fa;
-            color: #262730;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #e9ecef;
-        }
-        .stExpander {
-            background-color: #ffffff;
-            border: 1px solid #cccccc;
-            color: #262730;
-        }
-        .stExpander > div > div > div > div {
-            color: #262730;
-        }
-        .stButton > button {
-            background-color: #ffffff;
-            color: #262730;
-            border: 1px solid #cccccc;
-        }
-        .stButton > button:hover {
-            background-color: #f8f9fa;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            background-color: #f0f2f6;
-        }
-        .stTabs [data-baseweb="tab"] {
-            color: #262730;
-        }
-        /* Comprehensive text color styling for light mode */
-        .stApp, .stApp * {
+            background-color: #ffffff !important;
             color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
-        .stMarkdown, .stMarkdown *, .stText, .stText * {
+        .stSelectbox > div > div {
+            background-color: #ffffff !important;
             color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
-        .stCaption, .stCaption * {
-            color: #666666 !important;
-        }
-        .stSubheader, .stSubheader *, .stTitle, .stTitle * {
+        .stTextInput > div > div > input {
+            background-color: #ffffff !important;
             color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
-        .stHeader, .stHeader * {
+        .stNumberInput > div > div > input {
+            background-color: #ffffff !important;
             color: #262730 !important;
+            border: 1px solid #cccccc !important;
         }
-        /* Ensure all headings are visible */
-        h1, h2, h3, h4, h5, h6 {
-            color: #262730 !important;
-        }
-        /* Fix all form labels */
+        
+        /* Labels and Text */
         label, .stSelectbox label, .stTextInput label, .stNumberInput label, .stTextArea label {
             color: #262730 !important;
         }
-        /* Ensure chart text is visible */
-        .js-plotly-plot .plotly text {
-            fill: #262730 !important;
+        .stMarkdown, .stText {
+            color: #262730 !important;
         }
-        /* Fix metric labels and values */
+        .stCaption {
+            color: #666666 !important;
+        }
+        
+        /* Data and Tables */
+        .stDataFrame {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        
+        /* Metrics */
+        .stMetric {
+            background-color: #f8f9fa !important;
+            color: #262730 !important;
+            padding: 10px !important;
+            border-radius: 5px !important;
+            border: 1px solid #e9ecef !important;
+        }
         .stMetric label, .stMetric div {
             color: #262730 !important;
         }
-        /* Fix tab text */
+        
+        /* Expandable sections */
+        .stExpander {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+            color: #262730 !important;
+        }
+        .stExpander * {
+            color: #262730 !important;
+        }
+        
+        /* Buttons */
+        .stButton > button {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        .stButton > button:hover {
+            background-color: #f8f9fa !important;
+        }
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #f0f2f6 !important;
+        }
         .stTabs [data-baseweb="tab"] {
             color: #262730 !important;
         }
-        /* Fix any remaining text elements */
-        p, span, div:not(.stButton):not(.stSelectbox):not(.stTextInput):not(.stNumberInput) {
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            color: #262730 !important;
+        }
+        
+        /* Charts */
+        .js-plotly-plot .plotly text {
+            fill: #262730 !important;
+        }
+        
+        /* Dropdown menus */
+        .stSelectbox [data-baseweb="select"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        .stSelectbox [data-baseweb="select"] > div {
+            color: #262730 !important;
+        }
+        
+        /* Multi-select components */
+        .stMultiSelect > div > div {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        .stMultiSelect [data-baseweb="tag"] {
+            background-color: #e9ecef !important;
+            color: #262730 !important;
+        }
+        
+        /* Date input */
+        .stDateInput > div > div > input {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        
+        /* File uploader */
+        .stFileUploader > div {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        .stFileUploader label {
+            color: #262730 !important;
+        }
+        
+        /* Checkbox */
+        .stCheckbox > label {
             color: #262730 !important;
         }
         </style>

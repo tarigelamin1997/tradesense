@@ -787,8 +787,16 @@ if selected_file:
         st.expander("Error details").write(str(e))
         st.stop()
 
+    # Add tags column if it doesn't exist
+    if 'tags' not in df.columns:
+        df['tags'] = ''
+    
     if importer.validate_columns(df):
-        df = df[REQUIRED_COLUMNS]
+        # Keep REQUIRED_COLUMNS plus tags if it exists
+        columns_to_keep = REQUIRED_COLUMNS.copy()
+        if 'tags' in df.columns:
+            columns_to_keep.append('tags')
+        df = df[[col for col in columns_to_keep if col in df.columns]]
     else:
         st.warning('Columns do not match required fields. Map them below:')
         mapping: Dict[str, str] = {}
@@ -816,23 +824,84 @@ if selected_file:
         st.error("No valid rows remain after cleaning.")
         st.stop()
 
-    st.sidebar.subheader("Filters")
-    symbols = st.sidebar.multiselect('Symbol', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
-    directions = st.sidebar.multiselect('Direction', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())
-    brokers = st.sidebar.multiselect('Broker', options=df['broker'].unique().tolist(), default=df['broker'].unique().tolist())
-    date_range = st.sidebar.date_input(
-        'Date range',
-        value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
-    )
-
+    # Filters above dashboard for better visibility
+    st.header("📊 Trade Filters")
+    st.caption("Filter your trades to analyze specific subsets of your trading data")
+    
+    # Create filter columns
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    
+    with filter_col1:
+        symbols = st.multiselect(
+            'Symbols', 
+            options=df['symbol'].unique().tolist(), 
+            default=df['symbol'].unique().tolist(),
+            help="Select which symbols to include in analysis"
+        )
+    
+    with filter_col2:
+        directions = st.multiselect(
+            'Directions', 
+            options=df['direction'].unique().tolist(), 
+            default=df['direction'].unique().tolist(),
+            help="Filter by trade direction (long/short)"
+        )
+    
+    with filter_col3:
+        # Extract unique tags from the tags column (if it exists)
+        all_tags = set()
+        if 'tags' in df.columns:
+            for tag_string in df['tags'].dropna():
+                if tag_string and str(tag_string).strip():
+                    tags_list = [tag.strip() for tag in str(tag_string).split(',')]
+                    all_tags.update(tags_list)
+        
+        all_tags = sorted([tag for tag in all_tags if tag])  # Remove empty tags and sort
+        
+        selected_tags = st.multiselect(
+            'Tags',
+            options=all_tags,
+            default=all_tags,
+            help="Filter by trade tags (e.g., scalp, swing, breakout)"
+        )
+    
+    with filter_col4:
+        date_range = st.date_input(
+            'Date Range',
+            value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
+            help="Select date range for analysis"
+        )
+    
+    # Apply filters
     filtered_df = df[
         df['symbol'].isin(symbols)
         & df['direction'].isin(directions)
-        & df['broker'].isin(brokers)
         & (df['entry_time'].dt.date >= date_range[0])
         & (df['exit_time'].dt.date <= date_range[1])
     ]
+    
+    # Apply tag filter if tags column exists and tags are selected
+    if 'tags' in df.columns and selected_tags:
+        def has_selected_tag(tag_string):
+            if pd.isna(tag_string) or not str(tag_string).strip():
+                return False
+            trade_tags = [tag.strip() for tag in str(tag_string).split(',')]
+            return any(tag in selected_tags for tag in trade_tags)
+        
+        filtered_df = filtered_df[filtered_df['tags'].apply(has_selected_tag)]
+    
+    # Remove broker filter since it's not always available in manual entries
+    # Keep it in sidebar for uploaded files
+    if 'broker' in df.columns:
+        st.sidebar.subheader("Additional Filters")
+        brokers = st.sidebar.multiselect('Broker', options=df['broker'].unique().tolist(), default=df['broker'].unique().tolist())
+        filtered_df = filtered_df[filtered_df['broker'].isin(brokers)]
 
+    # Show filter results
+    st.info(f"📈 Showing {len(filtered_df)} of {len(df)} total trades after applying filters")
+    
+    st.divider()
+    
     # Ensure PnL is numeric for all analytics
     filtered_df = filtered_df.copy()
     filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
@@ -1056,12 +1125,14 @@ if selected_file:
                        'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
         display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
         
-        # Format numeric columns
+        # Format numeric columns properly to avoid pandas warnings
         if 'rr_ratio' in display_df.columns:
-            display_df.loc[:, 'rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
+            display_df = display_df.copy()
+            display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
         if 'pnl' in display_df.columns:
-            display_df.loc[:, 'pnl'] = pd.to_numeric(display_df['pnl'], errors='coerce')
-            display_df.loc[:, 'pnl'] = display_df['pnl'].apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
+            display_df = display_df.copy()
+            pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
+            display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
         
         # Apply styling and display
         styled_df = style_trades(display_df)
@@ -1313,6 +1384,10 @@ else:
             
             # Parse datetime to timestamp column
             manual_trades_df['timestamp'] = pd.to_datetime(manual_trades_df['datetime'], errors='coerce')
+            
+            # Ensure tags column exists for filtering
+            if 'tags' not in manual_trades_df.columns:
+                manual_trades_df['tags'] = ''
             
             if not manual_trades_df.empty:
                 st.subheader('Your Manual Trades')

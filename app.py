@@ -1454,8 +1454,7 @@ if selected_file:
         fig = px.imshow(pivot, 
                         labels={'x': 'Month', 'y': 'Day', 'color': 'PnL'},
                         aspect='auto',
-                        color_continuous_scale=color```python
-_scale,
+                        color_continuous_scale=color_scale,
                         title='Daily P&L Calendar Heatmap')
         fig.update_layout(
             plot_bgcolor=chart_bg,

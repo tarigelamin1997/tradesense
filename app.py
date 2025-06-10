@@ -798,7 +798,6 @@ if selected_file:
         )
 
     with filter_col4:
-        ```python
         date_range = st.date_input(
             'Date Range',
             value=[df['entry_time'].min().date(), df['exit_time'].max().date()],

@@ -382,8 +382,62 @@ else:
             color: #262730 !important;
         }
         
-        /* Fix multi-select */
+        /* Fix multi-select tags/pills */
         [data-baseweb="tag"] {
+            background-color: #e9ecef !important;
+            color: #262730 !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-baseweb="tag"] span {
+            color: #262730 !important;
+        }
+        
+        /* Fix multi-select container and input */
+        [data-baseweb="select"] [data-baseweb="input"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        
+        /* Fix multi-select dropdown options */
+        [data-baseweb="list"] {
+            background-color: #ffffff !important;
+        }
+        [data-baseweb="list-item"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="list-item"]:hover {
+            background-color: #f8f9fa !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="list-item"][aria-selected="true"] {
+            background-color: #e9ecef !important;
+            color: #262730 !important;
+        }
+        
+        /* Fix checkbox in multi-select */
+        [data-baseweb="checkbox"] {
+            border-color: #cccccc !important;
+        }
+        [data-baseweb="checkbox"]:checked {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+        }
+        
+        /* Fix single select dropdown options */
+        [data-baseweb="popover"] [data-baseweb="list"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+        }
+        [data-baseweb="popover"] [data-baseweb="list-item"] {
+            background-color: #ffffff !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="popover"] [data-baseweb="list-item"]:hover {
+            background-color: #f8f9fa !important;
+            color: #262730 !important;
+        }
+        [data-baseweb="popover"] [data-baseweb="list-item"][aria-selected="true"] {
             background-color: #e9ecef !important;
             color: #262730 !important;
         }

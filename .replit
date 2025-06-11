@@ -10,15 +10,7 @@ run = ["sh", "-c", "streamlit run app.py"]
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 8501
 externalPort = 80
-
-[[ports]]
-localPort = 8502
-externalPort = 3000
 
 [workflows]
 runButton = "Run"
@@ -30,4 +22,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false"

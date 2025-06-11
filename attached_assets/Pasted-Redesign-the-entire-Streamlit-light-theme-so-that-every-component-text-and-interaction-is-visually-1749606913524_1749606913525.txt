@@ -1,0 +1,117 @@
+Redesign the entire Streamlit light theme so that every component, text, and interaction is visually clear, professional, and adheres to top-tier UI/UX and accessibility standards. Fix these issues specifically:
+
+1. Background:
+
+Main app background must be pure white (#FFFFFF) or very light gray (#F7F7F7), never yellow, beige, or blue-tinted.
+
+
+
+2. Text:
+
+All text (headers, subheaders, labels, table content, button text, KPIs, tooltips) must be dark gray or black (#1A1A1A to #222222 or pure #000000). No faded gray or pastel.
+
+Avoid gray-on-gray. Use at least 7:1 contrast ratio for ALL text (check with a WCAG contrast checker).
+
+Table cell text must never be lighter than #222222.
+
+
+
+3. Charts:
+
+Axes, labels, tick marks: black or dark gray on white, at full opacity.
+
+Bars/lines: use bold, classic palette (blue, green, red, orange, purple), but always dark enough to stand out against white.
+
+Highlight lines, fills, and tooltips so nothing fades into the background.
+
+
+
+4. Tables:
+
+Alternate row backgrounds using very light gray (#F2F2F2) and white.
+
+Table borders: thin, light gray (#E0E0E0).
+
+Selected or hovered rows: slightly bolder border or subtle blue background (#E3F0FF).
+
+
+
+5. Buttons & Interactive Elements:
+
+Button backgrounds: medium/dark blue (#2563EB or similar), text pure white.
+
+Disabled buttons: light gray background, clear border, gray text.
+
+Focus/hover states: slightly darker/lighter background, clear outline (not just a color shift).
+
+
+
+6. Inputs:
+
+Borders: clear, solid gray (#C1C1C1).
+
+Text inside: dark, high-contrast.
+
+Focus: blue outline (#2563EB or similar), not faint shadow.
+
+
+
+7. KPIs, Cards, Metrics:
+
+Card backgrounds: white with subtle shadow, text dark and bold.
+
+Red for negative (use #D32F2F), green for positive (#388E3C), blue for neutral.
+
+Never use pastel, washed-out colors for numbers or deltas.
+
+
+
+8. Error/Success/Warning Messages:
+
+Error: red background (#FFECEC), red text (#D32F2F), bold icon.
+
+Success: green background (#E6FFED), green text (#388E3C).
+
+Warning: orange/yellow background (#FFF8E1), dark amber text.
+
+Never put colored text on a color background with low contrast.
+
+
+
+9. Sidebar/Menu:
+
+Sidebar background: white or very light gray.
+
+Sidebar text: black or dark gray, bold for active item.
+
+Menu/links: clear hover/focus states, never blue-on-blue.
+
+
+
+10. Mobile Responsiveness:
+
+All buttons, inputs, charts, tables, and cards should stack cleanly.
+
+No text or controls should shrink below 14px or run off screen.
+
+
+
+11. General Principles:
+
+No element should ever be hard to read, faded, or low-contrast.
+
+Use bold color for call-to-action; never rely on subtlety in light theme.
+
+Test all main pages, dashboard, forms, charts, and errors.
+
+Show me a screenshot or list of all color hex codes and font weights used.
+
+
+
+
+Your result must look like a modern SaaS dashboard—clear, punchy, and ultra-readable, not like a generic Streamlit app. Reference Stripe Dashboard, Linear, or Notion as examples.
+
+
+---
+
+Do not just “tweak”—systematically upgrade every component’s clarity and color to these standards. If you use any custom CSS or update theme settings, list exactly what you changed. I will only accept a solution that looks as clean and pro as the best fintech UIs.

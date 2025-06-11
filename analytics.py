@@ -9,6 +9,12 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
     df = df.dropna(subset=["pnl"])
     
+    # Convert any remaining object dtypes to numeric
+    numeric_columns = ['entry_price', 'exit_price', 'qty']
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    
     if df.empty:
         return {
             "win_rate": 0.0,
@@ -92,7 +98,8 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
 
     df = df.copy()
     df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce")
-    df["exit_time"] = pd.to_datetime(df["exit_time"], errors="coerce")
+    # Handle various datetime formats more robustly
+    df["exit_time"] = pd.to_datetime(df["exit_time"], errors="coerce", infer_datetime_format=True)
     df = df.dropna(subset=["pnl", "exit_time"])
     
     if df.empty:

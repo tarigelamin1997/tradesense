@@ -17,8 +17,8 @@ def test_malformed_dates_do_not_crash():
         'broker': ['Demo', 'Demo'],
     })
 
-    df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce', format='ISO8601')
-    df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce', format='ISO8601')
+    df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
+    df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
     df = df.dropna(subset=['entry_time', 'exit_time'])
 
     stats = compute_basic_stats(df)

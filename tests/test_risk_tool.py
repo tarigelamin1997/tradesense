@@ -27,6 +27,10 @@ def test_recommended_position_size():
     assert stats['warning'] == ''
 
 
+import pandas as pd
+from risk_tool import assess_risk
+
+
 def test_max_daily_loss_warning():
     data = [
         ['ES', '2024-01-01', '2024-01-01', 100, 95, 1, 'short', -60, 'daytrade', 'Demo'],

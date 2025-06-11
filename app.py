@@ -515,37 +515,55 @@ else:
     st.markdown(
         """
         <style>
-        /* LIGHT THEME - HIGH CONTRAST ACCESSIBILITY */
+        /* PROFESSIONAL SaaS DASHBOARD - LIGHT THEME */
+        /* Inspired by Stripe, Linear, and Notion for maximum clarity and accessibility */
 
+        /* ========== FOUNDATION STYLES ========== */
+        
         /* Root Application - Pure White Background */
+        .stApp {
+            background-color: #ffffff !important;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
         [data-testid="stAppViewContainer"] {
             background-color: #ffffff !important;
         }
         .main .block-container {
             background-color: #ffffff !important;
-        }
-        .stApp {
-            background-color: #ffffff !important;
+            padding-top: 2rem !important;
+            max-width: 1200px !important;
         }
 
-        /* HEADERS - Maximum Contrast Black */
-        [data-testid="stHeader"] h1,
+        /* ========== TYPOGRAPHY HIERARCHY ========== */
+        
+        /* Headers - Bold, Dark, Professional */
         h1, h2, h3, h4, h5, h6,
+        [data-testid="stHeader"] h1,
         .stTitle, .stHeader, .stSubheader {
-            color: #000000 !important;
-            font-weight: 600 !important;
+            color: #1a1a1a !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.025em !important;
+            line-height: 1.2 !important;
         }
-        [data-testid="stMarkdownContainer"] h1,
-        [data-testid="stMarkdownContainer"] h2,
-        [data-testid="stMarkdownContainer"] h3,
-        [data-testid="stMarkdownContainer"] h4,
-        [data-testid="stMarkdownContainer"] h5,
-        [data-testid="stMarkdownContainer"] h6 {
-            color: #000000 !important;
-            font-weight: 600 !important;
+        
+        h1 {
+            font-size: 2.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        h2 {
+            font-size: 2rem !important;
+            margin-bottom: 1rem !important;
+            border-bottom: 2px solid #e5e7eb !important;
+            padding-bottom: 0.5rem !important;
+        }
+        
+        h3 {
+            font-size: 1.5rem !important;
+            margin-bottom: 0.75rem !important;
         }
 
-        /* TEXT CONTENT - High Contrast Dark Gray */
+        /* Body Text - High Contrast */
         [data-testid="stMarkdownContainer"] p,
         [data-testid="stMarkdownContainer"] div,
         [data-testid="stText"] div,
@@ -554,54 +572,45 @@ else:
         .stMarkdown p {
             color: #1a1a1a !important;
             font-weight: 400 !important;
+            line-height: 1.6 !important;
+            font-size: 1rem !important;
         }
 
-        /* CAPTIONS - Medium Dark for Hierarchy */
+        /* Captions - Clear Hierarchy */
         [data-testid="stCaptionContainer"] p,
         .stCaption div,
         .stCaption {
-            color: #404040 !important;
-            font-weight: 400 !important;
+            color: #4b5563 !important;
+            font-weight: 500 !important;
+            font-size: 0.875rem !important;
         }
 
-        /* SIDEBAR - Light Gray Background with Dark Text */
+        /* ========== SIDEBAR - CLEAN NAVIGATION ========== */
+        
         [data-testid="stSidebar"] {
-            background-color: #f8f9fa !important;
-            border-right: 2px solid #e9ecef !important;
+            background-color: #f9fafb !important;
+            border-right: 1px solid #e5e7eb !important;
+            padding: 1rem !important;
         }
+        
         [data-testid="stSidebar"] * {
-            color: #000000 !important;
+            color: #1a1a1a !important;
             font-weight: 500 !important;
         }
+        
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
-        [data-testid="stSidebar"] h3,
-        [data-testid="stSidebar"] p,
-        [data-testid="stSidebar"] div,
-        [data-testid="stSidebar"] span,
-        [data-testid="stSidebar"] label {
-            color: #000000 !important;
+        [data-testid="stSidebar"] h3 {
+            color: #1a1a1a !important;
+            font-weight: 700 !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            padding-bottom: 0.5rem !important;
+            margin-bottom: 1rem !important;
         }
 
-        /* FORM ELEMENTS - High Contrast Borders and Text */
-        [data-baseweb="select"],
-        [data-testid="stSidebar"] [data-baseweb="select"] {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 2px solid #404040 !important;
-            border-radius: 4px !important;
-        }
-        [data-baseweb="select"] span,
-        [data-baseweb="select"] div {
-            color: #000000 !important;
-            font-weight: 500 !important;
-        }
-        [data-baseweb="select"] svg,
-        [data-baseweb="select-arrow"] svg {
-            fill: #000000 !important;
-        }
-
-        /* INPUT FIELDS - Strong Borders and Dark Text */
+        /* ========== FORM ELEMENTS - PROFESSIONAL INPUTS ========== */
+        
+        /* Input Fields */
         input[type="text"], 
         input[type="number"], 
         textarea,
@@ -609,272 +618,410 @@ else:
         [data-testid="stNumberInput"] input,
         [data-testid="stTextArea"] textarea {
             background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 2px solid #404040 !important;
-            border-radius: 4px !important;
+            color: #1a1a1a !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 8px !important;
             font-weight: 500 !important;
+            padding: 12px 16px !important;
+            font-size: 1rem !important;
+            transition: all 0.2s ease !important;
         }
+        
         [data-testid="stTextInput"] input:focus,
         [data-testid="stNumberInput"] input:focus,
         [data-testid="stTextArea"] textarea:focus {
-            border-color: #0066cc !important;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+            outline: none !important;
         }
 
-        /* LABELS - Dark and Bold */
-        label,
-        [data-testid="stWidgetLabel"] label {
-            color: #000000 !important;
-            font-weight: 600 !important;
+        /* Select Dropdowns */
+        [data-baseweb="select"],
+        [data-testid="stSidebar"] [data-baseweb="select"] {
+            background-color: #ffffff !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 8px !important;
+            min-height: 48px !important;
+        }
+        
+        [data-baseweb="select"] > div {
+            color: #1a1a1a !important;
+            font-weight: 500 !important;
+            padding: 12px 16px !important;
+        }
+        
+        [data-baseweb="select"] svg {
+            fill: #4b5563 !important;
         }
 
-        /* DROPDOWN MENUS - High Contrast */
+        /* Dropdown Menus */
         [data-baseweb="popover"] {
             background-color: #ffffff !important;
-            border: 2px solid #404040 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
         }
+        
         [data-baseweb="menu"] {
             background-color: #ffffff !important;
         }
+        
         [data-baseweb="menu"] li {
             background-color: #ffffff !important;
-            color: #000000 !important;
+            color: #1a1a1a !important;
             font-weight: 500 !important;
+            padding: 12px 16px !important;
+            transition: background-color 0.15s ease !important;
         }
+        
         [data-baseweb="menu"] li:hover {
-            background-color: #e3f2fd !important;
-            color: #000000 !important;
+            background-color: #f3f4f6 !important;
+            color: #1a1a1a !important;
         }
+        
         [data-baseweb="menu"] li[aria-selected="true"] {
-            background-color: #1976d2 !important;
+            background-color: #2563eb !important;
             color: #ffffff !important;
             font-weight: 600 !important;
         }
 
-        /* METRICS/KPI CARDS - High Contrast with Borders */
-        [data-testid="metric-container"] {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 2px solid #e9ecef !important;
-            border-radius: 8px !important;
-            padding: 16px !important;
-        }
-        [data-testid="metric-container"] * {
-            color: #000000 !important;
+        /* Labels */
+        label,
+        [data-testid="stWidgetLabel"] label {
+            color: #1a1a1a !important;
             font-weight: 600 !important;
-        }
-        [data-testid="metric-container"] [data-testid="metric-label"] {
-            color: #404040 !important;
-            font-weight: 500 !important;
+            font-size: 0.875rem !important;
+            margin-bottom: 0.5rem !important;
+            display: block !important;
         }
 
-        /* BUTTONS - Strong Contrast and Clear Borders */
+        /* ========== BUTTONS - CLEAR CALL-TO-ACTION ========== */
+        
         .stButton button,
         button {
             background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 2px solid #404040 !important;
-            border-radius: 6px !important;
+            color: #374151 !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 8px !important;
             font-weight: 600 !important;
-            padding: 8px 16px !important;
+            padding: 12px 24px !important;
+            font-size: 0.875rem !important;
+            transition: all 0.2s ease !important;
+            min-height: 48px !important;
         }
+        
         .stButton button:hover,
         button:hover {
-            background-color: #f0f0f0 !important;
-            color: #000000 !important;
-            border-color: #000000 !important;
+            background-color: #f9fafb !important;
+            border-color: #9ca3af !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
         }
-        .stButton button[kind="primary"] {
-            background-color: #1976d2 !important;
+        
+        /* Primary Buttons */
+        .stButton button[kind="primary"],
+        button[data-testid*="primary"] {
+            background-color: #2563eb !important;
             color: #ffffff !important;
-            border-color: #1976d2 !important;
+            border-color: #2563eb !important;
         }
+        
         .stButton button[kind="primary"]:hover {
-            background-color: #1565c0 !important;
+            background-color: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
             color: #ffffff !important;
         }
 
-        /* TABS - Clear Distinction */
+        /* ========== METRICS & KPI CARDS - DASHBOARD STYLE ========== */
+        
+        [data-testid="metric-container"] {
+            background-color: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            padding: 24px !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+            transition: box-shadow 0.2s ease !important;
+        }
+        
+        [data-testid="metric-container"]:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        }
+        
+        [data-testid="metric-container"] [data-testid="metric-value"] {
+            color: #1a1a1a !important;
+            font-weight: 700 !important;
+            font-size: 2rem !important;
+            line-height: 1 !important;
+        }
+        
+        [data-testid="metric-container"] [data-testid="metric-label"] {
+            color: #6b7280 !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+        
+        [data-testid="metric-container"] [data-testid="metric-delta"] {
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+        }
+
+        /* ========== TABS - CLEAN NAVIGATION ========== */
+        
         [data-baseweb="tab-list"] {
-            background-color: #f8f9fa !important;
-            border-bottom: 2px solid #e9ecef !important;
+            background-color: #f9fafb !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 0 8px !important;
         }
+        
         [data-baseweb="tab"] {
-            color: #404040 !important;
+            color: #6b7280 !important;
             font-weight: 500 !important;
+            padding: 16px 24px !important;
+            border-radius: 8px 8px 0 0 !important;
+            transition: all 0.2s ease !important;
+            margin: 8px 4px 0 4px !important;
         }
+        
+        [data-baseweb="tab"]:hover {
+            color: #374151 !important;
+            background-color: #f3f4f6 !important;
+        }
+        
         [data-baseweb="tab"][aria-selected="true"] {
-            color: #000000 !important;
+            color: #2563eb !important;
             background-color: #ffffff !important;
             font-weight: 600 !important;
-            border-bottom: 3px solid #1976d2 !important;
+            border-bottom: 3px solid #2563eb !important;
+            box-shadow: 0 -2px 4px 0 rgba(0, 0, 0, 0.05) !important;
         }
 
-        /* EXPANDABLE SECTIONS - Clear Borders */
-        [data-testid="stExpander"] {
-            background-color: #ffffff !important;
-            border: 2px solid #e9ecef !important;
-            border-radius: 6px !important;
-        }
-        [data-testid="stExpander"] * {
-            color: #000000 !important;
-        }
-        [data-testid="stExpander"] summary {
-            font-weight: 600 !important;
-            padding: 12px !important;
-        }
-
-        /* DATA TABLES - Alternating Rows and Clear Borders */```python
+        /* ========== TABLES - DATA VISUALIZATION ========== */
+        
         [data-testid="stDataFrame"] {
             background-color: #ffffff !important;
-            border: 2px solid #e9ecef !important;
-            border-radius: 6px !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
         }
-        [data-testid="stDataFrame"] * {
-            color: #000000 !important;
-        }
+        
         [data-testid="stDataFrame"] table {
             border-collapse: separate !important;
             border-spacing: 0 !important;
+            width: 100% !important;
         }
+        
         [data-testid="stDataFrame"] th {
-            background-color: #f8f9fa !important;
-            color: #000000 !important;
-            font-weight: 600 !important;
-            border-bottom: 2px solid #404040 !important;
+            background-color: #f9fafb !important;
+            color: #1a1a1a !important;
+            font-weight: 700 !important;
+            font-size: 0.875rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            padding: 16px !important;
+            border-bottom: 2px solid #e5e7eb !important;
         }
+        
         [data-testid="stDataFrame"] td {
-            border-bottom: 1px solid #e9ecef !important;
+            color: #1a1a1a !important;
+            font-weight: 500 !important;
+            padding: 16px !important;
+            border-bottom: 1px solid #f3f4f6 !important;
         }
+        
         [data-testid="stDataFrame"] tr:nth-child(even) td {
-            background-color: #f8f9fa !important;
+            background-color: #f9fafb !important;
+        }
+        
+        [data-testid="stDataFrame"] tr:hover td {
+            background-color: #f3f4f6 !important;
         }
 
-        /* FILE UPLOADER - Clear Visual Cues */
-        [data-testid="stFileUploader"] {
+        /* ========== EXPANDABLE SECTIONS ========== */
+        
+        [data-testid="stExpander"] {
             background-color: #ffffff !important;
-            color: #000000 !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            margin: 16px 0 !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
         }
-        [data-testid="stFileUploader"] * {
-            color: #000000 !important;
+        
+        [data-testid="stExpander"] summary {
+            color: #1a1a1a !important;
+            font-weight: 600 !important;
+            padding: 20px !important;
+            background-color: #f9fafb !important;
+            border-radius: 12px 12px 0 0 !important;
+            cursor: pointer !important;
+            transition: background-color 0.2s ease !important;
         }
-        [data-testid="stFileUploader"] section {
-            background-color: #f8f9fa !important;
-            border: 3px dashed #404040 !important;
-            border-radius: 8px !important;
-            color: #000000 !important;
+        
+        [data-testid="stExpander"] summary:hover {
+            background-color: #f3f4f6 !important;
+        }
+        
+        [data-testid="stExpander"] > div > div {
             padding: 20px !important;
         }
-        [data-testid="stFileUploader"] button {
-            background-color: #1976d2 !important;
-            color: #ffffff !important;
-            border: 2px solid #1976d2 !important;
-            font-weight: 600 !important;
-        }
 
-        /* CHECKBOXES AND FORM CONTROLS */
-        [data-testid="stCheckbox"] label {
-            color: #000000 !important;
-            font-weight: 500 !important;
-        }
-        [data-testid="stCheckbox"] input[type="checkbox"] {
-            accent-color: #1976d2 !important;
-            transform: scale(1.2) !important;
-        }
-
-        /* SUCCESS/ERROR/WARNING MESSAGES - High Contrast Colors */
+        /* ========== ALERTS & MESSAGES ========== */
+        
         .stSuccess {
-            background-color: #d4edda !important;
-            color: #155724 !important;
-            border: 2px solid #c3e6cb !important;
+            background-color: #ecfdf5 !important;
+            color: #065f46 !important;
+            border: 1px solid #a7f3d0 !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
             font-weight: 600 !important;
         }
+        
         .stError {
-            background-color: #f8d7da !important;
-            color: #721c24 !important;
-            border: 2px solid #f5c6cb !important;
+            background-color: #fef2f2 !important;
+            color: #991b1b !important;
+            border: 1px solid #fecaca !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
             font-weight: 600 !important;
         }
+        
         .stWarning {
-            background-color: #fff3cd !important;
-            color: #856404 !important;
-            border: 2px solid #ffeaa7 !important;
+            background-color: #fffbeb !important;
+            color: #92400e !important;
+            border: 1px solid #fed7aa !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
             font-weight: 600 !important;
         }
+        
         .stInfo {
-            background-color: #d1ecf1 !important;
-            color: #0c5460 !important;
-            border: 2px solid #bee5eb !important;
+            background-color: #eff6ff !important;
+            color: #1e40af !important;
+            border: 1px solid #bfdbfe !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
             font-weight: 600 !important;
         }
 
-        /* CLEAR BUTTONS AND CONTROLS */
-        button[aria-label*="Clear"],
-        [data-baseweb="tag"] button {
-            color: #000000 !important;
-            background-color: #f8f9fa !important;
-            border: 1px solid #404040 !important;
+        /* ========== FILE UPLOADER ========== */
+        
+        [data-testid="stFileUploader"] section {
+            background-color: #f9fafb !important;
+            border: 2px dashed #d1d5db !important;
+            border-radius: 12px !important;
+            padding: 32px !important;
+            text-align: center !important;
+            transition: all 0.2s ease !important;
         }
-        button[aria-label*="Clear"]:hover,
-        [data-baseweb="tag"] button:hover {
-            background-color: #e9ecef !important;
-            color: #000000 !important;
+        
+        [data-testid="stFileUploader"] section:hover {
+            border-color: #2563eb !important;
+            background-color: #eff6ff !important;
         }
-        [data-baseweb="tag"] button svg {
-            fill: #000000 !important;
+        
+        [data-testid="stFileUploader"] button {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            padding: 12px 24px !important;
         }
 
-        /* PLOTLY CHART TEXT - Force Dark Colors */
-        .js-plotly-plot .plotly text {
-            fill: #000000 !important;
+        /* ========== CHECKBOXES ========== */
+        
+        [data-testid="stCheckbox"] label {
+            color: #1a1a1a !important;
             font-weight: 500 !important;
+            cursor: pointer !important;
         }
+        
+        [data-testid="stCheckbox"] input[type="checkbox"] {
+            accent-color: #2563eb !important;
+            transform: scale(1.3) !important;
+            margin-right: 8px !important;
+        }
+
+        /* ========== CHARTS - PROFESSIONAL STYLING ========== */
+        
+        .js-plotly-plot .plotly text {
+            fill: #1a1a1a !important;
+            font-weight: 500 !important;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+        
         .js-plotly-plot .plotly .xtick text,
         .js-plotly-plot .plotly .ytick text {
-            fill: #000000 !important;
+            fill: #4b5563 !important;
             font-weight: 500 !important;
         }
+        
         .js-plotly-plot .plotly .g-gtitle text {
-            fill: #000000 !important;
-            font-weight: 600 !important;
+            fill: #1a1a1a !important;
+            font-weight: 700 !important;
+            font-size: 18px !important;
         }
 
-        /* MOBILE RESPONSIVENESS - Maintain Contrast */
-        @media (max-width: 768px) {
-            [data-testid="metric-container"] {
-                border-width: 3px !important;
-            }
-            .stButton button {
-                padding: 12px 20px !important;
-                font-size: 16px !important;
-            }
-            [data-baseweb="select"] {
-                border-width: 3px !important;
-            }
-        }
-
-        /* FOCUS STATES - Clear Visual Indication */
+        /* ========== FOCUS STATES - ACCESSIBILITY ========== */
+        
         button:focus,
         input:focus,
         textarea:focus,
         [data-baseweb="select"]:focus-within {
-            outline: 3px solid #1976d2 !important;
+            outline: 3px solid #93c5fd !important;
             outline-offset: 2px !important;
         }
 
-        /* OVERRIDE ANY REMAINING LOW CONTRAST ELEMENTS */
-        * {
-            color: inherit !important;
+        /* ========== MOBILE RESPONSIVENESS ========== */
+        
+        @media (max-width: 768px) {
+            .main .block-container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            [data-testid="metric-container"] {
+                padding: 16px !important;
+            }
+            
+            .stButton button {
+                padding: 16px 20px !important;
+                font-size: 16px !important;
+                min-height: 52px !important;
+            }
+            
+            [data-baseweb="tab"] {
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+            }
+            
+            h1 {
+                font-size: 2rem !important;
+            }
+            
+            h2 {
+                font-size: 1.5rem !important;
+            }
         }
-        [data-testid="stSidebar"] * {
-            color: #000000 !important;
-        }
+
+        /* ========== UTILITY OVERRIDES ========== */
+        
+        /* Ensure all text maintains proper contrast */
         .main * {
             color: #1a1a1a !important;
         }
+        
+        /* Sidebar text override */
+        [data-testid="stSidebar"] * {
+            color: #1a1a1a !important;
+        }
+        
+        /* Header hierarchy override */
         h1, h2, h3, h4, h5, h6 {
-            color: #000000 !important;
+            color: #1a1a1a !important;
         }
         </style>
         """,
@@ -1174,9 +1321,9 @@ if selected_file:
 
         # Choose colors based on theme
         if theme == "Light":
-            equity_color = '#1976d2'  # Strong blue for light theme
+            equity_color = '#2563eb'  # Professional blue for light theme
             chart_bg = '#ffffff'
-            text_color = '#000000'
+            text_color = '#1a1a1a'
         else:
             equity_color = '#00cc96'  # Keep existing color for dark theme
             chart_bg = '#0e1117'
@@ -1198,10 +1345,25 @@ if selected_file:
             hovermode='x unified',
             plot_bgcolor=chart_bg,
             paper_bgcolor=chart_bg,
-            font_color=text_color,
+            font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
             title_font_color=text_color,
-            xaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a'),
-            yaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a')
+            xaxis=dict(
+                color=text_color, 
+                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                gridwidth=1,
+                showgrid=True,
+                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                linewidth=2
+            ),
+            yaxis=dict(
+                color=text_color, 
+                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                gridwidth=1,
+                showgrid=True,
+                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                linewidth=2
+            ),
+            margin=dict(l=60, r=60, t=60, b=60)
         )
         fig_equity.update_traces(
             line=dict(color=equity_color, width=3),
@@ -1223,9 +1385,9 @@ if selected_file:
         if not weekly_counts.empty:
             # Choose colors based on theme
             if theme == "Light":
-                bar_color = '#1976d2'  # Strong blue for light theme
+                bar_color = '#2563eb'  # Professional blue for light theme
                 chart_bg = '#ffffff'
-                text_color = '#000000'
+                text_color = '#1a1a1a'
             else:
                 bar_color = '#636EFA'  # Keep existing color for dark theme
                 chart_bg = '#0e1117'
@@ -1247,10 +1409,25 @@ if selected_file:
                 showlegend=False,
                 plot_bgcolor=chart_bg,
                 paper_bgcolor=chart_bg,
-                font_color=text_color,
+                font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
                 title_font_color=text_color,
-                xaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a'),
-                yaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a')
+                xaxis=dict(
+                    color=text_color, 
+                    gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                    gridwidth=1,
+                    showgrid=True,
+                    linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                    linewidth=2
+                ),
+                yaxis=dict(
+                    color=text_color, 
+                    gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                    gridwidth=1,
+                    showgrid=True,
+                    linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                    linewidth=2
+                ),
+                margin=dict(l=60, r=60, t=60, b=60)
             )
             fig_weekly.update_traces(
                 marker_color=bar_color,
@@ -1410,9 +1587,9 @@ if selected_file:
         drawdown = equity.cummax() - equity
         # Choose colors based on theme
         if theme == "Light":
-            area_color = '#d32f2f'  # Strong red for drawdown in light theme
+            area_color = '#dc2626'  # Professional red for drawdown in light theme
             chart_bg = '#ffffff'
-            text_color = '#000000'
+            text_color = '#1a1a1a'
         else:
             area_color = '#ff6b6b'  # Keep existing red-ish for dark theme
             chart_bg = '#0e1117'
@@ -1424,10 +1601,27 @@ if selected_file:
         fig.update_layout(
             plot_bgcolor=chart_bg,
             paper_bgcolor=chart_bg,
-            font_color=text_color,
+            font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
             title_font_color=text_color,
-            xaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a'),
-            yaxis=dict(color=text_color, gridcolor='#e9ecef' if theme == "Light" else '#4a4a4a')
+            xaxis=dict(
+                color=text_color, 
+                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                gridwidth=1,
+                showgrid=True,
+                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                linewidth=2,
+                title='Trade Number'
+            ),
+            yaxis=dict(
+                color=text_color, 
+                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                gridwidth=1,
+                showgrid=True,
+                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                linewidth=2,
+                title='Drawdown ($)'
+            ),
+            margin=dict(l=60, r=60, t=60, b=60)
         )
         fig.update_traces(fill='tonexty', fillcolor=area_color, line_color=area_color)
         st.plotly_chart(fig, use_container_width=True)
@@ -1443,9 +1637,9 @@ if selected_file:
         pivot = cal_df.pivot(index='day', columns='month', values='pnl')
         # Choose color scale based on theme
         if theme == "Light":
-            color_scale = 'RdYlGn'  # Red-Yellow-Green scale for light theme (high contrast)
+            color_scale = [[0.0, '#dc2626'], [0.5, '#f3f4f6'], [1.0, '#059669']]  # Professional red-gray-green scale
             chart_bg = '#ffffff'
-            text_color = '#000000'
+            text_color = '#1a1a1a'
         else:
             color_scale = 'RdYlGn'  # Same scale works for dark theme
             chart_bg = '#0e1117'
@@ -1459,10 +1653,19 @@ if selected_file:
         fig.update_layout(
             plot_bgcolor=chart_bg,
             paper_bgcolor=chart_bg,
-            font_color=text_color,
+            font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
             title_font_color=text_color,
-            xaxis=dict(color=text_color),
-            yaxis=dict(color=text_color)
+            xaxis=dict(
+                color=text_color,
+                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                linewidth=2
+            ),
+            yaxis=dict(
+                color=text_color,
+                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                linewidth=2
+            ),
+            margin=dict(l=60, r=60, t=60, b=60)
         )
         st.plotly_chart(fig, use_container_width=True)
 

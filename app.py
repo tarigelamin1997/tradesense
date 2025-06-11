@@ -354,679 +354,8 @@ if st.session_state.show_tour:
         if st.button("Got it", key="close_tour"):
             st.session_state.show_tour = False
 
+# Simplified theme selection - remove heavy CSS
 theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=1)
-if theme == "Dark":
-    st.markdown(
-        """
-        <style>
-        /* Dark Theme - Global Styles */
-        .stApp {
-            background-color: #0e1117 !important;
-            color: #fafafa !important;
-        }
-        .stApp *, .stApp div, .stApp span, .stApp p {
-            color: #fafafa !important;
-        }
-
-        /* Headers and Titles */
-        h1, h2, h3, h4, h5, h6, .stTitle, .stHeader, .stSubheader {
-            color: #fafafa !important;
-        }
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
-            color: #fafafa !important;
-        }
-
-        /* Sidebar */
-        .stSidebar {
-            background-color: #262730 !important;
-            color: #fafafa !important;
-        }
-        .stSidebar * {
-            color: #fafafa !important;
-        }
-        .stSidebar .stSelectbox > div > div {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stSidebar .stSelectbox > div > div > div {
-            color: #fafafa !important;
-        }
-        .stSidebar .stTextInput > div > div > input {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stSidebar .stNumberInput > div > div > input {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stSidebar .stCheckbox > label {
-            color: #fafafa !important;
-        }
-        .stSidebar .stMultiSelect > label {
-            color: #fafafa !important;
-        }
-        .stSidebar .stDateInput > label {
-            color: #fafafa !important;
-        }
-
-        /* Form Elements */
-        .stTextArea > div > div > textarea {
-            background-color: #262730 !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stSelectbox > div > div {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stTextInput > div > div > input {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stNumberInput > div > div > input {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-
-        /* Labels and Text */
-        label, .stSelectbox label, .stTextInput label, .stNumberInput label, .stTextArea label {
-            color: #fafafa !important;
-        }
-        .stMarkdown, .stText {
-            color: #fafafa !important;
-        }
-        .stCaption {
-            color: #b3b3b3 !important;
-        }
-
-        /* Data and Tables */
-        .stDataFrame {
-            background-color: #262730 !important;
-            color: #fafafa !important;
-        }
-
-        /* Metrics */
-        .stMetric {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            padding: 10px !important;
-            border-radius: 5px !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stMetric label, .stMetric div {
-            color: #fafafa !important;
-        }
-
-        /* Expandable sections */
-        .stExpander {
-            background-color: #262730 !important;
-            border: 1px solid #4a4a4a !important;
-            color: #fafafa !important;
-        }
-        .stExpander * {
-            color: #fafafa !important;
-        }
-
-        /* Buttons */
-        .stButton > button {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-            border: 1px solid #4a4a4a !important;
-        }
-        .stButton > button:hover {
-            background-color: #333333 !important;
-        }
-
-        /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            background-color: #262730 !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            color: #fafafa !important;
-        }
-        .stTabs [data-baseweb="tab"][aria-selected="true"] {
-            color: #fafafa !important;
-        }
-
-        /* Charts */
-        .js-plotly-plot .plotly text {
-            fill: #fafafa !important;
-        }
-
-        /* Dropdown menus */
-        .stSelectbox [data-baseweb="select"] {
-            background-color: #1e1e1e !important;
-            color: #fafafa !important;
-        }
-        .stSelectbox [data-baseweb="select"] > div {
-            color: #fafafa !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-else:
-    st.markdown(
-        """
-        <style>
-        /* PROFESSIONAL SaaS DASHBOARD - LIGHT THEME */
-        /* Inspired by Stripe, Linear, and Notion for maximum clarity and accessibility */
-
-        /* ========== FOUNDATION STYLES ========== */
-        
-        /* Root Application - Pure White Background */
-        .stApp {
-            background-color: #ffffff !important;
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        }
-        [data-testid="stAppViewContainer"] {
-            background-color: #ffffff !important;
-        }
-        .main .block-container {
-            background-color: #ffffff !important;
-            padding-top: 2rem !important;
-            max-width: 1200px !important;
-        }
-
-        /* ========== TYPOGRAPHY HIERARCHY ========== */
-        
-        /* Headers - Bold, Dark, Professional */
-        h1, h2, h3, h4, h5, h6,
-        [data-testid="stHeader"] h1,
-        .stTitle, .stHeader, .stSubheader {
-            color: #1a1a1a !important;
-            font-weight: 700 !important;
-            letter-spacing: -0.025em !important;
-            line-height: 1.2 !important;
-        }
-        
-        h1 {
-            font-size: 2.5rem !important;
-            margin-bottom: 0.5rem !important;
-        }
-        
-        h2 {
-            font-size: 2rem !important;
-            margin-bottom: 1rem !important;
-            border-bottom: 2px solid #e5e7eb !important;
-            padding-bottom: 0.5rem !important;
-        }
-        
-        h3 {
-            font-size: 1.5rem !important;
-            margin-bottom: 0.75rem !important;
-        }
-
-        /* Body Text - High Contrast */
-        [data-testid="stMarkdownContainer"] p,
-        [data-testid="stMarkdownContainer"] div,
-        [data-testid="stText"] div,
-        .stMarkdown div,
-        .stText div,
-        .stMarkdown p {
-            color: #1a1a1a !important;
-            font-weight: 400 !important;
-            line-height: 1.6 !important;
-            font-size: 1rem !important;
-        }
-
-        /* Captions - Clear Hierarchy */
-        [data-testid="stCaptionContainer"] p,
-        .stCaption div,
-        .stCaption {
-            color: #4b5563 !important;
-            font-weight: 500 !important;
-            font-size: 0.875rem !important;
-        }
-
-        /* ========== SIDEBAR - CLEAN NAVIGATION ========== */
-        
-        [data-testid="stSidebar"] {
-            background-color: #f9fafb !important;
-            border-right: 1px solid #e5e7eb !important;
-            padding: 1rem !important;
-        }
-        
-        [data-testid="stSidebar"] * {
-            color: #1a1a1a !important;
-            font-weight: 500 !important;
-        }
-        
-        [data-testid="stSidebar"] h1,
-        [data-testid="stSidebar"] h2,
-        [data-testid="stSidebar"] h3 {
-            color: #1a1a1a !important;
-            font-weight: 700 !important;
-            border-bottom: 1px solid #e5e7eb !important;
-            padding-bottom: 0.5rem !important;
-            margin-bottom: 1rem !important;
-        }
-
-        /* ========== FORM ELEMENTS - PROFESSIONAL INPUTS ========== */
-        
-        /* Input Fields */
-        input[type="text"], 
-        input[type="number"], 
-        textarea,
-        [data-testid="stTextInput"] input,
-        [data-testid="stNumberInput"] input,
-        [data-testid="stTextArea"] textarea {
-            background-color: #ffffff !important;
-            color: #1a1a1a !important;
-            border: 2px solid #d1d5db !important;
-            border-radius: 8px !important;
-            font-weight: 500 !important;
-            padding: 12px 16px !important;
-            font-size: 1rem !important;
-            transition: all 0.2s ease !important;
-        }
-        
-        [data-testid="stTextInput"] input:focus,
-        [data-testid="stNumberInput"] input:focus,
-        [data-testid="stTextArea"] textarea:focus {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-            outline: none !important;
-        }
-
-        /* Select Dropdowns */
-        [data-baseweb="select"],
-        [data-testid="stSidebar"] [data-baseweb="select"] {
-            background-color: #ffffff !important;
-            border: 2px solid #d1d5db !important;
-            border-radius: 8px !important;
-            min-height: 48px !important;
-        }
-        
-        [data-baseweb="select"] > div {
-            color: #1a1a1a !important;
-            font-weight: 500 !important;
-            padding: 12px 16px !important;
-        }
-        
-        [data-baseweb="select"] svg {
-            fill: #4b5563 !important;
-        }
-
-        /* Dropdown Menus */
-        [data-baseweb="popover"] {
-            background-color: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 12px !important;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-        }
-        
-        [data-baseweb="menu"] {
-            background-color: #ffffff !important;
-        }
-        
-        [data-baseweb="menu"] li {
-            background-color: #ffffff !important;
-            color: #1a1a1a !important;
-            font-weight: 500 !important;
-            padding: 12px 16px !important;
-            transition: background-color 0.15s ease !important;
-        }
-        
-        [data-baseweb="menu"] li:hover {
-            background-color: #f3f4f6 !important;
-            color: #1a1a1a !important;
-        }
-        
-        [data-baseweb="menu"] li[aria-selected="true"] {
-            background-color: #2563eb !important;
-            color: #ffffff !important;
-            font-weight: 600 !important;
-        }
-
-        /* Labels */
-        label,
-        [data-testid="stWidgetLabel"] label {
-            color: #1a1a1a !important;
-            font-weight: 600 !important;
-            font-size: 0.875rem !important;
-            margin-bottom: 0.5rem !important;
-            display: block !important;
-        }
-
-        /* ========== BUTTONS - CLEAR CALL-TO-ACTION ========== */
-        
-        .stButton button,
-        button {
-            background-color: #ffffff !important;
-            color: #374151 !important;
-            border: 2px solid #d1d5db !important;
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-            padding: 12px 24px !important;
-            font-size: 0.875rem !important;
-            transition: all 0.2s ease !important;
-            min-height: 48px !important;
-        }
-        
-        .stButton button:hover,
-        button:hover {
-            background-color: #f9fafb !important;
-            border-color: #9ca3af !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        /* Primary Buttons */
-        .stButton button[kind="primary"],
-        button[data-testid*="primary"] {
-            background-color: #2563eb !important;
-            color: #ffffff !important;
-            border-color: #2563eb !important;
-        }
-        
-        .stButton button[kind="primary"]:hover {
-            background-color: #1d4ed8 !important;
-            border-color: #1d4ed8 !important;
-            color: #ffffff !important;
-        }
-
-        /* ========== METRICS & KPI CARDS - DASHBOARD STYLE ========== */
-        
-        [data-testid="metric-container"] {
-            background-color: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 12px !important;
-            padding: 24px !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
-            transition: box-shadow 0.2s ease !important;
-        }
-        
-        [data-testid="metric-container"]:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-        }
-        
-        [data-testid="metric-container"] [data-testid="metric-value"] {
-            color: #1a1a1a !important;
-            font-weight: 700 !important;
-            font-size: 2rem !important;
-            line-height: 1 !important;
-        }
-        
-        [data-testid="metric-container"] [data-testid="metric-label"] {
-            color: #6b7280 !important;
-            font-weight: 600 !important;
-            font-size: 0.875rem !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.05em !important;
-        }
-        
-        [data-testid="metric-container"] [data-testid="metric-delta"] {
-            font-weight: 600 !important;
-            font-size: 0.875rem !important;
-        }
-
-        /* ========== TABS - CLEAN NAVIGATION ========== */
-        
-        [data-baseweb="tab-list"] {
-            background-color: #f9fafb !important;
-            border-bottom: 1px solid #e5e7eb !important;
-            border-radius: 12px 12px 0 0 !important;
-            padding: 0 8px !important;
-        }
-        
-        [data-baseweb="tab"] {
-            color: #6b7280 !important;
-            font-weight: 500 !important;
-            padding: 16px 24px !important;
-            border-radius: 8px 8px 0 0 !important;
-            transition: all 0.2s ease !important;
-            margin: 8px 4px 0 4px !important;
-        }
-        
-        [data-baseweb="tab"]:hover {
-            color: #374151 !important;
-            background-color: #f3f4f6 !important;
-        }
-        
-        [data-baseweb="tab"][aria-selected="true"] {
-            color: #2563eb !important;
-            background-color: #ffffff !important;
-            font-weight: 600 !important;
-            border-bottom: 3px solid #2563eb !important;
-            box-shadow: 0 -2px 4px 0 rgba(0, 0, 0, 0.05) !important;
-        }
-
-        /* ========== TABLES - DATA VISUALIZATION ========== */
-        
-        [data-testid="stDataFrame"] {
-            background-color: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 12px !important;
-            overflow: hidden !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        [data-testid="stDataFrame"] table {
-            border-collapse: separate !important;
-            border-spacing: 0 !important;
-            width: 100% !important;
-        }
-        
-        [data-testid="stDataFrame"] th {
-            background-color: #f9fafb !important;
-            color: #1a1a1a !important;
-            font-weight: 700 !important;
-            font-size: 0.875rem !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.05em !important;
-            padding: 16px !important;
-            border-bottom: 2px solid #e5e7eb !important;
-        }
-        
-        [data-testid="stDataFrame"] td {
-            color: #1a1a1a !important;
-            font-weight: 500 !important;
-            padding: 16px !important;
-            border-bottom: 1px solid #f3f4f6 !important;
-        }
-        
-        [data-testid="stDataFrame"] tr:nth-child(even) td {
-            background-color: #f9fafb !important;
-        }
-        
-        [data-testid="stDataFrame"] tr:hover td {
-            background-color: #f3f4f6 !important;
-        }
-
-        /* ========== EXPANDABLE SECTIONS ========== */
-        
-        [data-testid="stExpander"] {
-            background-color: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 12px !important;
-            margin: 16px 0 !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        [data-testid="stExpander"] summary {
-            color: #1a1a1a !important;
-            font-weight: 600 !important;
-            padding: 20px !important;
-            background-color: #f9fafb !important;
-            border-radius: 12px 12px 0 0 !important;
-            cursor: pointer !important;
-            transition: background-color 0.2s ease !important;
-        }
-        
-        [data-testid="stExpander"] summary:hover {
-            background-color: #f3f4f6 !important;
-        }
-        
-        [data-testid="stExpander"] > div > div {
-            padding: 20px !important;
-        }
-
-        /* ========== ALERTS & MESSAGES ========== */
-        
-        .stSuccess {
-            background-color: #ecfdf5 !important;
-            color: #065f46 !important;
-            border: 1px solid #a7f3d0 !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
-            font-weight: 600 !important;
-        }
-        
-        .stError {
-            background-color: #fef2f2 !important;
-            color: #991b1b !important;
-            border: 1px solid #fecaca !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
-            font-weight: 600 !important;
-        }
-        
-        .stWarning {
-            background-color: #fffbeb !important;
-            color: #92400e !important;
-            border: 1px solid #fed7aa !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
-            font-weight: 600 !important;
-        }
-        
-        .stInfo {
-            background-color: #eff6ff !important;
-            color: #1e40af !important;
-            border: 1px solid #bfdbfe !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
-            font-weight: 600 !important;
-        }
-
-        /* ========== FILE UPLOADER ========== */
-        
-        [data-testid="stFileUploader"] section {
-            background-color: #f9fafb !important;
-            border: 2px dashed #d1d5db !important;
-            border-radius: 12px !important;
-            padding: 32px !important;
-            text-align: center !important;
-            transition: all 0.2s ease !important;
-        }
-        
-        [data-testid="stFileUploader"] section:hover {
-            border-color: #2563eb !important;
-            background-color: #eff6ff !important;
-        }
-        
-        [data-testid="stFileUploader"] button {
-            background-color: #2563eb !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-            padding: 12px 24px !important;
-        }
-
-        /* ========== CHECKBOXES ========== */
-        
-        [data-testid="stCheckbox"] label {
-            color: #1a1a1a !important;
-            font-weight: 500 !important;
-            cursor: pointer !important;
-        }
-        
-        [data-testid="stCheckbox"] input[type="checkbox"] {
-            accent-color: #2563eb !important;
-            transform: scale(1.3) !important;
-            margin-right: 8px !important;
-        }
-
-        /* ========== CHARTS - PROFESSIONAL STYLING ========== */
-        
-        .js-plotly-plot .plotly text {
-            fill: #1a1a1a !important;
-            font-weight: 500 !important;
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        }
-        
-        .js-plotly-plot .plotly .xtick text,
-        .js-plotly-plot .plotly .ytick text {
-            fill: #4b5563 !important;
-            font-weight: 500 !important;
-        }
-        
-        .js-plotly-plot .plotly .g-gtitle text {
-            fill: #1a1a1a !important;
-            font-weight: 700 !important;
-            font-size: 18px !important;
-        }
-
-        /* ========== FOCUS STATES - ACCESSIBILITY ========== */
-        
-        button:focus,
-        input:focus,
-        textarea:focus,
-        [data-baseweb="select"]:focus-within {
-            outline: 3px solid #93c5fd !important;
-            outline-offset: 2px !important;
-        }
-
-        /* ========== MOBILE RESPONSIVENESS ========== */
-        
-        @media (max-width: 768px) {
-            .main .block-container {
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-            }
-            
-            [data-testid="metric-container"] {
-                padding: 16px !important;
-            }
-            
-            .stButton button {
-                padding: 16px 20px !important;
-                font-size: 16px !important;
-                min-height: 52px !important;
-            }
-            
-            [data-baseweb="tab"] {
-                padding: 12px 16px !important;
-                font-size: 14px !important;
-            }
-            
-            h1 {
-                font-size: 2rem !important;
-            }
-            
-            h2 {
-                font-size: 1.5rem !important;
-            }
-        }
-
-        /* ========== UTILITY OVERRIDES ========== */
-        
-        /* Ensure all text maintains proper contrast */
-        .main * {
-            color: #1a1a1a !important;
-        }
-        
-        /* Sidebar text override */
-        [data-testid="stSidebar"] * {
-            color: #1a1a1a !important;
-        }
-        
-        /* Header hierarchy override */
-        h1, h2, h3, h4, h5, h6 {
-            color: #1a1a1a !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
 st.sidebar.header("Upload Trade History")
 st.sidebar.caption("We do not store or share your uploaded trade data.")
@@ -1075,69 +404,42 @@ if selected_file:
             st.error(str(e))
             st.stop()
 
-    # Parse datetimes with coercion and ISO8601 format
-    df['entry_time'] = pd.to_datetime(
-        df['entry_time'], errors='coerce', format='ISO8601'
-    )
-    df['exit_time'] = pd.to_datetime(
-        df['exit_time'], errors='coerce', format='ISO8601'
-    )
+    # Optimize data processing with minimal operations
+    with st.spinner("Processing data..."):
+        # Cache datetime parsing
+        if 'entry_time' not in st.session_state or 'data_hash' not in st.session_state or st.session_state.data_hash != hash(df.to_string()):
+            df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
+            df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+            df = df.dropna(subset=['entry_time', 'exit_time'])
+            st.session_state.data_hash = hash(df.to_string())
+            st.session_state.processed_df = df
+        else:
+            df = st.session_state.processed_df
 
-    if df['entry_time'].isna().any() or df['exit_time'].isna().any():
-        st.warning("Some rows had invalid dates and were dropped.")
-        df = df.dropna(subset=['entry_time', 'exit_time'])
+        if df.empty:
+            st.error("No valid rows remain after cleaning.")
+            st.stop()
 
-    if df.empty:
-        st.error("No valid rows remain after cleaning.")
-        st.stop()
-
-    # Filters above dashboard for better visibility
-    st.header("📊 Trade Filters")
-    st.caption("Filter your trades to analyze specific subsets of your trading data")
-
-    # Create filter columns
-    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    # Simplified filters
+    st.header("📊 Filters")
+    filter_col1, filter_col2 = st.columns(2)
 
     with filter_col1:
-        symbols = st.multiselect(
-            'Symbols', 
-            options=df['symbol'].unique().tolist(), 
-            default=df['symbol'].unique().tolist(),
-            help="Select which symbols to include in analysis"
-        )
+        symbols = st.multiselect('Symbols', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
+        date_range = st.date_input('Date Range', value=[df['entry_time'].min().date(), df['exit_time'].max().date()])
 
     with filter_col2:
-        directions = st.multiselect(
-            'Directions', 
-            options=df['direction'].unique().tolist(), 
-            default=df['direction'].unique().tolist(),
-            help="Filter by trade direction (long/short)"
-        )
-
-    with filter_col3:
-        # Extract unique tags from the tags column (if it exists)
-        all_tags = set()
+        directions = st.multiselect('Directions', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())
+        
+        # Simplified tags
         if 'tags' in df.columns:
+            all_tags = set()
             for tag_string in df['tags'].dropna():
                 if tag_string and str(tag_string).strip():
-                    tags_list = [tag.strip() for tag in str(tag_string).split(',')]
-                    all_tags.update(tags_list)
-
-        all_tags = sorted([tag for tag in all_tags if tag])  # Remove empty tags and sort
-
-        selected_tags = st.multiselect(
-            'Tags',
-            options=all_tags,
-            default=all_tags,
-            help="Filter by trade tags (e.g., scalp, swing, breakout)"
-        )
-
-    with filter_col4:
-        date_range = st.date_input(
-            'Date Range',
-            value=[df['entry_time'].min().date(), df['exit_time'].max().date()],
-            help="Select date range for analysis"
-        )
+                    all_tags.update([tag.strip() for tag in str(tag_string).split(',')])
+            selected_tags = st.multiselect('Tags', options=sorted(all_tags), default=sorted(all_tags))
+        else:
+            selected_tags = []
 
     # Apply filters
     filtered_df = df[
@@ -1169,20 +471,33 @@ if selected_file:
 
     st.divider()
 
-    # Ensure PnL is numeric for all analytics
-    filtered_df = filtered_df.copy()
-    filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
-    filtered_df = filtered_df.dropna(subset=['pnl'])
-
-    if filtered_df.empty:
-        st.error("No valid trade data found after filtering. Please check your data.")
-        st.stop()
-
-    stats = compute_basic_stats(filtered_df)
-    perf = performance_over_time(filtered_df, freq='M')
-
-    # Calculate and display KPIs at the top of the dashboard
-    kpis = calculate_kpis(filtered_df, commission_per_trade=3.5)
+    # Cache expensive calculations
+    filter_key = f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}"
+    
+    if 'cached_calculations' not in st.session_state or st.session_state.get('filter_key') != filter_key:
+        with st.spinner("Computing analytics..."):
+            filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+            filtered_df = filtered_df.dropna(subset=['pnl'])
+            
+            if filtered_df.empty:
+                st.error("No valid trade data found after filtering.")
+                st.stop()
+            
+            # Cache all calculations
+            st.session_state.cached_calculations = {
+                'stats': compute_basic_stats(filtered_df),
+                'perf': performance_over_time(filtered_df, freq='M'),
+                'kpis': calculate_kpis(filtered_df, commission_per_trade=3.5),
+                'filtered_df': filtered_df
+            }
+            st.session_state.filter_key = filter_key
+    
+    # Use cached values
+    cached = st.session_state.cached_calculations
+    stats = cached['stats']
+    perf = cached['perf']
+    kpis = cached['kpis']
+    filtered_df = cached['filtered_df']
 
     st.subheader('📊 Key Performance Indicators')
     kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
@@ -1315,128 +630,19 @@ if selected_file:
 
         st.subheader('Equity Curve')
 
-        # Create Plotly equity curve with timestamps
-        equity_df = filtered_df.copy().sort_values('exit_time')
+        # Simplified equity curve
+        equity_df = filtered_df.sort_values('exit_time')
         equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
-
-        # Choose colors based on theme
-        if theme == "Light":
-            equity_color = '#2563eb'  # Professional blue for light theme
-            chart_bg = '#ffffff'
-            text_color = '#1a1a1a'
-        else:
-            equity_color = '#00cc96'  # Keep existing color for dark theme
-            chart_bg = '#0e1117'
-            text_color = '#fafafa'
-
-        fig_equity = px.line(
-            equity_df, 
-            x='exit_time', 
-            y='cumulative_pnl',
-            title='Cumulative P&L Over Time (Equity Curve)',
-            labels={
-                'exit_time': 'Date',
-                'cumulative_pnl': 'Cumulative P&L ($)'
-            }
+        
+        # Simple line chart without heavy styling
+        st.line_chart(
+            equity_df.set_index('exit_time')['cumulative_pnl'], 
+            height=400
         )
-        fig_equity.update_layout(
-            xaxis_title='Date',
-            yaxis_title='Cumulative P&L ($)',
-            hovermode='x unified',
-            plot_bgcolor=chart_bg,
-            paper_bgcolor=chart_bg,
-            font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
-            title_font_color=text_color,
-            xaxis=dict(
-                color=text_color, 
-                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
-                gridwidth=1,
-                showgrid=True,
-                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                linewidth=2
-            ),
-            yaxis=dict(
-                color=text_color, 
-                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
-                gridwidth=1,
-                showgrid=True,
-                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                linewidth=2
-            ),
-            margin=dict(l=60, r=60, t=60, b=60)
-        )
-        fig_equity.update_traces(
-            line=dict(color=equity_color, width=3),
-            hovertemplate='<b>Date:</b> %{x}<br><b>Cumulative P&L:</b> $%{y:,.2f}<extra></extra>'
-        )
-
-        st.plotly_chart(fig_equity, use_container_width=True)
 
         st.subheader('Performance Over Time')
-        st.bar_chart(perf.set_index('period')['pnl'])
-
-        st.subheader('Trading Activity - Trades Per Week')
-
-        # Create weekly trade count chart
-        trades_per_week = filtered_df.copy()
-        trades_per_week['week'] = trades_per_week['exit_time'].dt.to_period('W').dt.start_time
-        weekly_counts = trades_per_week.groupby('week').size().reset_index(name='trade_count')
-
-        if not weekly_counts.empty:
-            # Choose colors based on theme
-            if theme == "Light":
-                bar_color = '#2563eb'  # Professional blue for light theme
-                chart_bg = '#ffffff'
-                text_color = '#1a1a1a'
-            else:
-                bar_color = '#636EFA'  # Keep existing color for dark theme
-                chart_bg = '#0e1117'
-                text_color = '#fafafa'
-
-            fig_weekly = px.bar(
-                weekly_counts,
-                x='week',
-                y='trade_count',
-                title='Number of Trades Per Week',
-                labels={
-                    'week': 'Week Starting',
-                    'trade_count': 'Number of Trades'
-                }
-            )
-            fig_weekly.update_layout(
-                xaxis_title='Week Starting',
-                yaxis_title='Number of Trades',
-                showlegend=False,
-                plot_bgcolor=chart_bg,
-                paper_bgcolor=chart_bg,
-                font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
-                title_font_color=text_color,
-                xaxis=dict(
-                    color=text_color, 
-                    gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
-                    gridwidth=1,
-                    showgrid=True,
-                    linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                    linewidth=2
-                ),
-                yaxis=dict(
-                    color=text_color, 
-                    gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
-                    gridwidth=1,
-                    showgrid=True,
-                    linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                    linewidth=2
-                ),
-                margin=dict(l=60, r=60, t=60, b=60)
-            )
-            fig_weekly.update_traces(
-                marker_color=bar_color,
-                hovertemplate='<b>Week:</b> %{x}<br><b>Trades:</b> %{y}<extra></extra>'
-            )
-
-            st.plotly_chart(fig_weekly, use_container_width=True)
-        else:
-            st.info("No weekly trade data available.")
+        if not perf.empty:
+            st.bar_chart(perf.set_index('period')['pnl'])
 
         med = median_results(filtered_df)
         st.subheader('Median Results')

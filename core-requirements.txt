@@ -5,5 +5,5 @@ streamlit==1.31.1
 plotly==5.17.0
 openpyxl==3.1.2
 psutil==5.9.8
-st-aggrid==1.1.5
-fpdf==1.7.2
+streamlit-aggrid==0.3.4
+fpdf2==2.7.6

@@ -15,7 +15,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Clean Run"
+runButton = "Stable Run"
 
 [[workflows.workflow]]
 name = "Run"
@@ -59,6 +59,19 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pip install --no-cache-dir -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+
+[[workflows.workflow]]
+name = "Stable Run"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install --no-cache-dir --upgrade -r core-requirements.txt"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

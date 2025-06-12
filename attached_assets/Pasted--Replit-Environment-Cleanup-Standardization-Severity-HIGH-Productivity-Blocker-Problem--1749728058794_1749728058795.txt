@@ -1,0 +1,107 @@
+🚨 Replit Environment Cleanup & Standardization – Severity: HIGH (Productivity Blocker) 🚨
+Problem:
+My Replit project has serious environment instability due to a mix of conflicting Python environment tools:
+
+Old virtualenvs, pycache folders, redundant .cache
+
+Multiple package managers (pip, Nix, Replit modules)
+
+Multiple requirements files (requirements.txt, core-requirements.txt)
+
+This is causing slow startups, random rebuilds, broken dependencies, and wasted dev time.
+
+Severity:
+7/10 – This is a major productivity drain and a future time bomb. If not fixed, future work will get slower and more error-prone.
+I need a clean, stable, fast environment for business-critical feature development.
+
+🔨 DO THIS EXACTLY (ALL STEPS, IN ORDER):
+1. NUCLEAR CLEANUP: Remove all legacy envs, caches, and pyc files
+
+rm -rf venv/ .venv/ .cache/ __pycache__/ .config/
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -exec rm -rf {} +
+
+
+
+2. MINIMAL REQUIREMENTS: Replace with only the libraries I actually use:
+echo "pandas==2.2.2
+streamlit==1.31.1
+numpy==1.26.4" > core-requirements.txt
+
+(Add any other truly essential packages you use—NO excess, keep it lean!)
+
+
+
+3. REPLIT CONFIGURATION: Update .replit file to use only built-in modules and minimal requirements
+
+Open .replit and make sure it contains:
+
+[run]
+command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+
+[interpreter]
+modules = ["python-3.12"]
+
+
+
+4. NIX ENVIRONMENT: Disable custom Nix dependencies
+
+Open (or create) replit.nix and make it EMPTY except for this line:
+
+{ pkgs }: { deps = []; }
+
+
+5. PIP CACHE CONFIGURATION (Optional but helps):
+mkdir -p ~/.cache/pip
+export PIP_CACHE_DIR="$HOME/.cache/pip"
+
+
+6. INSTALL FRESH:
+pip install --no-cache-dir -r core-requirements.txt
+
+
+7. VERIFY:
+
+Restart the Replit workspace (Stop & Start)
+
+Check for any errors on startup
+
+Run python -c "import streamlit, pandas, numpy" in the shell – there should be NO import errors
+
+8. DELETE ALL UNNECESSARY FILES:
+
+Remove old requirements.txt (if not used)
+
+Remove unused venv/.venv folders
+
+Keep only one requirements file: core-requirements.txt
+
+9. KEEP IT THIS WAY:
+
+NO virtualenv/venv – Replit handles the Python environment.
+
+NO conflicting requirements files.
+
+Only use pip or Replit modules for installs—not both.
+
+Only install what you actually use.
+
+EXPLAIN TO ME CLEARLY:
+
+If you find ANY additional conflicts (Nix, venv, pip), point them out.
+
+If you see any startup warnings or dependency errors, explain them in plain English and how to fix.
+
+🛡️ Expected Result:
+70% faster startup and reload times
+
+No more random rebuilds or dependency issues
+
+Stable, professional environment to support further business development
+DO NOT skip any of the above steps.
+DO NOT try to be “clever” by merging solutions.
+Just follow this playbook step by step for a guaranteed fix.
+
+If you have questions or see conflicts, STOP and show me the exact issue, don’t guess.
+
+

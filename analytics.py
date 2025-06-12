@@ -129,32 +129,89 @@ def performance_over_time(df: pd.DataFrame, freq: str = 'M') -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
+    
+    # Clean PnL data more thoroughly
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
+    
+    # Remove infinite values
+    df = df[np.isfinite(df['pnl'])]
+    df = df[df['pnl'] != np.inf]
+    df = df[df['pnl'] != -np.inf]
 
     if 'exit_time' not in df.columns:
         logger.warning("exit_time column missing")
         return pd.DataFrame()
 
+    # Clean exit_time data
     df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
     df = df.dropna(subset=['exit_time'])
+    
+    # Remove rows with invalid dates (like NaT or extreme dates)
+    valid_date_mask = (df['exit_time'] > pd.Timestamp('1970-01-01')) & (df['exit_time'] < pd.Timestamp('2100-01-01'))
+    df = df[valid_date_mask]
 
     if df.empty:
+        logger.warning("No valid data after cleaning in performance_over_time")
         return pd.DataFrame()
 
-    # Group by time period
-    df['period'] = df['exit_time'].dt.to_period(freq)
-    grouped = df.groupby('period')
+    try:
+        # Group by time period
+        df['period'] = df['exit_time'].dt.to_period(freq)
+        df = df.dropna(subset=['period'])  # Remove any NaT periods
+        
+        if df.empty:
+            logger.warning("No valid periods after conversion")
+            return pd.DataFrame()
+        
+        grouped = df.groupby('period')
+        
+        if len(grouped) == 0:
+            logger.warning("No groups found after grouping")
+            return pd.DataFrame()
 
-    result = pd.DataFrame({
-        'period': grouped.groups.keys(),
-        'trades': grouped.size(),
-        'pnl': grouped['pnl'].sum(),
-        'win_rate': grouped['pnl'].apply(lambda x: (x > 0).mean() * 100)
-    }).reset_index(drop=True)
+        # Calculate metrics safely
+        periods = []
+        trades = []
+        pnls = []
+        win_rates = []
+        
+        for period, group in grouped:
+            if len(group) > 0:
+                periods.append(period)
+                trades.append(len(group))
+                group_pnl = group['pnl'].sum()
+                pnls.append(group_pnl if np.isfinite(group_pnl) else 0)
+                
+                # Calculate win rate safely
+                wins = (group['pnl'] > 0).sum()
+                total = len(group)
+                win_rate = (wins / total * 100) if total > 0 else 0
+                win_rates.append(win_rate if np.isfinite(win_rate) else 0)
 
-    log_debug_info("performance_over_time result", result.to_dict())
-    return result
+        if len(periods) == 0:
+            logger.warning("No valid periods collected")
+            return pd.DataFrame()
+
+        result = pd.DataFrame({
+            'period': periods,
+            'trades': trades,
+            'pnl': pnls,
+            'win_rate': win_rates
+        })
+
+        # Final check for any remaining infinite values
+        for col in ['pnl', 'win_rate']:
+            if col in result.columns:
+                result[col] = result[col].replace([np.inf, -np.inf], 0)
+                result[col] = result[col].fillna(0)
+
+        log_debug_info("performance_over_time result", result.to_dict())
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in performance_over_time: {str(e)}")
+        return pd.DataFrame()
 
 def median_results(df: pd.DataFrame) -> dict:
     """Calculate median trading results."""

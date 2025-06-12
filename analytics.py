@@ -4,6 +4,10 @@ import numpy as np
 import streamlit as st
 
 
+@st.cache_data
+def compute_basic_stats(df: pd.DataFrame) -> dict:
+
+
 def clean_numeric_data(df: pd.DataFrame, column: str) -> pd.DataFrame:
     """Clean numeric data by removing infinite and NaN values."""
     if df.empty or column not in df.columns:

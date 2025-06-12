@@ -7,10 +7,19 @@ command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
 modules = ["python-3.12"]
 
 [workflows]
-runButton = "Main App"
+runButton = "Run TradeSense"
 
 [[workflows.workflow]]
 name = "Main App"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+
+[[workflows.workflow]]
+name = "Run TradeSense"
 author = 43683701
 mode = "sequential"
 

@@ -334,10 +334,7 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
 
 st.set_page_config(page_title="TradeSense", layout="wide")
 
-# Initialize session ID for feedback tracking
-if 'session_id' not in st.session_state:
-    import uuid
-    st.session_state.session_id = str(uuid.uuid4())[:8]
+# Session ID already initialized above
 
 # Header with feedback button
 header_col1, header_col2 = st.columns([4, 1])
@@ -399,10 +396,15 @@ if st.session_state.get('show_feedback_modal', False):
                 st.session_state.show_feedback_modal = False
                 st.rerun()
 
-# Onboarding message shown only on first load
+# Initialize session state variables safely
 if "show_tour" not in st.session_state:
     st.session_state.show_tour = True
 
+if "session_id" not in st.session_state:
+    import uuid
+    st.session_state.session_id = str(uuid.uuid4())[:8]
+
+# Onboarding message shown only on first load
 if st.session_state.get("show_tour", True):
     with st.expander("Getting Started", expanded=True):
         st.markdown(

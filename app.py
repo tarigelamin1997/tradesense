@@ -515,6 +515,15 @@ if selected_file:
             st.error(str(e))
             st.stop()
 
+    # Debug: Show initial DataFrame info
+    st.write(f"**Debug Info:** Initial DataFrame shape: {df.shape}")
+    if not df.empty:
+        st.write(f"**Initial columns:** {list(df.columns)}")
+    else:
+        st.error("❌ **Critical Error:** DataFrame is empty after initial loading!")
+        st.error("This suggests an issue with the data loading process.")
+        st.stop()
+
     # Ensure required columns exist before any processing
     required_cols_for_processing = ['entry_time', 'exit_time']
     missing_critical_cols = [col for col in required_cols_for_processing if col not in df.columns]
@@ -522,6 +531,7 @@ if selected_file:
     if missing_critical_cols:
         st.error(f"❌ **Critical columns missing:** {', '.join(missing_critical_cols)}")
         st.error("Please ensure your data contains the required datetime columns.")
+        st.error(f"**Available columns:** {list(df.columns)}")
         st.stop()
 
     # Data Validation and Correction System
@@ -529,9 +539,21 @@ if selected_file:
     
     validator = DataValidator()
     
-    # Quick quality check
+    # Quick quality check with error handling
     with st.spinner("Checking data quality..."):
-        _, quick_report = validator.validate_and_clean_data(df, interactive=False)
+        try:
+            cleaned_df_preview, quick_report = validator.validate_and_clean_data(df.copy(), interactive=False)
+            # Don't replace original df yet, just get the report
+        except Exception as e:
+            st.error(f"❌ **Data validation error:** {str(e)}")
+            st.error("Proceeding with original data...")
+            quick_report = {
+                'data_quality_score': 50.0,
+                'issues_found': [f"Validation error: {str(e)}"],
+                'corrections_made': [],
+                'original_rows': len(df),
+                'final_rows': len(df)
+            }
     
     quality_score = quick_report['data_quality_score']
     
@@ -547,8 +569,31 @@ if selected_file:
         show_validation = st.checkbox("🔧 Fix Data Issues (Recommended)", value=True)
     
     if show_validation:
-        df = create_data_correction_interface(df, validator)
-        st.success("✅ Data validation complete. Proceeding with analysis...")
+        try:
+            validated_df = create_data_correction_interface(df, validator)
+            # Only update if validation didn't empty the DataFrame
+            if not validated_df.empty and len(validated_df.columns) > 0:
+                df = validated_df
+                st.success("✅ Data validation complete. Proceeding with analysis...")
+            else:
+                st.warning("⚠️ Validation resulted in empty DataFrame. Using original data.")
+        except Exception as e:
+            st.error(f"❌ **Validation error:** {str(e)}")
+            st.warning("Using original data instead.")
+
+    # Final check before processing
+    if df.empty:
+        st.error("❌ **Critical Error:** DataFrame is empty after validation!")
+        st.error("Cannot proceed with analysis.")
+        st.stop()
+    
+    if len(df.columns) == 0:
+        st.error("❌ **Critical Error:** DataFrame has no columns!")
+        st.error("Cannot proceed with analysis.")
+        st.stop()
+        
+    st.write(f"**Debug Info:** Final DataFrame shape before processing: {df.shape}")
+    st.write(f"**Final columns:** {list(df.columns)}")
 
     # Optimize data processing with cached operations
     with st.spinner("Processing data..."):

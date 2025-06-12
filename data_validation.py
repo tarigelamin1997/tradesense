@@ -24,58 +24,110 @@ class DataValidator:
     def validate_and_clean_data(self, df: pd.DataFrame, interactive: bool = True) -> Tuple[pd.DataFrame, dict]:
         """Main validation and cleaning function."""
         if df.empty:
-            return df, self._generate_report(df, [], [])
+            return df, self._generate_report(df, [], ["Input DataFrame is empty"], 0)
 
+        # Create a copy to avoid modifying the original
+        df_copy = df.copy()
+        original_rows = len(df_copy)
+        
         # Ensure required columns exist
         from data_import.base_importer import REQUIRED_COLUMNS
-        missing_required = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+        missing_required = [col for col in REQUIRED_COLUMNS if col not in df_copy.columns]
         if missing_required:
             issues = [f"Missing required columns: {', '.join(missing_required)}"]
-            return df, self._generate_report(df, [], issues)
+            return df_copy, self._generate_report(df_copy, [], issues, original_rows)
 
-        original_rows = len(df)
         corrections = []
         issues = []
 
         try:
             # Verify critical columns exist before processing
             critical_processing_cols = ['entry_time', 'exit_time', 'symbol']
-            missing_critical = [col for col in critical_processing_cols if col not in df.columns]
+            missing_critical = [col for col in critical_processing_cols if col not in df_copy.columns]
             if missing_critical:
                 issues.append(f"Critical columns missing before validation: {', '.join(missing_critical)}")
-                return df, self._generate_report(df, corrections, issues, original_rows)
+                return df_copy, self._generate_report(df_copy, corrections, issues, original_rows)
 
-            # Fix data types first
-            df, type_corrections = self._fix_data_types(df)
-            corrections.extend(type_corrections)
+            # Fix data types first - but preserve the DataFrame structure
+            try:
+                df_copy, type_corrections = self._fix_data_types(df_copy)
+                corrections.extend(type_corrections)
+                
+                # Check if DataFrame became empty after type fixing
+                if df_copy.empty:
+                    issues.append("DataFrame became empty after type conversion")
+                    return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
+                    
+            except Exception as e:
+                issues.append(f"Error fixing data types: {str(e)}")
+                return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
 
-            # Validate each column
+            # Validate each column with safety checks
             for column in self.validation_rules.keys():
-                if column in df.columns:
-                    df, column_issues = self._validate_column(df, column, interactive)
-                    issues.extend(column_issues)
+                if column in df_copy.columns:
+                    try:
+                        df_copy, column_issues = self._validate_column(df_copy, column, interactive)
+                        issues.extend(column_issues)
+                        
+                        # Safety check: ensure DataFrame is not empty
+                        if df_copy.empty:
+                            issues.append(f"DataFrame became empty after validating column {column}")
+                            return df, self._generate_report(df, corrections, issues, original_rows)
+                            
+                    except Exception as e:
+                        issues.append(f"Error validating column {column}: {str(e)}")
 
-            # Validate logical consistency
-            df, logic_issues = self._validate_logical_consistency(df, interactive)
-            issues.extend(logic_issues)
+            # Validate logical consistency with safety checks
+            try:
+                df_copy, logic_issues = self._validate_logical_consistency(df_copy, interactive)
+                issues.extend(logic_issues)
+                
+                # Safety check after logical validation
+                if df_copy.empty:
+                    issues.append("DataFrame became empty after logical consistency validation")
+                    return df, self._generate_report(df, corrections, issues, original_rows)
+                    
+            except Exception as e:
+                issues.append(f"Error in logical consistency validation: {str(e)}")
 
-            # Remove completely invalid rows
-            df = self._remove_invalid_rows(df)
+            # Remove completely invalid rows with safety check
+            try:
+                rows_before_removal = len(df_copy)
+                df_copy = self._remove_invalid_rows(df_copy)
+                rows_after_removal = len(df_copy)
+                
+                # If too many rows were removed, warn but don't return empty DataFrame
+                if rows_after_removal == 0 and rows_before_removal > 0:
+                    issues.append("All rows were marked as invalid and removed")
+                    return df, self._generate_report(df, corrections, issues, original_rows)
+                elif rows_after_removal < rows_before_removal * 0.1:  # More than 90% removed
+                    issues.append(f"Warning: {rows_before_removal - rows_after_removal} of {rows_before_removal} rows removed ({((rows_before_removal - rows_after_removal)/rows_before_removal*100):.1f}%)")
+                    
+            except Exception as e:
+                issues.append(f"Error removing invalid rows: {str(e)}")
 
             # Final check to ensure required columns still exist
-            final_missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+            final_missing = [col for col in REQUIRED_COLUMNS if col not in df_copy.columns]
             if final_missing:
                 issues.append(f"Required columns lost during validation: {', '.join(final_missing)}")
+                return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
                 
             # Extra check for critical processing columns
-            critical_missing = [col for col in critical_processing_cols if col not in df.columns]
+            critical_missing = [col for col in critical_processing_cols if col not in df_copy.columns]
             if critical_missing:
                 issues.append(f"Critical processing columns lost: {', '.join(critical_missing)}")
+                return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
 
         except Exception as e:
             issues.append(f"Critical validation error: {str(e)}")
+            return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
 
-        return df, self._generate_report(df, corrections, issues, original_rows)
+        # Final safety check before returning
+        if df_copy.empty or len(df_copy.columns) == 0:
+            issues.append("Final safety check failed: DataFrame is empty or has no columns")
+            return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
+
+        return df_copy, self._generate_report(df_copy, corrections, issues, original_rows)
 
     def _fix_data_types(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         """Fix basic data type issues."""

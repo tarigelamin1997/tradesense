@@ -711,13 +711,33 @@ if selected_file:
         # Clean equity curve generation
         try:
             equity_df = filtered_df.copy()
+            
+            # More thorough data cleaning
             equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
             equity_df = equity_df.dropna(subset=['pnl'])
 
-            # Remove infinite and NaN values more thoroughly
+            # Remove infinite and extreme values
             equity_df = equity_df[np.isfinite(equity_df['pnl'])]
             equity_df = equity_df[equity_df['pnl'] != np.inf]
             equity_df = equity_df[equity_df['pnl'] != -np.inf]
+            
+            # Remove extreme outliers that might cause display issues
+            if not equity_df.empty:
+                q99 = equity_df['pnl'].quantile(0.99)
+                q1 = equity_df['pnl'].quantile(0.01)
+                
+                # Only filter extreme outliers (beyond 99th percentile range)
+                extreme_threshold = abs(q99 - q1) * 10  # Allow values within 10x the IQR
+                equity_df = equity_df[abs(equity_df['pnl']) <= extreme_threshold]
+
+            # Clean exit_time
+            if 'exit_time' in equity_df.columns:
+                equity_df['exit_time'] = pd.to_datetime(equity_df['exit_time'], errors='coerce')
+                equity_df = equity_df.dropna(subset=['exit_time'])
+                
+                # Remove invalid dates
+                valid_date_mask = (equity_df['exit_time'] > pd.Timestamp('1970-01-01')) & (equity_df['exit_time'] < pd.Timestamp('2100-01-01'))
+                equity_df = equity_df[valid_date_mask]
 
             if not equity_df.empty and len(equity_df) >= 2:
                 equity_df = equity_df.sort_values('exit_time')
@@ -729,21 +749,30 @@ if selected_file:
                 equity_df = equity_df[equity_df['cumulative_pnl'] != -np.inf]
 
                 if not equity_df.empty and len(equity_df) >= 2:
-                    # Reset index to ensure proper time series
+                    # Create clean chart data
                     chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
                     chart_data = chart_data[np.isfinite(chart_data)]
+                    
+                    # Remove duplicate timestamps by keeping the last value
+                    chart_data = chart_data[~chart_data.index.duplicated(keep='last')]
 
-                    if len(chart_data) >= 2 and chart_data.index.dtype.kind in 'Mm':
+                    if len(chart_data) >= 2:
                         st.line_chart(chart_data, height=400)
                     else:
-                        st.warning("⚠️ Unable to display equity curve: Invalid time series data")
+                        st.warning("⚠️ Unable to display equity curve: Insufficient data points after deduplication")
+                        st.info(f"Available data points: {len(chart_data)}")
                 else:
-                    st.warning("⚠️ Unable to display equity curve: Insufficient valid data points after cleaning")
+                    st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
+                    if not equity_df.empty:
+                        st.info(f"Data before cumulative calculation: {len(equity_df)} rows")
             else:
-                st.warning("⚠️ Unable to display equity curve: Need at least 2 trades with valid P&L data")
+                st.warning("⚠️ Unable to display equity curve: Need at least 2 trades with valid data")
+                if not equity_df.empty:
+                    st.info(f"Available trades after cleaning: {len(equity_df)}")
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
+            logger.error(f"Equity curve error: {str(e)}")
 
         st.subheader('Performance Over Time')
         try:

@@ -630,48 +630,120 @@ if selected_file:
 
         st.subheader('Equity Curve')
 
-        # Simplified equity curve with validation
+        # Equity curve with comprehensive debugging and validation
         try:
+            st.write("=" * 50)
+            st.write("🚀 **STARTING EQUITY CURVE GENERATION**")
+            
             equity_df = filtered_df.copy()
+            st.write(f"📊 Initial equity DataFrame shape: {equity_df.shape}")
+            st.write(f"📊 Initial PnL dtype: {equity_df['pnl'].dtype}")
+            st.write(f"📊 Initial exit_time dtype: {equity_df['exit_time'].dtype}")
+            
+            # Force numeric conversion with debugging
             equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
+            st.write(f"📊 After pd.to_numeric - PnL dtype: {equity_df['pnl'].dtype}")
+            
+            # Check for problematic values before cleaning
+            nan_count = equity_df['pnl'].isna().sum()
+            inf_count = np.isinf(equity_df['pnl']).sum()
+            st.write(f"📊 PnL issues - NaN: {nan_count}, Infinite: {inf_count}")
+            
             equity_df = equity_df.dropna(subset=['pnl'])
+            st.write(f"📊 After dropna - shape: {equity_df.shape}")
             
             if not equity_df.empty and len(equity_df) >= 2:
+                # Sort by exit_time with debugging
+                st.write(f"📊 Exit_time dtype before sort: {equity_df['exit_time'].dtype}")
                 equity_df = equity_df.sort_values('exit_time')
-                equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
                 
-                # Check for finite values only
+                # Calculate cumulative PnL with debugging
+                st.write(f"📊 PnL dtype before cumsum: {equity_df['pnl'].dtype}")
+                equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
+                st.write(f"📊 Cumulative PnL dtype: {equity_df['cumulative_pnl'].dtype}")
+                
+                # Check cumulative PnL for issues
+                cum_nan_count = equity_df['cumulative_pnl'].isna().sum()
+                cum_inf_count = np.isinf(equity_df['cumulative_pnl']).sum()
+                st.write(f"📊 Cumulative PnL issues - NaN: {cum_nan_count}, Infinite: {cum_inf_count}")
+                
                 if equity_df['cumulative_pnl'].isna().all() or not equity_df['cumulative_pnl'].apply(np.isfinite).any():
-                    st.warning("⚠️ Unable to display equity curve: Invalid P&L data")
+                    st.warning("⚠️ Unable to display equity curve: Invalid cumulative P&L data")
                 else:
-                    # Simple line chart without heavy styling
+                    # Prepare chart data with debugging
                     chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
-                    chart_data = chart_data[np.isfinite(chart_data)]  # Remove infinite values
+                    st.write(f"📊 Chart data dtype before filtering: {chart_data.dtype}")
+                    st.write(f"📊 Chart data length before filtering: {len(chart_data)}")
+                    
+                    # Remove infinite values
+                    finite_mask = np.isfinite(chart_data)
+                    st.write(f"📊 Finite values: {finite_mask.sum()} out of {len(chart_data)}")
+                    chart_data = chart_data[finite_mask]
+                    
+                    st.write(f"📊 Final chart data dtype: {chart_data.dtype}")
+                    st.write(f"📊 Final chart data length: {len(chart_data)}")
+                    st.write(f"📊 Final chart data sample: {chart_data.head().tolist()}")
                     
                     if not chart_data.empty and len(chart_data) >= 2:
-                        st.line_chart(chart_data, height=400)
+                        # Final validation before charting
+                        if chart_data.index.dtype.kind in 'Mm':  # datetime types
+                            st.write("✅ Chart data validation passed - creating equity curve")
+                            st.line_chart(chart_data, height=400)
+                        else:
+                            st.warning("⚠️ Unable to display equity curve: Invalid index type for time series")
                     else:
-                        st.warning("⚠️ Unable to display equity curve: Insufficient valid data points")
+                        st.warning(f"⚠️ Unable to display equity curve: Insufficient valid data points (got {len(chart_data)})")
             else:
-                st.warning("⚠️ Unable to display equity curve: Need at least 2 trades with valid P&L data")
+                st.warning(f"⚠️ Unable to display equity curve: Need at least 2 trades with valid P&L data (got {len(equity_df)})")
+                
+            st.write("✅ **EQUITY CURVE GENERATION COMPLETED**")
+            
         except Exception as e:
-            st.error(f"Error generating equity curve: {str(e)}")
+            st.error(f"❌ Error generating equity curve: {str(e)}")
+            import traceback
+            st.error(f"Full traceback: {traceback.format_exc()}")
 
         st.subheader('Performance Over Time')
         try:
+            st.write("=" * 50)
+            st.write("🚀 **STARTING PERFORMANCE OVER TIME CHART**")
+            
+            st.write(f"📊 Performance DataFrame shape: {perf.shape}")
+            st.write(f"📊 Performance DataFrame dtypes: {dict(perf.dtypes)}")
+            st.write(f"📊 Performance DataFrame empty: {perf.empty}")
+            
             if not perf.empty and len(perf) >= 2:
+                st.write(f"📊 Period column sample values: {perf['period'].head().tolist()}")
+                st.write(f"📊 PnL column sample values: {perf['pnl'].head().tolist()}")
+                
                 # Validate data before charting
                 chart_data = perf.set_index('period')['pnl']
+                st.write(f"📊 Chart data dtype: {chart_data.dtype}")
+                st.write(f"📊 Chart data length: {len(chart_data)}")
+                st.write(f"📊 Chart data index dtype: {chart_data.index.dtype}")
+                
+                # Check for problematic values
+                nan_count = chart_data.isna().sum()
+                inf_count = np.isinf(chart_data).sum()
+                st.write(f"📊 Chart data issues - NaN: {nan_count}, Infinite: {inf_count}")
+                
                 chart_data = chart_data[np.isfinite(chart_data)]  # Remove infinite values
+                st.write(f"📊 After filtering - length: {len(chart_data)}")
                 
                 if not chart_data.empty and len(chart_data) >= 2:
+                    st.write("✅ Chart data validation passed - creating performance chart")
                     st.bar_chart(chart_data)
                 else:
-                    st.warning("⚠️ Unable to display performance chart: Insufficient valid data points")
+                    st.warning(f"⚠️ Unable to display performance chart: Insufficient valid data points (got {len(chart_data)})")
             else:
-                st.warning("⚠️ Unable to display performance chart: Need at least 2 periods of data")
+                st.warning(f"⚠️ Unable to display performance chart: Need at least 2 periods of data (got {len(perf)})")
+                
+            st.write("✅ **PERFORMANCE OVER TIME CHART COMPLETED**")
+            
         except Exception as e:
-            st.error(f"Error generating performance chart: {str(e)}")
+            st.error(f"❌ Error generating performance chart: {str(e)}")
+            import traceback
+            st.error(f"Full traceback: {traceback.format_exc()}")
 
         med = median_results(filtered_df)
         st.subheader('Median Results')
@@ -691,23 +763,49 @@ if selected_file:
 
         rolling = rolling_metrics(filtered_df, window=10)
         try:
+            st.write("=" * 50)
+            st.write("🚀 **STARTING ROLLING METRICS CHART**")
+            
+            st.write(f"📊 Rolling metrics DataFrame shape: {rolling.shape}")
+            st.write(f"📊 Rolling metrics DataFrame dtypes: {dict(rolling.dtypes)}")
+            st.write(f"📊 Rolling metrics DataFrame empty: {rolling.empty}")
+            
             if not rolling.empty and len(rolling) >= 2:
                 st.subheader('Rolling Metrics (10 trades)')
                 
+                st.write(f"📊 End_index sample values: {rolling['end_index'].head().tolist()}")
+                st.write(f"📊 Win_rate sample values: {rolling['win_rate'].head().tolist()}")
+                st.write(f"📊 Profit_factor sample values: {rolling['profit_factor'].head().tolist()}")
+                
                 # Validate data before charting
                 chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']]
+                st.write(f"📊 Chart data dtypes: {dict(chart_data.dtypes)}")
+                st.write(f"📊 Chart data shape: {chart_data.shape}")
+                
+                # Check for problematic values
+                for col in chart_data.columns:
+                    nan_count = chart_data[col].isna().sum()
+                    inf_count = np.isinf(chart_data[col]).sum()
+                    st.write(f"📊 {col} issues - NaN: {nan_count}, Infinite: {inf_count}")
                 
                 # Remove infinite and NaN values
                 chart_data = chart_data.replace([np.inf, -np.inf], np.nan).dropna()
+                st.write(f"📊 After cleaning - shape: {chart_data.shape}")
                 
                 if not chart_data.empty and len(chart_data) >= 2:
+                    st.write("✅ Chart data validation passed - creating rolling metrics chart")
                     st.line_chart(chart_data)
                 else:
-                    st.warning("⚠️ Unable to display rolling metrics chart: Insufficient valid data points")
+                    st.warning(f"⚠️ Unable to display rolling metrics chart: Insufficient valid data points (got {len(chart_data)})")
             else:
-                st.warning("⚠️ Unable to display rolling metrics: Need more trades for rolling window analysis")
+                st.warning(f"⚠️ Unable to display rolling metrics: Need more trades for rolling window analysis (got {len(rolling)})")
+                
+            st.write("✅ **ROLLING METRICS CHART COMPLETED**")
+            
         except Exception as e:
-            st.error(f"Error generating rolling metrics chart: {str(e)}")
+            st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
+            import traceback
+            st.error(f"Full traceback: {traceback.format_exc()}")
 
         st.subheader('Trades')
         table_df = compute_trade_result(filtered_df)
@@ -815,18 +913,37 @@ if selected_file:
     with symbol_tab:
         st.session_state.current_tab = 'Symbols'
         try:
+            st.write("=" * 50)
+            st.write("🚀 **STARTING SYMBOL ANALYSIS**")
+            
             # Convert PnL to numeric to handle string values from CSV uploads
             symbol_df = filtered_df.copy()
+            st.write(f"📊 Initial symbol DataFrame shape: {symbol_df.shape}")
+            st.write(f"📊 Initial PnL dtype: {symbol_df['pnl'].dtype}")
+            
             symbol_df['pnl'] = pd.to_numeric(symbol_df['pnl'], errors='coerce')
+            st.write(f"📊 After pd.to_numeric - PnL dtype: {symbol_df['pnl'].dtype}")
+            
+            # Check for problematic values
+            nan_count = symbol_df['pnl'].isna().sum()
+            inf_count = np.isinf(symbol_df['pnl']).sum()
+            st.write(f"📊 PnL issues - NaN: {nan_count}, Infinite: {inf_count}")
+            
             symbol_df = symbol_df.dropna(subset=['pnl'])
+            st.write(f"📊 After dropna - shape: {symbol_df.shape}")
             
             # Remove infinite values
             symbol_df = symbol_df[np.isfinite(symbol_df['pnl'])]
+            st.write(f"📊 After infinite filtering - shape: {symbol_df.shape}")
 
             if not symbol_df.empty:
+                st.write("🧮 Computing symbol statistics...")
                 grp = symbol_df.groupby('symbol')
+                st.write(f"📊 Number of symbols: {len(grp)}")
                 
-                # Calculate stats with error handling
+                # Calculate stats with error handling and debugging
+                st.write(f"📊 PnL dtype before aggregations: {symbol_df['pnl'].dtype}")
+                
                 symbol_stats = pd.DataFrame({
                     'Trades': grp['pnl'].count(),
                     'Total PnL': grp['pnl'].sum(),
@@ -834,14 +951,29 @@ if selected_file:
                     'Win Rate %': grp['pnl'].apply(lambda x: (x > 0).mean() * 100),
                 })
                 
+                st.write(f"📊 Symbol stats dtypes: {dict(symbol_stats.dtypes)}")
+                
+                # Check for issues in computed stats
+                for col in symbol_stats.columns:
+                    nan_count = symbol_stats[col].isna().sum()
+                    inf_count = np.isinf(symbol_stats[col]).sum() if pd.api.types.is_numeric_dtype(symbol_stats[col]) else 0
+                    st.write(f"📊 {col} issues - NaN: {nan_count}, Infinite: {inf_count}")
+                
                 # Clean the data - remove infinite and NaN values
                 symbol_stats = symbol_stats.replace([np.inf, -np.inf], np.nan).fillna(0)
+                st.write(f"📊 After cleaning - symbol stats shape: {symbol_stats.shape}")
                 
+                st.write("✅ Symbol analysis completed - displaying table")
                 st.dataframe(symbol_stats, use_container_width=True)
             else:
                 st.warning("⚠️ No valid PnL data found for symbol analysis.")
+                
+            st.write("✅ **SYMBOL ANALYSIS COMPLETED**")
+            
         except Exception as e:
-            st.error(f"Error analyzing symbols: {str(e)}")
+            st.error(f"❌ Error analyzing symbols: {str(e)}")
+            import traceback
+            st.error(f"Full traceback: {traceback.format_exc()}")
 
     with drawdown_tab:
         st.session_state.current_tab = 'Drawdowns'

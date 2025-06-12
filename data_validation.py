@@ -386,9 +386,21 @@ class DataValidator:
         # Remove rows where critical fields are all missing
         critical_fields = ['symbol', 'entry_price', 'exit_price', 'entry_time', 'exit_time']
 
+        # Only remove rows if they have missing data in critical fields
+        # But ensure we don't remove ALL rows
+        initial_rows = len(df)
+        
         for field in critical_fields:
             if field in df.columns:
+                rows_before = len(df)
                 df = df[df[field].notna()]
+                rows_after = len(df)
+                
+                # If this removal would empty the DataFrame, stop and return what we have
+                if rows_after == 0 and initial_rows > 0:
+                    # Restore the DataFrame to the previous state
+                    df = pd.DataFrame(df_data) if 'df_data' in locals() else df
+                    break
 
         return df
 

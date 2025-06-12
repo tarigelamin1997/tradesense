@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from typing import Dict
+import psutil
 from st_aggrid import AgGrid, GridUpdateMode
 from interactive_table import (
     compute_trade_result,
@@ -26,6 +27,44 @@ from analytics import (
 )
 from risk_tool import assess_risk
 from payment import PaymentGateway
+
+
+@st.cache_data
+def load_cached_trade_data(file_path_or_content):
+    """Cached version of trade data loading."""
+    if isinstance(file_path_or_content, str):
+        # File path
+        return load_trade_data(file_path_or_content)
+    else:
+        # File content - convert to string for hashing
+        return load_trade_data(file_path_or_content)
+
+
+@st.cache_data
+def process_trade_dataframe(df_hash, df_data):
+    """Cache expensive data processing operations."""
+    df = pd.DataFrame(df_data)
+    df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
+    df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+    df = df.dropna(subset=['entry_time', 'exit_time'])
+    return df
+
+
+@st.cache_data
+def compute_cached_analytics(filtered_df_hash, filtered_df_data):
+    """Cache all expensive analytics computations."""
+    filtered_df = pd.DataFrame(filtered_df_data)
+    filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+    filtered_df = filtered_df.dropna(subset=['pnl'])
+    
+    if filtered_df.empty:
+        return None
+    
+    return {
+        'stats': compute_basic_stats(filtered_df),
+        'perf': performance_over_time(filtered_df, freq='M'),
+        'kpis': calculate_kpis(filtered_df, commission_per_trade=3.5),
+    }
 
 
 def log_feedback(page: str, feedback: str) -> None:
@@ -360,6 +399,17 @@ theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=1)
 st.sidebar.header("Upload Trade History")
 st.sidebar.caption("We do not store or share your uploaded trade data.")
 
+# Memory monitoring
+try:
+    memory_info = psutil.virtual_memory()
+    st.sidebar.metric(
+        "Memory Usage", 
+        f"{memory_info.percent:.1f}%",
+        help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
+    )
+except:
+    pass  # Gracefully handle if psutil not available
+
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)
 uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
@@ -375,7 +425,12 @@ importer = FuturesImporter()
 
 if selected_file:
     try:
-        df = load_trade_data(selected_file)
+        # Use cached data loading
+        if isinstance(selected_file, str):
+            df = load_cached_trade_data(selected_file)
+        else:
+            # For uploaded files, we need to cache based on content
+            df = load_cached_trade_data(selected_file)
     except Exception as e:
         st.error(
             "Failed to process file. Ensure it is a valid CSV or Excel file with the correct columns."
@@ -404,17 +459,11 @@ if selected_file:
             st.error(str(e))
             st.stop()
 
-    # Optimize data processing with minimal operations
+    # Optimize data processing with cached operations
     with st.spinner("Processing data..."):
-        # Cache datetime parsing
-        if 'entry_time' not in st.session_state or 'data_hash' not in st.session_state or st.session_state.data_hash != hash(df.to_string()):
-            df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
-            df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
-            df = df.dropna(subset=['entry_time', 'exit_time'])
-            st.session_state.data_hash = hash(df.to_string())
-            st.session_state.processed_df = df
-        else:
-            df = st.session_state.processed_df
+        # Use cached data processing
+        df_hash = hash(df.to_string())
+        df = process_trade_dataframe(df_hash, df.to_dict('records'))
 
         if df.empty:
             st.error("No valid rows remain after cleaning.")
@@ -471,33 +520,27 @@ if selected_file:
 
     st.divider()
 
-    # Cache expensive calculations
-    filter_key = f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}"
+    # Use cached expensive calculations
+    filtered_df_hash = hash(f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}")
+    
+    with st.spinner("Computing analytics..."):
+        filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+        filtered_df = filtered_df.dropna(subset=['pnl'])
 
-    if 'cached_calculations' not in st.session_state or st.session_state.get('filter_key') != filter_key:
-        with st.spinner("Computing analytics..."):
-            filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
-            filtered_df = filtered_df.dropna(subset=['pnl'])
+        if filtered_df.empty:
+            st.error("No valid trade data found after filtering.")
+            st.stop()
 
-            if filtered_df.empty:
-                st.error("No valid trade data found after filtering.")
-                st.stop()
-
-            # Cache all calculations
-            st.session_state.cached_calculations = {
-                'stats': compute_basic_stats(filtered_df),
-                'perf': performance_over_time(filtered_df, freq='M'),
-                'kpis': calculate_kpis(filtered_df, commission_per_trade=3.5),
-                'filtered_df': filtered_df
-            }
-            st.session_state.filter_key = filter_key
-
-    # Use cached values
-    cached = st.session_state.cached_calculations
-    stats = cached['stats']
-    perf = cached['perf']
-    kpis = cached['kpis']
-    filtered_df = cached['filtered_df']
+        # Use cached analytics computation
+        cached_results = compute_cached_analytics(filtered_df_hash, filtered_df.to_dict('records'))
+        
+        if cached_results is None:
+            st.error("No valid trade data found after filtering.")
+            st.stop()
+            
+        stats = cached_results['stats']
+        perf = cached_results['perf']
+        kpis = cached_results['kpis']
 
     st.subheader('📊 Key Performance Indicators')
     kpi_col1, kpi_col2, kpi_col3 = st.columns(3)

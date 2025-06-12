@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from typing import Union, IO, Any
+import streamlit as st
 
 
 def robust_read_csv(file: Union[str, IO[Any]]):
@@ -21,6 +22,7 @@ def robust_read_csv(file: Union[str, IO[Any]]):
     return pd.read_csv(file)
 
 
+@st.cache_data
 def load_trade_data(file: Union[str, IO[Any]]):
     """Load trade data from a file path or file-like object."""
     # If file is a string path

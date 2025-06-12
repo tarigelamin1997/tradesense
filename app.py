@@ -15,6 +15,7 @@ from fpdf import FPDF
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
 from data_import.utils import load_trade_data
+from data_validation import DataValidator, create_data_correction_interface
 from analytics import (
     compute_basic_stats,
     performance_over_time,
@@ -487,6 +488,32 @@ if selected_file:
             st.error(str(e))
             st.stop()
 
+    # Data Validation and Correction System
+    st.subheader("🔍 Data Quality Check")
+    
+    validator = DataValidator()
+    
+    # Quick quality check
+    with st.spinner("Checking data quality..."):
+        _, quick_report = validator.validate_and_clean_data(df, interactive=False)
+    
+    quality_score = quick_report['data_quality_score']
+    
+    # Show quality status
+    if quality_score >= 90:
+        st.success(f"✅ **Excellent Data Quality** ({quality_score:.1f}%) - Ready for analysis!")
+        show_validation = st.checkbox("🔧 Advanced Validation Options", value=False)
+    elif quality_score >= 70:
+        st.warning(f"⚠️ **Good Data Quality** ({quality_score:.1f}%) - Minor issues detected")
+        show_validation = st.checkbox("🔧 Review and Fix Issues", value=True)
+    else:
+        st.error(f"❌ **Data Quality Issues** ({quality_score:.1f}%) - Validation recommended")
+        show_validation = st.checkbox("🔧 Fix Data Issues (Recommended)", value=True)
+    
+    if show_validation:
+        df = create_data_correction_interface(df, validator)
+        st.success("✅ Data validation complete. Proceeding with analysis...")
+
     # Optimize data processing with cached operations
     with st.spinner("Processing data..."):
         # Use cached data processing
@@ -708,71 +735,120 @@ if selected_file:
 
         st.subheader('Equity Curve')
 
-        # Clean equity curve generation
+        # Enhanced equity curve generation with robust data cleaning
         try:
             equity_df = filtered_df.copy()
             
-            # More thorough data cleaning
+            # Step 1: Ultra-thorough data cleaning
+            original_rows = len(equity_df)
+            
+            # Clean PnL data with multiple validation layers
             equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
             equity_df = equity_df.dropna(subset=['pnl'])
-
-            # Remove infinite and extreme values
+            
+            # Remove infinite, NaN, and extreme values with multiple checks
             equity_df = equity_df[np.isfinite(equity_df['pnl'])]
+            equity_df = equity_df[~np.isinf(equity_df['pnl'])]
+            equity_df = equity_df[~np.isnan(equity_df['pnl'])]
             equity_df = equity_df[equity_df['pnl'] != np.inf]
             equity_df = equity_df[equity_df['pnl'] != -np.inf]
+            equity_df = equity_df[equity_df['pnl'] != float('inf')]
+            equity_df = equity_df[equity_df['pnl'] != float('-inf')]
             
-            # Remove extreme outliers that might cause display issues
-            if not equity_df.empty:
-                q99 = equity_df['pnl'].quantile(0.99)
-                q1 = equity_df['pnl'].quantile(0.01)
-                
-                # Only filter extreme outliers (beyond 99th percentile range)
-                extreme_threshold = abs(q99 - q1) * 10  # Allow values within 10x the IQR
-                equity_df = equity_df[abs(equity_df['pnl']) <= extreme_threshold]
-
-            # Clean exit_time
+            # Cap extreme values to prevent infinite accumulation
+            max_single_trade = 100000  # Cap single trade at $100k
+            equity_df['pnl'] = equity_df['pnl'].clip(-max_single_trade, max_single_trade)
+            
+            # Step 2: Clean and validate exit_time
             if 'exit_time' in equity_df.columns:
                 equity_df['exit_time'] = pd.to_datetime(equity_df['exit_time'], errors='coerce')
                 equity_df = equity_df.dropna(subset=['exit_time'])
                 
-                # Remove invalid dates
-                valid_date_mask = (equity_df['exit_time'] > pd.Timestamp('1970-01-01')) & (equity_df['exit_time'] < pd.Timestamp('2100-01-01'))
+                # Remove invalid dates with more strict validation
+                current_time = pd.Timestamp.now()
+                min_valid_date = pd.Timestamp('2000-01-01')
+                max_valid_date = current_time + pd.Timedelta(days=7)  # Allow up to 1 week in future
+                
+                valid_date_mask = (
+                    (equity_df['exit_time'] >= min_valid_date) & 
+                    (equity_df['exit_time'] <= max_valid_date) &
+                    (equity_df['exit_time'].notna())
+                )
                 equity_df = equity_df[valid_date_mask]
 
-            if not equity_df.empty and len(equity_df) >= 2:
+            # Step 3: Ensure we have valid data for charting
+            if equity_df.empty:
+                st.warning("⚠️ Unable to display equity curve: No valid trade data after cleaning")
+                st.info(f"Started with {original_rows} trades, all were removed during data cleaning")
+                st.info("**Common causes:** Invalid P&L values, missing dates, extreme outliers")
+            elif len(equity_df) < 2:
+                st.warning("⚠️ Unable to display equity curve: Need at least 2 valid trades")
+                st.info(f"Available trades after cleaning: {len(equity_df)} of {original_rows}")
+            else:
+                # Step 4: Sort and create cumulative PnL with additional safety
                 equity_df = equity_df.sort_values('exit_time')
-                equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
-
-                # Double-check cumulative PnL for infinite values
+                equity_df = equity_df.reset_index(drop=True)
+                
+                # Calculate cumulative PnL with overflow protection
+                running_total = 0
+                cumulative_values = []
+                
+                for pnl in equity_df['pnl']:
+                    running_total += pnl
+                    # Check for overflow/underflow
+                    if abs(running_total) > 1e10:  # 10 billion limit
+                        running_total = np.sign(running_total) * 1e10
+                    cumulative_values.append(running_total)
+                
+                equity_df['cumulative_pnl'] = cumulative_values
+                
+                # Final validation of cumulative values
                 equity_df = equity_df[np.isfinite(equity_df['cumulative_pnl'])]
-                equity_df = equity_df[equity_df['cumulative_pnl'] != np.inf]
-                equity_df = equity_df[equity_df['cumulative_pnl'] != -np.inf]
-
+                equity_df = equity_df[~np.isinf(equity_df['cumulative_pnl'])]
+                
                 if not equity_df.empty and len(equity_df) >= 2:
-                    # Create clean chart data
+                    # Step 5: Create chart data with additional safety measures
                     chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
-                    chart_data = chart_data[np.isfinite(chart_data)]
                     
-                    # Remove duplicate timestamps by keeping the last value
+                    # Remove any remaining infinite values
+                    chart_data = chart_data[np.isfinite(chart_data)]
+                    chart_data = chart_data[~np.isinf(chart_data)]
+                    
+                    # Handle duplicate timestamps by keeping the last value
                     chart_data = chart_data[~chart_data.index.duplicated(keep='last')]
-
-                    if len(chart_data) >= 2:
+                    
+                    # Ensure index is properly formatted datetime
+                    chart_data.index = pd.to_datetime(chart_data.index)
+                    
+                    # Final check before plotting
+                    if len(chart_data) >= 2 and chart_data.index.notna().all():
+                        # Display summary info
+                        starting_value = chart_data.iloc[0]
+                        ending_value = chart_data.iloc[-1]
+                        total_return = ending_value - starting_value
+                        
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("Starting P&L", f"${starting_value:,.2f}")
+                        col2.metric("Ending P&L", f"${ending_value:,.2f}")
+                        col3.metric("Total Return", f"${total_return:,.2f}")
+                        
+                        # Plot the equity curve
                         st.line_chart(chart_data, height=400)
+                        
+                        st.caption(f"📊 Equity curve based on {len(equity_df)} valid trades")
                     else:
-                        st.warning("⚠️ Unable to display equity curve: Insufficient data points after deduplication")
-                        st.info(f"Available data points: {len(chart_data)}")
+                        st.warning("⚠️ Unable to display equity curve: Invalid chart data after final validation")
+                        st.info(f"Chart data points: {len(chart_data)}")
                 else:
                     st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
-                    if not equity_df.empty:
-                        st.info(f"Data before cumulative calculation: {len(equity_df)} rows")
-            else:
-                st.warning("⚠️ Unable to display equity curve: Need at least 2 trades with valid data")
-                if not equity_df.empty:
-                    st.info(f"Available trades after cleaning: {len(equity_df)}")
+                    st.info(f"Trades before cumulative calculation: {len(equity_df)}")
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
-            logger.error(f"Equity curve error: {str(e)}")
+            st.info("**Troubleshooting:** Try using the data validation tool above to clean your data")
+            # Log the error for debugging
+            import traceback
+            st.expander("Technical Details").code(traceback.format_exc())
 
         st.subheader('Performance Over Time')
         try:

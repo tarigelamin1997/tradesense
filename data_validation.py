@@ -38,6 +38,13 @@ class DataValidator:
         issues = []
 
         try:
+            # Verify critical columns exist before processing
+            critical_processing_cols = ['entry_time', 'exit_time', 'symbol']
+            missing_critical = [col for col in critical_processing_cols if col not in df.columns]
+            if missing_critical:
+                issues.append(f"Critical columns missing before validation: {', '.join(missing_critical)}")
+                return df, self._generate_report(df, corrections, issues, original_rows)
+
             # Fix data types first
             df, type_corrections = self._fix_data_types(df)
             corrections.extend(type_corrections)
@@ -59,6 +66,11 @@ class DataValidator:
             final_missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
             if final_missing:
                 issues.append(f"Required columns lost during validation: {', '.join(final_missing)}")
+                
+            # Extra check for critical processing columns
+            critical_missing = [col for col in critical_processing_cols if col not in df.columns]
+            if critical_missing:
+                issues.append(f"Critical processing columns lost: {', '.join(critical_missing)}")
 
         except Exception as e:
             issues.append(f"Critical validation error: {str(e)}")
@@ -320,7 +332,7 @@ class DataValidator:
     def _remove_invalid_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """Remove rows that are completely invalid."""
         # Remove rows where critical fields are all missing
-        critical_fields = ['symbol', 'entry_price', 'exit_price']
+        critical_fields = ['symbol', 'entry_price', 'exit_price', 'entry_time', 'exit_time']
 
         for field in critical_fields:
             if field in df.columns:

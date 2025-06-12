@@ -50,12 +50,32 @@ def process_trade_dataframe(df_hash, df_data):
     required_cols = ['entry_time', 'exit_time']
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
-        raise ValueError(f"Missing required columns: {missing_cols}")
+        # Provide detailed error information
+        available_cols = list(df.columns)
+        error_msg = f"Missing required columns: {missing_cols}. Available columns: {available_cols}"
+        raise ValueError(error_msg)
     
-    df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
-    df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
-    df = df.dropna(subset=['entry_time', 'exit_time'])
-    return df
+    # Process datetime columns with error handling
+    try:
+        df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
+        df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+        
+        # Remove rows with invalid datetime data
+        original_rows = len(df)
+        df = df.dropna(subset=['entry_time', 'exit_time'])
+        
+        if len(df) == 0:
+            raise ValueError("No valid datetime data found after processing")
+        
+        if len(df) < original_rows:
+            # Log information about removed rows
+            removed_rows = original_rows - len(df)
+            print(f"Removed {removed_rows} rows with invalid datetime data")
+        
+        return df
+        
+    except Exception as e:
+        raise ValueError(f"Error processing datetime columns: {str(e)}")
 
 
 @st.cache_data
@@ -495,6 +515,15 @@ if selected_file:
             st.error(str(e))
             st.stop()
 
+    # Ensure required columns exist before any processing
+    required_cols_for_processing = ['entry_time', 'exit_time']
+    missing_critical_cols = [col for col in required_cols_for_processing if col not in df.columns]
+    
+    if missing_critical_cols:
+        st.error(f"❌ **Critical columns missing:** {', '.join(missing_critical_cols)}")
+        st.error("Please ensure your data contains the required datetime columns.")
+        st.stop()
+
     # Data Validation and Correction System
     st.subheader("🔍 Data Quality Check")
     
@@ -523,11 +552,11 @@ if selected_file:
 
     # Optimize data processing with cached operations
     with st.spinner("Processing data..."):
-        # Validate that required columns exist before processing
-        missing_cols = [col for col in ['entry_time', 'exit_time', 'pnl'] if col not in df.columns]
+        # Final validation that required columns still exist after data validation
+        missing_cols = [col for col in ['entry_time', 'exit_time'] if col not in df.columns]
         if missing_cols:
-            st.error(f"❌ Missing required columns after data validation: {', '.join(missing_cols)}")
-            st.error("Please check your data format and try again.")
+            st.error(f"❌ Required columns lost during validation: {', '.join(missing_cols)}")
+            st.error("Data validation process removed required columns. Please review your data.")
             st.stop()
         
         # Use cached data processing

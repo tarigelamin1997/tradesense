@@ -5,13 +5,7 @@ modules = ["python-3.12"]
 channel = "stable-24_05"
 
 [run]
-command = "pip install -r core-requirements.txt && streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"
-
-[packager]
-afterInstall = "python -c 'print(\"Dependencies cached\")'"
-
-[interpreter]
-timeout = 60
+command = "pip install -r core-requirements.txt && streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
 
 [deployment]
 run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"]
@@ -21,7 +15,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Run with Caching"
+runButton = "Clean Run"
 
 [[workflows.workflow]]
 name = "Run"
@@ -56,3 +50,16 @@ args = "pip install -r core-requirements.txt"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"
+
+[[workflows.workflow]]
+name = "Clean Run"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install --no-cache-dir -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"

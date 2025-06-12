@@ -824,31 +824,45 @@ if selected_file:
         streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
         streak_col2.metric('Max Loss Streak', f"{streak['max_loss_streak']} trades")
 
-        rolling = rolling_metrics(filtered_df, window=10)
-        try:
-            if not rolling.empty and len(rolling) >= 2:
-                st.subheader('Rolling Metrics (10 trades)')
+        # Rolling metrics with better validation
+        min_trades_for_rolling = 15  # Need more than the window size for meaningful analysis
+        if len(filtered_df) >= min_trades_for_rolling:
+            rolling = rolling_metrics(filtered_df, window=10)
+            try:
+                if not rolling.empty and len(rolling) >= 2:
+                    st.subheader('Rolling Metrics (10-trade windows)')
+                    
+                    # Display metrics summary
+                    col_r1, col_r2, col_r3 = st.columns(3)
+                    col_r1.metric('Rolling Periods', len(rolling))
+                    if not rolling.empty:
+                        avg_win_rate = rolling['win_rate'].mean()
+                        avg_pf = rolling['profit_factor'].mean()
+                        col_r2.metric('Avg Rolling Win Rate', f"{avg_win_rate:.1f}%")
+                        col_r3.metric('Avg Rolling PF', f"{avg_pf:.2f}")
 
-                # Clean chart data more thoroughly
-                chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']].copy()
+                    # Clean chart data
+                    chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']].copy()
 
-                # Replace infinite values and clean data
-                chart_data = chart_data.replace([np.inf, -np.inf], np.nan)
-                chart_data = chart_data.dropna()
+                    # Replace infinite values and clean data
+                    chart_data = chart_data.replace([np.inf, -np.inf], np.nan)
+                    chart_data = chart_data.dropna()
 
-                # Additional safety checks for extreme values
-                chart_data = chart_data[(chart_data['win_rate'] >= 0) & (chart_data['win_rate'] <= 100)]
-                chart_data = chart_data[(chart_data['profit_factor'] >= 0) & (chart_data['profit_factor'] <= 100)]
-
-                if not chart_data.empty and len(chart_data) >= 2:
-                    st.line_chart(chart_data)
+                    if not chart_data.empty and len(chart_data) >= 2:
+                        st.line_chart(chart_data, height=400)
+                    else:
+                        st.warning("⚠️ Unable to display rolling metrics chart: Insufficient valid data points after cleaning")
+                        st.info(f"Rolling data generated: {len(rolling)} periods, Chart data after cleaning: {len(chart_data)}")
                 else:
-                    st.warning("⚠️ Unable to display rolling metrics chart: Insufficient valid data points after cleaning")
-            else:
-                st.warning("⚠️ Unable to display rolling metrics: Need more trades for rolling window analysis")
+                    st.warning(f"⚠️ Unable to generate rolling metrics: Generated {len(rolling)} rolling periods (need at least 2)")
+                    st.info(f"Available trades: {len(filtered_df)}, Required for rolling analysis: {min_trades_for_rolling}")
 
-        except Exception as e:
-            st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
+            except Exception as e:
+                st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
+                logger.error(f"Rolling metrics error: {str(e)}")
+        else:
+            st.info(f"ℹ️ Rolling metrics analysis requires at least {min_trades_for_rolling} trades. You have {len(filtered_df)} trades.")
+            st.caption("Add more trades to see rolling performance analysis over 10-trade windows.")
 
         st.subheader('Trades')
         table_df = compute_trade_result(filtered_df)

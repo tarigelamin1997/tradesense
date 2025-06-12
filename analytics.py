@@ -6,6 +6,124 @@ import streamlit as st
 
 @st.cache_data
 def compute_basic_stats(df: pd.DataFrame) -> dict:
+    """Compute basic trading statistics efficiently."""
+    default_stats = {
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "expectancy": 0.0,
+        "max_drawdown": 0.0,
+        "sharpe_ratio": 0.0,
+        "average_win": 0.0,
+        "average_loss": 0.0,
+        "reward_risk": 0.0,
+        "equity_curve": pd.Series([0.0, 0.0], index=pd.date_range(start=pd.Timestamp.now(), periods=2, freq='D'))
+    }
+    
+    try:
+        if df.empty:
+            return default_stats
+
+        # Clean PnL data
+        df = clean_numeric_data(df, 'pnl')
+        if df.empty:
+            return default_stats
+
+        # Calculate basic metrics
+        total_trades = len(df)
+        wins = df[df["pnl"] > 0]
+        losses = df[df["pnl"] <= 0]
+        
+        win_rate = (len(wins) / total_trades * 100) if total_trades > 0 else 0.0
+        
+        # Safe average calculations
+        avg_win = float(wins["pnl"].mean()) if not wins.empty else 0.0
+        avg_loss = float(losses["pnl"].mean()) if not losses.empty else 0.0
+        
+        # Ensure finite values
+        avg_win = avg_win if np.isfinite(avg_win) else 0.0
+        avg_loss = avg_loss if np.isfinite(avg_loss) else 0.0
+        
+        # Calculate reward/risk ratio
+        reward_risk = abs(avg_win / avg_loss) if avg_loss != 0 else 0.0
+        reward_risk = min(reward_risk, 999.99) if np.isfinite(reward_risk) else 0.0
+
+        # Calculate expectancy
+        expectancy = (win_rate / 100) * avg_win + (1 - win_rate / 100) * avg_loss
+        expectancy = expectancy if np.isfinite(expectancy) else 0.0
+
+        # Calculate profit factor
+        wins_sum = float(wins["pnl"].sum()) if not wins.empty else 0.0
+        losses_sum = float(abs(losses["pnl"].sum())) if not losses.empty else 0.0
+        
+        if losses_sum != 0 and np.isfinite(losses_sum) and np.isfinite(wins_sum):
+            profit_factor = min(wins_sum / losses_sum, 999.99)
+        else:
+            profit_factor = 0.0 if wins_sum == 0 else 999.99
+
+        # Create equity curve
+        try:
+            if 'exit_time' in df.columns:
+                df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+                df = df.dropna(subset=['exit_time'])
+                if not df.empty:
+                    df_sorted = df.sort_values('exit_time')
+                    equity_curve = df_sorted['pnl'].cumsum()
+                    equity_curve.index = df_sorted['exit_time']
+                    equity_curve = equity_curve[np.isfinite(equity_curve)]
+                else:
+                    equity_curve = pd.Series([0.0, 0.0], index=pd.date_range(start=pd.Timestamp.now(), periods=2, freq='D'))
+            else:
+                equity_curve = df['pnl'].cumsum()
+                equity_curve = equity_curve[np.isfinite(equity_curve)]
+                
+            # Ensure minimum 2 points
+            if len(equity_curve) < 2:
+                equity_curve = pd.Series([0.0, 0.0], index=pd.date_range(start=pd.Timestamp.now(), periods=2, freq='D'))
+                
+        except Exception:
+            equity_curve = pd.Series([0.0, 0.0], index=pd.date_range(start=pd.Timestamp.now(), periods=2, freq='D'))
+
+        # Calculate max drawdown
+        try:
+            if len(equity_curve) > 1:
+                drawdown = equity_curve.cummax() - equity_curve
+                max_drawdown = float(drawdown.max()) if not drawdown.empty else 0.0
+                max_drawdown = max_drawdown if np.isfinite(max_drawdown) else 0.0
+            else:
+                max_drawdown = 0.0
+        except Exception:
+            max_drawdown = 0.0
+
+        # Calculate Sharpe ratio
+        try:
+            if len(equity_curve) > 1:
+                returns = equity_curve.pct_change().dropna()
+                returns = returns[np.isfinite(returns)]
+                if not returns.empty and returns.std() != 0:
+                    sharpe = float(np.sqrt(252) * returns.mean() / returns.std())
+                    sharpe = max(min(sharpe, 10.0), -10.0) if np.isfinite(sharpe) else 0.0
+                else:
+                    sharpe = 0.0
+            else:
+                sharpe = 0.0
+        except Exception:
+            sharpe = 0.0
+
+        return {
+            "win_rate": win_rate,
+            "average_win": avg_win,
+            "average_loss": avg_loss,
+            "reward_risk": reward_risk,
+            "expectancy": expectancy,
+            "max_drawdown": max_drawdown,
+            "profit_factor": profit_factor,
+            "sharpe_ratio": sharpe,
+            "equity_curve": equity_curve,
+        }
+
+    except Exception:
+        return default_stats
 
 
 def clean_numeric_data(df: pd.DataFrame, column: str) -> pd.DataFrame:
@@ -235,6 +353,39 @@ def median_results(df: pd.DataFrame) -> dict:
 
     except Exception:
         return {"median_pnl": 0.0, "median_win": 0.0, "median_loss": 0.0}
+
+
+def debug_dataframe(df: pd.DataFrame, context: str):
+    """Debug helper to show DataFrame info."""
+    st.write(f"🔍 **{context}**:")
+    st.write(f"   - Shape: {df.shape}")
+    st.write(f"   - Columns: {list(df.columns)}")
+    if not df.empty:
+        st.write(f"   - Sample data: {df.head(2).to_dict()}")
+
+
+def force_numeric_and_validate(df: pd.DataFrame, column: str, context: str) -> pd.DataFrame:
+    """Force numeric conversion and validate data."""
+    st.write(f"🔄 **{context}** - Converting {column} to numeric")
+    
+    if df.empty or column not in df.columns:
+        st.warning(f"⚠️ {context}: Column '{column}' missing or DataFrame empty")
+        return pd.DataFrame()
+    
+    df = df.copy()
+    original_dtype = df[column].dtype
+    st.write(f"   - Original {column} dtype: {original_dtype}")
+    
+    # Force numeric conversion
+    df[column] = pd.to_numeric(df[column], errors='coerce')
+    df = df.dropna(subset=[column])
+    df = df[np.isfinite(df[column])]
+    
+    new_dtype = df[column].dtype if not df.empty else "N/A"
+    st.write(f"   - After conversion {column} dtype: {new_dtype}")
+    st.write(f"   - Rows after cleaning: {len(df)}")
+    
+    return df
 
 
 def profit_factor_by_symbol(df: pd.DataFrame) -> pd.DataFrame:

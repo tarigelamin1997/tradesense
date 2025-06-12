@@ -82,12 +82,12 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
 def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     """Return P&L and win rate aggregated by period."""
     if df.empty:
-        # Return a DataFrame with one default row to prevent infinite extent warnings
+        # Return a DataFrame with valid date range to prevent infinite extent warnings
         default_date = pd.Timestamp.now().normalize()
         return pd.DataFrame({
-            "period": [default_date], 
-            "pnl": [0.0], 
-            "win_rate": [0.0]
+            "period": [default_date, default_date + pd.Timedelta(days=1)], 
+            "pnl": [0.0, 0.0], 
+            "win_rate": [0.0, 0.0]
         })
 
     df = df.copy()
@@ -96,12 +96,12 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     df = df.dropna(subset=["pnl", "exit_time"])
     
     if df.empty:
-        # Return a DataFrame with one default row to prevent infinite extent warnings
+        # Return a DataFrame with valid date range to prevent infinite extent warnings
         default_date = pd.Timestamp.now().normalize()
         return pd.DataFrame({
-            "period": [default_date], 
-            "pnl": [0.0], 
-            "win_rate": [0.0]
+            "period": [default_date, default_date + pd.Timedelta(days=1)], 
+            "pnl": [0.0, 0.0], 
+            "win_rate": [0.0, 0.0]
         })
 
     try:
@@ -123,14 +123,20 @@ def performance_over_time(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
             "pnl": pnl_values, 
             "win_rate": wr_values
         })
+        
+        # Ensure we have at least 2 data points for proper charting
+        if len(result) == 1:
+            result = pd.concat([result, result.copy()], ignore_index=True)
+            result.iloc[1, result.columns.get_loc('period')] = result.iloc[0]['period'] + pd.Timedelta(days=1)
+        
         return result
     except Exception:
-        # Return a DataFrame with one default row to prevent infinite extent warnings
+        # Return a DataFrame with valid date range to prevent infinite extent warnings
         default_date = pd.Timestamp.now().normalize()
         return pd.DataFrame({
-            "period": [default_date], 
-            "pnl": [0.0], 
-            "win_rate": [0.0]
+            "period": [default_date, default_date + pd.Timedelta(days=1)], 
+            "pnl": [0.0, 0.0], 
+            "win_rate": [0.0, 0.0]
         })
 
 
@@ -246,11 +252,11 @@ def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
     df = df.dropna(subset=["pnl"])
     
     if df.empty or len(df) < window:
-        # Return a DataFrame with one default row to prevent infinite extent warnings
+        # Return a DataFrame with valid range to prevent infinite extent warnings
         return pd.DataFrame({
-            "end_index": [0.0],
-            "win_rate": [0.0],
-            "profit_factor": [0.0]
+            "end_index": [0.0, 1.0],
+            "win_rate": [0.0, 0.0],
+            "profit_factor": [0.0, 0.0]
         })
     
     results = []
@@ -269,7 +275,15 @@ def rolling_metrics(df: pd.DataFrame, window: int = 30) -> pd.DataFrame:
                 "profit_factor": profit_factor,
             }
         )
-    return pd.DataFrame(results)
+    
+    result_df = pd.DataFrame(results)
+    
+    # Ensure we have at least 2 data points for proper charting
+    if len(result_df) == 1:
+        result_df = pd.concat([result_df, result_df.copy()], ignore_index=True)
+        result_df.iloc[1, result_df.columns.get_loc('end_index')] = result_df.iloc[0]['end_index'] + 1
+    
+    return result_df
 
 
 def calculate_kpis(df: pd.DataFrame, commission_per_trade: float = 3.5) -> dict:

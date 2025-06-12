@@ -45,6 +45,13 @@ def load_cached_trade_data(file_path_or_content):
 def process_trade_dataframe(df_hash, df_data):
     """Cache expensive data processing operations."""
     df = pd.DataFrame(df_data)
+    
+    # Check if required columns exist
+    required_cols = ['entry_time', 'exit_time']
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+    
     df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
     df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
     df = df.dropna(subset=['entry_time', 'exit_time'])
@@ -516,6 +523,13 @@ if selected_file:
 
     # Optimize data processing with cached operations
     with st.spinner("Processing data..."):
+        # Validate that required columns exist before processing
+        missing_cols = [col for col in ['entry_time', 'exit_time', 'pnl'] if col not in df.columns]
+        if missing_cols:
+            st.error(f"❌ Missing required columns after data validation: {', '.join(missing_cols)}")
+            st.error("Please check your data format and try again.")
+            st.stop()
+        
         # Use cached data processing
         df_hash = hash(df.to_string())
         df = process_trade_dataframe(df_hash, df.to_dict('records'))

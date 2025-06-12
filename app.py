@@ -630,19 +630,48 @@ if selected_file:
 
         st.subheader('Equity Curve')
 
-        # Simplified equity curve
-        equity_df = filtered_df.sort_values('exit_time')
-        equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
-
-        # Simple line chart without heavy styling
-        st.line_chart(
-            equity_df.set_index('exit_time')['cumulative_pnl'], 
-            height=400
-        )
+        # Simplified equity curve with validation
+        try:
+            equity_df = filtered_df.copy()
+            equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
+            equity_df = equity_df.dropna(subset=['pnl'])
+            
+            if not equity_df.empty and len(equity_df) >= 2:
+                equity_df = equity_df.sort_values('exit_time')
+                equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
+                
+                # Check for finite values only
+                if equity_df['cumulative_pnl'].isna().all() or not equity_df['cumulative_pnl'].apply(np.isfinite).any():
+                    st.warning("⚠️ Unable to display equity curve: Invalid P&L data")
+                else:
+                    # Simple line chart without heavy styling
+                    chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
+                    chart_data = chart_data[np.isfinite(chart_data)]  # Remove infinite values
+                    
+                    if not chart_data.empty and len(chart_data) >= 2:
+                        st.line_chart(chart_data, height=400)
+                    else:
+                        st.warning("⚠️ Unable to display equity curve: Insufficient valid data points")
+            else:
+                st.warning("⚠️ Unable to display equity curve: Need at least 2 trades with valid P&L data")
+        except Exception as e:
+            st.error(f"Error generating equity curve: {str(e)}")
 
         st.subheader('Performance Over Time')
-        if not perf.empty:
-            st.bar_chart(perf.set_index('period')['pnl'])
+        try:
+            if not perf.empty and len(perf) >= 2:
+                # Validate data before charting
+                chart_data = perf.set_index('period')['pnl']
+                chart_data = chart_data[np.isfinite(chart_data)]  # Remove infinite values
+                
+                if not chart_data.empty and len(chart_data) >= 2:
+                    st.bar_chart(chart_data)
+                else:
+                    st.warning("⚠️ Unable to display performance chart: Insufficient valid data points")
+            else:
+                st.warning("⚠️ Unable to display performance chart: Need at least 2 periods of data")
+        except Exception as e:
+            st.error(f"Error generating performance chart: {str(e)}")
 
         med = median_results(filtered_df)
         st.subheader('Median Results')
@@ -661,9 +690,24 @@ if selected_file:
         st.write(streak)
 
         rolling = rolling_metrics(filtered_df, window=10)
-        if not rolling.empty:
-            st.subheader('Rolling Metrics (10 trades)')
-            st.line_chart(rolling.set_index('end_index')[['win_rate', 'profit_factor']])
+        try:
+            if not rolling.empty and len(rolling) >= 2:
+                st.subheader('Rolling Metrics (10 trades)')
+                
+                # Validate data before charting
+                chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']]
+                
+                # Remove infinite and NaN values
+                chart_data = chart_data.replace([np.inf, -np.inf], np.nan).dropna()
+                
+                if not chart_data.empty and len(chart_data) >= 2:
+                    st.line_chart(chart_data)
+                else:
+                    st.warning("⚠️ Unable to display rolling metrics chart: Insufficient valid data points")
+            else:
+                st.warning("⚠️ Unable to display rolling metrics: Need more trades for rolling window analysis")
+        except Exception as e:
+            st.error(f"Error generating rolling metrics chart: {str(e)}")
 
         st.subheader('Trades')
         table_df = compute_trade_result(filtered_df)
@@ -770,22 +814,34 @@ if selected_file:
 
     with symbol_tab:
         st.session_state.current_tab = 'Symbols'
-        # Convert PnL to numeric to handle string values from CSV uploads
-        symbol_df = filtered_df.copy()
-        symbol_df['pnl'] = pd.to_numeric(symbol_df['pnl'], errors='coerce')
-        symbol_df = symbol_df.dropna(subset=['pnl'])
+        try:
+            # Convert PnL to numeric to handle string values from CSV uploads
+            symbol_df = filtered_df.copy()
+            symbol_df['pnl'] = pd.to_numeric(symbol_df['pnl'], errors='coerce')
+            symbol_df = symbol_df.dropna(subset=['pnl'])
+            
+            # Remove infinite values
+            symbol_df = symbol_df[np.isfinite(symbol_df['pnl'])]
 
-        if not symbol_df.empty:
-            grp = symbol_df.groupby('symbol')
-            symbol_stats = pd.DataFrame({
-                'Trades': grp['pnl'].count(),
-                'Total PnL': grp['pnl'].sum(),
-                'Avg PnL': grp['pnl'].mean(),
-                'Win Rate %': grp['pnl'].apply(lambda x: (x > 0).mean() * 100),
-            })
-            st.dataframe(symbol_stats, use_container_width=True)
-        else:
-            st.warning("No valid PnL data found for symbol analysis.")
+            if not symbol_df.empty:
+                grp = symbol_df.groupby('symbol')
+                
+                # Calculate stats with error handling
+                symbol_stats = pd.DataFrame({
+                    'Trades': grp['pnl'].count(),
+                    'Total PnL': grp['pnl'].sum(),
+                    'Avg PnL': grp['pnl'].mean(),
+                    'Win Rate %': grp['pnl'].apply(lambda x: (x > 0).mean() * 100),
+                })
+                
+                # Clean the data - remove infinite and NaN values
+                symbol_stats = symbol_stats.replace([np.inf, -np.inf], np.nan).fillna(0)
+                
+                st.dataframe(symbol_stats, use_container_width=True)
+            else:
+                st.warning("⚠️ No valid PnL data found for symbol analysis.")
+        except Exception as e:
+            st.error(f"Error analyzing symbols: {str(e)}")
 
     with drawdown_tab:
         st.session_state.current_tab = 'Drawdowns'

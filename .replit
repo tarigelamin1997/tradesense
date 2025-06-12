@@ -1,20 +1,15 @@
+
 modules = ["python-3.12"]
-run = "streamlit run app.py"
 
 [nix]
 channel = "stable-24_05"
-packages = ["glibcLocales"]
 
 [deployment]
-run = ["sh", "-c", "streamlit run app.py"]
+run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"]
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
 
 [workflows]
 runButton = "Run"
@@ -26,4 +21,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableXsrfProtection=false"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=true --server.enableXsrfProtection=false --server.fileWatcherType=none"

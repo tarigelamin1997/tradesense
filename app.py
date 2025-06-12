@@ -56,10 +56,10 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
     filtered_df = pd.DataFrame(filtered_df_data)
     filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
     filtered_df = filtered_df.dropna(subset=['pnl'])
-    
+
     if filtered_df.empty:
         return None
-    
+
     return {
         'stats': compute_basic_stats(filtered_df),
         'perf': performance_over_time(filtered_df, freq='M'),
@@ -522,7 +522,7 @@ if selected_file:
 
     # Use cached expensive calculations
     filtered_df_hash = hash(f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}")
-    
+
     with st.spinner("Computing analytics..."):
         filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
         filtered_df = filtered_df.dropna(subset=['pnl'])
@@ -533,11 +533,11 @@ if selected_file:
 
         # Use cached analytics computation
         cached_results = compute_cached_analytics(filtered_df_hash, filtered_df.to_dict('records'))
-        
+
         if cached_results is None:
             st.error("No valid trade data found after filtering.")
             st.stop()
-            
+
         stats = cached_results['stats']
         perf = cached_results['perf']
         kpis = cached_results['kpis']
@@ -679,14 +679,14 @@ if selected_file:
             equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
             equity_df = equity_df.dropna(subset=['pnl'])
             equity_df = equity_df[np.isfinite(equity_df['pnl'])]
-            
+
             if not equity_df.empty and len(equity_df) >= 2:
                 equity_df = equity_df.sort_values('exit_time')
                 equity_df['cumulative_pnl'] = equity_df['pnl'].cumsum()
-                
+
                 # Remove infinite values from cumulative PnL
                 equity_df = equity_df[np.isfinite(equity_df['cumulative_pnl'])]
-                
+
                 if not equity_df.empty and len(equity_df) >= 2:
                     chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
                     if chart_data.index.dtype.kind in 'Mm' and len(chart_data) >= 2:
@@ -697,7 +697,7 @@ if selected_file:
                     st.warning("⚠️ Unable to display equity curve: Insufficient valid data points")
             else:
                 st.warning("⚠️ Unable to display equity curve: Need at least 2 trades with valid P&L data")
-                
+
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
 
@@ -706,14 +706,14 @@ if selected_file:
             if not perf.empty and len(perf) >= 2:
                 chart_data = perf.set_index('period')['pnl']
                 chart_data = chart_data[np.isfinite(chart_data)]  # Remove infinite values
-                
+
                 if not chart_data.empty and len(chart_data) >= 2:
                     st.bar_chart(chart_data)
                 else:
                     st.warning("⚠️ Unable to display performance chart: Insufficient valid data points")
             else:
                 st.warning("⚠️ Unable to display performance chart: Need at least 2 periods of data")
-                
+
         except Exception as e:
             st.error(f"❌ Error generating performance chart: {str(e)}")
 
@@ -737,18 +737,18 @@ if selected_file:
         try:
             if not rolling.empty and len(rolling) >= 2:
                 st.subheader('Rolling Metrics (10 trades)')
-                
+
                 # Clean chart data
                 chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']]
                 chart_data = chart_data.replace([np.inf, -np.inf], np.nan).dropna()
-                
+
                 if not chart_data.empty and len(chart_data) >= 2:
                     st.line_chart(chart_data)
                 else:
                     st.warning("⚠️ Unable to display rolling metrics chart: Insufficient valid data points")
             else:
                 st.warning("⚠️ Unable to display rolling metrics: Need more trades for rolling window analysis")
-                
+
         except Exception as e:
             st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
 
@@ -866,20 +866,20 @@ if selected_file:
 
             if not symbol_df.empty:
                 grp = symbol_df.groupby('symbol')
-                
+
                 symbol_stats = pd.DataFrame({
                     'Trades': grp['pnl'].count(),
                     'Total PnL': grp['pnl'].sum(),
                     'Avg PnL': grp['pnl'].mean(),
                     'Win Rate %': grp['pnl'].apply(lambda x: (x > 0).mean() * 100),
                 })
-                
+
                 # Clean the data - remove infinite and NaN values
                 symbol_stats = symbol_stats.replace([np.inf, -np.inf], np.nan).fillna(0)
                 st.dataframe(symbol_stats, use_container_width=True)
             else:
                 st.warning("⚠️ No valid PnL data found for symbol analysis.")
-                
+
         except Exception as e:
             st.error(f"❌ Error analyzing symbols: {str(e)}")
 

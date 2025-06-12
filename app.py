@@ -111,7 +111,7 @@ def generate_pdf(stats: Dict[str, float], risk: Dict[str, float]) -> bytes:
         pdf.cell(0, 10, f"{k}: {v}", ln=1)
     for k, v in risk.items():
         pdf.cell(0, 10, f"{k}: {v}", ln=1)
-    
+
     # Handle fpdf2 output properly
     try:
         output = pdf.output()
@@ -574,10 +574,10 @@ if selected_file:
         kpis = cached_results['kpis']
 
     st.subheader('📊 Key Performance Indicators')
-    
+
     # Import formatting functions
     from analytics import format_currency, format_percentage, format_number
-    
+
     kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
 
     kpi_col1.metric(
@@ -713,7 +713,7 @@ if selected_file:
             equity_df = filtered_df.copy()
             equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
             equity_df = equity_df.dropna(subset=['pnl'])
-            
+
             # Remove infinite and NaN values more thoroughly
             equity_df = equity_df[np.isfinite(equity_df['pnl'])]
             equity_df = equity_df[equity_df['pnl'] != np.inf]
@@ -732,7 +732,7 @@ if selected_file:
                     # Reset index to ensure proper time series
                     chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
                     chart_data = chart_data[np.isfinite(chart_data)]
-                    
+
                     if len(chart_data) >= 2 and chart_data.index.dtype.kind in 'Mm':
                         st.line_chart(chart_data, height=400)
                     else:
@@ -755,7 +755,7 @@ if selected_file:
                 clean_perf = clean_perf[np.isfinite(clean_perf['pnl'])]
                 clean_perf = clean_perf[clean_perf['pnl'] != np.inf]
                 clean_perf = clean_perf[clean_perf['pnl'] != -np.inf]
-                
+
                 if not clean_perf.empty and len(clean_perf) >= 2:
                     chart_data = clean_perf.set_index('period')['pnl']
                     st.bar_chart(chart_data)
@@ -769,7 +769,7 @@ if selected_file:
 
         med = median_results(filtered_df)
         st.subheader('Median Results')
-        
+
         med_col1, med_col2, med_col3 = st.columns(3)
         med_col1.metric('Median P&L', format_currency(med['median_pnl']))
         med_col2.metric('Median Win', format_currency(med['median_win']))
@@ -781,7 +781,7 @@ if selected_file:
 
         duration = trade_duration_stats(filtered_df)
         st.subheader('Trade Duration Analysis')
-        
+
         dur_col1, dur_col2, dur_col3, dur_col4 = st.columns(4)
         dur_col1.metric('Average Duration', f"{format_number(duration['average_minutes'], 0)} min")
         dur_col2.metric('Shortest Trade', f"{format_number(duration['min_minutes'], 0)} min")
@@ -790,7 +790,7 @@ if selected_file:
 
         streak = max_streaks(filtered_df)
         st.subheader('Streak Analysis')
-        
+
         streak_col1, streak_col2 = st.columns(2)
         streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
         streak_col2.metric('Max Loss Streak', f"{streak['max_loss_streak']} trades")
@@ -802,11 +802,11 @@ if selected_file:
 
                 # Clean chart data more thoroughly
                 chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']].copy()
-                
+
                 # Replace infinite values and clean data
                 chart_data = chart_data.replace([np.inf, -np.inf], np.nan)
                 chart_data = chart_data.dropna()
-                
+
                 # Additional safety checks for extreme values
                 chart_data = chart_data[(chart_data['win_rate'] >= 0) & (chart_data['win_rate'] <= 100)]
                 chart_data = chart_data[(chart_data['profit_factor'] >= 0) & (chart_data['profit_factor'] <= 100)]
@@ -1079,45 +1079,45 @@ if selected_file:
 
     # External CSV Upload Section
     st.subheader('📂 Import External CSV Trades')
-    
+
     with st.expander("Import CSV Trade Data", expanded=False):
         st.write("Upload a CSV file with your trade history to merge with existing data.")
-        
+
         external_csv = st.file_uploader(
             "Choose CSV file", 
             type=['csv'], 
             key="external_csv_upload",
             help="Upload CSV with columns: symbol, entry_time, exit_time, entry_price, exit_price, qty, direction, pnl, trade_type, broker"
         )
-        
+
         if external_csv is not None:
             try:
                 # Load and validate external CSV
                 external_df = pd.read_csv(external_csv)
-                
+
                 st.write(f"📊 **File loaded:** {len(external_df)} rows found")
-                
+
                 # Perform data quality analysis first
                 quality_report = importer.validate_data_quality(external_df)
-                
+
                 if quality_report['issues']:
                     st.error("**🚨 Critical Data Issues Found:**")
                     for issue in quality_report['issues']:
                         st.error(f"• {issue}")
                     st.stop()
-                
+
                 if quality_report['warnings']:
                     st.warning("**⚠️ Data Quality Warnings:**")
                     for warning in quality_report['warnings']:
                         st.warning(f"• {warning}")
-                    
+
                     estimated_valid = quality_report['valid_rows']
                     total_rows = quality_report['total_rows']
                     if estimated_valid < total_rows:
                         st.info(f"📈 **Estimated valid trades after cleaning:** {estimated_valid} of {total_rows} ({(estimated_valid/total_rows*100):.1f}%)")
-                
+
                 st.write("**Column validation:**")
-                
+
                 # Check for required columns
                 missing_cols = []
                 for col in REQUIRED_COLUMNS:
@@ -1126,18 +1126,18 @@ if selected_file:
                     else:
                         st.error(f"❌ {col} - Missing")
                         missing_cols.append(col)
-                
+
                 if missing_cols:
                     st.warning(f"**Missing required columns:** {', '.join(missing_cols)}")
                     st.write("**Available columns in your file:**")
                     st.write(list(external_df.columns))
-                    
+
                     # Allow column mapping
                     st.write("**Map your columns to required format:**")
                     column_mapping = {}
-                    
+
                     map_col1, map_col2 = st.columns(2)
-                    
+
                     with map_col1:
                         for i, req_col in enumerate(missing_cols[:5]):  # First 5 missing
                             column_mapping[req_col] = st.selectbox(
@@ -1145,7 +1145,7 @@ if selected_file:
                                 options=[""] + list(external_df.columns),
                                 key=f"map_{req_col}"
                             )
-                    
+
                     with map_col2:
                         for i, req_col in enumerate(missing_cols[5:]):  # Remaining missing
                             column_mapping[req_col] = st.selectbox(
@@ -1153,14 +1153,14 @@ if selected_file:
                                 options=[""] + list(external_df.columns),
                                 key=f"map_{req_col}"
                             )
-                    
+
                     # Apply column mapping
                     if st.button("Apply Column Mapping", key="apply_mapping"):
                         if all(mapping for mapping in column_mapping.values()):
                             try:
                                 # Rename columns based on mapping
                                 external_df = external_df.rename(columns={v: k for k, v in column_mapping.items() if v})
-                                
+
                                 # Recheck validation
                                 if importer.validate_columns(external_df):
                                     st.success("✅ Column mapping successful!")
@@ -1172,32 +1172,32 @@ if selected_file:
                                 st.error(f"Error applying mapping: {str(e)}")
                         else:
                             st.warning("Please map all missing columns before proceeding.")
-                
+
                 # If validation passes, proceed with data processing
                 if not missing_cols:
                     # Clean and standardize external data
                     try:
                         # Store original row count for reporting
                         original_rows = len(external_df)
-                        
+
                         # Keep only required columns plus optional ones
                         columns_to_keep = REQUIRED_COLUMNS.copy()
                         if 'tags' in external_df.columns:
                             columns_to_keep.append('tags')
                         if 'notes' in external_df.columns:
                             columns_to_keep.append('notes')
-                        
+
                         external_df = external_df[[col for col in columns_to_keep if col in external_df.columns]]
-                        
+
                         # Add missing optional columns
                         if 'tags' not in external_df.columns:
                             external_df['tags'] = ''
                         if 'notes' not in external_df.columns:
                             external_df['notes'] = ''
-                        
+
                         # Data quality check and cleaning
                         st.write("**🔍 Data Quality Analysis:**")
-                        
+
                         # Check for missing values in required columns
                         missing_data_report = []
                         for col in REQUIRED_COLUMNS:
@@ -1207,17 +1207,17 @@ if selected_file:
                                 total_missing = null_count + empty_count
                                 if total_missing > 0:
                                     missing_data_report.append(f"• {col}: {total_missing} missing values ({(total_missing/len(external_df)*100):.1f}%)")
-                        
+
                         if missing_data_report:
                             st.warning("**⚠️ Found missing data:**")
                             for report in missing_data_report:
                                 st.write(report)
                         else:
                             st.success("✅ No missing data detected in required columns")
-                        
+
                         # Clean and validate data step by step
                         cleaning_steps = []
-                        
+
                         # 1. Clean symbol column
                         if 'symbol' in external_df.columns:
                             before_symbol = len(external_df)
@@ -1226,22 +1226,22 @@ if selected_file:
                             after_symbol = len(external_df)
                             if before_symbol != after_symbol:
                                 cleaning_steps.append(f"Removed {before_symbol - after_symbol} rows with missing symbols")
-                        
+
                         # 2. Process and validate dates
                         if 'entry_time' in external_df.columns and 'exit_time' in external_df.columns:
                             before_dates = len(external_df)
                             external_df['entry_time'] = pd.to_datetime(external_df['entry_time'], errors='coerce')
                             external_df['exit_time'] = pd.to_datetime(external_df['exit_time'], errors='coerce')
                             external_df = external_df.dropna(subset=['entry_time', 'exit_time'])
-                            
+
                             # Remove trades where exit time is before entry time
                             invalid_dates = external_df['exit_time'] <= external_df['entry_time']
                             external_df = external_df[~invalid_dates]
                             after_dates = len(external_df)
-                            
+
                             if before_dates != after_dates:
                                 cleaning_steps.append(f"Removed {before_dates - after_dates} rows with invalid dates")
-                        
+
                         # 3. Clean price data
                         price_columns = ['entry_price', 'exit_price']
                         for col in price_columns:
@@ -1252,7 +1252,7 @@ if selected_file:
                                 after_price = len(external_df)
                                 if before_price != after_price:
                                     cleaning_steps.append(f"Removed {before_price - after_price} rows with invalid {col}")
-                        
+
                         # 4. Clean quantity data
                         if 'qty' in external_df.columns:
                             before_qty = len(external_df)
@@ -1261,7 +1261,7 @@ if selected_file:
                             after_qty = len(external_df)
                             if before_qty != after_qty:
                                 cleaning_steps.append(f"Removed {before_qty - after_qty} rows with invalid quantity")
-                        
+
                         # 5. Validate direction
                         if 'direction' in external_df.columns:
                             before_direction = len(external_df)
@@ -1273,7 +1273,7 @@ if selected_file:
                             after_direction = len(external_df)
                             if before_direction != after_direction:
                                 cleaning_steps.append(f"Removed {before_direction - after_direction} rows with invalid direction")
-                        
+
                         # 6. Clean PnL data (if present, otherwise calculate it)
                         if 'pnl' in external_df.columns:
                             before_pnl = len(external_df)
@@ -1292,23 +1292,23 @@ if selected_file:
                                         return (row['exit_price'] - row['entry_price']) * row['qty']
                                     else:  # short
                                         return (row['entry_price'] - row['exit_price']) * row['qty']
-                                
+
                                 external_df['pnl'] = external_df.apply(calculate_pnl, axis=1)
                                 cleaning_steps.append("Calculated P&L from price and quantity data")
-                        
+
                         # 7. Fill missing optional fields with defaults
                         if 'trade_type' not in external_df.columns or external_df['trade_type'].isna().all():
                             external_df['trade_type'] = 'manual'
                             cleaning_steps.append("Set trade_type to 'manual' for missing values")
-                        
+
                         if 'broker' not in external_df.columns or external_df['broker'].isna().all():
                             external_df['broker'] = 'imported'
                             cleaning_steps.append("Set broker to 'imported' for missing values")
-                        
+
                         # Report cleaning results
                         final_rows = len(external_df)
                         rows_removed = original_rows - final_rows
-                        
+
                         if rows_removed > 0:
                             st.warning(f"⚠️ **Data Cleaning Results:** Removed {rows_removed} of {original_rows} rows ({(rows_removed/original_rows*100):.1f}%)")
                             if cleaning_steps:
@@ -1317,7 +1317,7 @@ if selected_file:
                                     st.write(f"• {step}")
                         else:
                             st.success("✅ **All data passed validation** - No rows removed")
-                        
+
                         if final_rows == 0:
                             st.error("❌ **No valid trades remaining after data cleaning**")
                             st.error("**Common issues to check:**")
@@ -1325,18 +1325,18 @@ if selected_file:
                             st.error("• Verify prices and quantities are positive numbers")
                             st.error("• Check that direction is 'long', 'short', 'buy', or 'sell'")
                             st.error("• Make sure entry_time is before exit_time")
-                            return
-                        
+                            st.stop()
+
                         st.success(f"✅ **Data cleaned:** {final_rows} valid trades ready for import")
-                        
+
                         # Show preview with data quality indicators
                         st.write("**Preview of cleaned data:**")
                         preview_df = external_df.head(10).copy()
-                        
+
                         # Add data quality indicators to preview
                         if len(preview_df) > 0:
                             st.dataframe(preview_df, use_container_width=True)
-                            
+
                             # Show data types for verification
                             with st.expander("📋 Data Types Verification"):
                                 st.write("**Column data types after cleaning:**")
@@ -1348,54 +1348,54 @@ if selected_file:
                                         elif col in ['entry_price', 'exit_price', 'qty', 'pnl']:
                                             dtype_info += f" (Valid numbers: {external_df[col].notna().sum()})"
                                         st.write(dtype_info)
-                        
+
                         # Merge with existing data
                         if st.button("🔄 Merge with Existing Trades", key="merge_data", type="primary"):
                             try:
                                 # Create a unique identifier for duplicate detection
                                 def create_trade_id(row):
                                     return f"{row['symbol']}_{row['entry_time']}_{row['exit_time']}_{row['entry_price']}_{row['exit_price']}"
-                                
+
                                 # Add IDs to both dataframes
                                 external_df['trade_id'] = external_df.apply(create_trade_id, axis=1)
                                 df['trade_id'] = df.apply(create_trade_id, axis=1)
-                                
+
                                 # Find duplicates
                                 duplicates = external_df[external_df['trade_id'].isin(df['trade_id'])]
                                 unique_external = external_df[~external_df['trade_id'].isin(df['trade_id'])]
-                                
+
                                 if len(duplicates) > 0:
                                     st.warning(f"⚠️ Found {len(duplicates)} duplicate trades (will be skipped)")
                                     with st.expander("View Duplicates"):
                                         st.dataframe(duplicates[['symbol', 'entry_time', 'exit_time', 'pnl']], use_container_width=True)
-                                
+
                                 if len(unique_external) > 0:
                                     # Merge unique trades
                                     merged_df = pd.concat([df.drop('trade_id', axis=1), unique_external.drop('trade_id', axis=1)], ignore_index=True)
-                                    
+
                                     st.success(f"🎉 **Merge Complete!**")
                                     st.success(f"• Added {len(unique_external)} new trades")
                                     st.success(f"• Skipped {len(duplicates)} duplicates") 
                                     st.success(f"• Total trades: {len(merged_df)}")
-                                    
+
                                     # Save merged data to session state to trigger re-analysis
                                     st.session_state['merged_df'] = merged_df
                                     st.session_state['data_updated'] = True
-                                    
+
                                     st.info("🔄 **Page will refresh to show updated analytics...**")
                                     st.rerun()
-                                    
+
                                 else:
                                     st.warning("❌ No new trades to add (all were duplicates)")
-                                    
+
                             except Exception as e:
                                 st.error(f"❌ Error during merge: {str(e)}")
                                 st.error("Please check your data format and try again.")
-                        
+
                     except Exception as e:
                         st.error(f"❌ Error processing external data: {str(e)}")
                         st.write("Please check your CSV format and data types.")
-                        
+
             except Exception as e:
                 st.error(f"❌ Error loading CSV file: {str(e)}")
                 st.write("Please ensure your file is a valid CSV format.")

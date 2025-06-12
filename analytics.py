@@ -321,7 +321,8 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
     """Calculate rolling metrics over a specified window."""
     log_debug_info("rolling_metrics input", f"df shape: {df.shape}, window: {window}")
 
-    if df.empty or len(df) < window:
+    if df.empty:
+        log_debug_info("rolling_metrics", "Empty dataframe")
         return pd.DataFrame()
 
     df = df.copy()
@@ -333,29 +334,61 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
     df = df[df['pnl'] != np.inf]
     df = df[df['pnl'] != -np.inf]
     
-    df = df.sort_values('exit_time' if 'exit_time' in df.columns else df.index)
+    # Remove extreme outliers that could cause infinite values
+    if not df.empty:
+        q99 = df['pnl'].quantile(0.99)
+        q1 = df['pnl'].quantile(0.01)
+        if np.isfinite(q99) and np.isfinite(q1):
+            # Cap values to prevent infinite calculations
+            max_val = abs(q99 - q1) * 100  # Allow up to 100x IQR
+            df = df[abs(df['pnl']) <= max_val]
+    
+    # Check again after cleaning
+    if df.empty or len(df) < window:
+        log_debug_info("rolling_metrics", f"Insufficient data after cleaning: {len(df)} < {window}")
+        return pd.DataFrame()
+    
+    # Sort by exit_time if available, otherwise by index
+    if 'exit_time' in df.columns:
+        df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+        df = df.dropna(subset=['exit_time'])
+        if df.empty or len(df) < window:
+            return pd.DataFrame()
+        df = df.sort_values('exit_time')
+    else:
+        df = df.sort_index()
 
     rolling_data = []
     for i in range(window, len(df) + 1):
         subset = df.iloc[i-window:i]
+        
+        # Ensure subset has valid data
+        if subset.empty or len(subset) != window:
+            continue
+            
         wins = (subset['pnl'] > 0).sum()
         win_rate = wins / window * 100
 
-        gross_profit = subset[subset['pnl'] > 0]['pnl'].sum()
-        gross_loss = abs(subset[subset['pnl'] < 0]['pnl'].sum())
+        winning_trades = subset[subset['pnl'] > 0]
+        losing_trades = subset[subset['pnl'] < 0]
         
-        # Prevent infinite profit factor
-        if gross_loss > 0 and np.isfinite(gross_loss) and gross_loss != 0:
+        gross_profit = winning_trades['pnl'].sum() if not winning_trades.empty else 0
+        gross_loss = abs(losing_trades['pnl'].sum()) if not losing_trades.empty else 0
+        
+        # Calculate profit factor with safety checks
+        if gross_loss > 0 and np.isfinite(gross_loss) and np.isfinite(gross_profit):
             profit_factor = gross_profit / gross_loss
-            # Cap profit factor to reasonable values
-            profit_factor = min(profit_factor, 100.0)
+            # Cap profit factor to reasonable values to prevent chart issues
+            profit_factor = min(max(profit_factor, 0), 50.0)  # Cap between 0 and 50
+        elif gross_profit > 0 and gross_loss == 0:
+            profit_factor = 10.0  # Reasonable upper bound for all-winning periods
         else:
-            profit_factor = 0.0 if gross_profit == 0 else 100.0
+            profit_factor = 0.0
 
-        # Ensure values are finite
-        if not np.isfinite(win_rate):
+        # Ensure values are finite and reasonable
+        if not np.isfinite(win_rate) or win_rate < 0 or win_rate > 100:
             win_rate = 0.0
-        if not np.isfinite(profit_factor):
+        if not np.isfinite(profit_factor) or profit_factor < 0:
             profit_factor = 0.0
 
         rolling_data.append({
@@ -364,8 +397,25 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
             'profit_factor': profit_factor
         })
 
+    if not rolling_data:
+        log_debug_info("rolling_metrics", "No valid rolling data generated")
+        return pd.DataFrame()
+
     result = pd.DataFrame(rolling_data)
-    log_debug_info("rolling_metrics result", result.to_dict())
+    
+    # Final validation of result data
+    if not result.empty:
+        # Remove any remaining infinite values
+        result = result.replace([np.inf, -np.inf], np.nan)
+        result = result.dropna()
+        
+        # Ensure reasonable ranges
+        if 'win_rate' in result.columns:
+            result['win_rate'] = result['win_rate'].clip(0, 100)
+        if 'profit_factor' in result.columns:
+            result['profit_factor'] = result['profit_factor'].clip(0, 50)
+    
+    log_debug_info("rolling_metrics result", f"Generated {len(result)} rolling periods")
     return result
 
 def calculate_kpis(df: pd.DataFrame, commission_per_trade: float = 3.5) -> dict:

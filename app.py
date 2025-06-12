@@ -1096,6 +1096,26 @@ if selected_file:
                 external_df = pd.read_csv(external_csv)
                 
                 st.write(f"📊 **File loaded:** {len(external_df)} rows found")
+                
+                # Perform data quality analysis first
+                quality_report = importer.validate_data_quality(external_df)
+                
+                if quality_report['issues']:
+                    st.error("**🚨 Critical Data Issues Found:**")
+                    for issue in quality_report['issues']:
+                        st.error(f"• {issue}")
+                    st.stop()
+                
+                if quality_report['warnings']:
+                    st.warning("**⚠️ Data Quality Warnings:**")
+                    for warning in quality_report['warnings']:
+                        st.warning(f"• {warning}")
+                    
+                    estimated_valid = quality_report['valid_rows']
+                    total_rows = quality_report['total_rows']
+                    if estimated_valid < total_rows:
+                        st.info(f"📈 **Estimated valid trades after cleaning:** {estimated_valid} of {total_rows} ({(estimated_valid/total_rows*100):.1f}%)")
+                
                 st.write("**Column validation:**")
                 
                 # Check for required columns
@@ -1157,6 +1177,9 @@ if selected_file:
                 if not missing_cols:
                     # Clean and standardize external data
                     try:
+                        # Store original row count for reporting
+                        original_rows = len(external_df)
+                        
                         # Keep only required columns plus optional ones
                         columns_to_keep = REQUIRED_COLUMNS.copy()
                         if 'tags' in external_df.columns:
@@ -1172,20 +1195,159 @@ if selected_file:
                         if 'notes' not in external_df.columns:
                             external_df['notes'] = ''
                         
-                        # Process dates
-                        external_df['entry_time'] = pd.to_datetime(external_df['entry_time'], errors='coerce')
-                        external_df['exit_time'] = pd.to_datetime(external_df['exit_time'], errors='coerce')
-                        external_df = external_df.dropna(subset=['entry_time', 'exit_time'])
+                        # Data quality check and cleaning
+                        st.write("**🔍 Data Quality Analysis:**")
                         
-                        # Clean PnL data
-                        external_df['pnl'] = pd.to_numeric(external_df['pnl'], errors='coerce')
-                        external_df = external_df.dropna(subset=['pnl'])
+                        # Check for missing values in required columns
+                        missing_data_report = []
+                        for col in REQUIRED_COLUMNS:
+                            if col in external_df.columns:
+                                null_count = external_df[col].isna().sum()
+                                empty_count = (external_df[col] == '').sum() if external_df[col].dtype == 'object' else 0
+                                total_missing = null_count + empty_count
+                                if total_missing > 0:
+                                    missing_data_report.append(f"• {col}: {total_missing} missing values ({(total_missing/len(external_df)*100):.1f}%)")
                         
-                        st.success(f"✅ **Data cleaned:** {len(external_df)} valid trades after processing")
+                        if missing_data_report:
+                            st.warning("**⚠️ Found missing data:**")
+                            for report in missing_data_report:
+                                st.write(report)
+                        else:
+                            st.success("✅ No missing data detected in required columns")
                         
-                        # Show preview
-                        st.write("**Preview of imported data:**")
-                        st.dataframe(external_df.head(), use_container_width=True)
+                        # Clean and validate data step by step
+                        cleaning_steps = []
+                        
+                        # 1. Clean symbol column
+                        if 'symbol' in external_df.columns:
+                            before_symbol = len(external_df)
+                            external_df = external_df[external_df['symbol'].notna() & (external_df['symbol'] != '')]
+                            external_df['symbol'] = external_df['symbol'].astype(str).str.strip().str.upper()
+                            after_symbol = len(external_df)
+                            if before_symbol != after_symbol:
+                                cleaning_steps.append(f"Removed {before_symbol - after_symbol} rows with missing symbols")
+                        
+                        # 2. Process and validate dates
+                        if 'entry_time' in external_df.columns and 'exit_time' in external_df.columns:
+                            before_dates = len(external_df)
+                            external_df['entry_time'] = pd.to_datetime(external_df['entry_time'], errors='coerce')
+                            external_df['exit_time'] = pd.to_datetime(external_df['exit_time'], errors='coerce')
+                            external_df = external_df.dropna(subset=['entry_time', 'exit_time'])
+                            
+                            # Remove trades where exit time is before entry time
+                            invalid_dates = external_df['exit_time'] <= external_df['entry_time']
+                            external_df = external_df[~invalid_dates]
+                            after_dates = len(external_df)
+                            
+                            if before_dates != after_dates:
+                                cleaning_steps.append(f"Removed {before_dates - after_dates} rows with invalid dates")
+                        
+                        # 3. Clean price data
+                        price_columns = ['entry_price', 'exit_price']
+                        for col in price_columns:
+                            if col in external_df.columns:
+                                before_price = len(external_df)
+                                external_df[col] = pd.to_numeric(external_df[col], errors='coerce')
+                                external_df = external_df[external_df[col] > 0]  # Prices must be positive
+                                after_price = len(external_df)
+                                if before_price != after_price:
+                                    cleaning_steps.append(f"Removed {before_price - after_price} rows with invalid {col}")
+                        
+                        # 4. Clean quantity data
+                        if 'qty' in external_df.columns:
+                            before_qty = len(external_df)
+                            external_df['qty'] = pd.to_numeric(external_df['qty'], errors='coerce')
+                            external_df = external_df[external_df['qty'] > 0]  # Quantity must be positive
+                            after_qty = len(external_df)
+                            if before_qty != after_qty:
+                                cleaning_steps.append(f"Removed {before_qty - after_qty} rows with invalid quantity")
+                        
+                        # 5. Validate direction
+                        if 'direction' in external_df.columns:
+                            before_direction = len(external_df)
+                            external_df['direction'] = external_df['direction'].astype(str).str.lower().str.strip()
+                            valid_directions = external_df['direction'].isin(['long', 'short', 'buy', 'sell'])
+                            external_df = external_df[valid_directions]
+                            # Standardize direction values
+                            external_df['direction'] = external_df['direction'].replace({'buy': 'long', 'sell': 'short'})
+                            after_direction = len(external_df)
+                            if before_direction != after_direction:
+                                cleaning_steps.append(f"Removed {before_direction - after_direction} rows with invalid direction")
+                        
+                        # 6. Clean PnL data (if present, otherwise calculate it)
+                        if 'pnl' in external_df.columns:
+                            before_pnl = len(external_df)
+                            external_df['pnl'] = pd.to_numeric(external_df['pnl'], errors='coerce')
+                            external_df = external_df.dropna(subset=['pnl'])
+                            # Remove infinite values
+                            external_df = external_df[np.isfinite(external_df['pnl'])]
+                            after_pnl = len(external_df)
+                            if before_pnl != after_pnl:
+                                cleaning_steps.append(f"Removed {before_pnl - after_pnl} rows with invalid P&L")
+                        else:
+                            # Calculate P&L if missing
+                            if all(col in external_df.columns for col in ['entry_price', 'exit_price', 'qty', 'direction']):
+                                def calculate_pnl(row):
+                                    if row['direction'] == 'long':
+                                        return (row['exit_price'] - row['entry_price']) * row['qty']
+                                    else:  # short
+                                        return (row['entry_price'] - row['exit_price']) * row['qty']
+                                
+                                external_df['pnl'] = external_df.apply(calculate_pnl, axis=1)
+                                cleaning_steps.append("Calculated P&L from price and quantity data")
+                        
+                        # 7. Fill missing optional fields with defaults
+                        if 'trade_type' not in external_df.columns or external_df['trade_type'].isna().all():
+                            external_df['trade_type'] = 'manual'
+                            cleaning_steps.append("Set trade_type to 'manual' for missing values")
+                        
+                        if 'broker' not in external_df.columns or external_df['broker'].isna().all():
+                            external_df['broker'] = 'imported'
+                            cleaning_steps.append("Set broker to 'imported' for missing values")
+                        
+                        # Report cleaning results
+                        final_rows = len(external_df)
+                        rows_removed = original_rows - final_rows
+                        
+                        if rows_removed > 0:
+                            st.warning(f"⚠️ **Data Cleaning Results:** Removed {rows_removed} of {original_rows} rows ({(rows_removed/original_rows*100):.1f}%)")
+                            if cleaning_steps:
+                                st.write("**Cleaning steps performed:**")
+                                for step in cleaning_steps:
+                                    st.write(f"• {step}")
+                        else:
+                            st.success("✅ **All data passed validation** - No rows removed")
+                        
+                        if final_rows == 0:
+                            st.error("❌ **No valid trades remaining after data cleaning**")
+                            st.error("**Common issues to check:**")
+                            st.error("• Ensure dates are in a recognizable format (YYYY-MM-DD or MM/DD/YYYY)")
+                            st.error("• Verify prices and quantities are positive numbers")
+                            st.error("• Check that direction is 'long', 'short', 'buy', or 'sell'")
+                            st.error("• Make sure entry_time is before exit_time")
+                            return
+                        
+                        st.success(f"✅ **Data cleaned:** {final_rows} valid trades ready for import")
+                        
+                        # Show preview with data quality indicators
+                        st.write("**Preview of cleaned data:**")
+                        preview_df = external_df.head(10).copy()
+                        
+                        # Add data quality indicators to preview
+                        if len(preview_df) > 0:
+                            st.dataframe(preview_df, use_container_width=True)
+                            
+                            # Show data types for verification
+                            with st.expander("📋 Data Types Verification"):
+                                st.write("**Column data types after cleaning:**")
+                                for col in external_df.columns:
+                                    if col in REQUIRED_COLUMNS:
+                                        dtype_info = f"• {col}: {external_df[col].dtype}"
+                                        if col in ['entry_time', 'exit_time']:
+                                            dtype_info += f" (Valid dates: {external_df[col].notna().sum()})"
+                                        elif col in ['entry_price', 'exit_price', 'qty', 'pnl']:
+                                            dtype_info += f" (Valid numbers: {external_df[col].notna().sum()})"
+                                        st.write(dtype_info)
                         
                         # Merge with existing data
                         if st.button("🔄 Merge with Existing Trades", key="merge_data", type="primary"):

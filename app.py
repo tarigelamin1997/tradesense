@@ -543,45 +543,49 @@ if selected_file:
         kpis = cached_results['kpis']
 
     st.subheader('📊 Key Performance Indicators')
+    
+    # Import formatting functions
+    from analytics import format_currency, format_percentage, format_number
+    
     kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
 
     kpi_col1.metric(
         label='Total Trades', 
-        value=f"{kpis['total_trades']:,}",
+        value=f"{kpis['total_trades']:,}" if kpis['total_trades'] > 0 else "–",
         help="Total number of completed trades"
     )
     kpi_col1.metric(
         label='Win Rate', 
-        value=f"{kpis['win_rate_percent']:.1f}%",
+        value=format_percentage(kpis['win_rate_percent']),
         help="Percentage of profitable trades"
     )
     kpi_col2.metric(
         label='Average R:R', 
-        value=f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞",
+        value=format_number(kpis['average_rr']) if kpis['average_rr'] != np.inf else "∞",
         help="Average reward-to-risk ratio"
     )
     kpi_col2.metric(
         label='Net P&L (After Commission)', 
-        value=f"${kpis['net_pnl_after_commission']:,.2f}",
-        delta=f"${kpis['gross_pnl'] - kpis['net_pnl_after_commission']:,.2f} commission",
-        help="Total profit/loss after $3.50 commission per trade"
+        value=format_currency(kpis['net_pnl_after_commission']),
+        delta=f"{format_currency(kpis['gross_pnl'] - kpis['net_pnl_after_commission'])} commission",
+        help="Total profit/loss after commission"
     )
     kpi_col3.metric(
         label='Best Trade', 
-        value=f"${kpis['max_single_trade_win']:,.2f}",
+        value=format_currency(kpis['max_single_trade_win']),
         help="Largest single winning trade"
     )
     kpi_col3.metric(
         label='Worst Trade', 
-        value=f"${kpis['max_single_trade_loss']:,.2f}",
+        value=format_currency(kpis['max_single_trade_loss']),
         help="Largest single losing trade"
     )
 
     # Show commission breakdown in expandable section
     with st.expander("💰 Commission Breakdown"):
         col_a, col_b, col_c = st.columns(3)
-        col_a.metric('Gross P&L', f"${kpis['gross_pnl']:,.2f}")
-        col_b.metric('Total Commission', f"${kpis['total_commission']:,.2f}")
+        col_a.metric('Gross P&L', format_currency(kpis['gross_pnl']))
+        col_b.metric('Total Commission', format_currency(kpis['total_commission']))
         col_c.metric('Commission per Trade', "$3.50")
 
     # Daily Loss Limit Section
@@ -609,16 +613,16 @@ if selected_file:
     violation_col1, violation_col2 = st.columns(2)
     violation_col1.metric(
         label='Daily Loss Limit Violations', 
-        value=f"{violation_days}",
+        value=f"{violation_days}" if violation_days >= 0 else "–",
         delta=f"out of {total_trading_days} trading days",
-        help=f"Days where net loss exceeded ${daily_loss_limit:,.2f}"
+        help=f"Days where net loss exceeded {format_currency(daily_loss_limit)}"
     )
 
     if violation_days > 0:
         violation_percentage = (violation_days / total_trading_days) * 100
         violation_col2.metric(
             label='Violation Rate', 
-            value=f"{violation_percentage:.1f}%",
+            value=format_percentage(violation_percentage),
             help="Percentage of trading days with losses exceeding limit"
         )
 
@@ -644,10 +648,10 @@ if selected_file:
         total_excess_loss = violation_details['excess_loss'].sum()
 
         viol_col1, viol_col2 = st.columns(2)
-        viol_col1.metric('Worst Day Loss', f"${worst_day_loss:,.2f}")
-        viol_col2.metric('Total Excess Loss', f"${total_excess_loss:,.2f}")
+        viol_col1.metric('Worst Day Loss', format_currency(worst_day_loss))
+        viol_col2.metric('Total Excess Loss', format_currency(total_excess_loss))
     else:
-        st.success(f"✅ No days exceeded the daily loss limit of ${daily_loss_limit:,.2f}")
+        st.success(f"✅ No days exceeded the daily loss limit of {format_currency(daily_loss_limit)}")
 
     st.divider()
 
@@ -664,12 +668,12 @@ if selected_file:
 
         st.subheader('Additional Performance Metrics')
         col1, col2, col3 = st.columns(3)
-        col1.metric('Win Rate %', f"{stats['win_rate']:.2f}")
-        col1.metric('Profit Factor', f"{stats['profit_factor']:.2f}")
-        col2.metric('Expectancy', f"{stats['expectancy']:.2f}")
-        col2.metric('Max Drawdown', f"{stats['max_drawdown']:.2f}")
-        col3.metric('Sharpe Ratio', f"{stats['sharpe_ratio']:.2f}")
-        col3.metric('Reward:Risk', f"{stats['reward_risk']:.2f}")
+        col1.metric('Win Rate', format_percentage(stats['win_rate']))
+        col1.metric('Profit Factor', format_number(stats['profit_factor']))
+        col2.metric('Expectancy', format_currency(stats['expectancy']))
+        col2.metric('Max Drawdown', format_currency(stats['max_drawdown']))
+        col3.metric('Sharpe Ratio', format_number(stats['sharpe_ratio']))
+        col3.metric('Reward:Risk', format_number(stats['reward_risk']))
 
         st.subheader('Equity Curve')
 
@@ -719,19 +723,31 @@ if selected_file:
 
         med = median_results(filtered_df)
         st.subheader('Median Results')
-        st.write(med)
+        
+        med_col1, med_col2, med_col3 = st.columns(3)
+        med_col1.metric('Median P&L', format_currency(med['median_pnl']))
+        med_col2.metric('Median Win', format_currency(med['median_win']))
+        med_col3.metric('Median Loss', format_currency(med['median_loss']))
 
         pf_sym = profit_factor_by_symbol(filtered_df)
         st.subheader('Profit Factor by Symbol')
         st.dataframe(pf_sym, use_container_width=True)
 
         duration = trade_duration_stats(filtered_df)
-        st.subheader('Trade Duration Stats (minutes)')
-        st.write(duration)
+        st.subheader('Trade Duration Analysis')
+        
+        dur_col1, dur_col2, dur_col3, dur_col4 = st.columns(4)
+        dur_col1.metric('Average Duration', f"{format_number(duration['average_minutes'], 0)} min")
+        dur_col2.metric('Shortest Trade', f"{format_number(duration['min_minutes'], 0)} min")
+        dur_col3.metric('Longest Trade', f"{format_number(duration['max_minutes'], 0)} min")
+        dur_col4.metric('Median Duration', f"{format_number(duration['median_minutes'], 0)} min")
 
         streak = max_streaks(filtered_df)
-        st.subheader('Max Streaks')
-        st.write(streak)
+        st.subheader('Streak Analysis')
+        
+        streak_col1, streak_col2 = st.columns(2)
+        streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
+        streak_col2.metric('Max Loss Streak', f"{streak['max_loss_streak']} trades")
 
         rolling = rolling_metrics(filtered_df, window=10)
         try:
@@ -869,13 +885,11 @@ if selected_file:
 
                 symbol_stats = pd.DataFrame({
                     'Trades': grp['pnl'].count(),
-                    'Total PnL': grp['pnl'].sum(),
-                    'Avg PnL': grp['pnl'].mean(),
-                    'Win Rate %': grp['pnl'].apply(lambda x: (x > 0).mean() * 100),
+                    'Total PnL': grp['pnl'].sum().apply(format_currency),
+                    'Avg PnL': grp['pnl'].mean().apply(format_currency),
+                    'Win Rate': grp['pnl'].apply(lambda x: format_percentage((x > 0).mean() * 100)),
                 })
 
-                # Clean the data - remove infinite and NaN values
-                symbol_stats = symbol_stats.replace([np.inf, -np.inf], np.nan).fillna(0)
                 st.dataframe(symbol_stats, use_container_width=True)
             else:
                 st.warning("⚠️ No valid PnL data found for symbol analysis.")

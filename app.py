@@ -402,7 +402,8 @@ if st.session_state.get('show_feedback_modal', False):
 # Onboarding message shown only on first load
 if "show_tour" not in st.session_state:
     st.session_state.show_tour = True
-if st.session_state.show_tour:
+
+if st.session_state.get("show_tour", True):
     with st.expander("Getting Started", expanded=True):
         st.markdown(
             "1. Upload a CSV/Excel file or use the sample data.\n"

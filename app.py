@@ -44,7 +44,15 @@ def load_cached_trade_data(file_path_or_content):
 @st.cache_data
 def process_trade_dataframe(df_hash, df_data):
     """Cache expensive data processing operations."""
+    # Safety check for empty data
+    if not df_data:
+        raise ValueError("No data provided for processing")
+    
     df = pd.DataFrame(df_data)
+    
+    # Safety check for empty DataFrame
+    if df.empty:
+        raise ValueError("Empty DataFrame after conversion from records")
     
     # Check if required columns exist
     required_cols = ['entry_time', 'exit_time']
@@ -571,25 +579,43 @@ if selected_file:
     if show_validation:
         try:
             validated_df = create_data_correction_interface(df, validator)
-            # Only update if validation didn't empty the DataFrame
-            if not validated_df.empty and len(validated_df.columns) > 0:
+            # Only update if validation didn't empty the DataFrame and has required columns
+            if (not validated_df.empty and 
+                len(validated_df.columns) > 0 and 
+                all(col in validated_df.columns for col in ['entry_time', 'exit_time'])):
                 df = validated_df
                 st.success("✅ Data validation complete. Proceeding with analysis...")
             else:
-                st.warning("⚠️ Validation resulted in empty DataFrame. Using original data.")
+                st.warning("⚠️ Validation resulted in empty DataFrame or missing required columns. Using original data.")
         except Exception as e:
             st.error(f"❌ **Validation error:** {str(e)}")
             st.warning("Using original data instead.")
 
-    # Final check before processing
+    # Critical data integrity checks before processing
     if df.empty:
-        st.error("❌ **Critical Error:** DataFrame is empty after validation!")
-        st.error("Cannot proceed with analysis.")
+        st.error("❌ **Critical Error:** DataFrame is empty!")
+        st.error("**Possible causes:**")
+        st.error("• No data was loaded from the file")
+        st.error("• Data validation removed all rows")
+        st.error("• File format is not compatible")
         st.stop()
     
     if len(df.columns) == 0:
         st.error("❌ **Critical Error:** DataFrame has no columns!")
-        st.error("Cannot proceed with analysis.")
+        st.error("**Possible causes:**")
+        st.error("• File is empty or corrupted")
+        st.error("• Data processing removed all columns")
+        st.stop()
+
+    # Check for required columns before processing
+    required_processing_cols = ['entry_time', 'exit_time']
+    missing_cols = [col for col in required_processing_cols if col not in df.columns]
+    
+    if missing_cols:
+        st.error(f"❌ **Required columns missing:** {', '.join(missing_cols)}")
+        st.error(f"**Available columns:** {list(df.columns)}")
+        st.error("**Required for analysis:** entry_time, exit_time")
+        st.error("Please ensure your data contains the required datetime columns.")
         st.stop()
         
     st.write(f"**Debug Info:** Final DataFrame shape before processing: {df.shape}")
@@ -597,20 +623,26 @@ if selected_file:
 
     # Optimize data processing with cached operations
     with st.spinner("Processing data..."):
-        # Final validation that required columns still exist after data validation
-        missing_cols = [col for col in ['entry_time', 'exit_time'] if col not in df.columns]
-        if missing_cols:
-            st.error(f"❌ Required columns lost during validation: {', '.join(missing_cols)}")
-            st.error("Data validation process removed required columns. Please review your data.")
-            st.stop()
-        
-        # Use cached data processing
-        df_hash = hash(df.to_string())
-        df = process_trade_dataframe(df_hash, df.to_dict('records'))
+        try:
+            # Use cached data processing with additional error handling
+            df_hash = hash(df.to_string())
+            df = process_trade_dataframe(df_hash, df.to_dict('records'))
 
-        if df.empty:
-            st.error("No valid rows remain after cleaning.")
-            st.stop()
+            if df.empty:
+                st.error("❌ **No valid rows remain after data processing.**")
+                st.error("**Common causes:**")
+                st.error("• Invalid datetime formats in entry_time/exit_time columns")
+                st.error("• All dates are outside valid range (2000-present)")
+                st.error("• Data contains only NaN or null values")
+                st.stop()
+        except ValueError as e:
+            if "Missing required columns" in str(e):
+                st.error("❌ **Column validation failed during processing**")
+                st.error(f"**Error:** {str(e)}")
+                st.error("**This usually means the DataFrame became corrupted during processing.**")
+                st.stop()
+            else:
+                raise e
 
     # Simplified filters
     st.header("📊 Filters")

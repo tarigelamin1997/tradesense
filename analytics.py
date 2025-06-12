@@ -270,6 +270,12 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
     df = df.copy()
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
+    
+    # Additional cleaning to prevent infinite values
+    df = df[np.isfinite(df['pnl'])]
+    df = df[df['pnl'] != np.inf]
+    df = df[df['pnl'] != -np.inf]
+    
     df = df.sort_values('exit_time' if 'exit_time' in df.columns else df.index)
 
     rolling_data = []
@@ -280,7 +286,20 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
 
         gross_profit = subset[subset['pnl'] > 0]['pnl'].sum()
         gross_loss = abs(subset[subset['pnl'] < 0]['pnl'].sum())
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else 0
+        
+        # Prevent infinite profit factor
+        if gross_loss > 0 and np.isfinite(gross_loss) and gross_loss != 0:
+            profit_factor = gross_profit / gross_loss
+            # Cap profit factor to reasonable values
+            profit_factor = min(profit_factor, 100.0)
+        else:
+            profit_factor = 0.0 if gross_profit == 0 else 100.0
+
+        # Ensure values are finite
+        if not np.isfinite(win_rate):
+            win_rate = 0.0
+        if not np.isfinite(profit_factor):
+            profit_factor = 0.0
 
         rolling_data.append({
             'end_index': i,

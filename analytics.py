@@ -177,7 +177,7 @@ def median_results(df: pd.DataFrame) -> dict:
     }
 
     log_debug_info("median_results", result)
-    return result result
+    return result
 
 def profit_factor_by_symbol(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate profit factor for each symbol."""
@@ -258,7 +258,7 @@ def max_streaks(df: pd.DataFrame) -> dict:
     }
 
     log_debug_info("max_streaks", result)
-    return result result
+    return result
 
 def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
     """Calculate rolling metrics over a specified window."""
@@ -299,7 +299,7 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
         if not np.isfinite(win_rate):
             win_rate = 0.0
         if not np.isfinite(profit_factor):
-            profit_factor = 0.0 = 0.0
+            profit_factor = 0.0
 
         rolling_data.append({
             'end_index': i,
@@ -309,7 +309,7 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
 
     result = pd.DataFrame(rolling_data)
     log_debug_info("rolling_metrics result", result.to_dict())
-    return result result
+    return result
 
 def calculate_kpis(df: pd.DataFrame, commission_per_trade: float = 3.5) -> dict:
     """Calculate key performance indicators."""
@@ -359,4 +359,4 @@ def calculate_kpis(df: pd.DataFrame, commission_per_trade: float = 3.5) -> dict:
     }
 
     log_debug_info("calculate_kpis result", kpis)
-    return kpisn kpis
+    return kpis

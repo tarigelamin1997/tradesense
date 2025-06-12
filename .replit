@@ -25,8 +25,8 @@ args = "pkill -f streamlit || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "sleep 1"
+args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=true --server.enableXsrfProtection=false --server.fileWatcherType=none"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"

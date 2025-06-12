@@ -447,12 +447,18 @@ importer = FuturesImporter()
 
 if selected_file:
     try:
-        # Use cached data loading
-        if isinstance(selected_file, str):
-            df = load_cached_trade_data(selected_file)
+        # Check if we have merged data from external CSV upload
+        if st.session_state.get('data_updated', False) and 'merged_df' in st.session_state:
+            df = st.session_state['merged_df']
+            st.session_state['data_updated'] = False  # Reset flag
+            st.info(f"📊 **Using merged dataset:** {len(df)} total trades")
         else:
-            # For uploaded files, we need to cache based on content
-            df = load_cached_trade_data(selected_file)
+            # Use cached data loading
+            if isinstance(selected_file, str):
+                df = load_cached_trade_data(selected_file)
+            else:
+                # For uploaded files, we need to cache based on content
+                df = load_cached_trade_data(selected_file)
     except Exception as e:
         st.error(
             "Failed to process file. Ensure it is a valid CSV or Excel file with the correct columns."
@@ -537,8 +543,11 @@ if selected_file:
         brokers = st.sidebar.multiselect('Broker', options=df['broker'].unique().tolist(), default=df['broker'].unique().tolist())
         filtered_df = filtered_df[filtered_df['broker'].isin(brokers)]
 
-    # Show filter results
-    st.info(f"📈 Showing {len(filtered_df)} of {len(df)} total trades after applying filters")
+    # Show filter results and merged data notification
+    if st.session_state.get('merged_df') is not None:
+        st.success(f"🔄 **Analytics Updated:** Showing {len(filtered_df)} of {len(df)} total trades (including imported data)")
+    else:
+        st.info(f"📈 Showing {len(filtered_df)} of {len(df)} total trades after applying filters")
 
     st.divider()
 
@@ -1067,6 +1076,167 @@ if selected_file:
     if risk:
         pdf_bytes = generate_pdf(stats, risk)
         st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
+
+    # External CSV Upload Section
+    st.subheader('📂 Import External CSV Trades')
+    
+    with st.expander("Import CSV Trade Data", expanded=False):
+        st.write("Upload a CSV file with your trade history to merge with existing data.")
+        
+        external_csv = st.file_uploader(
+            "Choose CSV file", 
+            type=['csv'], 
+            key="external_csv_upload",
+            help="Upload CSV with columns: symbol, entry_time, exit_time, entry_price, exit_price, qty, direction, pnl, trade_type, broker"
+        )
+        
+        if external_csv is not None:
+            try:
+                # Load and validate external CSV
+                external_df = pd.read_csv(external_csv)
+                
+                st.write(f"📊 **File loaded:** {len(external_df)} rows found")
+                st.write("**Column validation:**")
+                
+                # Check for required columns
+                missing_cols = []
+                for col in REQUIRED_COLUMNS:
+                    if col in external_df.columns:
+                        st.success(f"✅ {col}")
+                    else:
+                        st.error(f"❌ {col} - Missing")
+                        missing_cols.append(col)
+                
+                if missing_cols:
+                    st.warning(f"**Missing required columns:** {', '.join(missing_cols)}")
+                    st.write("**Available columns in your file:**")
+                    st.write(list(external_df.columns))
+                    
+                    # Allow column mapping
+                    st.write("**Map your columns to required format:**")
+                    column_mapping = {}
+                    
+                    map_col1, map_col2 = st.columns(2)
+                    
+                    with map_col1:
+                        for i, req_col in enumerate(missing_cols[:5]):  # First 5 missing
+                            column_mapping[req_col] = st.selectbox(
+                                f"Map '{req_col}' to:", 
+                                options=[""] + list(external_df.columns),
+                                key=f"map_{req_col}"
+                            )
+                    
+                    with map_col2:
+                        for i, req_col in enumerate(missing_cols[5:]):  # Remaining missing
+                            column_mapping[req_col] = st.selectbox(
+                                f"Map '{req_col}' to:", 
+                                options=[""] + list(external_df.columns),
+                                key=f"map_{req_col}"
+                            )
+                    
+                    # Apply column mapping
+                    if st.button("Apply Column Mapping", key="apply_mapping"):
+                        if all(mapping for mapping in column_mapping.values()):
+                            try:
+                                # Rename columns based on mapping
+                                external_df = external_df.rename(columns={v: k for k, v in column_mapping.items() if v})
+                                
+                                # Recheck validation
+                                if importer.validate_columns(external_df):
+                                    st.success("✅ Column mapping successful!")
+                                    missing_cols = []  # Clear missing columns
+                                else:
+                                    still_missing = [col for col in REQUIRED_COLUMNS if col not in external_df.columns]
+                                    st.error(f"❌ Still missing: {', '.join(still_missing)}")
+                            except Exception as e:
+                                st.error(f"Error applying mapping: {str(e)}")
+                        else:
+                            st.warning("Please map all missing columns before proceeding.")
+                
+                # If validation passes, proceed with data processing
+                if not missing_cols:
+                    # Clean and standardize external data
+                    try:
+                        # Keep only required columns plus optional ones
+                        columns_to_keep = REQUIRED_COLUMNS.copy()
+                        if 'tags' in external_df.columns:
+                            columns_to_keep.append('tags')
+                        if 'notes' in external_df.columns:
+                            columns_to_keep.append('notes')
+                        
+                        external_df = external_df[[col for col in columns_to_keep if col in external_df.columns]]
+                        
+                        # Add missing optional columns
+                        if 'tags' not in external_df.columns:
+                            external_df['tags'] = ''
+                        if 'notes' not in external_df.columns:
+                            external_df['notes'] = ''
+                        
+                        # Process dates
+                        external_df['entry_time'] = pd.to_datetime(external_df['entry_time'], errors='coerce')
+                        external_df['exit_time'] = pd.to_datetime(external_df['exit_time'], errors='coerce')
+                        external_df = external_df.dropna(subset=['entry_time', 'exit_time'])
+                        
+                        # Clean PnL data
+                        external_df['pnl'] = pd.to_numeric(external_df['pnl'], errors='coerce')
+                        external_df = external_df.dropna(subset=['pnl'])
+                        
+                        st.success(f"✅ **Data cleaned:** {len(external_df)} valid trades after processing")
+                        
+                        # Show preview
+                        st.write("**Preview of imported data:**")
+                        st.dataframe(external_df.head(), use_container_width=True)
+                        
+                        # Merge with existing data
+                        if st.button("🔄 Merge with Existing Trades", key="merge_data", type="primary"):
+                            try:
+                                # Create a unique identifier for duplicate detection
+                                def create_trade_id(row):
+                                    return f"{row['symbol']}_{row['entry_time']}_{row['exit_time']}_{row['entry_price']}_{row['exit_price']}"
+                                
+                                # Add IDs to both dataframes
+                                external_df['trade_id'] = external_df.apply(create_trade_id, axis=1)
+                                df['trade_id'] = df.apply(create_trade_id, axis=1)
+                                
+                                # Find duplicates
+                                duplicates = external_df[external_df['trade_id'].isin(df['trade_id'])]
+                                unique_external = external_df[~external_df['trade_id'].isin(df['trade_id'])]
+                                
+                                if len(duplicates) > 0:
+                                    st.warning(f"⚠️ Found {len(duplicates)} duplicate trades (will be skipped)")
+                                    with st.expander("View Duplicates"):
+                                        st.dataframe(duplicates[['symbol', 'entry_time', 'exit_time', 'pnl']], use_container_width=True)
+                                
+                                if len(unique_external) > 0:
+                                    # Merge unique trades
+                                    merged_df = pd.concat([df.drop('trade_id', axis=1), unique_external.drop('trade_id', axis=1)], ignore_index=True)
+                                    
+                                    st.success(f"🎉 **Merge Complete!**")
+                                    st.success(f"• Added {len(unique_external)} new trades")
+                                    st.success(f"• Skipped {len(duplicates)} duplicates") 
+                                    st.success(f"• Total trades: {len(merged_df)}")
+                                    
+                                    # Save merged data to session state to trigger re-analysis
+                                    st.session_state['merged_df'] = merged_df
+                                    st.session_state['data_updated'] = True
+                                    
+                                    st.info("🔄 **Page will refresh to show updated analytics...**")
+                                    st.rerun()
+                                    
+                                else:
+                                    st.warning("❌ No new trades to add (all were duplicates)")
+                                    
+                            except Exception as e:
+                                st.error(f"❌ Error during merge: {str(e)}")
+                                st.error("Please check your data format and try again.")
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error processing external data: {str(e)}")
+                        st.write("Please check your CSV format and data types.")
+                        
+            except Exception as e:
+                st.error(f"❌ Error loading CSV file: {str(e)}")
+                st.write("Please ensure your file is a valid CSV format.")
 
     # Download buttons
     col_download1, col_download2, col_download3 = st.columns(3)

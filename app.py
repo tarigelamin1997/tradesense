@@ -527,23 +527,26 @@ st.sidebar.caption("We do not store or share your uploaded trade data.")
 # Memory monitoring with management controls
 try:
     memory_info = psutil.virtual_memory()
-    memory_col1, memory_col2 = st.sidebar.columns([2, 1])
+    memory_usage = memory_info.percent
     
-    with memory_col1:
-        memory_usage = memory_info.percent
-        delta_color = "inverse" if memory_usage > 70 else "normal"
-        st.metric(
-            "Memory Usage", 
-            f"{memory_usage:.1f}%",
-            help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
-        )
+    # Always show memory info and cleanup button
+    st.sidebar.metric(
+        "Memory Usage", 
+        f"{memory_usage:.1f}%",
+        help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
+    )
     
-    with memory_col2:
-        if memory_usage > 50:  # Show clear button if memory usage is above 50%
-            if st.button("🧹", help="Clear cache to free memory", key="clear_cache"):
-                if clear_memory_cache():
-                    st.success("✅ Cache cleared!")
-                    st.rerun()
+    # Always show cleanup button, but make it more prominent when needed
+    if memory_usage > 50:
+        if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache", type="primary"):
+            if clear_memory_cache():
+                st.sidebar.success("✅ Cache cleared!")
+                st.rerun()
+    else:
+        if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_normal"):
+            if clear_memory_cache():
+                st.sidebar.success("✅ Cache cleared!")
+                st.rerun()
         
     # Warning for high memory usage
     if memory_usage > 80:
@@ -552,7 +555,11 @@ try:
         st.sidebar.warning("⚠️ Memory usage getting high.")
         
 except:
-    pass  # Gracefully handle if psutil not available
+    # Fallback cleanup button if psutil not available
+    if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_fallback"):
+        if clear_memory_cache():
+            st.sidebar.success("✅ Cache cleared!")
+            st.rerun()
 
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)

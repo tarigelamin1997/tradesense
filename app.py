@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 from typing import Dict
 import psutil
+import gc
 from st_aggrid import AgGrid, GridUpdateMode
 from interactive_table import (
     compute_trade_result,
@@ -41,7 +42,7 @@ def load_cached_trade_data(file_path_or_content):
         return load_trade_data(file_path_or_content)
 
 
-@st.cache_data
+@st.cache_data(max_entries=3)  # Limit cache entries to prevent memory buildup
 def process_trade_dataframe(df_hash, df_data):
     """Cache expensive data processing operations with graceful handling of missing columns."""
     # Safety check for empty data
@@ -104,7 +105,7 @@ def process_trade_dataframe(df_hash, df_data):
         raise ValueError(f"Error processing data: {str(e)}")
 
 
-@st.cache_data
+@st.cache_data(max_entries=3)  # Limit cache entries to prevent memory buildup
 def compute_cached_analytics(filtered_df_hash, filtered_df_data):
     """Cache all expensive analytics computations with graceful handling of missing columns."""
     filtered_df = pd.DataFrame(filtered_df_data)
@@ -148,6 +149,26 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
 
     return result
 
+
+def clear_memory_cache():
+    """Clear Streamlit cache and force garbage collection to free memory."""
+    try:
+        # Clear all Streamlit caches
+        st.cache_data.clear()
+        
+        # Clear session state of large data objects
+        keys_to_clear = ['merged_df', 'processed_df', 'cached_analytics']
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+        
+        # Force garbage collection
+        gc.collect()
+        
+        return True
+    except Exception as e:
+        st.error(f"Error clearing cache: {str(e)}")
+        return False
 
 def log_feedback(page: str, feedback: str) -> None:
     """Log user feedback to feedback.csv with timestamp and page info."""
@@ -503,14 +524,33 @@ theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=1)
 st.sidebar.header("Upload Trade History")
 st.sidebar.caption("We do not store or share your uploaded trade data.")
 
-# Memory monitoring
+# Memory monitoring with management controls
 try:
     memory_info = psutil.virtual_memory()
-    st.sidebar.metric(
-        "Memory Usage", 
-        f"{memory_info.percent:.1f}%",
-        help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
-    )
+    memory_col1, memory_col2 = st.sidebar.columns([2, 1])
+    
+    with memory_col1:
+        memory_usage = memory_info.percent
+        delta_color = "inverse" if memory_usage > 70 else "normal"
+        st.metric(
+            "Memory Usage", 
+            f"{memory_usage:.1f}%",
+            help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
+        )
+    
+    with memory_col2:
+        if memory_usage > 50:  # Show clear button if memory usage is above 50%
+            if st.button("🧹", help="Clear cache to free memory", key="clear_cache"):
+                if clear_memory_cache():
+                    st.success("✅ Cache cleared!")
+                    st.rerun()
+        
+    # Warning for high memory usage
+    if memory_usage > 80:
+        st.sidebar.error("⚠️ High memory usage! Consider clearing cache.")
+    elif memory_usage > 60:
+        st.sidebar.warning("⚠️ Memory usage getting high.")
+        
 except:
     pass  # Gracefully handle if psutil not available
 
@@ -1773,9 +1813,15 @@ if selected_file:
                                     st.success(f"• Skipped {len(duplicates)} duplicates") 
                                     st.success(f"• Total trades: {len(merged_df)}")
 
+                                    # Clear old cache before saving new data
+                                    st.cache_data.clear()
+                                    
                                     # Save merged data to session state to trigger re-analysis
                                     st.session_state['merged_df'] = merged_df
                                     st.session_state['data_updated'] = True
+
+                                    # Force garbage collection after data operations
+                                    gc.collect()
 
                                     st.info("🔄 **Page will refresh to show updated analytics...**")
                                     st.rerun()

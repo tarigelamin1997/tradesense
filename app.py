@@ -43,7 +43,7 @@ def load_cached_trade_data(file_path_or_content):
 
 @st.cache_data
 def process_trade_dataframe(df_hash, df_data):
-    """Cache expensive data processing operations."""
+    """Cache expensive data processing operations with graceful handling of missing columns."""
     # Safety check for empty data
     if not df_data:
         raise ValueError("No data provided for processing")
@@ -54,53 +54,99 @@ def process_trade_dataframe(df_hash, df_data):
     if df.empty:
         raise ValueError("Empty DataFrame after conversion from records")
     
-    # Check if required columns exist
-    required_cols = ['entry_time', 'exit_time']
-    missing_cols = [col for col in required_cols if col not in df.columns]
-    if missing_cols:
-        # Provide detailed error information
-        available_cols = list(df.columns)
-        error_msg = f"Missing required columns: {missing_cols}. Available columns: {available_cols}"
-        raise ValueError(error_msg)
+    # Check which datetime columns are available
+    datetime_cols = ['entry_time', 'exit_time']
+    available_datetime_cols = [col for col in datetime_cols if col in df.columns]
     
-    # Process datetime columns with error handling
+    # Process available datetime columns with error handling
     try:
-        df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
-        df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+        for col in available_datetime_cols:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
         
-        # Remove rows with invalid datetime data
-        original_rows = len(df)
-        df = df.dropna(subset=['entry_time', 'exit_time'])
+        # Only remove rows with invalid datetime data if we have datetime columns
+        if available_datetime_cols:
+            original_rows = len(df)
+            df = df.dropna(subset=available_datetime_cols)
+            
+            if len(df) == 0 and original_rows > 0:
+                raise ValueError("No valid datetime data found after processing")
+            
+            if len(df) < original_rows:
+                # Log information about removed rows
+                removed_rows = original_rows - len(df)
+                print(f"Removed {removed_rows} rows with invalid datetime data")
         
-        if len(df) == 0:
-            raise ValueError("No valid datetime data found after processing")
-        
-        if len(df) < original_rows:
-            # Log information about removed rows
-            removed_rows = original_rows - len(df)
-            print(f"Removed {removed_rows} rows with invalid datetime data")
+        # Calculate P&L if missing but we have price and quantity data
+        if 'pnl' not in df.columns:
+            required_for_pnl = ['entry_price', 'exit_price', 'qty', 'direction']
+            if all(col in df.columns for col in required_for_pnl):
+                def calc_pnl(row):
+                    try:
+                        entry = float(row['entry_price'])
+                        exit_price = float(row['exit_price'])
+                        qty = float(row['qty'])
+                        direction = str(row['direction']).lower()
+                        
+                        if direction in ['long', 'buy']:
+                            return (exit_price - entry) * qty
+                        elif direction in ['short', 'sell']:
+                            return (entry - exit_price) * qty
+                        else:
+                            return 0
+                    except:
+                        return 0
+                
+                df['pnl'] = df.apply(calc_pnl, axis=1)
         
         return df
         
     except Exception as e:
-        raise ValueError(f"Error processing datetime columns: {str(e)}")
+        raise ValueError(f"Error processing data: {str(e)}")
 
 
 @st.cache_data
 def compute_cached_analytics(filtered_df_hash, filtered_df_data):
-    """Cache all expensive analytics computations."""
+    """Cache all expensive analytics computations with graceful handling of missing columns."""
     filtered_df = pd.DataFrame(filtered_df_data)
-    filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
-    filtered_df = filtered_df.dropna(subset=['pnl'])
+    
+    # Only process P&L if it exists
+    if 'pnl' in filtered_df.columns:
+        filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+        filtered_df = filtered_df.dropna(subset=['pnl'])
 
     if filtered_df.empty:
         return None
 
-    return {
-        'stats': compute_basic_stats(filtered_df),
-        'perf': performance_over_time(filtered_df, freq='M'),
-        'kpis': calculate_kpis(filtered_df, commission_per_trade=3.5),
-    }
+    result = {}
+    
+    # Compute basic stats if P&L is available
+    try:
+        if 'pnl' in filtered_df.columns:
+            result['stats'] = compute_basic_stats(filtered_df)
+        else:
+            result['stats'] = {'total_trades': len(filtered_df)}
+    except Exception as e:
+        result['stats'] = {'total_trades': len(filtered_df), 'error': str(e)}
+    
+    # Compute performance over time if datetime columns are available
+    try:
+        if 'exit_time' in filtered_df.columns and 'pnl' in filtered_df.columns:
+            result['perf'] = performance_over_time(filtered_df, freq='M')
+        else:
+            result['perf'] = pd.DataFrame()
+    except Exception as e:
+        result['perf'] = pd.DataFrame()
+    
+    # Compute KPIs if P&L is available
+    try:
+        if 'pnl' in filtered_df.columns:
+            result['kpis'] = calculate_kpis(filtered_df, commission_per_trade=3.5)
+        else:
+            result['kpis'] = {'total_trades': len(filtered_df)}
+    except Exception as e:
+        result['kpis'] = {'total_trades': len(filtered_df), 'error': str(e)}
+
+    return result
 
 
 def log_feedback(page: str, feedback: str) -> None:
@@ -506,22 +552,80 @@ if selected_file:
     if 'tags' not in df.columns:
         df['tags'] = ''
 
-    if importer.validate_columns(df):
-        # Keep REQUIRED_COLUMNS plus tags if it exists
-        columns_to_keep = REQUIRED_COLUMNS.copy()
-        if 'tags' in df.columns:
-            columns_to_keep.append('tags')
-        df = df[[col for col in columns_to_keep if col in df.columns]]
-    else:
-        st.warning('Columns do not match required fields. Map them below:')
-        mapping: Dict[str, str] = {}
-        for col in REQUIRED_COLUMNS:
-            mapping[col] = st.selectbox(f"Column for {col}", options=df.columns, key=col)
-        try:
-            df = importer.map_columns(df, mapping)
-        except Exception as e:
-            st.error(str(e))
-            st.stop()
+    # Analyze column availability instead of blocking
+    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    available_columns = [col for col in REQUIRED_COLUMNS if col in df.columns]
+    
+    if missing_columns:
+        # Show warning but continue processing
+        st.warning(f"⚠️ **Missing columns:** {', '.join(missing_columns)}")
+        st.info(f"📊 **Available columns:** {', '.join(available_columns)}")
+        
+        # Show what analytics will be affected
+        affected_features = []
+        if 'entry_time' not in df.columns or 'exit_time' not in df.columns:
+            affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])
+        if 'pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
+            affected_features.extend(['P&L analytics', 'Performance metrics'])
+        if 'symbol' not in df.columns:
+            affected_features.extend(['Symbol-based analysis'])
+        if 'direction' not in df.columns:
+            affected_features.extend(['Direction-based analysis'])
+            
+        if affected_features:
+            st.warning(f"📉 **Limited analytics:** {', '.join(affected_features)} will be unavailable.")
+        
+        # Offer column mapping option
+        with st.expander("🔧 Map Your Columns (Optional)", expanded=False):
+            st.write("Map your existing columns to the expected format:")
+            mapping: Dict[str, str] = {}
+            
+            col_map1, col_map2 = st.columns(2)
+            
+            for i, req_col in enumerate(missing_columns):
+                with col_map1 if i % 2 == 0 else col_map2:
+                    mapping[req_col] = st.selectbox(
+                        f"Map '{req_col}' to:", 
+                        options=["(Skip)"] + list(df.columns),
+                        key=f"map_{req_col}"
+                    )
+            
+            if st.button("Apply Column Mapping", key="apply_column_mapping"):
+                try:
+                    # Apply valid mappings
+                    for req_col, selected_col in mapping.items():
+                        if selected_col != "(Skip)" and selected_col in df.columns:
+                            df[req_col] = df[selected_col]
+                    
+                    # Update missing columns list
+                    new_missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+                    if len(new_missing) < len(missing_columns):
+                        st.success(f"✅ Successfully mapped {len(missing_columns) - len(new_missing)} columns!")
+                        st.rerun()
+                    else:
+                        st.info("No new columns were mapped.")
+                        
+                except Exception as e:
+                    st.error(f"Error applying mapping: {str(e)}")
+    
+    # Keep available columns plus optional ones
+    columns_to_keep = [col for col in REQUIRED_COLUMNS if col in df.columns]
+    if 'tags' in df.columns:
+        columns_to_keep.append('tags')
+    if 'notes' in df.columns:
+        columns_to_keep.append('notes')
+    
+    # Also keep any unmapped columns that might be useful
+    useful_columns = ['stop_loss', 'target', 'commission', 'fees', 'spread']
+    for col in useful_columns:
+        if col in df.columns and col not in columns_to_keep:
+            columns_to_keep.append(col)
+    
+    df = df[[col for col in columns_to_keep if col in df.columns]]
+    
+    if df.empty:
+        st.error("❌ No usable data found in the uploaded file.")
+        st.stop()
 
     # Debug: Show initial DataFrame info
     st.write(f"**Debug Info:** Initial DataFrame shape: {df.shape}")
@@ -532,15 +636,20 @@ if selected_file:
         st.error("This suggests an issue with the data loading process.")
         st.stop()
 
-    # Ensure required columns exist before any processing
-    required_cols_for_processing = ['entry_time', 'exit_time']
-    missing_critical_cols = [col for col in required_cols_for_processing if col not in df.columns]
+    # Check for datetime columns - warn but don't stop if missing
+    datetime_cols_available = [col for col in ['entry_time', 'exit_time'] if col in df.columns]
+    missing_datetime_cols = [col for col in ['entry_time', 'exit_time'] if col not in df.columns]
     
-    if missing_critical_cols:
-        st.error(f"❌ **Critical columns missing:** {', '.join(missing_critical_cols)}")
-        st.error("Please ensure your data contains the required datetime columns.")
-        st.error(f"**Available columns:** {list(df.columns)}")
-        st.stop()
+    if missing_datetime_cols:
+        st.warning(f"⚠️ **Missing datetime columns:** {', '.join(missing_datetime_cols)}")
+        st.info("Time-based analytics will be limited or unavailable.")
+        
+        # If both datetime columns are missing, create dummy ones for basic processing
+        if not datetime_cols_available:
+            st.info("🔧 Creating dummy timestamps to enable basic analytics...")
+            df['entry_time'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D')
+            df['exit_time'] = df['entry_time'] + pd.Timedelta(hours=1)
+            datetime_cols_available = ['entry_time', 'exit_time']
 
     # Data Validation and Correction System
     st.subheader("🔍 Data Quality Check")
@@ -622,40 +731,58 @@ if selected_file:
     st.write(f"**Final columns:** {list(df.columns)}")
 
     # Optimize data processing with cached operations
-    with st.spinner("Processing data..."):
+    with st.spinner("Processing available data..."):
         try:
-            # Use cached data processing with additional error handling
+            # Use cached data processing with graceful handling
             df_hash = hash(df.to_string())
             df = process_trade_dataframe(df_hash, df.to_dict('records'))
 
             if df.empty:
                 st.error("❌ **No valid rows remain after data processing.**")
                 st.error("**Common causes:**")
-                st.error("• Invalid datetime formats in entry_time/exit_time columns")
-                st.error("• All dates are outside valid range (2000-present)")
-                st.error("• Data contains only NaN or null values")
+                st.error("• Invalid data formats in available columns")
+                st.error("• All values are missing or invalid")
                 st.stop()
+                
         except ValueError as e:
-            if "Missing required columns" in str(e):
-                st.error("❌ **Column validation failed during processing**")
-                st.error(f"**Error:** {str(e)}")
-                st.error("**This usually means the DataFrame became corrupted during processing.**")
-                st.stop()
-            else:
-                raise e
+            st.error(f"❌ **Data processing error:** {str(e)}")
+            st.error("**Proceeding with limited analytics using available data...**")
+            # Continue with original data if processing fails
+            pass
 
-    # Simplified filters
+    # Simplified filters - only show available columns
     st.header("📊 Filters")
     filter_col1, filter_col2 = st.columns(2)
 
     with filter_col1:
-        symbols = st.multiselect('Symbols', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
-        date_range = st.date_input('Date Range', value=[df['entry_time'].min().date(), df['exit_time'].max().date()])
+        # Symbol filter (only if symbol column exists)
+        if 'symbol' in df.columns:
+            symbols = st.multiselect('Symbols', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
+        else:
+            symbols = []
+            st.info("ℹ️ Symbol filter unavailable (missing 'symbol' column)")
+        
+        # Date range filter (only if datetime columns exist)
+        if 'entry_time' in df.columns and 'exit_time' in df.columns:
+            try:
+                min_date = df['entry_time'].min().date() if pd.notna(df['entry_time'].min()) else pd.Timestamp.now().date()
+                max_date = df['exit_time'].max().date() if pd.notna(df['exit_time'].max()) else pd.Timestamp.now().date()
+                date_range = st.date_input('Date Range', value=[min_date, max_date])
+            except:
+                date_range = [pd.Timestamp.now().date(), pd.Timestamp.now().date()]
+        else:
+            date_range = []
+            st.info("ℹ️ Date filter unavailable (missing datetime columns)")
 
     with filter_col2:
-        directions = st.multiselect('Directions', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())
+        # Direction filter (only if direction column exists)
+        if 'direction' in df.columns:
+            directions = st.multiselect('Directions', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())
+        else:
+            directions = []
+            st.info("ℹ️ Direction filter unavailable (missing 'direction' column)")
 
-        # Simplified tags
+        # Tags filter (only if tags column exists)
         if 'tags' in df.columns:
             all_tags = set()
             for tag_string in df['tags'].dropna():
@@ -665,13 +792,27 @@ if selected_file:
         else:
             selected_tags = []
 
-    # Apply filters
-    filtered_df = df[
-        df['symbol'].isin(symbols)
-        & df['direction'].isin(directions)
-        & (df['entry_time'].dt.date >= date_range[0])
-        & (df['exit_time'].dt.date <= date_range[1])
-    ]
+    # Apply filters only for available columns
+    filtered_df = df.copy()
+    
+    # Apply symbol filter
+    if 'symbol' in df.columns and symbols:
+        filtered_df = filtered_df[filtered_df['symbol'].isin(symbols)]
+    
+    # Apply direction filter
+    if 'direction' in df.columns and directions:
+        filtered_df = filtered_df[filtered_df['direction'].isin(directions)]
+    
+    # Apply date range filter
+    if 'entry_time' in df.columns and 'exit_time' in df.columns and date_range:
+        try:
+            filtered_df = filtered_df[
+                (filtered_df['entry_time'].dt.date >= date_range[0])
+                & (filtered_df['exit_time'].dt.date <= date_range[1])
+            ]
+        except:
+            # Skip date filtering if there's an error
+            pass
 
     # Apply tag filter if tags column exists and tags are selected
     if 'tags' in df.columns and selected_tags:
@@ -698,27 +839,42 @@ if selected_file:
 
     st.divider()
 
-    # Use cached expensive calculations
+    # Use cached expensive calculations with graceful P&L handling
     filtered_df_hash = hash(f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}")
 
-    with st.spinner("Computing analytics..."):
-        filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
-        filtered_df = filtered_df.dropna(subset=['pnl'])
+    with st.spinner("Computing available analytics..."):
+        # Only process P&L if the column exists
+        if 'pnl' in filtered_df.columns:
+            filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+            filtered_df = filtered_df.dropna(subset=['pnl'])
+        else:
+            st.warning("⚠️ P&L column missing - Financial analytics will be limited")
 
         if filtered_df.empty:
             st.error("No valid trade data found after filtering.")
             st.stop()
 
-        # Use cached analytics computation
-        cached_results = compute_cached_analytics(filtered_df_hash, filtered_df.to_dict('records'))
+        # Use cached analytics computation with error handling
+        try:
+            cached_results = compute_cached_analytics(filtered_df_hash, filtered_df.to_dict('records'))
+            
+            if cached_results is None:
+                # Create minimal stats if cached computation fails
+                cached_results = {
+                    'stats': {'total_trades': len(filtered_df)},
+                    'perf': pd.DataFrame(),
+                    'kpis': {'total_trades': len(filtered_df)}
+                }
 
-        if cached_results is None:
-            st.error("No valid trade data found after filtering.")
-            st.stop()
-
-        stats = cached_results['stats']
-        perf = cached_results['perf']
-        kpis = cached_results['kpis']
+            stats = cached_results['stats']
+            perf = cached_results['perf']
+            kpis = cached_results['kpis']
+        except Exception as e:
+            st.warning(f"⚠️ Some analytics unavailable due to missing data: {str(e)}")
+            # Create basic fallback stats
+            stats = {'total_trades': len(filtered_df)}
+            perf = pd.DataFrame()
+            kpis = {'total_trades': len(filtered_df)}
 
     st.subheader('📊 Key Performance Indicators')
 

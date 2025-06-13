@@ -47,35 +47,35 @@ def process_trade_dataframe(df_hash, df_data):
     # Safety check for empty data
     if not df_data:
         raise ValueError("No data provided for processing")
-    
+
     df = pd.DataFrame(df_data)
-    
+
     # Safety check for empty DataFrame
     if df.empty:
         raise ValueError("Empty DataFrame after conversion from records")
-    
+
     # Check which datetime columns are available
     datetime_cols = ['entry_time', 'exit_time']
     available_datetime_cols = [col for col in datetime_cols if col in df.columns]
-    
+
     # Process available datetime columns with error handling
     try:
         for col in available_datetime_cols:
             df[col] = pd.to_datetime(df[col], errors='coerce')
-        
+
         # Only remove rows with invalid datetime data if we have datetime columns
         if available_datetime_cols:
             original_rows = len(df)
             df = df.dropna(subset=available_datetime_cols)
-            
+
             if len(df) == 0 and original_rows > 0:
                 raise ValueError("No valid datetime data found after processing")
-            
+
             if len(df) < original_rows:
                 # Log information about removed rows
                 removed_rows = original_rows - len(df)
                 print(f"Removed {removed_rows} rows with invalid datetime data")
-        
+
         # Calculate P&L if missing but we have price and quantity data
         if 'pnl' not in df.columns:
             required_for_pnl = ['entry_price', 'exit_price', 'qty', 'direction']
@@ -86,7 +86,7 @@ def process_trade_dataframe(df_hash, df_data):
                         exit_price = float(row['exit_price'])
                         qty = float(row['qty'])
                         direction = str(row['direction']).lower()
-                        
+
                         if direction in ['long', 'buy']:
                             return (exit_price - entry) * qty
                         elif direction in ['short', 'sell']:
@@ -95,11 +95,11 @@ def process_trade_dataframe(df_hash, df_data):
                             return 0
                     except:
                         return 0
-                
+
                 df['pnl'] = df.apply(calc_pnl, axis=1)
-        
+
         return df
-        
+
     except Exception as e:
         raise ValueError(f"Error processing data: {str(e)}")
 
@@ -108,7 +108,7 @@ def process_trade_dataframe(df_hash, df_data):
 def compute_cached_analytics(filtered_df_hash, filtered_df_data):
     """Cache all expensive analytics computations with graceful handling of missing columns."""
     filtered_df = pd.DataFrame(filtered_df_data)
-    
+
     # Only process P&L if it exists
     if 'pnl' in filtered_df.columns:
         filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
@@ -118,7 +118,7 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
         return None
 
     result = {}
-    
+
     # Compute basic stats if P&L is available
     try:
         if 'pnl' in filtered_df.columns:
@@ -127,7 +127,7 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
             result['stats'] = {'total_trades': len(filtered_df)}
     except Exception as e:
         result['stats'] = {'total_trades': len(filtered_df), 'error': str(e)}
-    
+
     # Compute performance over time if datetime columns are available
     try:
         if 'exit_time' in filtered_df.columns and 'pnl' in filtered_df.columns:
@@ -136,7 +136,7 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
             result['perf'] = pd.DataFrame()
     except Exception as e:
         result['perf'] = pd.DataFrame()
-    
+
     # Compute KPIs if P&L is available
     try:
         if 'pnl' in filtered_df.columns:
@@ -281,7 +281,7 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
     # Symbol Breakdown
     if not filtered_df.empty:
         pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, "Performance by Symbol", ln=1)
+        pdf.cell(0, 10, "Performance by Symbol", new_x="LMARGIN", new_y="NEXT")
         pdf.set_font("Arial", "", 9)
 
         # Group by symbol
@@ -298,7 +298,7 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
         pdf.cell(25, 8, "Trades", border=1, align='C')
         pdf.cell(35, 8, "Total P&L", border=1, align='C')
         pdf.cell(35, 8, "Avg P&L", border=1, align='C')
-        pdf.cell(30, 8, "Win Rate %", border=1, align='C', ln=1)
+        pdf.cell(30, 8, "Win Rate %", border=1, align='C', new_x="LMARGIN", new_y="NEXT")
 
         # Table data
         for _, row in symbol_stats.head(10).iterrows():  # Limit to top 10 symbols
@@ -306,7 +306,7 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
             pdf.cell(25, 6, str(int(row['Trades'])), border=1, align='C')
             pdf.cell(35, 6, safe_format_number(row['Total_PnL'], "currency", 2), border=1, align='C')
             pdf.cell(35, 6, safe_format_number(row['Avg_PnL'], "currency", 2), border=1, align='C')
-            pdf.cell(30, 6, f"{row['Win_Rate']:.1f}%", border=1, align='C', ln=1)
+            pdf.cell(30, 6, f"{row['Win_Rate']:.1f}%", border=1, align='C', new_x="LMARGIN", new_y="NEXT")
 
     pdf.ln(10)
 
@@ -555,12 +555,12 @@ if selected_file:
     # Analyze column availability instead of blocking
     missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
     available_columns = [col for col in REQUIRED_COLUMNS if col in df.columns]
-    
+
     if missing_columns:
         # Show warning but continue processing
         st.warning(f"⚠️ **Missing columns:** {', '.join(missing_columns)}")
         st.info(f"📊 **Available columns:** {', '.join(available_columns)}")
-        
+
         # Show what analytics will be affected
         affected_features = []
         if 'entry_time' not in df.columns or 'exit_time' not in df.columns:
@@ -571,17 +571,17 @@ if selected_file:
             affected_features.extend(['Symbol-based analysis'])
         if 'direction' not in df.columns:
             affected_features.extend(['Direction-based analysis'])
-            
+
         if affected_features:
             st.warning(f"📉 **Limited analytics:** {', '.join(affected_features)} will be unavailable.")
-        
+
         # Offer column mapping option
         with st.expander("🔧 Map Your Columns (Optional)", expanded=False):
             st.write("Map your existing columns to the expected format:")
             mapping: Dict[str, str] = {}
-            
+
             col_map1, col_map2 = st.columns(2)
-            
+
             for i, req_col in enumerate(missing_columns):
                 with col_map1 if i % 2 == 0 else col_map2:
                     mapping[req_col] = st.selectbox(
@@ -589,14 +589,14 @@ if selected_file:
                         options=["(Skip)"] + list(df.columns),
                         key=f"map_{req_col}"
                     )
-            
+
             if st.button("Apply Column Mapping", key="apply_column_mapping"):
                 try:
                     # Apply valid mappings
                     for req_col, selected_col in mapping.items():
                         if selected_col != "(Skip)" and selected_col in df.columns:
                             df[req_col] = df[selected_col]
-                    
+
                     # Update missing columns list
                     new_missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
                     if len(new_missing) < len(missing_columns):
@@ -604,25 +604,25 @@ if selected_file:
                         st.rerun()
                     else:
                         st.info("No new columns were mapped.")
-                        
+
                 except Exception as e:
                     st.error(f"Error applying mapping: {str(e)}")
-    
+
     # Keep available columns plus optional ones
     columns_to_keep = [col for col in REQUIRED_COLUMNS if col in df.columns]
     if 'tags' in df.columns:
         columns_to_keep.append('tags')
     if 'notes' in df.columns:
         columns_to_keep.append('notes')
-    
+
     # Also keep any unmapped columns that might be useful
     useful_columns = ['stop_loss', 'target', 'commission', 'fees', 'spread']
     for col in useful_columns:
         if col in df.columns and col not in columns_to_keep:
             columns_to_keep.append(col)
-    
+
     df = df[[col for col in columns_to_keep if col in df.columns]]
-    
+
     if df.empty:
         st.error("❌ No usable data found in the uploaded file.")
         st.stop()
@@ -639,11 +639,11 @@ if selected_file:
     # Check for datetime columns - warn but don't stop if missing
     datetime_cols_available = [col for col in ['entry_time', 'exit_time'] if col in df.columns]
     missing_datetime_cols = [col for col in ['entry_time', 'exit_time'] if col not in df.columns]
-    
+
     if missing_datetime_cols:
         st.warning(f"⚠️ **Missing datetime columns:** {', '.join(missing_datetime_cols)}")
         st.info("Time-based analytics will be limited or unavailable.")
-        
+
         # If both datetime columns are missing, create dummy ones for basic processing
         if not datetime_cols_available:
             st.info("🔧 Creating dummy timestamps to enable basic analytics...")
@@ -653,9 +653,9 @@ if selected_file:
 
     # Data Validation and Correction System
     st.subheader("🔍 Data Quality Check")
-    
+
     validator = DataValidator()
-    
+
     # Quick quality check with error handling
     with st.spinner("Checking data quality..."):
         try:
@@ -671,9 +671,9 @@ if selected_file:
                 'original_rows': len(df),
                 'final_rows': len(df)
             }
-    
+
     quality_score = quick_report['data_quality_score']
-    
+
     # Show quality status
     if quality_score >= 90:
         st.success(f"✅ **Excellent Data Quality** ({quality_score:.1f}%) - Ready for analysis!")
@@ -684,7 +684,7 @@ if selected_file:
     else:
         st.error(f"❌ **Data Quality Issues** ({quality_score:.1f}%) - Validation recommended")
         show_validation = st.checkbox("🔧 Fix Data Issues (Recommended)", value=True)
-    
+
     if show_validation:
         try:
             validated_df = create_data_correction_interface(df, validator)
@@ -708,7 +708,7 @@ if selected_file:
         st.error("• Data validation removed all rows")
         st.error("• File format is not compatible")
         st.stop()
-    
+
     if len(df.columns) == 0:
         st.error("❌ **Critical Error:** DataFrame has no columns!")
         st.error("**Possible causes:**")
@@ -719,14 +719,14 @@ if selected_file:
     # Check for required columns before processing
     required_processing_cols = ['entry_time', 'exit_time']
     missing_cols = [col for col in required_processing_cols if col not in df.columns]
-    
+
     if missing_cols:
         st.error(f"❌ **Required columns missing:** {', '.join(missing_cols)}")
         st.error(f"**Available columns:** {list(df.columns)}")
         st.error("**Required for analysis:** entry_time, exit_time")
         st.error("Please ensure your data contains the required datetime columns.")
         st.stop()
-        
+
     st.write(f"**Debug Info:** Final DataFrame shape before processing: {df.shape}")
     st.write(f"**Final columns:** {list(df.columns)}")
 
@@ -743,7 +743,7 @@ if selected_file:
                 st.error("• Invalid data formats in available columns")
                 st.error("• All values are missing or invalid")
                 st.stop()
-                
+
         except ValueError as e:
             st.error(f"❌ **Data processing error:** {str(e)}")
             st.error("**Proceeding with limited analytics using available data...**")
@@ -761,7 +761,7 @@ if selected_file:
         else:
             symbols = []
             st.info("ℹ️ Symbol filter unavailable (missing 'symbol' column)")
-        
+
         # Date range filter (only if datetime columns exist)
         if 'entry_time' in df.columns and 'exit_time' in df.columns:
             try:
@@ -794,15 +794,15 @@ if selected_file:
 
     # Apply filters only for available columns
     filtered_df = df.copy()
-    
+
     # Apply symbol filter
     if 'symbol' in df.columns and symbols:
         filtered_df = filtered_df[filtered_df['symbol'].isin(symbols)]
-    
+
     # Apply direction filter
     if 'direction' in df.columns and directions:
         filtered_df = filtered_df[filtered_df['direction'].isin(directions)]
-    
+
     # Apply date range filter
     if 'entry_time' in df.columns and 'exit_time' in df.columns and date_range:
         try:
@@ -857,7 +857,7 @@ if selected_file:
         # Use cached analytics computation with error handling
         try:
             cached_results = compute_cached_analytics(filtered_df_hash, filtered_df.to_dict('records'))
-            
+
             if cached_results is None:
                 # Create minimal stats if cached computation fails
                 cached_results = {
@@ -1014,14 +1014,14 @@ if selected_file:
         # Enhanced equity curve generation with robust data cleaning
         try:
             equity_df = filtered_df.copy()
-            
+
             # Step 1: Ultra-thorough data cleaning
             original_rows = len(equity_df)
-            
+
             # Clean PnL data with multiple validation layers
             equity_df['pnl'] = pd.to_numeric(equity_df['pnl'], errors='coerce')
             equity_df = equity_df.dropna(subset=['pnl'])
-            
+
             # Remove infinite, NaN, and extreme values with multiple checks
             equity_df = equity_df[np.isfinite(equity_df['pnl'])]
             equity_df = equity_df[~np.isinf(equity_df['pnl'])]
@@ -1030,21 +1030,21 @@ if selected_file:
             equity_df = equity_df[equity_df['pnl'] != -np.inf]
             equity_df = equity_df[equity_df['pnl'] != float('inf')]
             equity_df = equity_df[equity_df['pnl'] != float('-inf')]
-            
+
             # Cap extreme values to prevent infinite accumulation
             max_single_trade = 100000  # Cap single trade at $100k
             equity_df['pnl'] = equity_df['pnl'].clip(-max_single_trade, max_single_trade)
-            
+
             # Step 2: Clean and validate exit_time
             if 'exit_time' in equity_df.columns:
                 equity_df['exit_time'] = pd.to_datetime(equity_df['exit_time'], errors='coerce')
                 equity_df = equity_df.dropna(subset=['exit_time'])
-                
+
                 # Remove invalid dates with more strict validation
                 current_time = pd.Timestamp.now()
                 min_valid_date = pd.Timestamp('2000-01-01')
                 max_valid_date = current_time + pd.Timedelta(days=7)  # Allow up to 1 week in future
-                
+
                 valid_date_mask = (
                     (equity_df['exit_time'] >= min_valid_date) & 
                     (equity_df['exit_time'] <= max_valid_date) &
@@ -1064,53 +1064,53 @@ if selected_file:
                 # Step 4: Sort and create cumulative PnL with additional safety
                 equity_df = equity_df.sort_values('exit_time')
                 equity_df = equity_df.reset_index(drop=True)
-                
+
                 # Calculate cumulative PnL with overflow protection
                 running_total = 0
                 cumulative_values = []
-                
+
                 for pnl in equity_df['pnl']:
                     running_total += pnl
                     # Check for overflow/underflow
                     if abs(running_total) > 1e10:  # 10 billion limit
                         running_total = np.sign(running_total) * 1e10
                     cumulative_values.append(running_total)
-                
+
                 equity_df['cumulative_pnl'] = cumulative_values
-                
+
                 # Final validation of cumulative values
                 equity_df = equity_df[np.isfinite(equity_df['cumulative_pnl'])]
                 equity_df = equity_df[~np.isinf(equity_df['cumulative_pnl'])]
-                
+
                 if not equity_df.empty and len(equity_df) >= 2:
                     # Step 5: Create chart data with additional safety measures
                     chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
-                    
+
                     # Remove any remaining infinite values
                     chart_data = chart_data[np.isfinite(chart_data)]
                     chart_data = chart_data[~np.isinf(chart_data)]
-                    
+
                     # Handle duplicate timestamps by keeping the last value
                     chart_data = chart_data[~chart_data.index.duplicated(keep='last')]
-                    
+
                     # Ensure index is properly formatted datetime
                     chart_data.index = pd.to_datetime(chart_data.index)
-                    
+
                     # Final check before plotting
                     if len(chart_data) >= 2 and chart_data.index.notna().all():
                         # Display summary info
                         starting_value = chart_data.iloc[0]
                         ending_value = chart_data.iloc[-1]
                         total_return = ending_value - starting_value
-                        
+
                         col1, col2, col3 = st.columns(3)
                         col1.metric("Starting P&L", f"${starting_value:,.2f}")
                         col2.metric("Ending P&L", f"${ending_value:,.2f}")
                         col3.metric("Total Return", f"${total_return:,.2f}")
-                        
+
                         # Plot the equity curve
                         st.line_chart(chart_data, height=400)
-                        
+
                         st.caption(f"📊 Equity curve based on {len(equity_df)} valid trades")
                     else:
                         st.warning("⚠️ Unable to display equity curve: Invalid chart data after final validation")
@@ -1183,7 +1183,7 @@ if selected_file:
             try:
                 if not rolling.empty and len(rolling) >= 2:
                     st.subheader('Rolling Metrics (10-trade windows)')
-                    
+
                     # Display metrics summary
                     col_r1, col_r2, col_r3 = st.columns(3)
                     col_r1.metric('Rolling Periods', len(rolling))

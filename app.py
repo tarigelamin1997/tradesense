@@ -151,23 +151,63 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
 
 
 def clear_memory_cache():
-    """Clear Streamlit cache and force garbage collection to free memory."""
+    """Clear Streamlit cache and force aggressive memory cleanup."""
     try:
+        # Get memory before cleanup
+        memory_before = None
+        try:
+            memory_before = psutil.virtual_memory().percent
+        except:
+            pass
+        
         # Clear all Streamlit caches
         st.cache_data.clear()
         
         # Clear session state of large data objects
-        keys_to_clear = ['merged_df', 'processed_df', 'cached_analytics']
+        keys_to_clear = [
+            'merged_df', 'processed_df', 'cached_analytics', 
+            'journal_entries', 'show_feedback_modal', 'data_updated'
+        ]
+        cleared_keys = []
         for key in keys_to_clear:
             if key in st.session_state:
                 del st.session_state[key]
+                cleared_keys.append(key)
         
-        # Force garbage collection
-        gc.collect()
+        # Clear any cached dataframes or large objects from globals
+        import sys
+        for name, obj in list(sys.modules[__name__].__dict__.items()):
+            if isinstance(obj, pd.DataFrame) and len(obj) > 100:
+                del sys.modules[__name__].__dict__[name]
+        
+        # Multiple rounds of garbage collection
+        for _ in range(3):
+            gc.collect()
+        
+        # Get memory after cleanup
+        memory_after = None
+        try:
+            memory_after = psutil.virtual_memory().percent
+        except:
+            pass
+        
+        # Calculate memory freed (if available)
+        if memory_before is not None and memory_after is not None:
+            memory_freed = memory_before - memory_after
+            if memory_freed > 0:
+                st.sidebar.success(f"✅ Freed {memory_freed:.1f}% memory")
+            else:
+                st.sidebar.info("✅ Cache cleared (system memory unchanged)")
+        else:
+            st.sidebar.success("✅ Cache and session data cleared")
+        
+        # Show what was cleared
+        if cleared_keys:
+            st.sidebar.info(f"Cleared: {', '.join(cleared_keys)}")
         
         return True
     except Exception as e:
-        st.error(f"Error clearing cache: {str(e)}")
+        st.sidebar.error(f"Error clearing cache: {str(e)}")
         return False
 
 def log_feedback(page: str, feedback: str) -> None:
@@ -539,14 +579,12 @@ try:
     # Always show cleanup button, but make it more prominent when needed
     if memory_usage > 50:
         if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache", type="primary"):
-            if clear_memory_cache():
-                st.sidebar.success("✅ Cache cleared!")
-                st.rerun()
+            clear_memory_cache()  # Function now handles its own feedback
+            st.rerun()
     else:
         if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_normal"):
-            if clear_memory_cache():
-                st.sidebar.success("✅ Cache cleared!")
-                st.rerun()
+            clear_memory_cache()  # Function now handles its own feedback
+            st.rerun()
         
     # Warning for high memory usage
     if memory_usage > 80:
@@ -557,9 +595,8 @@ try:
 except:
     # Fallback cleanup button if psutil not available
     if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_fallback"):
-        if clear_memory_cache():
-            st.sidebar.success("✅ Cache cleared!")
-            st.rerun()
+        clear_memory_cache()  # Function now handles its own feedback
+        st.rerun()
 
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)

@@ -22,3 +22,7 @@ args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[nix]
+channel = "stable-24_05"
+packages = ["cargo", "libiconv", "rustc"]

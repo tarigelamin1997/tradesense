@@ -9,6 +9,7 @@ import numpy as np
 from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
 from models.trade_model import UniversalTradeDataModel, TradeRecord, TradeDirection, TradeType
+from deduplication_manager import dedup_manager
 from analytics import (
     compute_basic_stats,
     performance_over_time,
@@ -38,11 +39,36 @@ class TradeEntryManager:
         self._analytics_cache = {}
         self._cache_dirty = True
     
-    def add_manual_trade(self, trade_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Add a single manual trade entry."""
+    def add_manual_trade(self, trade_data: Dict[str, Any], user_id: int = None) -> Dict[str, Any]:
+        """Add a single manual trade entry with deduplication."""
         try:
             # Normalize manual trade data to universal format
             normalized_trade = self._normalize_manual_trade(trade_data)
+            
+            # Perform deduplication check if user_id provided
+            if user_id:
+                dedup_results = dedup_manager.deduplicate_trades([normalized_trade], user_id, auto_resolve=True)
+                
+                if dedup_results['duplicates_removed'] > 0:
+                    duplicate_info = dedup_results['duplicates_found'][0]
+                    return {
+                        "status": "duplicate",
+                        "message": "Trade appears to be a duplicate",
+                        "duplicate_info": duplicate_info,
+                        "existing_trade_id": duplicate_info.get("existing_trade_id")
+                    }
+                
+                if dedup_results['conflicts_requiring_review']:
+                    conflict = dedup_results['conflicts_requiring_review'][0]
+                    return {
+                        "status": "needs_review",
+                        "message": "Potential duplicate found - manual review required",
+                        "potential_matches": conflict['potential_matches']
+                    }
+                
+                # Use deduplicated trade data
+                if dedup_results['unique_trades']:
+                    normalized_trade = dedup_results['unique_trades'][0]
             
             # Create trade record
             trade_record = TradeRecord(**normalized_trade)
@@ -50,6 +76,10 @@ class TradeEntryManager:
             # Add to model
             self.model.add_trade(trade_record)
             self._cache_dirty = True
+            
+            # Register trade fingerprint for future deduplication
+            if user_id:
+                dedup_manager.register_trades([trade_record], user_id)
             
             # Log the action
             if CENTRALIZED_LOGGING:
@@ -69,8 +99,8 @@ class TradeEntryManager:
                 logger.error(error_msg)
             return {"status": "error", "message": error_msg}
     
-    def add_file_trades(self, df: pd.DataFrame, data_source: str = "file") -> Dict[str, Any]:
-        """Add trades from file upload (CSV/Excel)."""
+    def add_file_trades(self, df: pd.DataFrame, data_source: str = "file", user_id: int = None) -> Dict[str, Any]:
+        """Add trades from file upload (CSV/Excel) with deduplication."""
         try:
             # Convert DataFrame to universal model
             file_model = UniversalTradeDataModel()
@@ -79,22 +109,55 @@ class TradeEntryManager:
             # Validate data
             validation_report = file_model.validate_all()
             
-            # Remove duplicates
-            duplicates_removed = file_model.remove_duplicates()
+            # Remove duplicates within the file
+            internal_duplicates_removed = file_model.remove_duplicates()
+            
+            # Perform cross-source deduplication if user_id provided
+            dedup_report = None
+            if user_id and file_model.trades:
+                trades_data = [trade.to_dict() for trade in file_model.trades]
+                dedup_results = dedup_manager.deduplicate_trades(trades_data, user_id, auto_resolve=True)
+                
+                # Create new model with only unique trades
+                unique_model = UniversalTradeDataModel()
+                for trade_dict in dedup_results['unique_trades']:
+                    # Remove dedup review flag if present
+                    trade_dict.pop('_requires_dedup_review', None)
+                    trade_record = TradeRecord.from_dict(trade_dict)
+                    unique_model.add_trade(trade_record)
+                
+                file_model = unique_model
+                dedup_report = dedup_results
             
             # Add valid trades to main model
             self.model.add_trades(file_model.trades)
             self._cache_dirty = True
             
+            # Register trade fingerprints for future deduplication
+            if user_id and file_model.trades:
+                dedup_manager.register_trades(file_model.trades, user_id)
+            
             result = {
                 "status": "success",
                 "trades_added": len(file_model.trades),
-                "duplicates_removed": duplicates_removed,
+                "internal_duplicates_removed": internal_duplicates_removed,
                 "validation_report": validation_report
             }
             
+            # Add deduplication results if performed
+            if dedup_report:
+                result.update({
+                    "cross_source_duplicates_removed": dedup_report['duplicates_removed'],
+                    "conflicts_requiring_review": len(dedup_report['conflicts_requiring_review']),
+                    "deduplication_summary": {
+                        "original_count": dedup_report['original_count'],
+                        "final_count": len(dedup_report['unique_trades']),
+                        "duplicates_found": len(dedup_report['duplicates_found'])
+                    }
+                })
+            
             if CENTRALIZED_LOGGING:
-                log_info("File trades imported", 
+                log_info("File trades imported with deduplication", 
                         details=result, 
                         category=LogCategory.DATA_PROCESSING)
             else:
@@ -110,20 +173,39 @@ class TradeEntryManager:
                 logger.error(error_msg)
             return {"status": "error", "message": error_msg}
     
-    def add_api_trades(self, trades: List[Dict[str, Any]], connector_name: str) -> Dict[str, Any]:
-        """Add trades from API connector."""
+    def add_api_trades(self, trades: List[Dict[str, Any]], connector_name: str, user_id: int = None) -> Dict[str, Any]:
+        """Add trades from API connector with deduplication."""
         try:
-            api_trades = []
-            
+            # Normalize API trade data
+            normalized_trades = []
             for trade_data in trades:
-                # Normalize API trade data
                 normalized_trade = self._normalize_api_trade(trade_data, connector_name)
-                trade_record = TradeRecord(**normalized_trade)
+                normalized_trades.append(normalized_trade)
+            
+            # Perform deduplication if user_id provided
+            dedup_report = None
+            if user_id and normalized_trades:
+                dedup_results = dedup_manager.deduplicate_trades(normalized_trades, user_id, auto_resolve=True)
+                unique_trades_data = dedup_results['unique_trades']
+                dedup_report = dedup_results
+            else:
+                unique_trades_data = normalized_trades
+            
+            # Create trade records from unique data
+            api_trades = []
+            for trade_dict in unique_trades_data:
+                # Remove dedup review flag if present
+                trade_dict.pop('_requires_dedup_review', None)
+                trade_record = TradeRecord(**trade_dict)
                 api_trades.append(trade_record)
             
             # Add to model
             self.model.add_trades(api_trades)
             self._cache_dirty = True
+            
+            # Register trade fingerprints for future deduplication
+            if user_id and api_trades:
+                dedup_manager.register_trades(api_trades, user_id)
             
             result = {
                 "status": "success",
@@ -131,8 +213,20 @@ class TradeEntryManager:
                 "connector": connector_name
             }
             
+            # Add deduplication results if performed
+            if dedup_report:
+                result.update({
+                    "duplicates_removed": dedup_report['duplicates_removed'],
+                    "conflicts_requiring_review": len(dedup_report['conflicts_requiring_review']),
+                    "deduplication_summary": {
+                        "original_count": dedup_report['original_count'],
+                        "final_count": len(dedup_report['unique_trades']),
+                        "duplicates_found": len(dedup_report['duplicates_found'])
+                    }
+                })
+            
             if CENTRALIZED_LOGGING:
-                log_info("API trades imported", details=result, category=LogCategory.DATA_PROCESSING)
+                log_info("API trades imported with deduplication", details=result, category=LogCategory.DATA_PROCESSING)
             else:
                 logger.info(f"API trades imported from {connector_name}: {len(api_trades)} trades")
             

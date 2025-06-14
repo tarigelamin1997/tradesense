@@ -679,6 +679,35 @@ except:
 # Sync status widget
 render_sync_status_widget()
 
+# Deduplication status widget
+if current_user:
+    with st.sidebar.expander("🔍 Deduplication Status", expanded=False):
+        from deduplication_manager import dedup_manager
+        
+        try:
+            dedup_stats = dedup_manager.get_deduplication_stats(current_user['id'], days=30)
+            
+            st.metric("Registered Trades", dedup_stats['total_registered_trades'])
+            
+            if dedup_stats['resolution_stats']:
+                st.write("**Last 30 days:**")
+                for stat in dedup_stats['resolution_stats']:
+                    confidence_badge = "🟢" if stat['avg_confidence'] > 0.95 else "🟡" if stat['avg_confidence'] > 0.85 else "🔴"
+                    st.caption(f"{confidence_badge} {stat['action'].replace('_', ' ').title()}: {stat['count']}")
+            else:
+                st.caption("No duplicates found recently")
+                
+            if st.button("🧹 Cleanup Old Data", help="Remove old fingerprints to improve performance"):
+                cleaned = dedup_manager.cleanup_old_fingerprints(days_to_keep=365)
+                if cleaned > 0:
+                    st.success(f"Cleaned {cleaned} old records")
+                else:
+                    st.info("No old records to clean")
+                    
+        except Exception as e:
+            st.error(f"Error loading dedup stats: {str(e)}")
+            st.caption("Deduplication system may need initialization")
+
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)
 uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
@@ -1886,50 +1915,69 @@ if selected_file:
                         total_pnl = normalized_df['pnl'].sum()
                         st.metric("Total P&L", f"${total_pnl:,.2f}")
 
-                    # Merge data using universal model
+                    # Merge data using advanced deduplication
                     if st.button("🔄 Merge with Existing Data", key="merge_external_csv"):
                         try:
-                            # Convert existing data to universal model
-                            existing_model = UniversalTradeDataModel()
-                            existing_model = existing_model.from_dataframe(df, "existing")
+                            from trade_entry_manager import trade_manager
+                            
+                            # Use trade manager with deduplication
+                            result = trade_manager.add_file_trades(normalized_df, "external_csv", current_user['id'])
+                            
+                            if result['status'] == 'success':
+                                st.success(f"🎉 **Advanced Merge Complete!**")
+                                st.success(f"• Processed {result.get('deduplication_summary', {}).get('original_count', len(normalized_df))} trades")
+                                st.success(f"• Added {result['trades_added']} unique trades")
+                                
+                                # Show deduplication results
+                                if 'internal_duplicates_removed' in result and result['internal_duplicates_removed'] > 0:
+                                    st.success(f"• Removed {result['internal_duplicates_removed']} internal duplicates")
+                                
+                                if 'cross_source_duplicates_removed' in result and result['cross_source_duplicates_removed'] > 0:
+                                    st.success(f"• Removed {result['cross_source_duplicates_removed']} cross-source duplicates")
+                                
+                                if 'conflicts_requiring_review' in result and result['conflicts_requiring_review'] > 0:
+                                    st.warning(f"⚠️ {result['conflicts_requiring_review']} trades require manual review")
+                                
+                                # Get unified data from trade manager
+                                unified_df = trade_manager.get_all_trades_dataframe()
+                                
+                                if not unified_df.empty:
+                                    # Clear old cache before saving new data
+                                    st.cache_data.clear()
 
-                            # Add new trades
-                            new_trades = [TradeRecord.from_dict(row.to_dict()) for _, row in normalized_df.iterrows()]
-                            existing_model.add_trades(new_trades)
+                                    # Save merged data to session state to trigger re-analysis
+                                    st.session_state['merged_df'] = unified_df
+                                    st.session_state['data_updated'] = True
 
-                            # Remove duplicates
-                            duplicates_removed = existing_model.remove_duplicates()
+                                    # Force garbage collection after data operations
+                                    gc.collect()
 
-                            # Get final merged DataFrame
-                            merged_df = existing_model.get_dataframe()
-
-                            if duplicates_removed > 0:
-                                st.warning(f"⚠️ Removed {duplicates_removed} duplicate trades")
-
-                            if len(merged_df) > len(df):
-                                st.success(f"🎉 **Merge Complete!**")
-                                st.success(f"• Added {len(normalized_df)} new trades")
-                                st.success(f"• Skipped {duplicates_removed} duplicates")
-                                st.success(f"• Total trades: {len(merged_df)}")
-
-                                # Clear old cache before saving new data
-                                st.cache_data.clear()
-
-                                # Save merged data to session state to trigger re-analysis
-                                st.session_state['merged_df'] = merged_df
-                                st.session_state['data_updated'] = True
-
-                                # Force garbage collection after data operations
-                                gc.collect()
-
-                                st.info("🔄 **Page will refresh to show updated analytics...**")
-                                st.rerun()
-
+                                    st.info("🔄 **Page will refresh to show updated analytics...**")
+                                    st.rerun()
+                                else:
+                                    st.warning("No data available after merge")
+                            
                             else:
-                                st.warning("No new trades were added (all were duplicates)")
+                                st.error(f"❌ Merge failed: {result.get('message', 'Unknown error')}")
 
                         except Exception as e:
                             st.error(f"❌ Merge failed: {str(e)}")
+                            st.warning("Falling back to legacy merge...")
+                            
+                            # Fallback to original merge logic
+                            existing_model = UniversalTradeDataModel()
+                            existing_model = existing_model.from_dataframe(df, "existing")
+
+                            new_trades = [TradeRecord.from_dict(row.to_dict()) for _, row in normalized_df.iterrows()]
+                            existing_model.add_trades(new_trades)
+
+                            duplicates_removed = existing_model.remove_duplicates()
+                            merged_df = existing_model.get_dataframe()
+
+                            if len(merged_df) > len(df):
+                                st.session_state['merged_df'] = merged_df
+                                st.session_state['data_updated'] = True
+                                st.rerun()
 
                 except Exception as e:
                     st.error(f"❌ Normalization failed: {str(e)}")
@@ -2160,6 +2208,69 @@ if selected_file:
                     'partner_id': current_user.get('partner_id', ''),
                     'user_email': current_user['email']
                 }
+
+                # Check for duplicates using deduplication manager
+                from trade_entry_manager import trade_manager
+                
+                dedup_result = trade_manager.add_manual_trade(trade_entry, current_user['id'])
+                
+                if dedup_result['status'] == 'duplicate':
+                    st.error("❌ **DUPLICATE TRADE DETECTED**")
+                    st.error("This trade appears to be identical to an existing trade in your database.")
+                    
+                    duplicate_info = dedup_result['duplicate_info']
+                    st.error(f"**Existing Trade ID:** {duplicate_info.get('existing_trade_id', 'Unknown')}")
+                    st.error(f"**Match Type:** {duplicate_info.get('match_type', 'Unknown')}")
+                    st.error(f"**Confidence:** {duplicate_info.get('confidence', 0):.1%}")
+                    
+                    if duplicate_info.get('differences'):
+                        st.error("**Differences found:**")
+                        for field, (existing, new) in duplicate_info['differences'].items():
+                            st.error(f"• {field}: Existing='{existing}' vs New='{new}'")
+                    
+                    st.warning("💡 **Tip**: Check your recent trades or import history to avoid duplicates.")
+                    st.stop()
+                
+                elif dedup_result['status'] == 'needs_review':
+                    st.warning("⚠️ **POTENTIAL DUPLICATE DETECTED**")
+                    st.warning("This trade is similar to existing trades but requires manual review.")
+                    
+                    potential_matches = dedup_result['potential_matches']
+                    for i, match in enumerate(potential_matches[:2], 1):
+                        st.warning(f"**Match {i}:** Trade ID {match['existing_trade_id']} "
+                                 f"({match['confidence']:.1%} confidence)")
+                        if match.get('differences'):
+                            for field, (existing, new) in match['differences'].items():
+                                st.caption(f"  {field}: Existing='{existing}' vs New='{new}'")
+                    
+                    proceed = st.checkbox("⚠️ I understand this may be a duplicate but want to proceed anyway")
+                    if not proceed:
+                        st.info("Please review the potential matches above. Uncheck the box above if you want to add the trade anyway.")
+                        st.stop()
+                
+                elif dedup_result['status'] == 'error':
+                    st.error(f"❌ **Deduplication Error:** {dedup_result['message']}")
+                    st.warning("Proceeding with manual save (deduplication temporarily disabled)")
+                    # Fall back to manual CSV save below
+                
+                elif dedup_result['status'] == 'success':
+                    st.success("🎉 **TRADE SUBMISSION SUCCESSFUL!**")
+                    st.success("✅ **Deduplication Check Passed** - No duplicates found")
+                    
+                    # Trade summary
+                    rr_status = f"{rr_ratio:.3f}" if rr_ratio > 0 else "N/A (No Stop Loss)"
+                    rr_flag = " 🚨 Poor Risk/Reward" if 0 < rr_ratio < 1 else " ✅ Good Risk/Reward" if rr_ratio >= 1 else ""
+
+                    st.success(f"**Trade Details:**")
+                    st.success(f"• Symbol: {symbol.strip().upper()}")
+                    st.success(f"• Direction: {direction.upper()}")
+                    st.success(f"• P&L: ${pnl:.2f}")
+                    st.success(f"• Risk/Reward Ratio: {rr_status}{rr_flag}")
+                    st.success(f"• Tags: {', '.join(tags) if tags else 'None'}")
+                    st.success(f"• Trade ID: {dedup_result['trade_id']}")
+                    
+                    # Continue with legacy CSV save for backward compatibility
+                    # This ensures the trade also appears in the main interface
 
                 # Log the trade entry
                 log_user_action(

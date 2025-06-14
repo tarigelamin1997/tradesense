@@ -626,3 +626,316 @@ def log_sync_result(user_id: int, sync_type: str, connector_name: str,
         duration_seconds=duration_seconds,
         partner_id=partner_id
     )
+"""
+Centralized Logging & Error Handling System
+Records errors, warnings, sync failures, and major user actions.
+"""
+
+import logging
+import os
+import json
+from datetime import datetime
+from typing import Dict, Any, Optional
+from enum import Enum
+import traceback
+
+class LogCategory(Enum):
+    """Categories for different types of log entries."""
+    USER_ACTION = "user_action"
+    DATA_PROCESSING = "data_processing"
+    SYNC_OPERATION = "sync_operation"
+    AUTHENTICATION = "authentication"
+    SYSTEM_ERROR = "system_error"
+    BUSINESS_LOGIC = "business_logic"
+    PERFORMANCE = "performance"
+
+
+class CentralizedLogger:
+    """Centralized logging system with categorization and structured logging."""
+    
+    def __init__(self, log_dir: str = "logs"):
+        """Initialize the centralized logger."""
+        self.log_dir = log_dir
+        self._ensure_log_directory()
+        self._setup_loggers()
+        self._error_alerts = []
+        self._critical_threshold = 5  # Alert after 5 critical errors
+    
+    def _ensure_log_directory(self):
+        """Create log directory if it doesn't exist."""
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+    
+    def _setup_loggers(self):
+        """Setup different loggers for different categories."""
+        # Main application logger
+        self.main_logger = self._create_logger(
+            "tradesense_main",
+            os.path.join(self.log_dir, "application.log")
+        )
+        
+        # Error logger
+        self.error_logger = self._create_logger(
+            "tradesense_errors",
+            os.path.join(self.log_dir, "errors.log"),
+            level=logging.ERROR
+        )
+        
+        # User action logger
+        self.user_logger = self._create_logger(
+            "tradesense_users",
+            os.path.join(self.log_dir, "user_actions.log")
+        )
+        
+        # Sync operation logger
+        self.sync_logger = self._create_logger(
+            "tradesense_sync",
+            os.path.join(self.log_dir, "sync_operations.log")
+        )
+    
+    def _create_logger(self, name: str, filename: str, level: int = logging.INFO) -> logging.Logger:
+        """Create a configured logger."""
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+        
+        # Avoid duplicate handlers
+        if not logger.handlers:
+            # File handler
+            file_handler = logging.FileHandler(filename)
+            file_handler.setLevel(level)
+            
+            # Console handler for errors
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.WARNING)
+            
+            # Formatter
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            file_handler.setFormatter(formatter)
+            console_handler.setFormatter(formatter)
+            
+            logger.addHandler(file_handler)
+            logger.addHandler(console_handler)
+        
+        return logger
+    
+    def log_info(self, message: str, details: Dict[str, Any] = None, 
+                 category: LogCategory = LogCategory.SYSTEM_ERROR, 
+                 user_id: str = None, partner_id: str = None):
+        """Log informational message."""
+        structured_log = self._create_structured_log(
+            "INFO", message, details, category, user_id, partner_id
+        )
+        
+        if category == LogCategory.USER_ACTION:
+            self.user_logger.info(structured_log)
+        elif category == LogCategory.SYNC_OPERATION:
+            self.sync_logger.info(structured_log)
+        else:
+            self.main_logger.info(structured_log)
+    
+    def log_warning(self, message: str, details: Dict[str, Any] = None,
+                   category: LogCategory = LogCategory.SYSTEM_ERROR,
+                   user_id: str = None, partner_id: str = None):
+        """Log warning message."""
+        structured_log = self._create_structured_log(
+            "WARNING", message, details, category, user_id, partner_id
+        )
+        
+        self.main_logger.warning(structured_log)
+        
+    def log_error(self, message: str, details: Dict[str, Any] = None,
+                  category: LogCategory = LogCategory.SYSTEM_ERROR,
+                  user_id: str = None, partner_id: str = None,
+                  exc_info: bool = True):
+        """Log error message with optional exception info."""
+        structured_log = self._create_structured_log(
+            "ERROR", message, details, category, user_id, partner_id
+        )
+        
+        if exc_info:
+            structured_log["exception"] = traceback.format_exc()
+        
+        self.error_logger.error(structured_log)
+        self.main_logger.error(structured_log)
+        
+        # Track for alerts
+        self._error_alerts.append({
+            "timestamp": datetime.now().isoformat(),
+            "message": message,
+            "category": category.value,
+            "user_id": user_id,
+            "partner_id": partner_id
+        })
+        
+        # Check if we need to alert
+        self._check_error_threshold()
+    
+    def log_critical(self, message: str, details: Dict[str, Any] = None,
+                    category: LogCategory = LogCategory.SYSTEM_ERROR,
+                    user_id: str = None, partner_id: str = None):
+        """Log critical error that requires immediate attention."""
+        structured_log = self._create_structured_log(
+            "CRITICAL", message, details, category, user_id, partner_id
+        )
+        structured_log["exception"] = traceback.format_exc()
+        
+        self.error_logger.critical(structured_log)
+        self.main_logger.critical(structured_log)
+        
+        # Immediate alert for critical errors
+        self._send_critical_alert(message, details, user_id, partner_id)
+    
+    def log_sync_failure(self, connector_name: str, error_message: str,
+                        user_id: str = None, partner_id: str = None,
+                        details: Dict[str, Any] = None):
+        """Log synchronization failure for connectors."""
+        sync_details = {
+            "connector": connector_name,
+            "error": error_message,
+            **(details or {})
+        }
+        
+        self.log_error(
+            f"Sync failure in connector {connector_name}",
+            details=sync_details,
+            category=LogCategory.SYNC_OPERATION,
+            user_id=user_id,
+            partner_id=partner_id
+        )
+    
+    def log_user_action(self, user_id: str, action: str, details: Dict[str, Any] = None,
+                       partner_id: str = None, page_context: str = None):
+        """Log user actions for audit trail."""
+        action_details = {
+            "action": action,
+            "page_context": page_context,
+            **(details or {})
+        }
+        
+        self.log_info(
+            f"User action: {action}",
+            details=action_details,
+            category=LogCategory.USER_ACTION,
+            user_id=user_id,
+            partner_id=partner_id
+        )
+    
+    def get_error_summary(self, hours: int = 24) -> Dict[str, Any]:
+        """Get error summary for the last N hours."""
+        cutoff_time = datetime.now().timestamp() - (hours * 3600)
+        
+        recent_errors = [
+            error for error in self._error_alerts
+            if datetime.fromisoformat(error["timestamp"]).timestamp() > cutoff_time
+        ]
+        
+        # Categorize errors
+        error_categories = {}
+        for error in recent_errors:
+            category = error["category"]
+            if category not in error_categories:
+                error_categories[category] = 0
+            error_categories[category] += 1
+        
+        return {
+            "total_errors": len(recent_errors),
+            "categories": error_categories,
+            "recent_errors": recent_errors[-10:],  # Last 10 errors
+            "time_period_hours": hours
+        }
+    
+    def clear_error_alerts(self):
+        """Clear error alerts (after they've been addressed)."""
+        self._error_alerts.clear()
+    
+    def _create_structured_log(self, level: str, message: str, 
+                              details: Dict[str, Any] = None,
+                              category: LogCategory = LogCategory.SYSTEM_ERROR,
+                              user_id: str = None, partner_id: str = None) -> str:
+        """Create structured log entry."""
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "level": level,
+            "message": message,
+            "category": category.value,
+            "user_id": user_id,
+            "partner_id": partner_id,
+            "details": details or {}
+        }
+        
+        return json.dumps(log_entry, default=str)
+    
+    def _check_error_threshold(self):
+        """Check if error threshold is exceeded and alert."""
+        recent_errors = [
+            error for error in self._error_alerts
+            if datetime.fromisoformat(error["timestamp"]).timestamp() > 
+               (datetime.now().timestamp() - 3600)  # Last hour
+        ]
+        
+        if len(recent_errors) >= self._critical_threshold:
+            self._send_critical_alert(
+                f"High error rate detected: {len(recent_errors)} errors in the last hour",
+                {"recent_errors": recent_errors}
+            )
+    
+    def _send_critical_alert(self, message: str, details: Dict[str, Any] = None,
+                           user_id: str = None, partner_id: str = None):
+        """Send critical alert (placeholder for actual alerting system)."""
+        alert = {
+            "timestamp": datetime.now().isoformat(),
+            "type": "CRITICAL_ALERT",
+            "message": message,
+            "details": details or {},
+            "user_id": user_id,
+            "partner_id": partner_id
+        }
+        
+        # For now, just log to console - replace with actual alerting system
+        print(f"🚨 CRITICAL ALERT: {json.dumps(alert, indent=2)}")
+
+
+# Global logger instance
+centralized_logger = CentralizedLogger()
+
+# Convenience functions for easy access
+def log_info(message: str, details: Dict[str, Any] = None, 
+             category: LogCategory = LogCategory.SYSTEM_ERROR,
+             user_id: str = None, partner_id: str = None):
+    """Log info message."""
+    centralized_logger.log_info(message, details, category, user_id, partner_id)
+
+def log_warning(message: str, details: Dict[str, Any] = None,
+                category: LogCategory = LogCategory.SYSTEM_ERROR,
+                user_id: str = None, partner_id: str = None):
+    """Log warning message."""
+    centralized_logger.log_warning(message, details, category, user_id, partner_id)
+
+def log_error(message: str, details: Dict[str, Any] = None,
+              category: LogCategory = LogCategory.SYSTEM_ERROR,
+              user_id: str = None, partner_id: str = None):
+    """Log error message."""
+    centralized_logger.log_error(message, details, category, user_id, partner_id)
+
+def log_critical(message: str, details: Dict[str, Any] = None,
+                 category: LogCategory = LogCategory.SYSTEM_ERROR,
+                 user_id: str = None, partner_id: str = None):
+    """Log critical message."""
+    centralized_logger.log_critical(message, details, category, user_id, partner_id)
+
+def log_sync_failure(connector_name: str, error_message: str,
+                    user_id: str = None, partner_id: str = None,
+                    details: Dict[str, Any] = None):
+    """Log sync failure."""
+    centralized_logger.log_sync_failure(connector_name, error_message, user_id, partner_id, details)
+
+def log_user_action(user_id: str, action: str, details: Dict[str, Any] = None,
+                   partner_id: str = None, page_context: str = None):
+    """Log user action."""
+    centralized_logger.log_user_action(user_id, action, details, partner_id, page_context)
+
+def get_error_summary(hours: int = 24) -> Dict[str, Any]:
+    """Get error summary."""
+    return centralized_logger.get_error_summary(hours)

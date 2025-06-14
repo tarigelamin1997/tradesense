@@ -2118,7 +2118,7 @@ if selected_file:
                     if 'tags' in existing_trades.columns:
                         for tag_string in existing_trades['tags'].dropna():
                             if tag_string and str(tag_string).strip():
-                                existing_tag_list = [tag.strip() for tag in str(tag_string).split(',')]
+                                existing_tag_list = [tag.stripfor tag in str(tag_string).split(',')]
                                 existing_tags.update(existing_tag_list)
                 except:
                     pass
@@ -2230,7 +2230,8 @@ if selected_file:
         "🤝 Partners",
         "💼 Bulk Provision",
         "🔗 Affiliates",
-        "💳 Billing"
+        "💳 Billing",
+        "🛠️ Admin Dashboard"
     ]
 
     # Render navigation menu
@@ -2256,21 +2257,12 @@ if selected_file:
         render_affiliate_management_ui()
 
     elif selected_tab == "💳 Billing":
-        # Track usage for billing
-        if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
-            current_user = st.session_state.current_user
-            partner_id = current_user.get('partner_id')
-
-            if partner_id:
-                billing_manager = PartnerBillingManager()
-                billing_manager.track_usage(
-                    partner_id=partner_id,
-                    user_id=current_user.get('id'),
-                    usage_type='billing_dashboard_view',
-                    amount=1.0
-                )
-
+        from partner_billing import render_partner_billing_dashboard
         render_partner_billing_dashboard()
+
+    elif selected_tab == "🛠️ Admin Dashboard":
+        from admin_dashboard import render_admin_monitoring_dashboard
+        render_admin_monitoring_dashboard()
 
     # Track user activity for partner analytics
     if hasattr(st.session_state, 'current_user') and st.session_state.current_user:

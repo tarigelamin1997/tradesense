@@ -23,6 +23,16 @@ def load_connectors(connector_dirs: List[str] = None) -> Dict[str, Any]:
             "connectors/api"
         ]
     
+    # Initialize registry with built-in connectors
+    from .brokers.interactive_brokers import InteractiveBrokersConnector
+    from .brokers.td_ameritrade import TDAmeritudeConnector  
+    from .brokers.apex_trader import ApexTraderConnector
+    
+    # Register built-in connectors
+    registry.register(InteractiveBrokersConnector, 'interactive_brokers')
+    registry.register(TDAmeritudeConnector, 'td_ameritrade')
+    registry.register(ApexTraderConnector, 'apex_trader')
+    
     results = {
         'loaded': [],
         'errors': [],

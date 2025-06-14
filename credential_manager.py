@@ -21,26 +21,52 @@ class CredentialManager:
         self.init_credentials_table()
     
     def _get_or_create_encryption_key(self) -> bytes:
-        """Get or create master encryption key."""
-        # Check if key exists in environment
+        """Get or create master encryption key with enhanced persistence."""
+        # Check if key exists in environment (Replit Secrets)
         key_b64 = os.environ.get('TRADESENSE_MASTER_KEY')
         
         if key_b64:
             try:
-                return base64.urlsafe_b64decode(key_b64)
-            except:
-                pass
+                # Validate the key format and decode
+                decoded_key = base64.urlsafe_b64decode(key_b64)
+                # Test if key works with Fernet
+                test_cipher = Fernet(decoded_key)
+                # Key is valid
+                return decoded_key
+            except Exception as e:
+                st.error(f"⚠️ Invalid encryption key in environment: {str(e)}")
+                st.warning("Generating new encryption key...")
         
-        # Generate new key if not found
+        # Check for backup key in database
+        backup_key = self._get_backup_key_from_db()
+        if backup_key:
+            try:
+                decoded_key = base64.urlsafe_b64decode(backup_key)
+                test_cipher = Fernet(decoded_key)
+                # Update environment with backup key
+                os.environ['TRADESENSE_MASTER_KEY'] = backup_key
+                st.success("🔑 Restored encryption key from backup")
+                return decoded_key
+            except:
+                st.warning("Backup key is also invalid, generating new key...")
+        
+        # Generate new key if not found or invalid
         key = Fernet.generate_key()
         key_b64 = base64.urlsafe_b64encode(key).decode()
         
         # Store in environment for this session
         os.environ['TRADESENSE_MASTER_KEY'] = key_b64
         
+        # Store backup in database
+        self._store_backup_key_in_db(key_b64)
+        
         # Alert user to store this key securely
-        st.warning(f"🔐 New encryption key generated. Store this securely: `{key_b64}`")
-        st.info("Add this to your environment variables as TRADESENSE_MASTER_KEY")
+        st.warning("🔐 **New encryption key generated**")
+        st.code(key_b64, language="text")
+        st.error("🚨 **IMPORTANT**: Add this key to Replit Secrets as `TRADESENSE_MASTER_KEY`")
+        st.info("1. Click the 🔒 Secrets tool in the sidebar")
+        st.info("2. Add secret: Key=`TRADESENSE_MASTER_KEY`, Value=`(copy key above)`")
+        st.info("3. This key will encrypt all your stored credentials")
         
         return key
     
@@ -69,6 +95,17 @@ class CredentialManager:
             )
         ''')
         
+        # Create backup key storage table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS encryption_keys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key_id TEXT UNIQUE NOT NULL,
+                encrypted_key TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE
+            )
+        ''')
+        
         # Index for performance
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_credential_id 
@@ -80,8 +117,56 @@ class CredentialManager:
             ON encrypted_credentials (credential_type, user_id)
         ''')
         
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_key_id 
+            ON encryption_keys (key_id)
+        ''')
+        
         conn.commit()
         conn.close()
+    
+    def _store_backup_key_in_db(self, key_b64: str) -> None:
+        """Store backup encryption key in database."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Simple obfuscation for backup storage (not encryption, just basic protection)
+            obfuscated_key = base64.b64encode(key_b64.encode()).decode()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO encryption_keys (key_id, encrypted_key, is_active)
+                VALUES (?, ?, ?)
+            ''', ('master_backup', obfuscated_key, True))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            # Silently fail - backup storage is optional
+            pass
+    
+    def _get_backup_key_from_db(self) -> Optional[str]:
+        """Retrieve backup encryption key from database."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT encrypted_key FROM encryption_keys 
+                WHERE key_id = ? AND is_active = TRUE
+            ''', ('master_backup',))
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result:
+                # Deobfuscate the stored key
+                obfuscated_key = result[0]
+                return base64.b64decode(obfuscated_key).decode()
+            
+            return None
+        except Exception:
+            return None
     
     def store_credential(self, 
                         credential_id: str,
@@ -430,6 +515,71 @@ class CredentialManager:
         conn.close()
         
         return deleted_count
+    
+    def validate_encryption_key(self) -> Dict[str, any]:
+        """Validate the current encryption key and provide status."""
+        try:
+            # Test encryption/decryption with current key
+            test_data = {"test": "validation_data"}
+            test_json = json.dumps(test_data)
+            
+            # Try to encrypt
+            encrypted_data = self.cipher_suite.encrypt(test_json.encode())
+            
+            # Try to decrypt
+            decrypted_data = self.cipher_suite.decrypt(encrypted_data)
+            parsed_data = json.loads(decrypted_data.decode())
+            
+            # Check if data matches
+            is_valid = parsed_data == test_data
+            
+            return {
+                "is_valid": is_valid,
+                "has_env_key": bool(os.environ.get('TRADESENSE_MASTER_KEY')),
+                "has_backup": bool(self._get_backup_key_from_db()),
+                "error": None
+            }
+            
+        except Exception as e:
+            return {
+                "is_valid": False,
+                "has_env_key": bool(os.environ.get('TRADESENSE_MASTER_KEY')),
+                "has_backup": bool(self._get_backup_key_from_db()),
+                "error": str(e)
+            }
+    
+    def get_key_status_display(self) -> None:
+        """Display current encryption key status in Streamlit."""
+        status = self.validate_encryption_key()
+        
+        if status["is_valid"]:
+            st.success("🔐 Encryption key is valid and working")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if status["has_env_key"]:
+                    st.success("✅ Environment key found")
+                else:
+                    st.warning("⚠️ No environment key")
+            
+            with col2:
+                if status["has_backup"]:
+                    st.info("💾 Backup key available")
+                else:
+                    st.info("💾 No backup key")
+        else:
+            st.error("❌ Encryption key validation failed")
+            if status["error"]:
+                st.error(f"Error: {status['error']}")
+            
+            if not status["has_env_key"]:
+                st.warning("🔑 No encryption key found in environment")
+                st.info("Add TRADESENSE_MASTER_KEY to Replit Secrets")
+            
+            if status["has_backup"]:
+                st.info("💾 Backup key available - attempting recovery...")
+            else:
+                st.warning("💾 No backup key available")
 
 
 # Integration with existing auth system
@@ -577,6 +727,44 @@ def render_credential_list(credential_manager: CredentialManager, current_user: 
                             st.rerun()
     else:
         st.info("No credentials stored yet")
+    
+    # Key Management Section
+    st.subheader("🔑 Encryption Key Management")
+    credential_manager.get_key_status_display()
+    
+    with st.expander("🔧 Advanced Key Management"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔍 Validate Key"):
+                status = credential_manager.validate_encryption_key()
+                if status["is_valid"]:
+                    st.success("✅ Key validation successful")
+                else:
+                    st.error(f"❌ Key validation failed: {status.get('error', 'Unknown error')}")
+        
+        with col2:
+            if st.button("🔄 Regenerate Key", help="Generate new encryption key (will require re-entering all credentials)"):
+                # This is a dangerous operation - require confirmation
+                st.error("⚠️ **WARNING**: This will invalidate all stored credentials!")
+                st.error("You will need to re-enter all OAuth tokens, API keys, and broker credentials.")
+                
+                confirm = st.checkbox("I understand and want to proceed", key="confirm_key_regen")
+                if confirm and st.button("🔥 CONFIRM REGENERATE", type="primary"):
+                    # Generate new key
+                    new_key = Fernet.generate_key()
+                    new_key_b64 = base64.urlsafe_b64encode(new_key).decode()
+                    
+                    # Store backup
+                    credential_manager._store_backup_key_in_db(new_key_b64)
+                    
+                    # Update environment
+                    os.environ['TRADESENSE_MASTER_KEY'] = new_key_b64
+                    
+                    st.success("🔑 New encryption key generated!")
+                    st.code(new_key_b64, language="text")
+                    st.error("🚨 **UPDATE YOUR SECRETS**: Replace TRADESENSE_MASTER_KEY in Replit Secrets with the key above")
+                    st.warning("🔄 All existing credentials have been invalidated")
     
     # Cleanup expired credentials
     if st.button("🧹 Cleanup Expired Credentials"):

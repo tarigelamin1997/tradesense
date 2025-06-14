@@ -16,6 +16,9 @@ from fpdf import FPDF
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
 from data_import.utils import load_trade_data
+from connectors import load_connectors, ConnectorRegistry
+from connectors.registry import registry
+from connectors.loader import get_available_connectors, test_connector
 from data_validation import DataValidator, create_data_correction_interface
 from analytics import (
     compute_basic_stats,
@@ -1556,6 +1559,152 @@ if selected_file:
         pdf_bytes = generate_pdf(stats, risk)
         st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
+    # Connector Management Section
+    st.subheader('🔌 Data Connectors')
+    
+    # Load available connectors
+    if 'connectors_loaded' not in st.session_state:
+        with st.spinner("Loading connectors..."):
+            load_results = load_connectors()
+            st.session_state.connectors_loaded = True
+            if load_results['errors']:
+                st.warning(f"⚠️ {len(load_results['errors'])} connector loading errors")
+                with st.expander("View Errors"):
+                    for error in load_results['errors']:
+                        st.error(f"File: {error['file']} - {error['error']}")
+    
+    # Connector selection and management
+    with st.expander("🔧 Connector Manager", expanded=False):
+        available_connectors = get_available_connectors()
+        
+        if available_connectors:
+            st.write(f"**Available Connectors:** {len(available_connectors)}")
+            
+            connector_options = [f"{conn['name']} ({conn.get('type', 'unknown')})" 
+                               for conn in available_connectors if 'error' not in conn]
+            
+            if connector_options:
+                selected_connector = st.selectbox(
+                    "Select Connector:",
+                    options=[""] + connector_options,
+                    help="Choose a connector to import trade data"
+                )
+                
+                if selected_connector:
+                    connector_name = selected_connector.split(' (')[0]
+                    
+                    # Get connector instance for configuration
+                    try:
+                        instance = registry.create_instance(connector_name)
+                        metadata = instance.get_metadata()
+                        
+                        st.write(f"**Connector Type:** {metadata['type']}")
+                        st.write(f"**Supported Formats:** {', '.join(metadata['supported_formats'])}")
+                        
+                        # Configuration form
+                        if metadata['config_required']:
+                            st.write("**Required Configuration:**")
+                            config = {}
+                            
+                            for config_key in metadata['config_required']:
+                                if config_key == 'file_path':
+                                    uploaded_file = st.file_uploader(
+                                        f"Upload {metadata['supported_formats'][0].upper()} file",
+                                        type=metadata['supported_formats'],
+                                        key=f"connector_{connector_name}_file"
+                                    )
+                                    if uploaded_file:
+                                        # Save uploaded file temporarily
+                                        import tempfile
+                                        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
+                                            tmp_file.write(uploaded_file.getvalue())
+                                            config['file_path'] = tmp_file.name
+                                else:
+                                    config[config_key] = st.text_input(
+                                        f"{config_key.replace('_', ' ').title()}:",
+                                        key=f"connector_{connector_name}_{config_key}",
+                                        type="password" if "secret" in config_key.lower() or "key" in config_key.lower() else "default"
+                                    )
+                            
+                            # Test connection and import data
+                            col_test, col_import = st.columns(2)
+                            
+                            with col_test:
+                                if st.button("🔍 Test Connection", key=f"test_{connector_name}"):
+                                    if all(config.values()):
+                                        with st.spinner("Testing connection..."):
+                                            # Authenticate
+                                            auth_success = instance.authenticate(config)
+                                            if auth_success:
+                                                # Test data quality
+                                                test_result = test_connector(connector_name, config)
+                                                
+                                                if test_result['connection_status'] == 'ok':
+                                                    st.success("✅ Connection successful!")
+                                                    
+                                                    quality = test_result['quality_report']
+                                                    if quality['status'] == 'success':
+                                                        st.success(f"📊 Sample data: {quality['sample_size']} trades")
+                                                        if quality['missing_required']:
+                                                            st.warning(f"⚠️ Missing columns: {', '.join(quality['missing_required'])}")
+                                                    else:
+                                                        st.error(f"❌ Data quality issue: {quality.get('message', 'Unknown error')}")
+                                                else:
+                                                    st.error("❌ Connection failed")
+                                            else:
+                                                st.error("❌ Authentication failed")
+                                    else:
+                                        st.warning("Please fill in all required configuration fields")
+                            
+                            with col_import:
+                                if st.button("📥 Import Data", key=f"import_{connector_name}", type="primary"):
+                                    if all(config.values()):
+                                        with st.spinner("Importing trade data..."):
+                                            try:
+                                                # Authenticate and fetch data
+                                                auth_success = instance.authenticate(config)
+                                                if auth_success:
+                                                    raw_trades = instance.fetch_trades()
+                                                    if raw_trades:
+                                                        normalized_df = instance.normalize_data(raw_trades)
+                                                        
+                                                        if not normalized_df.empty:
+                                                            # Clear old cache
+                                                            st.cache_data.clear()
+                                                            
+                                                            # Merge with existing data if available
+                                                            if 'merged_df' in st.session_state or not df.empty:
+                                                                existing_df = st.session_state.get('merged_df', df)
+                                                                merged_df = pd.concat([existing_df, normalized_df], ignore_index=True)
+                                                                st.session_state['merged_df'] = merged_df
+                                                            else:
+                                                                st.session_state['merged_df'] = normalized_df
+                                                            
+                                                            st.session_state['data_updated'] = True
+                                                            
+                                                            st.success(f"🎉 Imported {len(normalized_df)} trades from {connector_name}")
+                                                            st.info("🔄 Page will refresh to show updated analytics...")
+                                                            st.rerun()
+                                                        else:
+                                                            st.warning("No valid trade data found after normalization")
+                                                    else:
+                                                        st.warning("No trade data available from connector")
+                                                else:
+                                                    st.error("Authentication failed")
+                                            except Exception as e:
+                                                st.error(f"Import error: {str(e)}")
+                                    else:
+                                        st.warning("Please complete configuration first")
+                        else:
+                            st.info("No configuration required for this connector")
+                            
+                    except Exception as e:
+                        st.error(f"Error loading connector: {str(e)}")
+            else:
+                st.warning("No working connectors available")
+        else:
+            st.warning("No connectors found. Check connector loading errors above.")
+    
     # External CSV Upload Section
     st.subheader('📂 Import External CSV Trades')
 

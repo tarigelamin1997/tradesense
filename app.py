@@ -1,6 +1,3 @@
-The code has been modified to fix the syntax error by properly nesting the `except` block within the `try` block related to rolling metrics chart generation.
-</text>
-```replit_final_file>
 import streamlit as st
 import pandas as pd
 import numpy as np

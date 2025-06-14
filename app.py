@@ -727,7 +727,7 @@ if current_user:
 
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)
-```python
+
 uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
 
 if use_sample:

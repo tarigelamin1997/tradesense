@@ -1663,10 +1663,10 @@ if selected_file:
     with st.expander("🔗 Broker & Prop Firm Integrations", expanded=False):
         from integration_manager import render_integration_management_ui
         from auth import AuthManager
-        
+
         auth_manager = AuthManager()
         current_user = auth_manager.get_current_user()
-        
+
         if current_user:
             render_integration_management_ui(current_user)
         else:
@@ -2433,3 +2433,46 @@ class UniversalTradeDataModel(BaseModel):
 
         self.trades = normalized_trades
         return self
+
+# Placeholder function for rendering the sync dashboard
+def render_sync_dashboard(current_user):
+    st.write("## Sync Dashboard")
+    st.write("This dashboard will provide an overview of connector synchronization status.")
+    # Add connector status and details here, using current_user for security
+    if current_user:
+        st.write(f"Welcome, {current_user['first_name']}!")
+        # Display connector status for this user
+
+    else:
+        st.warning("Please log in to view the Sync Dashboard.")
+
+# Sidebar navigation
+with st.sidebar:
+    st.header("Navigation")
+
+    page = st.radio(
+        "Choose a page",
+        [
+            "📊 Analytics", "📈 Risk Tool", "🔗 Integrations", "🔄 Sync Dashboard", "⚙️ Admin"
+        ],
+        index=0,
+    )
+
+    if page == "⚙️ Admin":
+        if current_user and current_user.get('is_admin'):
+            render_job_management_interface(current_user)
+            render_auth_interface()
+        else:
+            st.warning("Admin access required")
+    elif page == "📈 Risk Tool":
+        if selected_file:
+            st.info("Risk Tool - coming soon!")
+        else:
+            st.warning("Please load trade data to use this tool")
+    elif page == "📊 Analytics":
+        pass
+    elif page == "🔗 Integrations":
+        render_integration_management_ui(current_user)
+
+    elif page == "🔄 Sync Dashboard":
+        render_sync_dashboard(current_user)

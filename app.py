@@ -34,6 +34,7 @@ from risk_tool import assess_risk
 from payment import PaymentGateway
 from auth import AuthManager, require_auth
 from partner_management import render_auth_interface, PartnerManager
+from scheduler_ui import render_job_management_interface, render_sync_status_widget
 
 
 @st.cache_data
@@ -616,6 +617,9 @@ except:
         clear_memory_cache()  # Function now handles its own feedback
         st.rerun()
 
+# Sync status widget
+render_sync_status_widget()
+
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)
 uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
@@ -1108,8 +1112,8 @@ if selected_file:
 
     st.divider()
 
-    overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab = st.tabs(
-        ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal"]
+    overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab, jobs_tab = st.tabs(
+        ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal", "Background Jobs"]
     )
 
     # Track current tab for feedback context
@@ -1566,6 +1570,10 @@ if selected_file:
                 st.success('Entry added')
         if st.session_state.journal_entries:
             st.dataframe(pd.DataFrame(st.session_state.journal_entries))
+
+    with jobs_tab:
+        st.session_state.current_tab = 'Background Jobs'
+        render_job_management_interface(current_user)
 
     st.subheader('Risk Assessment')
 

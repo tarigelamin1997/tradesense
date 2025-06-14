@@ -1399,7 +1399,8 @@ if selected_file:
         dur_col4.metric('Median Duration', f"{format_number(duration['median_minutes'], 0)} min")
 
         streak = max_streaks(filtered_df)
-        st.subheader('Streak Analysis')
+        st```text
+subheader('Streak Analysis')
 
         streak_col1, streak_col2 = st.columns(2)
         streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
@@ -2120,4 +2121,65 @@ if selected_file:
                         for tag_string in existing_trades['tags'].dropna():
                             if tag_string and str(tag_string).strip():
                                 existing_tag_list = [tag.strip() for tag in str(tag_string).split(',')]
-                                existing_tags.update(existing_tag_list)
+                                try:
+                                  existing_tags.update(existing_tag_list)
+                                except:
+                                    pass
+                except:
+                    pass
+
+            available_tags = sorted(list(existing_tags))
+            selected_tags = st.multiselect("Tags (select or create new)", options=available_tags, default=[])
+
+        with col_tag2:
+            new_tag = st.text_input("Create new tag", placeholder="Enter new tag name")
+            if st.button("Add new tag"):
+                if new_tag and new_tag.strip():
+                    selected_tags.append(new_tag.strip())
+                    st.success(f"Added new tag: {new_tag.strip()}")
+
+        submitted = st.form_submit_button("Add Trade")
+
+        if submitted:
+            # Validate required fields
+            if not all([symbol, entry_price, exit_price, trade_size, direction, result]):
+                st.error("Please fill in all required fields.")
+                st.stop()
+
+            # Prepare data for the new trade entry
+            new_trade = {
+                'symbol': symbol,
+                'entry_time': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'exit_time': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'entry_price': float(entry_price),
+                'exit_price': float(exit_price),
+                'qty': float(trade_size),
+                'direction': direction,
+                'pnl': float(exit_price - entry_price) * float(trade_size) if direction == 'long' else float(entry_price - exit_price) * float(trade_size),
+                'trade_type': result,
+                'broker': 'Manual Entry',
+                'tags': ','.join(selected_tags) if selected_tags else '',
+                'stop_loss': float(stop_loss) if stop_loss else 0.0,
+                'notes': notes
+            }
+
+            # Handle user association
+            if current_user:
+                new_trade['user_id'] = current_user['id']
+
+            # Add the new trade to the trades.csv file
+            try:
+                new_trade_df = pd.DataFrame([new_trade])
+
+                # Try to load existing data
+                try:
+                    existing_trades = pd.read_csv('trades.csv')
+                    all_trades = pd.concat([existing_trades, new_trade_df], ignore_index=True)
+                except FileNotFoundError:
+                    all_trades = new_trade_df
+
+                all_trades.to_csv('trades.csv', index=False)
+                st.success("Trade added successfully!")
+
+            except Exception as e:
+                st.error(f"Error adding trade: {str(e)}")

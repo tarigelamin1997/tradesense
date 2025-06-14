@@ -728,7 +728,7 @@ if selected_file:
 
         # Show what analytics will be affected
         affected_features = []
-        if 'entry_time' not in df.columns or 'exit_time' notin df.columns:
+        if 'entry_time' not in df.columns or 'exit_time' not in df.columns:
             affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])            
         if 'pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
             affected_features.extend(['P&L analytics', 'Performance metrics'])

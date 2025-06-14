@@ -2278,34 +2278,3 @@ if selected_file:
             'tab': selected_tab,
             'user_id': st.session_state.current_user.get('id')
         })
-
-    # Execute the sync
-                    sync_result = sync_engine.sync_user_trades(current_user['id'])
-
-                    if sync_result['success']:
-                        st.success(f"✅ Sync completed! {sync_result['trades_imported']} trades imported.")
-
-                        # Track billing usage for trade imports
-                        if current_user.get('partner_id') and sync_result['trades_imported'] > 0:
-                            try:
-                                billing_manager = PartnerBillingManager()
-                                billing_manager.track_usage(
-                                    partner_id=current_user['partner_id'],
-                                    user_id=current_user['id'],
-                                    usage_type='trade_import',
-                                    amount=sync_result['trades_imported']
-                                )
-                            except Exception as e:
-                                # Don't fail the sync if billing tracking fails
-                                pass
-
-                        # Show any warnings
-                        if sync_result.get('warnings'):
-                            for warning in sync_result['warnings']:
-                                st.warning(f"⚠️ {warning}")
-
-                        # Show sync summary
-                        if sync_result.get('summary'):
-                            st.info(f"📊 {sync_result['summary']}")
-                    else:
-                        st.error(f"❌ Sync failed: {sync_result['error']}")

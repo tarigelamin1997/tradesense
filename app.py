@@ -729,9 +729,8 @@ if selected_file:
         # Show what analytics will be affected
         affected_features = []
         if 'entry_time' not in df.columns or 'exit_time' not in df.columns:
-            affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])            
-        if '```python
-pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
+            affected_features.extend(['Time-series analysis', ''Duration analysis', 'Calendar view'])            
+        if 'pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
             affected_features.extend(['P&L analytics', 'Performance metrics'])
         if 'symbol' not in df.columns:
             affected_features.extend(['Symbol-based analysis'])
@@ -1390,8 +1389,7 @@ pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 
                         st.info(f"Rolling data generated: {len(rolling)} periods, Chart data after cleaning: {len(chart_data)}")
                 else:
                     st.warning(f"⚠️ Unable to generate rolling metrics: Generated {len(rolling)} rolling periods (need at least 2)")
-                    st.info(f"Available trades: {len(filtered_df)}, Required for rolling analysis: {```python
-min_trades_for_rolling}")
+                    st.info(f"Available trades: {len(filtered_df)}, Required for rolling analysis: {min_trades_for_rolling}")
 
             except Exception as e:
                 st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
@@ -2105,8 +2103,7 @@ min_trades_for_rolling}")
 
                 # Calculate RR ratio for the new trade
                 if stop_loss > 0:
-                    if```python
- direction == 'long':
+                    if direction == 'long':
                         risk = abs(entry_price - stop_loss)
                         reward = abs(exit_price - entry_price)
                     else:  # short

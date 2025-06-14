@@ -33,9 +33,12 @@ from analytics import (
 from risk_tool import assess_risk
 from payment import PaymentGateway
 from auth import AuthManager, require_auth
-from partner_management import render_auth_interface
+from partner_analytics import render_partner_analytics_widget, track_user_action
 from partner_portal import render_partner_portal
 from affiliate_system import render_affiliate_management_ui
+from affiliate_integration import integrate_affiliate_tracking, track_new_user_conversion
+from bulk_provisioning import render_bulk_provisioning_ui
+from partner_billing import render_partner_billing_dashboard, PartnerBillingManager
 from scheduler_ui import render_job_management_interface, render_sync_status_widget
 from notification_system import (
     render_notification_center, 
@@ -2121,3 +2124,188 @@ if selected_file:
                     pass
 
             available_tags = sorted([tag for tag in existing_tags if tag])
+
+            # Dynamic tag selection with multi-select
+            selected_tags = st.multiselect(
+                'Select existing tags or add new ones:',
+                options=available_tags,
+                default=[],
+                help="Choose from the existing tags or type to add new ones"
+            )
+
+            # Allow adding custom tags
+            new_tag = st.text_input("New tag:", placeholder="Enter a new tag")
+
+        with col_tag2:
+            # Submit button to add trade
+            add_trade = st.form_submit_button('Add Trade')
+
+        if add_trade:
+            # Validate the required fields
+            if not all([symbol, entry_price, exit_price, trade_size, direction, result]):
+                st.error('All fields are required.')
+            else:
+                # Create trade entry
+                new_trade = {
+                    'symbol': symbol,
+                    'entry_price': entry_price,
+                    'exit_price': exit_price,
+                    'qty': trade_size,
+                    'direction': direction,
+                    'pnl': exit_price - entry_price if direction == 'long' else entry_price - exit_price,
+                    'trade_type': result,
+                    'notes': notes,
+                    'stop_loss': stop_loss,
+                    'entry_time': pd.Timestamp.now(),
+                    'exit_time': pd.Timestamp.now(),
+                    'broker': 'Manual Entry',
+                    'tags': ', '.join(selected_tags + ([new_tag] if new_tag else [])),
+                    'user_id': current_user['id'] if current_user else 'unknown',
+                }
+
+                # Save to trades.csv
+                trades_file = 'trades.csv'
+
+                try:
+                    new_trade_df = pd.DataFrame([new_trade])
+
+                    if pd.io.common.file_exists(trades_file):
+                        # Load existing data and append
+                        existing_trades = pd.read_csv(trades_file)
+                        updated_trades = pd.concat([existing_trades, new_trade_df], ignore_index=True)
+                        updated_trades.to_csv(trades_file, index=False)
+                    else:
+                        # Create new file with headers
+                        new_trade_df.to_csv(trades_file, index=False)
+
+                    # Deduplication and Merge Logic
+                    from trade_entry_manager import trade_manager
+
+                    try:
+                        dedup_result = trade_manager.add_manual_trade(new_trade, current_user['id'])
+
+                        if dedup_result['status'] == 'success':
+                            st.success(f"Manual trade added successfully!")
+                            st.success(f"Processed {dedup_result.get('deduplication_summary', {}).get('original_count', 1)} trades")
+                            st.success(f"Added {dedup_result['trades_added']} unique trades")
+
+                            # Show deduplication results
+                            if 'internal_duplicates_removed' in dedup_result and dedup_result['internal_duplicates_removed'] > 0:
+                                st.success(f"Removed {dedup_result['internal_duplicates_removed']} internal duplicates")
+
+                            if 'cross_source_duplicates_removed' in dedup_result and dedup_result['cross_source_duplicates_removed'] > 0:
+                                st.success(f"Removed {dedup_result['cross_source_duplicates_removed']} cross-source duplicates")
+
+                            if 'conflicts_requiring_review' in dedup_result and dedup_result['conflicts_requiring_review'] > 0:
+                                st.warning(f"{dedup_result['conflicts_requiring_review']} trades require manual review")
+
+                            # Get unified data from trade manager
+                            unified_df = trade_manager.get_all_trades_dataframe()
+
+                            if not unified_df.empty:
+                                # Clear old cache before saving new data
+                                st.cache_data.clear()
+
+                                # Save merged data to session state to trigger re-analysis
+                                st.session_state['merged_df'] = unified_df
+                                st.session_state['data_updated'] = True
+
+                                # Force garbage collection after data operations
+                                gc.collect()
+
+                                st.info("Page will refresh to show updated analytics...")
+                                st.rerun()
+                        else:
+                            st.error(f"Manual trade addition failed: {dedup_result.get('message', 'Unknown error')}")
+                    except Exception as e:
+                        st.error(f"Deduplication and Merge failed: {str(e)}")
+
+                except Exception as e:
+                    st.error(f"Failed to save trade: {str(e)}")
+
+    # Main navigation
+    menu = [
+        "📊 Analytics",
+        "⚙️ Settings",
+        "🤝 Partners",
+        "💼 Bulk Provision",
+        "🔗 Affiliates",
+        "💳 Billing"
+    ]
+
+    # Render navigation menu
+    selected_tab = st.sidebar.selectbox("Menu", menu)
+
+    if selected_tab == "📊 Analytics":
+        st.info("Welcome to the Trade Analytics Dashboard!")
+        st.write("Upload your trade history to unlock powerful insights.")
+        st.write("Analyze performance, manage risk, and make smarter decisions.")
+
+    elif selected_tab == "⚙️ Settings":
+        st.subheader("Account Settings")
+        st.write("Manage your profile and preferences.")
+        # Placeholder for settings content
+
+    elif selected_tab == "🤝 Partners":
+        render_partner_portal()
+
+    elif selected_tab == "💼 Bulk Provision":
+        render_bulk_provisioning_ui()
+
+    elif selected_tab == "🔗 Affiliates":
+        render_affiliate_management_ui()
+
+    elif selected_tab == "💳 Billing":
+        # Track usage for billing
+        if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
+            current_user = st.session_state.current_user
+            partner_id = current_user.get('partner_id')
+
+            if partner_id:
+                billing_manager = PartnerBillingManager()
+                billing_manager.track_usage(
+                    partner_id=partner_id,
+                    user_id=current_user.get('id'),
+                    usage_type='billing_dashboard_view',
+                    amount=1.0
+                )
+
+        render_partner_billing_dashboard()
+
+    # Track user activity for partner analytics
+    if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
+        track_user_action('dashboard_view', {
+            'tab': selected_tab,
+            'user_id': st.session_state.current_user.get('id')
+        })
+
+    # Execute the sync
+                    sync_result = sync_engine.sync_user_trades(current_user['id'])
+
+                    if sync_result['success']:
+                        st.success(f"✅ Sync completed! {sync_result['trades_imported']} trades imported.")
+
+                        # Track billing usage for trade imports
+                        if current_user.get('partner_id') and sync_result['trades_imported'] > 0:
+                            try:
+                                billing_manager = PartnerBillingManager()
+                                billing_manager.track_usage(
+                                    partner_id=current_user['partner_id'],
+                                    user_id=current_user['id'],
+                                    usage_type='trade_import',
+                                    amount=sync_result['trades_imported']
+                                )
+                            except Exception as e:
+                                # Don't fail the sync if billing tracking fails
+                                pass
+
+                        # Show any warnings
+                        if sync_result.get('warnings'):
+                            for warning in sync_result['warnings']:
+                                st.warning(f"⚠️ {warning}")
+
+                        # Show sync summary
+                        if sync_result.get('summary'):
+                            st.info(f"📊 {sync_result['summary']}")
+                    else:
+                        st.error(f"❌ Sync failed: {sync_result['error']}")

@@ -510,7 +510,7 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
         # Fallback for older fpdf versions
         return pdf.output(dest="S").encode("latin1")
 
-st.set_page_config(page_title="TradeSense", layout="wide")
+
 
 # Authentication Check - Must be done first
 current_user = render_auth_interface()
@@ -729,7 +729,7 @@ if selected_file:
         # Show what analytics will be affected
         affected_features = []
         if 'entry_time' not in df.columns or 'exit_time' notin df.columns:
-            affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])
+            affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])            
         if 'pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
             affected_features.extend(['P&L analytics', 'Performance metrics'])
         if 'symbol' not in df.columns:
@@ -1613,6 +1613,7 @@ if selected_file:
             ),
             margin=dict(l=60, r=60, t=60, b=60)
         )
+        fig.update_traces(fill='tonexty', fillcolor=color_scale[0][1] if theme == "Light" else area_color, line_color=color_scale[0][1] if theme == "Light" else area_color)
         st.plotly_chart(fig, use_container_width=True)
 
     with journal_tab:

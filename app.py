@@ -32,7 +32,7 @@ from analytics import (
 )
 from risk_tool import assess_risk
 from payment import PaymentGateway
-from auth import AuthManager, require_auth
+from auth import AuthManager, require_auth, render_auth_interface
 from partner_analytics import render_partner_analytics_widget, track_user_action
 from partner_portal import render_partner_portal
 from affiliate_system import render_affiliate_management_ui

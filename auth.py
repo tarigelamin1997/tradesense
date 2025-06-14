@@ -458,3 +458,105 @@ def check_partner_access(required_role: str = 'user'):
             return func(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def render_auth_interface():
+    """Render the main authentication interface."""
+    auth_manager = AuthManager()
+    
+    # Check if user is already authenticated
+    current_user = auth_manager.get_current_user()
+    
+    if current_user:
+        # User is authenticated, return user info
+        return current_user
+    
+    else:
+        # User not authenticated, show login/register
+        st.title("🔐 TradeSense Authentication")
+        st.write("Please log in to access the trading analytics dashboard.")
+        
+        tab1, tab2 = st.tabs(["Login", "Register"])
+        
+        with tab1:
+            render_login_form(auth_manager)
+        
+        with tab2:
+            render_register_form(auth_manager)
+        
+        # OAuth login
+        if auth_manager.oauth_flow:
+            st.divider()
+            st.subheader("🔗 Quick Login")
+            
+            if st.button("Sign in with Google", type="secondary"):
+                redirect_uri = "https://your-app.replit.dev/oauth2callback"
+                oauth_url = auth_manager.oauth_login_url(redirect_uri)
+                if oauth_url:
+                    st.markdown(f'<meta http-equiv="refresh" content="0; url={oauth_url}">', 
+                              unsafe_allow_html=True)
+        
+        st.stop()
+
+
+def render_login_form(auth_manager: AuthManager):
+    """Render login form."""
+    with st.form("login_form"):
+        st.subheader("Login to Your Account")
+        
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        
+        if st.form_submit_button("🔓 Login", type="primary"):
+            if email and password:
+                result = auth_manager.login_user(email, password)
+                
+                if result['success']:
+                    st.session_state.session_id = result['session_id']
+                    st.success("Login successful!")
+                    st.rerun()
+                else:
+                    st.error(result['error'])
+            else:
+                st.error("Please enter both email and password")
+
+
+def render_register_form(auth_manager: AuthManager):
+    """Render registration form."""
+    with st.form("register_form"):
+        st.subheader("Create New Account")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            first_name = st.text_input("First Name")
+        with col2:
+            last_name = st.text_input("Last Name")
+        
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        confirm_password = st.text_input("Confirm Password", type="password")
+        
+        # Partner invitation code
+        partner_code = st.text_input("Partner Code (Optional)", 
+                                   help="Enter if you have a partner invitation code")
+        
+        if st.form_submit_button("🚀 Create Account", type="primary"):
+            if not all([first_name, last_name, email, password, confirm_password]):
+                st.error("Please fill in all fields")
+            elif password != confirm_password:
+                st.error("Passwords do not match")
+            elif len(password) < 8:
+                st.error("Password must be at least 8 characters")
+            else:
+                result = auth_manager.register_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    partner_id=partner_code if partner_code else None
+                )
+                
+                if result['success']:
+                    st.success("Account created successfully! Please log in.")
+                else:
+                    st.error(result['error'])

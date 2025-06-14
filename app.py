@@ -35,6 +35,14 @@ from payment import PaymentGateway
 from auth import AuthManager, require_auth
 from partner_management import render_auth_interface, PartnerManager
 from scheduler_ui import render_job_management_interface, render_sync_status_widget
+from notification_system import (
+    render_notification_center, 
+    render_real_time_sync_status, 
+    show_error_help_center,
+    create_system_alert,
+    NotificationType,
+    NotificationPriority
+)
 import logging
 
 # Configure logging
@@ -679,6 +687,10 @@ except:
 # Sync status widget
 render_sync_status_widget()
 
+# Notification center
+if current_user:
+    render_notification_center(current_user['id'])
+
 # Deduplication status widget
 if current_user:
     with st.sidebar.expander("🔍 Deduplication Status", expanded=False):
@@ -1200,8 +1212,8 @@ if selected_file:
 
     st.divider()
 
-    overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab, jobs_tab = st.tabs(
-        ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal", "Background Jobs"]
+    overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab, jobs_tab, status_tab = st.tabs(
+        ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal", "Background Jobs", "System Status"]
     )
 
     # Track current tab for feedback context
@@ -1663,6 +1675,50 @@ if selected_file:
     with jobs_tab:
         st.session_state.current_tab = 'Background Jobs'
         render_job_management_interface(current_user)
+    
+    with status_tab:
+        st.session_state.current_tab = 'System Status'
+        
+        # Real-time sync status
+        if current_user:
+            render_real_time_sync_status(current_user['id'])
+            
+            st.divider()
+            
+            # Error help center
+            show_error_help_center()
+            
+            st.divider()
+            
+            # System alerts and notifications
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("🧪 Test Success Notification"):
+                    create_system_alert(
+                        "Test Success", 
+                        "This is a test success notification",
+                        NotificationType.SUCCESS,
+                        NotificationPriority.LOW
+                    )
+                    st.rerun()
+            
+            with col2:
+                if st.button("🧪 Test Error Notification"):
+                    create_system_alert(
+                        "Test Error", 
+                        "This is a test error notification",
+                        NotificationType.ERROR,
+                        NotificationPriority.HIGH,
+                        [
+                            "1. Check system logs",
+                            "2. Verify configuration",
+                            "3. Contact support if needed"
+                        ]
+                    )
+                    st.rerun()
+        else:
+            st.warning("Please login to view system status")
 
     st.subheader('Risk Assessment')
 

@@ -9,6 +9,7 @@ from sync_engine import sync_engine, SyncStatus, SyncTrigger
 from integration_manager import IntegrationManager
 from auth import require_auth
 from logging_manager import log_info, log_warning, LogCategory
+from notification_system import create_sync_status_notification
 
 class SyncManager:
     """High-level sync management interface for the UI."""
@@ -83,6 +84,12 @@ class SyncManager:
             log_info(f"Manual sync triggered for integration {integration_id}",
                     details={'user_id': user_id, 'job_id': job.job_id},
                     category=LogCategory.USER_ACTION)
+            
+            # Create notification for sync start
+            create_sync_status_notification(
+                job.job_id, SyncStatus.RUNNING, 
+                job.provider_name, user_id
+            )
             
             return {
                 'success': True,

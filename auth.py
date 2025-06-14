@@ -12,6 +12,7 @@ import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 import jwt
 from passlib.context import CryptContext
+from credential_manager import CredentialManager
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -291,6 +292,7 @@ class AuthManager:
     
     def __init__(self):
         self.db = AuthDatabase()
+        self.credential_manager = CredentialManager(self.db.db_path)
         self.setup_oauth()
     
     def setup_oauth(self):
@@ -379,6 +381,16 @@ class AuthManager:
                     return result
                 
                 user = self.db.get_user_by_oauth('google', oauth_id)
+            
+            # Store OAuth tokens securely
+            self.credential_manager.store_oauth_token(
+                user_id=user["id"],
+                provider='google',
+                access_token=credentials.token,
+                refresh_token=credentials.refresh_token,
+                expires_in=credentials.expiry.timestamp() - datetime.now().timestamp() if credentials.expiry else None,
+                partner_id=user.get("partner_id")
+            )
             
             # Create session
             session_id = self.db.create_session(user["id"], user["partner_id"])

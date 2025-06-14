@@ -733,8 +733,7 @@ elif uploaded_file is not None:
 else:
     selected_file = None
 
-```python
-importer = FuturesImporter()
+    importer = FuturesImporter()
 
 if selected_file:
     try:
@@ -1266,17 +1265,17 @@ if selected_file:
                 equity_df['exit_time'] = pd.to_datetime(equity_df['exit_time'], errors='coerce')
                 equity_df = equity_df.dropna(subset=['exit_time'])
 
-                # Remove invalid dates with more strict validation
-                current_time = pd.Timestamp.now()
-                min_valid_date = pd.Timestamp('2000-01-01')
-                max_valid_date = current_time + pd.Timedelta(days=7)  # Allow up to 1 week in future
+            # Remove invalid dates with more strict validation
+            current_time = pd.Timestamp.now()
+            min_valid_date = pd.Timestamp('2000-01-01')
+            max_valid_date = current_time + pd.Timedelta(days=7)  # Allow up to 1 week in future
 
-                valid_date_mask = (
-                    (equity_df['exit_time'] >= min_valid_date) & 
-                    (equity_df['exit_time'] <= max_valid_date) &
-                    (equity_df['exit_time'].notna())
-                )
-                equity_df = equity_df[valid_date_mask]
+            valid_date_mask = (
+                (equity_df['exit_time'] >= min_valid_date) & 
+                (equity_df['exit_time'] <= max_valid_date) &
+                (equity_df['exit_time'].notna())
+            )
+            equity_df = equity_df[valid_date_mask]
 
             # Step 3: Ensure we have valid data for charting
             if equity_df.empty:
@@ -1341,9 +1340,9 @@ if selected_file:
                     else:
                         st.warning("⚠️ Unable to display equity curve: Invalid chart data after final validation")
                         st.info(f"Chart data points: {len(chart_data)}")
-                else:
-                    st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
-                    st.info(f"Trades before cumulative calculation: {len(equity_df)}")
+                    else:
+                        st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
+                        st.info(f"Trades before cumulative calculation: {len(equity_df)}")
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
@@ -1402,7 +1401,6 @@ if selected_file:
         streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
         streak_col2.metric('Max Loss Streak', f"{streak['max_loss_streak']} trades")
 
-```python
         # Rolling metrics with better validation
         min_trades_for_rolling = 15  # Need more than the window size for meaningful analysis
         if len(filtered_df) >= min_trades_for_rolling:
@@ -1436,115 +1434,115 @@ if selected_file:
                     st.warning(f"⚠️ Unable to generate rolling metrics: Generated {len(rolling)} rolling periods (need at least 2)")
                     st.info(f"Available trades: {len(filtered_df)}, Required for rolling analysis: {min_trades_for_rolling}")
 
-            except Exception as e:
-                st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
-                logger.error(f"Rolling metrics error: {str(e)}")
-        else:
-            st.info(f"ℹ️ Rolling metrics analysis requires at least {min_trades_for_rolling} trades. You have {len(filtered_df)} trades.")
-            st.caption("Add more trades to see rolling performance analysis over 10-trade windows.")
+                except Exception as e:
+                    st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
+                    logger.error(f"Rolling metrics error: {str(e)}")
+            else:
+                st.info(f"ℹ️ Rolling metrics analysis requires at least {min_trades_for_rolling} trades. You have {len(filtered_df)} trades.")
+                st.caption("Add more trades to see rolling performance analysis over 10-trade windows.")
 
-        st.subheader('Trades')
-        table_df = compute_trade_result(filtered_df)
+            st.subheader('Trades')
+            table_df = compute_trade_result(filtered_df)
 
-        # Calculate Risk-Reward ratio for conditional formatting
-        table_df_formatted = table_df.copy()
+            # Calculate Risk-Reward ratio for conditional formatting
+            table_df_formatted = table_df.copy()
 
-        # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
-        # Reward = exit_price - entry_price for long, entry_price - exit_price for short
-        def calculate_rr(row):
-            entry = float(row['entry_price'])
-            exit = float(row['exit_price'])
-            stop = float(row.get('stop_loss', 0))
-            direction = row['direction']
+            # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
+            # Reward = exit_price - entry_price for long, entry_price - exit_price for short
+            def calculate_rr(row):
+                entry = float(row['entry_price'])
+                exit = float(row['exit_price'])
+                stop = float(row.get('stop_loss', 0))
+                direction = row['direction']
 
-            if stop == 0:
-                return 0  # No stop loss set
+                if stop == 0:
+                    return 0  # No stop loss set
 
-            if direction == 'long':
-                risk = abs(entry - stop)
-                reward = abs(exit - entry)
-            else:  # short
-                risk = abs(stop - entry)
-                reward = abs(entry - exit)
+                if direction == 'long':
+                    risk = abs(entry - stop)
+                    reward = abs(exit - entry)
+                else:  # short
+                    risk = abs(stop - entry)
+                    reward = abs(entry - exit)
 
-            return reward / risk if risk > 0 else 0
+                return reward / risk if risk > 0 else 0
 
-        table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
+            table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
 
-        # Create styled dataframe with conditional formatting
-        def style_trades(df):
-            def highlight_row(row):
-                styles = [''] * len(row)
+            # Create styled dataframe with conditional formatting
+            def style_trades(df):
+                def highlight_row(row):
+                    styles = [''] * len(row)
 
-                # Get PnL value (handle string values from CSV)
-                pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
+                    # Get PnL value (handle string values from CSV)
+                    pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
 
-                # Get RR value and ensure it's numeric
-                rr_val = row.get('rr_ratio', 0)
-                if isinstance(rr_val, str):
-                    try:
-                        rr_val = float(rr_val) if rr_val != "N/A" else 0
-                    except (ValueError, TypeError):
-                        rr_val = 0
+                    # Get RR value and ensure it's numeric
+                    rr_val = row.get('rr_ratio', 0)
+                    if isinstance(rr_val, str):
+                        try:
+                            rr_val = float(rr_val) if rr_val != "N/A" else 0
+                        except (ValueError, TypeError):
+                            rr_val = 0
 
-                # Highlight entire row based on conditions
-                if not pd.isna(pnl_val) and pnl_val > 100:
-                    # Green for high P&L trades
-                    styles = ['background-color: #d4edda; color: #155724'] * len(row)
-                elif rr_val > 0 and rr_val < 1:
-                    # Red for poor RR trades
-                    styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
+                    # Highlight entire row based on conditions
+                    if not pd.isna(pnl_val) and pnl_val > 100:
+                        # Green for high P&L trades
+                        styles = ['background-color: #d4edda; color: #155724'] * len(row)
+                    elif rr_val > 0 and rr_val < 1:
+                        # Red for poor RR trades
+                        styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
 
-                return styles
+                    return styles
 
-            return df.style.apply(highlight_row, axis=1)
+                return df.style.apply(highlight_row, axis=1)
 
-        # Display formatted table
-        st.subheader('Trades with Conditional Formatting')
-        st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
+            # Display formatted table
+            st.subheader('Trades with Conditional Formatting')
+            st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
 
-        # Prepare display columns
-        display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
-                       'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
-        display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
+            # Prepare display columns
+            display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
+                           'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
+            display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
 
-        # Format numeric columns properly to avoid pandas warnings
-        if 'rr_ratio' in display_df.columns:
-            display_df = display_df.copy()
-            display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
-        if 'pnl' in display_df.columns:
-            display_df = display_df.copy()
-            pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
-            display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
+            # Format numeric columns properly to avoid pandas warnings
+            if 'rr_ratio' in display_df.columns:
+                display_df = display_df.copy()
+                display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
+            if 'pnl' in display_df.columns:
+                display_df = display_df.copy()
+                pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
+                display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
 
-        # Apply styling and display
-        styled_df = style_trades(display_df)
-        st.dataframe(styled_df, use_container_width=True)
+            # Apply styling and display
+            styled_df = style_trades(display_df)
+            st.dataframe(styled_df, use_container_width=True)
 
-        # Original interactive grid for selection
-        st.subheader('Interactive Trades Table')
-        options = get_grid_options(table_df)
-        grid = AgGrid(
-            table_df,
-            gridOptions=options,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            allow_unsafe_jscode=True,
-            fit_columns_on_grid_load=True,
-        )
+            # Original interactive grid for selection
+            st.subheader('Interactive Trades Table')
+            options = get_grid_options(table_df)
+            grid = AgGrid(
+                table_df,
+                gridOptions=options,
+                update_mode=GridUpdateMode.SELECTION_CHANGED,
+                allow_unsafe_jscode=True,
+                fit_columns_on_grid_load=True,
+            )
 
-        if grid['selected_rows']:
-            row = pd.Series(grid['selected_rows'][0])
-            details = trade_detail(row)
-            with st.modal('Trade Details'):
-                chart_df = pd.DataFrame({
-                    'time': [row['entry_time'], row['exit_time']],
-                    'price': [row['entry_price'], row['exit_price']],
-                })
-                st.line_chart(chart_df.set_index('time'))
-                st.write(f"Duration: {details['duration']}")
-                st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
-                if details['notes']:
-                    st.write(details['notes'])
+            if grid['selected_rows']:
+                row = pd.Series(grid['selected_rows'][0])
+                details = trade_detail(row)
+                with st.modal('Trade Details'):
+                    chart_df = pd.DataFrame({
+                        'time': [row['entry_time'], row['exit_time']],
+                        'price': [row['entry_price'], row['exit_price']],
+                    })
+                    st.line_chart(chart_df.set_index('time'))
+                    st.write(f"Duration: {details['duration']}")
+                    st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
+                    if details['notes']:
+                        st.write(details['notes'])
 
     with symbol_tab:
         st.session_state.current_tab = 'Symbols'
@@ -2125,10 +2123,10 @@ if selected_file:
             available_tags = sorted([tag for tag in existing_tags if tag])
 
             tags = st.multiselect(
-```python
                 'Tags', 
                 options=available_tags,
-                help="Select existing tags or add custom ones below"
+```text
+help="Select existing tags or add custom ones below"
             )
 
         with col_tag2:

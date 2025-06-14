@@ -1691,6 +1691,55 @@ if selected_file:
 
             st.divider()
 
+            # QA and Security Section
+            st.subheader("🔧 Quality Assurance & Security")
+            
+            qa_col1, qa_col2, qa_col3 = st.columns(3)
+            
+            with qa_col1:
+                if st.button("🧪 QA Dashboard", use_container_width=True):
+                    st.session_state.show_qa_dashboard = True
+            
+            with qa_col2:
+                if st.button("🛡️ Security Dashboard", use_container_width=True):
+                    st.session_state.show_security_dashboard = True
+            
+            with qa_col3:
+                if st.button("📋 Compliance Dashboard", use_container_width=True):
+                    st.session_state.show_compliance_dashboard = True
+
+            # Show QA Dashboard Modal
+            if st.session_state.get('show_qa_dashboard', False):
+                with st.modal("🔧 Continuous QA Dashboard", width="large"):
+                    from continuous_qa_system import render_qa_dashboard
+                    render_qa_dashboard()
+                    
+                    if st.button("✅ Close QA Dashboard"):
+                        st.session_state.show_qa_dashboard = False
+                        st.rerun()
+
+            # Show Security Dashboard Modal
+            if st.session_state.get('show_security_dashboard', False):
+                with st.modal("🛡️ Security Dashboard", width="large"):
+                    from security_scanner import render_security_dashboard
+                    render_security_dashboard()
+                    
+                    if st.button("✅ Close Security Dashboard"):
+                        st.session_state.show_security_dashboard = False
+                        st.rerun()
+
+            # Show Compliance Dashboard Modal
+            if st.session_state.get('show_compliance_dashboard', False):
+                with st.modal("📋 Compliance Dashboard", width="large"):
+                    from compliance_framework import render_compliance_dashboard
+                    render_compliance_dashboard()
+                    
+                    if st.button("✅ Close Compliance Dashboard"):
+                        st.session_state.show_compliance_dashboard = False
+                        st.rerun()
+
+            st.divider()
+
                 # Error help center
             show_error_help_center()
 

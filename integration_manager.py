@@ -795,11 +795,15 @@ def render_sync_history_view(integration_manager: IntegrationManager,
 # Helper functions
 def get_available_brokers_by_type(integration_type: str) -> List[str]:
     """Get available brokers/providers by integration type."""
-    # This would normally query the connector registry
+    # Query the connector registry for available connectors
+    from connectors.registry import registry
+    
     if integration_type == 'broker':
-        return ['demo_broker', 'interactive_brokers', 'td_ameritrade', 'etrade']
+        broker_connectors = registry.filter_by_type('broker')
+        return broker_connectors + ['demo_broker', 'etrade']
     elif integration_type == 'prop_firm':
-        return ['demo_propfirm', 'apex_trader', 'funded_trader']
+        prop_connectors = registry.filter_by_type('prop_firm')
+        return prop_connectors + ['demo_propfirm', 'funded_trader']
     elif integration_type == 'trading_platform':
         return ['tradingview', 'thinkorswim', 'metatrader']
     return []

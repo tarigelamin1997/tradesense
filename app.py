@@ -162,10 +162,10 @@ def clear_memory_cache():
             memory_before = psutil.virtual_memory().percent
         except:
             pass
-        
+
         # Clear all Streamlit caches
         st.cache_data.clear()
-        
+
         # Clear session state of large data objects
         keys_to_clear = [
             'merged_df', 'processed_df', 'cached_analytics', 
@@ -176,24 +176,24 @@ def clear_memory_cache():
             if key in st.session_state:
                 del st.session_state[key]
                 cleared_keys.append(key)
-        
+
         # Clear any cached dataframes or large objects from globals
         import sys
         for name, obj in list(sys.modules[__name__].__dict__.items()):
             if isinstance(obj, pd.DataFrame) and len(obj) > 100:
                 del sys.modules[__name__].__dict__[name]
-        
+
         # Multiple rounds of garbage collection
         for _ in range(3):
             gc.collect()
-        
+
         # Get memory after cleanup
         memory_after = None
         try:
             memory_after = psutil.virtual_memory().percent
         except:
             pass
-        
+
         # Calculate memory freed (if available)
         if memory_before is not None and memory_after is not None:
             memory_freed = memory_before - memory_after
@@ -203,11 +203,11 @@ def clear_memory_cache():
                 st.sidebar.info("✅ Cache cleared (system memory unchanged)")
         else:
             st.sidebar.success("✅ Cache and session data cleared")
-        
+
         # Show what was cleared
         if cleared_keys:
             st.sidebar.info(f"Cleared: {', '.join(cleared_keys)}")
-        
+
         return True
     except Exception as e:
         st.sidebar.error(f"Error clearing cache: {str(e)}")
@@ -571,14 +571,14 @@ st.sidebar.caption("We do not store or share your uploaded trade data.")
 try:
     memory_info = psutil.virtual_memory()
     memory_usage = memory_info.percent
-    
+
     # Always show memory info and cleanup button
     st.sidebar.metric(
         "Memory Usage", 
         f"{memory_usage:.1f}%",
         help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
     )
-    
+
     # Always show cleanup button, but make it more prominent when needed
     if memory_usage > 50:
         if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache", type="primary"):
@@ -588,13 +588,13 @@ try:
         if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_normal"):
             clear_memory_cache()  # Function now handles its own feedback
             st.rerun()
-        
+
     # Warning for high memory usage
     if memory_usage > 80:
         st.sidebar.error("⚠️ High memory usage! Consider clearing cache.")
     elif memory_usage > 60:
         st.sidebar.warning("⚠️ Memory usage getting high.")
-        
+
 except:
     # Fallback cleanup button if psutil not available
     if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_fallback"):
@@ -1561,7 +1561,7 @@ if selected_file:
 
     # Connector Management Section
     st.subheader('🔌 Data Connectors')
-    
+
     # Load available connectors
     if 'connectors_loaded' not in st.session_state:
         with st.spinner("Loading connectors..."):
@@ -1572,40 +1572,40 @@ if selected_file:
                 with st.expander("View Errors"):
                     for error in load_results['errors']:
                         st.error(f"File: {error['file']} - {error['error']}")
-    
+
     # Connector selection and management
     with st.expander("🔧 Connector Manager", expanded=False):
         available_connectors = get_available_connectors()
-        
+
         if available_connectors:
             st.write(f"**Available Connectors:** {len(available_connectors)}")
-            
+
             connector_options = [f"{conn['name']} ({conn.get('type', 'unknown')})" 
                                for conn in available_connectors if 'error' not in conn]
-            
+
             if connector_options:
                 selected_connector = st.selectbox(
                     "Select Connector:",
                     options=[""] + connector_options,
                     help="Choose a connector to import trade data"
                 )
-                
+
                 if selected_connector:
                     connector_name = selected_connector.split(' (')[0]
-                    
+
                     # Get connector instance for configuration
                     try:
                         instance = registry.create_instance(connector_name)
                         metadata = instance.get_metadata()
-                        
+
                         st.write(f"**Connector Type:** {metadata['type']}")
                         st.write(f"**Supported Formats:** {', '.join(metadata['supported_formats'])}")
-                        
+
                         # Configuration form
                         if metadata['config_required']:
                             st.write("**Required Configuration:**")
                             config = {}
-                            
+
                             for config_key in metadata['config_required']:
                                 if config_key == 'file_path':
                                     uploaded_file = st.file_uploader(
@@ -1625,10 +1625,10 @@ if selected_file:
                                         key=f"connector_{connector_name}_{config_key}",
                                         type="password" if "secret" in config_key.lower() or "key" in config_key.lower() else "default"
                                     )
-                            
+
                             # Test connection and import data
                             col_test, col_import = st.columns(2)
-                            
+
                             with col_test:
                                 if st.button("🔍 Test Connection", key=f"test_{connector_name}"):
                                     if all(config.values()):
@@ -1638,10 +1638,10 @@ if selected_file:
                                             if auth_success:
                                                 # Test data quality
                                                 test_result = test_connector(connector_name, config)
-                                                
+
                                                 if test_result['connection_status'] == 'ok':
                                                     st.success("✅ Connection successful!")
-                                                    
+
                                                     quality = test_result['quality_report']
                                                     if quality['status'] == 'success':
                                                         st.success(f"📊 Sample data: {quality['sample_size']} trades")
@@ -1655,7 +1655,7 @@ if selected_file:
                                                 st.error("❌ Authentication failed")
                                     else:
                                         st.warning("Please fill in all required configuration fields")
-                            
+
                             with col_import:
                                 if st.button("📥 Import Data", key=f"import_{connector_name}", type="primary"):
                                     if all(config.values()):
@@ -1667,11 +1667,11 @@ if selected_file:
                                                     raw_trades = instance.fetch_trades()
                                                     if raw_trades:
                                                         normalized_df = instance.normalize_data(raw_trades)
-                                                        
+
                                                         if not normalized_df.empty:
                                                             # Clear old cache
                                                             st.cache_data.clear()
-                                                            
+
                                                             # Merge with existing data if available
                                                             if 'merged_df' in st.session_state or not df.empty:
                                                                 existing_df = st.session_state.get('merged_df', df)
@@ -1679,9 +1679,9 @@ if selected_file:
                                                                 st.session_state['merged_df'] = merged_df
                                                             else:
                                                                 st.session_state['merged_df'] = normalized_df
-                                                            
+
                                                             st.session_state['data_updated'] = True
-                                                            
+
                                                             st.success(f"🎉 Imported {len(normalized_df)} trades from {connector_name}")
                                                             st.info("🔄 Page will refresh to show updated analytics...")
                                                             st.rerun()
@@ -1697,14 +1697,14 @@ if selected_file:
                                         st.warning("Please complete configuration first")
                         else:
                             st.info("No configuration required for this connector")
-                            
+
                     except Exception as e:
                         st.error(f"Error loading connector: {str(e)}")
             else:
                 st.warning("No working connectors available")
         else:
             st.warning("No connectors found. Check connector loading errors above.")
-    
+
     # External CSV Upload Section
     st.subheader('📂 Import External CSV Trades')
 
@@ -1745,290 +1745,76 @@ if selected_file:
                         st.info(f"📈 **Estimated valid trades after cleaning:** {estimated_valid} of {total_rows} ({(estimated_valid/total_rows*100):.1f}%)")
 
                 st.write("**Column validation:**")
+# Use universal model for normalization and validation
+                try:
+                    # Convert to universal model
+                    trade_model = importer.normalize_to_universal_model(external_df, "external_csv")
+                    normalized_df = trade_model.get_dataframe()
 
-                # Check for required columns
-                missing_cols = []
-                for col in REQUIRED_COLUMNS:
-                    if col in external_df.columns:
-                        st.success(f"✅ {col}")
-                    else:
-                        st.error(f"❌ {col} - Missing")
-                        missing_cols.append(col)
+                    if normalized_df.empty:
+                        st.error("No valid trades found after normalization")
+                        st.stop()
 
-                if missing_cols:
-                    st.warning(f"**Missing required columns:** {', '.join(missing_cols)}")
-                    st.write("**Available columns in your file:**")
-                    st.write(list(external_df.columns))
+                    st.success("✅ **Data normalized successfully**")
 
-                    # Allow column mapping
-                    st.write("**Map your columns to required format:**")
-                    column_mapping = {}
+                    # Show basic stats
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Rows", len(normalized_df))
+                    with col2:
+                        unique_symbols = normalized_df['symbol'].nunique()
+                        st.metric("Unique Symbols", unique_symbols)
+                    with col3:
+                        total_pnl = normalized_df['pnl'].sum()
+                        st.metric("Total P&L", f"${total_pnl:,.2f}")
 
-                    map_col1, map_col2 = st.columns(2)
+                    # Merge data using universal model
+                    if st.button("🔄 Merge with Existing Data", key="merge_external_csv"):
+                        try:
+                            # Convert existing data to universal model
+                            existing_model = UniversalTradeDataModel()
+                            existing_model = existing_model.from_dataframe(df, "existing")
 
-                    with map_col1:
-                        for i, req_col in enumerate(missing_cols[:5]):  # First 5 missing
-                            column_mapping[req_col] = st.selectbox(
-                                f"Map '{req_col}' to:", 
-                                options=[""] + list(external_df.columns),
-                                key=f"map_{req_col}"
-                            )
+                            # Add new trades
+                            new_trades = [TradeRecord.from_dict(row.to_dict()) for _, row in normalized_df.iterrows()]
+                            existing_model.add_trades(new_trades)
 
-                    with map_col2:
-                        for i, req_col in enumerate(missing_cols[5:]):  # Remaining missing
-                            column_mapping[req_col] = st.selectbox(
-                                f"Map '{req_col}' to:", 
-                                options=[""] + list(external_df.columns),
-                                key=f"map_{req_col}"
-                            )
+                            # Remove duplicates
+                            duplicates_removed = existing_model.remove_duplicates()
 
-                    # Apply column mapping
-                    if st.button("Apply Column Mapping", key="apply_mapping"):
-                        if all(mapping for mapping in column_mapping.values()):
-                            try:
-                                # Rename columns based on mapping
-                                external_df = external_df.rename(columns={v: k for k, v in column_mapping.items() if v})
+                            # Get final merged DataFrame
+                            merged_df = existing_model.get_dataframe()
 
-                                # Recheck validation
-                                if importer.validate_columns(external_df):
-                                    st.success("✅ Column mapping successful!")
-                                    missing_cols = []  # Clear missing columns
-                                else:
-                                    still_missing = [col for col in REQUIRED_COLUMNS if col not in external_df.columns]
-                                    st.error(f"❌ Still missing: {', '.join(still_missing)}")
-                            except Exception as e:
-                                st.error(f"Error applying mapping: {str(e)}")
-                        else:
-                            st.warning("Please map all missing columns before proceeding.")
+                            if duplicates_removed > 0:
+                                st.warning(f"⚠️ Removed {duplicates_removed} duplicate trades")
 
-                # If validation passes, proceed with data processing
-                if not missing_cols:
-                    # Clean and standardize external data
-                    try:
-                        # Store original row count for reporting
-                        original_rows = len(external_df)
+                            if len(merged_df) > len(df):
+                                st.success(f"🎉 **Merge Complete!**")
+                                st.success(f"• Added {len(normalized_df)} new trades")
+                                st.success(f"• Skipped {duplicates_removed} duplicates")
+                                st.success(f"• Total trades: {len(merged_df)}")
 
-                        # Keep only required columns plus optional ones
-                        columns_to_keep = REQUIRED_COLUMNS.copy()
-                        if 'tags' in external_df.columns:
-                            columns_to_keep.append('tags')
-                        if 'notes' in external_df.columns:
-                            columns_to_keep.append('notes')
+                                # Clear old cache before saving new data
+                                st.cache_data.clear()
 
-                        external_df = external_df[[col for col in columns_to_keep if col in external_df.columns]]
+                                # Save merged data to session state to trigger re-analysis
+                                st.session_state['merged_df'] = merged_df
+                                st.session_state['data_updated'] = True
 
-                        # Add missing optional columns
-                        if 'tags' not in external_df.columns:
-                            external_df['tags'] = ''
-                        if 'notes' not in external_df.columns:
-                            external_df['notes'] = ''
+                                # Force garbage collection after data operations
+                                gc.collect()
 
-                        # Data quality check and cleaning
-                        st.write("**🔍 Data Quality Analysis:**")
+                                st.info("🔄 **Page will refresh to show updated analytics...**")
+                                st.rerun()
 
-                        # Check for missing values in required columns
-                        missing_data_report = []
-                        for col in REQUIRED_COLUMNS:
-                            if col in external_df.columns:
-                                null_count = external_df[col].isna().sum()
-                                empty_count = (external_df[col] == '').sum() if external_df[col].dtype == 'object' else 0
-                                total_missing = null_count + empty_count
-                                if total_missing > 0:
-                                    missing_data_report.append(f"• {col}: {total_missing} missing values ({(total_missing/len(external_df)*100):.1f}%)")
+                            else:
+                                st.warning("No new trades were added (all were duplicates)")
 
-                        if missing_data_report:
-                            st.warning("**⚠️ Found missing data:**")
-                            for report in missing_data_report:
-                                st.write(report)
-                        else:
-                            st.success("✅ No missing data detected in required columns")
+                        except Exception as e:
+                            st.error(f"❌ Merge failed: {str(e)}")
 
-                        # Clean and validate data step by step
-                        cleaning_steps = []
-
-                        # 1. Clean symbol column
-                        if 'symbol' in external_df.columns:
-                            before_symbol = len(external_df)
-                            external_df = external_df[external_df['symbol'].notna() & (external_df['symbol'] != '')]
-                            external_df['symbol'] = external_df['symbol'].astype(str).str.strip().str.upper()
-                            after_symbol = len(external_df)
-                            if before_symbol != after_symbol:
-                                cleaning_steps.append(f"Removed {before_symbol - after_symbol} rows with missing symbols")
-
-                        # 2. Process and validate dates
-                        if 'entry_time' in external_df.columns and 'exit_time' in external_df.columns:
-                            before_dates = len(external_df)
-                            external_df['entry_time'] = pd.to_datetime(external_df['entry_time'], errors='coerce')
-                            external_df['exit_time'] = pd.to_datetime(external_df['exit_time'], errors='coerce')
-                            external_df = external_df.dropna(subset=['entry_time', 'exit_time'])
-
-                            # Remove trades where exit time is before entry time
-                            invalid_dates = external_df['exit_time'] <= external_df['entry_time']
-                            external_df = external_df[~invalid_dates]
-                            after_dates = len(external_df)
-
-                            if before_dates != after_dates:
-                                cleaning_steps.append(f"Removed {before_dates - after_dates} rows with invalid dates")
-
-                        # 3. Clean price data
-                        price_columns = ['entry_price', 'exit_price']
-                        for col in price_columns:
-                            if col in external_df.columns:
-                                before_price = len(external_df)
-                                external_df[col] = pd.to_numeric(external_df[col], errors='coerce')
-                                external_df = external_df[external_df[col] > 0]  # Prices must be positive
-                                after_price = len(external_df)
-                                if before_price != after_price:
-                                    cleaning_steps.append(f"Removed {before_price - after_price} rows with invalid {col}")
-
-                        # 4. Clean quantity data
-                        if 'qty' in external_df.columns:
-                            before_qty = len(external_df)
-                            external_df['qty'] = pd.to_numeric(external_df['qty'], errors='coerce')
-                            external_df = external_df[external_df['qty'] > 0]  # Quantity must be positive
-                            after_qty = len(external_df)
-                            if before_qty != after_qty:
-                                cleaning_steps.append(f"Removed {before_qty - after_qty} rows with invalid quantity")
-
-                        # 5. Validate direction
-                        if 'direction' in external_df.columns:
-                            before_direction = len(external_df)
-                            external_df['direction'] = external_df['direction'].astype(str).str.lower().str.strip()
-                            valid_directions = external_df['direction'].isin(['long', 'short', 'buy', 'sell'])
-                            external_df = external_df[valid_directions]
-                            # Standardize direction values
-                            external_df['direction'] = external_df['direction'].replace({'buy': 'long', 'sell': 'short'})
-                            after_direction = len(external_df)
-                            if before_direction != after_direction:
-                                cleaning_steps.append(f"Removed {before_direction - after_direction} rows with invalid direction")
-
-                        # 6. Clean PnL data (if present, otherwise calculate it)
-                        if 'pnl' in external_df.columns:
-                            before_pnl = len(external_df)
-                            external_df['pnl'] = pd.to_numeric(external_df['pnl'], errors='coerce')
-                            external_df = external_df.dropna(subset=['pnl'])
-                            # Remove infinite values
-                            external_df = external_df[np.isfinite(external_df['pnl'])]
-                            after_pnl = len(external_df)
-                            if before_pnl != after_pnl:
-                                cleaning_steps.append(f"Removed {before_pnl - after_pnl} rows with invalid P&L")
-                        else:
-                            # Calculate P&L if missing
-                            if all(col in external_df.columns for col in ['entry_price', 'exit_price', 'qty', 'direction']):
-                                def calculate_pnl(row):
-                                    if row['direction'] == 'long':
-                                        return (row['exit_price'] - row['entry_price']) * row['qty']
-                                    else:  # short
-                                        return (row['entry_price'] - row['exit_price']) * row['qty']
-
-                                external_df['pnl'] = external_df.apply(calculate_pnl, axis=1)
-                                cleaning_steps.append("Calculated P&L from price and quantity data")
-
-                        # 7. Fill missing optional fields with defaults
-                        if 'trade_type' not in external_df.columns or external_df['trade_type'].isna().all():
-                            external_df['trade_type'] = 'manual'
-                            cleaning_steps.append("Set trade_type to 'manual' for missing values")
-
-                        if 'broker' not in external_df.columns or external_df['broker'].isna().all():
-                            external_df['broker'] = 'imported'
-                            cleaning_steps.append("Set broker to 'imported' for missing values")
-
-                        # Report cleaning results
-                        final_rows = len(external_df)
-                        rows_removed = original_rows - final_rows
-
-                        if rows_removed > 0:
-                            st.warning(f"⚠️ **Data Cleaning Results:** Removed {rows_removed} of {original_rows} rows ({(rows_removed/original_rows*100):.1f}%)")
-                            if cleaning_steps:
-                                st.write("**Cleaning steps performed:**")
-                                for step in cleaning_steps:
-                                    st.write(f"• {step}")
-                        else:
-                            st.success("✅ **All data passed validation** - No rows removed")
-
-                        if final_rows == 0:
-                            st.error("❌ **No valid trades remaining after data cleaning**")
-                            st.error("**Common issues to check:**")
-                            st.error("• Ensure dates are in a recognizable format (YYYY-MM-DD or MM/DD/YYYY)")
-                            st.error("• Verify prices and quantities are positive numbers")
-                            st.error("• Check that direction is 'long', 'short', 'buy', or 'sell'")
-                            st.error("• Make sure entry_time is before exit_time")
-                            st.stop()
-
-                        st.success(f"✅ **Data cleaned:** {final_rows} valid trades ready for import")
-
-                        # Show preview with data quality indicators
-                        st.write("**Preview of cleaned data:**")
-                        preview_df = external_df.head(10).copy()
-
-                        # Add data quality indicators to preview
-                        if len(preview_df) > 0:
-                            st.dataframe(preview_df, use_container_width=True)
-
-                            # Show data types for verification
-                            with st.expander("📋 Data Types Verification"):
-                                st.write("**Column data types after cleaning:**")
-                                for col in external_df.columns:
-                                    if col in REQUIRED_COLUMNS:
-                                        dtype_info = f"• {col}: {external_df[col].dtype}"
-                                        if col in ['entry_time', 'exit_time']:
-                                            dtype_info += f" (Valid dates: {external_df[col].notna().sum()})"
-                                        elif col in ['entry_price', 'exit_price', 'qty', 'pnl']:
-                                            dtype_info += f" (Valid numbers: {external_df[col].notna().sum()})"
-                                        st.write(dtype_info)
-
-                        # Merge with existing data
-                        if st.button("🔄 Merge with Existing Trades", key="merge_data", type="primary"):
-                            try:
-                                # Create a unique identifier for duplicate detection
-                                def create_trade_id(row):
-                                    return f"{row['symbol']}_{row['entry_time']}_{row['exit_time']}_{row['entry_price']}_{row['exit_price']}"
-
-                                # Add IDs to both dataframes
-                                external_df['trade_id'] = external_df.apply(create_trade_id, axis=1)
-                                df['trade_id'] = df.apply(create_trade_id, axis=1)
-
-                                # Find duplicates
-                                duplicates = external_df[external_df['trade_id'].isin(df['trade_id'])]
-                                unique_external = external_df[~external_df['trade_id'].isin(df['trade_id'])]
-
-                                if len(duplicates) > 0:
-                                    st.warning(f"⚠️ Found {len(duplicates)} duplicate trades (will be skipped)")
-                                    with st.expander("View Duplicates"):
-                                        st.dataframe(duplicates[['symbol', 'entry_time', 'exit_time', 'pnl']], use_container_width=True)
-
-                                if len(unique_external) > 0:
-                                    # Merge unique trades
-                                    merged_df = pd.concat([df.drop('trade_id', axis=1), unique_external.drop('trade_id', axis=1)], ignore_index=True)
-
-                                    st.success(f"🎉 **Merge Complete!**")
-                                    st.success(f"• Added {len(unique_external)} new trades")
-                                    st.success(f"• Skipped {len(duplicates)} duplicates") 
-                                    st.success(f"• Total trades: {len(merged_df)}")
-
-                                    # Clear old cache before saving new data
-                                    st.cache_data.clear()
-                                    
-                                    # Save merged data to session state to trigger re-analysis
-                                    st.session_state['merged_df'] = merged_df
-                                    st.session_state['data_updated'] = True
-
-                                    # Force garbage collection after data operations
-                                    gc.collect()
-
-                                    st.info("🔄 **Page will refresh to show updated analytics...**")
-                                    st.rerun()
-
-                                else:
-                                    st.warning("❌ No new trades to add (all were duplicates)")
-
-                            except Exception as e:
-                                st.error(f"❌ Error during merge: {str(e)}")
-                                st.error("Please check your data format and try again.")
-
-                    except Exception as e:
-                        st.error(f"❌ Error processing external data: {str(e)}")
-                        st.write("Please check your CSV format and data types.")
+                except Exception as e:
+                    st.error(f"❌ Normalization failed: {str(e)}")
 
             except Exception as e:
                 st.error(f"❌ Error loading CSV file: {str(e)}")
@@ -2039,16 +1825,16 @@ if selected_file:
 
     with col_download1:
         st.download_button(
-            'Download All Trades CSV', 
-            df.to_csv(index=False), 
+            'Download All Trades CSV',
+            df.to_csv(index=False),
             'all_trades.csv',
             help="Download complete trade dataset"
         )
 
     with col_download2:
         st.download_button(
-            'Download Filtered Trades CSV', 
-            filtered_df.to_csv(index=False), 
+            'Download Filtered Trades CSV',
+            filtered_df.to_csv(index=False),
             'filtered_trades.csv',
             help=f"Download {len(filtered_df)} filtered trades"
         )
@@ -2354,3 +2140,155 @@ if selected_file:
                     st.error("**Your trade data:** (Copy this as backup)")
                     st.json(trade_entry)
                     st.error("**Troubleshooting:** Try refreshing the page or contact support if the issue persists.")
+
+from typing import List, Optional
+from pydantic import BaseModel, validator, Field
+from datetime import datetime
+
+class TradeRecord(BaseModel):
+    """
+    Represents a single trade record with comprehensive fields.
+    """
+    datetime: datetime = Field(..., description="Date and time of the trade")
+    symbol: str = Field(..., description="Trading symbol (e.g., AAPL, TSLA)")
+    entry_price: float = Field(..., description="Price at which the trade was entered")
+    exit_price: float = Field(..., description="Price at which the trade was exited")
+    stop_loss: Optional[float] = Field(None, description="Stop loss price, if applicable")
+    trade_size: float = Field(..., description="Size of the trade (e.g., number of shares)")
+    direction: str = Field(..., description="Direction of the trade ('long' or 'short')")
+    pnl: float = Field(..., description="Profit and Loss of the trade")
+    notes: Optional[str] = Field(None, description="Additional notes or comments about the trade")
+    tags: Optional[str] = Field(None, description="Tags for categorization (e.g., 'scalp', 'swing')")
+    rr_ratio: Optional[float] = Field(None, description="Risk-reward ratio of the trade")
+    commission: Optional[float] = Field(None, description="Commission paid for the trade")
+    fees: Optional[float] = Field(None, description="Additional fees incurred during the trade")
+    trade_type: Optional[str] = Field("manual", description="Type of trade execution (e.g., 'manual', 'automated')")
+    broker: Optional[str] = Field("unknown", description="Name of the broker used for the trade")
+    exit_time: Optional[datetime] = Field(None, description="Specific time of trade exit")
+    entry_time: Optional[datetime] = Field(None, description="Specific time of trade entry")
+
+    @validator('datetime', pre=True)
+    def parse_datetime(cls, value):
+        """
+        Parses datetime values from various formats.
+        """
+        if isinstance(value, datetime):
+            return value
+        try:
+            return datetime.strptime(str(value), '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                return datetime.strptime(str(value), '%Y-%m-%d')
+            except ValueError:
+                raise ValueError("Invalid datetime format")
+
+    @validator('direction')
+    def validate_direction(cls, value):
+        """
+        Validates that the direction is either 'long' or 'short'.
+        """
+        value = value.lower()
+        if value not in ('long', 'short'):
+            raise ValueError("Direction must be 'long' or 'short'")
+        return value
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'TradeRecord':
+        """
+        Creates a TradeRecord instance from a dictionary.
+        """
+        return cls(**data)
+
+
+class UniversalTradeDataModel(BaseModel):
+    """
+    A universal data model for trade records, supporting normalization and validation.
+    """
+    trades: List[TradeRecord] = Field(default_factory=list, description="List of trade records")
+    source: Optional[str] = Field(None, description="Source of the data (e.g., 'csv', 'broker_api')")
+
+    def add_trade(self, trade: TradeRecord) -> None:
+        """
+        Adds a single trade record to the model.
+        """
+        self.trades.append(trade)
+
+    def add_trades(self, trades: List[TradeRecord]) -> None:
+        """
+        Adds multiple trade records to the model.
+        """
+        self.trades.extend(trades)
+
+    def get_dataframe(self) -> pd.DataFrame:
+        """
+        Converts the trade records to a Pandas DataFrame.
+        """
+        return pd.DataFrame([trade.dict() for trade in self.trades])
+
+    def remove_duplicates(self) -> int:
+        """
+        Removes duplicate trade records based on a unique identifier.
+        """
+        initial_count = len(self.trades)
+        unique_trades = []
+        seen = set()
+        for trade in self.trades:
+            trade_id = (trade.symbol, trade.datetime, trade.entry_price, trade.exit_price, trade.trade_size)
+            if trade_id not in seen:
+                unique_trades.append(trade)
+                seen.add(trade_id)
+        self.trades = unique_trades
+        return initial_count - len(self.trades)
+
+    def from_dataframe(self, df: pd.DataFrame, source: str) -> 'UniversalTradeDataModel':
+        """
+        Populates the model from a Pandas DataFrame.
+        """
+        self.source = source
+        for _, row in df.iterrows():
+            try:
+                trade = TradeRecord.from_dict(row.to_dict())
+                self.add_trade(trade)
+            except Exception as e:
+                print(f"Error adding trade from DataFrame: {e}")
+        return self
+
+    def normalize_to_universal_model(self, df: pd.DataFrame, source: str) -> 'UniversalTradeDataModel':
+        """
+        Normalizes a Pandas DataFrame to the universal trade data model.
+        """
+        self.source = source
+        normalized_trades = []
+
+        for _, row in df.iterrows():
+            try:
+                # Map DataFrame columns to TradeRecord fields
+                trade_data = {
+                    "datetime": row.get("datetime") or row.get("entry_time"),
+                    "symbol": row.get("symbol"),
+                    "entry_price": row.get("entry_price"),
+                    "exit_price": row.get("exit_price"),
+                    "stop_loss": row.get("stop_loss"),
+                    "trade_size": row.get("trade_size") or row.get("qty"),
+                    "direction": row.get("direction"),
+                    "pnl": row.get("pnl"),
+                    "notes": row.get("notes"),
+                    "tags": row.get("tags"),
+                    "rr_ratio": row.get("rr_ratio"),
+                    "commission": row.get("commission"),
+                    "fees": row.get("fees"),
+                    "trade_type": row.get("trade_type"),
+                    "broker": row.get("broker"),
+                    "exit_time": row.get("exit_time"),
+                    "entry_time": row.get("entry_time"),
+                }
+
+                # Create and validate TradeRecord instance
+                trade_record = TradeRecord(**trade_data)
+                normalized_trades.append(trade_record)
+
+            except Exception as e:
+                print(f"Error normalizing row: {e}")
+
+        self.trades = normalized_trades
+        return self

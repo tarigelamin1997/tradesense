@@ -2119,4 +2119,5 @@ if selected_file:
                     if 'tags' in existing_trades.columns:
                         for tag_string in existing_trades['tags'].dropna():
                             if tag_string and str(tag_string).strip():
-                                existing_tag_list =
+                                existing_tag_list = [tag.strip() for tag in str(tag_string).split(',')]
+                                existing_tags.update(existing_tag_list)

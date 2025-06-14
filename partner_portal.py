@@ -491,7 +491,8 @@ def render_partner_dashboard(portal_manager: PartnerPortalManager, current_user:
     tabs = st.tabs([
         "📊 Dashboard", 
         "🎨 Branding", 
-        "👥 Users", 
+        "👥 Users",
+        "⚡ Bulk Provision", 
         "📈 Analytics", 
         "⚙️ Settings",
         "🔑 API",
@@ -508,15 +509,19 @@ def render_partner_dashboard(portal_manager: PartnerPortalManager, current_user:
         render_user_management(portal_manager, partner_id)
     
     with tabs[3]:
-        render_partner_analytics_dashboard(portal_manager, partner_id)
+        from bulk_provisioning import render_bulk_provisioning_ui
+        render_bulk_provisioning_ui(partner_id)
     
     with tabs[4]:
-        render_partner_settings(portal_manager, partner_id)
+        render_partner_analytics_dashboard(portal_manager, partner_id)
     
     with tabs[5]:
-        render_api_management(portal_manager, partner_id)
+        render_partner_settings(portal_manager, partner_id)
     
     with tabs[6]:
+        render_api_management(portal_manager, partner_id)
+    
+    with tabs[7]:
         render_billing_management(portal_manager, partner_id)
 
 

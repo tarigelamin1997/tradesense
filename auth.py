@@ -121,6 +121,13 @@ class AuthDatabase:
             user_id = cursor.lastrowid
             conn.commit()
             
+            # Track affiliate conversion if applicable
+            try:
+                from affiliate_integration import track_new_user_conversion
+                track_new_user_conversion(user_id)
+            except:
+                pass  # Fail silently if affiliate system not available
+            
             return {"success": True, "user_id": user_id, "api_key": api_key}
         
         except sqlite3.IntegrityError as e:

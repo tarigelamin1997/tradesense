@@ -33,7 +33,9 @@ from analytics import (
 from risk_tool import assess_risk
 from payment import PaymentGateway
 from auth import AuthManager, require_auth
-from partner_management import render_auth_interface, PartnerManager
+from partner_management import render_auth_interface
+from partner_portal import render_partner_portal
+from affiliate_system import render_affiliate_management_ui
 from scheduler_ui import render_job_management_interface, render_sync_status_widget
 from notification_system import (
     render_notification_center, 
@@ -731,6 +733,7 @@ elif uploaded_file is not None:
 else:
     selected_file = None
 
+```python
 importer = FuturesImporter()
 
 if selected_file:
@@ -1399,6 +1402,7 @@ if selected_file:
         streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
         streak_col2.metric('Max Loss Streak', f"{streak['max_loss_streak']} trades")
 
+```python
         # Rolling metrics with better validation
         min_trades_for_rolling = 15  # Need more than the window size for meaningful analysis
         if len(filtered_df) >= min_trades_for_rolling:
@@ -2121,6 +2125,7 @@ if selected_file:
             available_tags = sorted([tag for tag in existing_tags if tag])
 
             tags = st.multiselect(
+```python
                 'Tags', 
                 options=available_tags,
                 help="Select existing tags or add custom ones below"
@@ -2620,10 +2625,21 @@ with st.sidebar:
     page = st.radio(
         "Choose a page",
         [
-            "📊 Analytics", "📈 Risk Tool", "🔗 Integrations", "🔄 Sync Dashboard", "⚙️ Admin"
+            "📊 Analytics", "📈 Risk Tool", "🔗 Integrations", "🔄 Sync Dashboard", "⚙️ Admin", "🤝 Partner Portal", "💼 Affiliate Management"
         ],
         index=0,
     )
+
+    # Determine the current page based on the selected value
+    current_page = page
+
+    # Authentication and partner management
+    if current_page == "Partner Portal":
+        render_partner_portal()
+        return
+    elif current_page == "Affiliate Management":
+        render_affiliate_management_ui()
+        return
 
     if page == "⚙️ Admin":
         if current_user and current_user.get('is_admin'):

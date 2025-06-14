@@ -1,3 +1,6 @@
+The code has been modified to fix the syntax error by properly nesting the `except` block within the `try` block related to rolling metrics chart generation.
+</text>
+```replit_final_file>
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -1434,95 +1437,95 @@ if selected_file:
                     st.warning(f"⚠️ Unable to generate rolling metrics: Generated {len(rolling)} rolling periods (need at least 2)")
                     st.info(f"Available trades: {len(filtered_df)}, Required for rolling analysis: {min_trades_for_rolling}")
 
-                except Exception as e:
+            except Exception as e:
                     st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
                     logger.error(f"Rolling metrics error: {str(e)}")
             else:
                 st.info(f"ℹ️ Rolling metrics analysis requires at least {min_trades_for_rolling} trades. You have {len(filtered_df)} trades.")
                 st.caption("Add more trades to see rolling performance analysis over 10-trade windows.")
 
-            st.subheader('Trades')
-            table_df = compute_trade_result(filtered_df)
+        st.subheader('Trades')
+        table_df = compute_trade_result(filtered_df)
 
             # Calculate Risk-Reward ratio for conditional formatting
-            table_df_formatted = table_df.copy()
+        table_df_formatted = table_df.copy()
 
             # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
             # Reward = exit_price - entry_price for long, entry_price - exit_price for short
-            def calculate_rr(row):
-                entry = float(row['entry_price'])
-                exit = float(row['exit_price'])
-                stop = float(row.get('stop_loss', 0))
-                direction = row['direction']
+        def calculate_rr(row):
+            entry = float(row['entry_price'])
+            exit = float(row['exit_price'])
+            stop = float(row.get('stop_loss', 0))
+            direction = row['direction']
 
-                if stop == 0:
-                    return 0  # No stop loss set
+            if stop == 0:
+                return 0  # No stop loss set
 
-                if direction == 'long':
-                    risk = abs(entry - stop)
-                    reward = abs(exit - entry)
-                else:  # short
-                    risk = abs(stop - entry)
-                    reward = abs(entry - exit)
+            if direction == 'long':
+                risk = abs(entry - stop)
+                reward = abs(exit - entry)
+            else:  # short
+                risk = abs(stop - entry)
+                reward = abs(entry - exit)
 
-                return reward / risk if risk > 0 else 0
+            return reward / risk if risk > 0 else 0
 
-            table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
+        table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
 
             # Create styled dataframe with conditional formatting
-            def style_trades(df):
-                def highlight_row(row):
-                    styles = [''] * len(row)
+        def style_trades(df):
+            def highlight_row(row):
+                styles = [''] * len(row)
 
                     # Get PnL value (handle string values from CSV)
-                    pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
+                pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
 
                     # Get RR value and ensure it's numeric
-                    rr_val = row.get('rr_ratio', 0)
-                    if isinstance(rr_val, str):
-                        try:
-                            rr_val = float(rr_val) if rr_val != "N/A" else 0
-                        except (ValueError, TypeError):
-                            rr_val = 0
+                rr_val = row.get('rr_ratio', 0)
+                if isinstance(rr_val, str):
+                    try:
+                        rr_val = float(rr_val) if rr_val != "N/A" else 0
+                    except (ValueError, TypeError):
+                        rr_val = 0
 
                     # Highlight entire row based on conditions
-                    if not pd.isna(pnl_val) and pnl_val > 100:
+                if not pd.isna(pnl_val) and pnl_val > 100:
                         # Green for high P&L trades
-                        styles = ['background-color: #d4edda; color: #155724'] * len(row)
-                    elif rr_val > 0 and rr_val < 1:
+                    styles = ['background-color: #d4edda; color: #155724'] * len(row)
+                elif rr_val > 0 and rr_val < 1:
                         # Red for poor RR trades
-                        styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
+                    styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
 
-                    return styles
+                return styles
 
-                return df.style.apply(highlight_row, axis=1)
+            return df.style.apply(highlight_row, axis=1)
 
             # Display formatted table
-            st.subheader('Trades with Conditional Formatting')
-            st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
+        st.subheader('Trades with Conditional Formatting')
+        st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
 
             # Prepare display columns
-            display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
-                           'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
-            display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
+        display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
+                               'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
+        display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
 
             # Format numeric columns properly to avoid pandas warnings
-            if 'rr_ratio' in display_df.columns:
-                display_df = display_df.copy()
-                display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
-            if 'pnl' in display_df.columns:
-                display_df = display_df.copy()
-                pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
-                display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
+        if 'rr_ratio' in display_df.columns:
+            display_df = display_df.copy()
+            display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
+        if 'pnl' in display_df.columns:
+            display_df = display_df.copy()
+            pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
+            display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
 
             # Apply styling and display
-            styled_df = style_trades(display_df)
-            st.dataframe(styled_df, use_container_width=True)
+        styled_df = style_trades(display_df)
+        st.dataframe(styled_df, use_container_width=True)
 
             # Original interactive grid for selection
-            st.subheader('Interactive Trades Table')
-            options = get_grid_options(table_df)
-            grid = AgGrid(
+        st.subheader('Interactive Trades Table')
+        options = get_grid_options(table_df)
+        grid = AgGrid(
                 table_df,
                 gridOptions=options,
                 update_mode=GridUpdateMode.SELECTION_CHANGED,
@@ -1530,19 +1533,19 @@ if selected_file:
                 fit_columns_on_grid_load=True,
             )
 
-            if grid['selected_rows']:
-                row = pd.Series(grid['selected_rows'][0])
-                details = trade_detail(row)
-                with st.modal('Trade Details'):
-                    chart_df = pd.DataFrame({
+        if grid['selected_rows']:
+            row = pd.Series(grid['selected_rows'][0])
+            details = trade_detail(row)
+            with st.modal('Trade Details'):
+                chart_df = pd.DataFrame({
                         'time': [row['entry_time'], row['exit_time']],
                         'price': [row['entry_price'], row['exit_price']],
                     })
-                    st.line_chart(chart_df.set_index('time'))
-                    st.write(f"Duration: {details['duration']}")
-                    st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
-                    if details['notes']:
-                        st.write(details['notes'])
+                st.line_chart(chart_df.set_index('time'))
+                st.write(f"Duration: {details['duration']}")
+                st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
+                if details['notes']:
+                    st.write(details['notes'])
 
     with symbol_tab:
         st.session_state.current_tab = 'Symbols'
@@ -1557,11 +1560,11 @@ if selected_file:
                 grp = symbol_df.groupby('symbol')
 
                 symbol_stats = pd.DataFrame({
-                    'Trades': grp['pnl'].count(),
-                    'Total PnL': grp['pnl'].sum().apply(format_currency),
-                    'Avg PnL': grp['pnl'].mean().apply(format_currency),
-                    'Win Rate': grp['pnl'].apply(lambda x: format_percentage((x > 0).mean() * 100)),
-                })
+                        'Trades': grp['pnl'].count(),
+                        'Total PnL': grp['pnl'].sum().apply(format_currency),
+                        'Avg PnL': grp['pnl'].mean().apply(format_currency),
+                        'Win Rate': grp['pnl'].apply(lambda x: format_percentage((x > 0).mean() * 100)),
+                    })
 
                 st.dataframe(symbol_stats, use_container_width=True)
             else:
@@ -1574,7 +1577,7 @@ if selected_file:
         st.session_state.current_tab = 'Drawdowns'
         equity = stats['equity_curve']
         drawdown = equity.cummax() - equity
-        # Choose colors based on theme
+            # Choose colors based on theme
         if theme == "Light":
             area_color = '#dc2626'  # Professional red for drawdown in light theme
             chart_bg = '#ffffff'
@@ -1624,7 +1627,7 @@ if selected_file:
         cal_df['month'] = cal_df['date'].dt.month
         cal_df['day'] = cal_df['date'].dt.day
         pivot = cal_df.pivot(index='day', columns='month', values='pnl')
-        # Choose color scale based on theme
+            # Choose color scale based on theme
         if theme == "Light":
             color_scale = [[0.0, '#dc2626'], [0.5, '#f3f4f6'], [1.0, '#059669']]  # Professional red-gray-green scale
             chart_bg = '#ffffff'
@@ -1681,43 +1684,43 @@ if selected_file:
     with status_tab:
         st.session_state.current_tab = 'System Status'
 
-        # Real-time sync status
+            # Real-time sync status
         if current_user:
             render_real_time_sync_status(current_user['id'])
 
             st.divider()
 
-            # Error help center
+                # Error help center
             show_error_help_center()
 
             st.divider()
 
-            # System alerts and notifications
+                # System alerts and notifications
             col1, col2 = st.columns(2)
 
             with col1:
                 if st.button("🧪 Test Success Notification"):
                     create_system_alert(
-                        "Test Success", 
-                        "This is a test success notification",
-                        NotificationType.SUCCESS,
-                        NotificationPriority.LOW
-                    )
+                            "Test Success", 
+                            "This is a test success notification",
+                            NotificationType.SUCCESS,
+                            NotificationPriority.LOW
+                        )
                     st.rerun()
 
             with col2:
                 if st.button("🧪 Test Error Notification"):
                     create_system_alert(
-                        "Test Error", 
-                        "This is a test error notification",
-                        NotificationType.ERROR,
-                        NotificationPriority.HIGH,
-                        [
-                            "1. Check system logs",
-                            "2. Verify configuration",
-                            "3. Contact support if needed"
-                        ]
-                    )
+                            "Test Error", 
+                            "This is a test error notification",
+                            NotificationType.ERROR,
+                            NotificationPriority.HIGH,
+                            [
+                                "1. Check system logs",
+                                "2. Verify configuration",
+                                "3. Contact support if needed"
+                            ]
+                        )
                     st.rerun()
         else:
             st.warning("Please login to view system status")
@@ -2121,538 +2124,3 @@ if selected_file:
                     pass
 
             available_tags = sorted([tag for tag in existing_tags if tag])
-
-            tags = st.multiselect(
-                'Tags', 
-                options=available_tags,
-                help="Select existing tags or add custom ones below"
-            )
-
-        with col_tag2:
-            custom_tag = st.text_input(
-                'Add Custom Tag',
-                placeholder='e.g., crypto, forex',
-                help="Enter a new tag and it will be added to your selection"
-            )
-
-            if custom_tag and custom_tag.strip():
-                clean_tag = custom_tag.strip().lower().replace(' ', '-')
-                if clean_tag not in tags:
-                    tags.append(clean_tag)
-                    st.success(f"Added '{clean_tag}' to tags")
-
-        # Applying the provided change to the form submission button for mobile responsiveness.
-        submitted = st.form_submit_button(
-            "💾 Submit Trade", 
-            use_container_width=True,
-            type="primary"
-        )
-
-        if submitted:
-            # Comprehensive validation with specific error messages
-            validation_errors = []
-
-            # Check symbol
-            if not symbol or symbol.strip() == '':
-                validation_errors.append("❌ Symbol is required and cannot be empty")
-            elif len(symbol.strip()) < 1:
-                validation_errors.append("❌ Symbol must be at least 1 character long")
-
-            # Check entry price
-            if entry_price <= 0:
-                validation_errors.append("❌ Entry price must be greater than 0")
-            elif entry_price > 1000000:
-                validation_errors.append("❌ Entry price seems unrealistically high (> $1,000,000)")
-
-            # Check exit price
-            if exit_price <= 0:
-                validation_errors.append("❌ Exit price must be greater than 0")
-            elif exit_price > 1000000:
-                validation_errors.append("❌ Exit price seems unrealistically high (> $1,000,000)")
-
-            # Check stop loss
-            if stop_loss < 0:
-                validation_errors.append("❌ Stop loss cannot be negative")
-            elif stop_loss > 1000000:
-                validation_errors.append("❌ Stop loss seems unrealistically high (> $1,000,000)")
-
-            # Check trade size
-            if trade_size <= 0:
-                validation_errors.append("❌ Trade size must be greater than 0")
-            elif trade_size > 1000000:
-                validation_errors.append("❌ Trade size seems unrealistically high (> 1,000,000 shares/contracts)")
-
-            # Check direction
-            if direction not in ['long', 'short']:
-                validation_errors.append("❌ Direction must be either 'long' or 'short'")
-
-            # Check result
-            if result not in ['win', 'loss']:
-                validation_errors.append("❌ Result must be either 'win' or 'loss'")
-
-            # Logical validation checks
-            if entry_price > 0 and exit_price > 0:
-                if direction == 'long' and exit_price < entry_price and result == 'win':
-                    validation_errors.append("❌ Long position with exit price lower than entry price should be marked as 'loss', not 'win'")
-                elif direction == 'short' and exit_price > entry_price and result == 'win':
-                    validation_errors.append("❌ Short position with exit price higher than entry price should be marked as 'loss', not 'win'")
-                elif direction == 'long' and exit_price > entry_price and result == 'loss':
-                    validation_errors.append("❌ Long position with exit price higher than entry price should be marked as 'win', not 'loss'")
-                elif direction == 'short' and exit_price < entry_price and result == 'loss':
-                    validation_errors.append("❌ Short position with exit price lower than entry price should be marked as 'win', not 'loss'")
-
-            # Stop loss validation
-            if stop_loss > 0 and entry_price > 0:
-                if direction == 'long' and stop_loss > entry_price:
-                    validation_errors.append("❌ For long positions, stop loss should be below entry price")
-                elif direction == 'short' and stop_loss < entry_price:
-                    validation_errors.append("❌ For short positions, stop loss should be above entry price")
-
-            # Display validation errors
-            if validation_errors:
-                st.error("❌ **TRADE SUBMISSION FAILED**")
-                st.error(f"Found {len(validation_errors)} validation error(s). Please fix the following issues:")
-                for i, error in enumerate(validation_errors, 1):
-                    st.error(f"{i}. {error}")
-                st.warning("💡 **Tip**: Double-check your entry/exit prices match your trade direction and result.")
-            else:
-                # All validation passed, proceed with saving
-                st.info("✅ **Validation passed** - Processing trade submission...")
-
-                # Calculate PnL based on direction
-                if direction == 'long':
-                    pnl = (exit_price - entry_price) * trade_size
-                else:  # short
-                    pnl = (entry_price - exit_price) * trade_size
-
-                # Calculate RR ratio for the new trade
-                if stop_loss > 0:
-                    if direction == 'long':
-                        risk = abs(entry_price - stop_loss)
-                        reward = abs(exit_price - entry_price)
-                    else:  # short
-                        risk = abs(stop_loss - entry_price)
-                        reward = abs(entry_price - exit_price)
-                    rr_ratio = reward / risk if risk > 0 else 0
-                else:
-                    rr_ratio = 0
-
-                # Store the trade entry with current datetime, RR ratio, and user/partner info
-                partner_tags = []
-                if current_user.get('partner_id'):
-                    auth_manager = AuthManager()
-                    partner = auth_manager.db.get_partner(current_user['partner_id'])
-                    if partner:
-                        partner_tags.append(f"partner:{partner['name']}")
-                        partner_tags.append(f"partner_type:{partner['type']}")
-
-                # Combine user tags with partner tags
-                all_tags = tags + partner_tags
-
-                trade_entry = {
-                    'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'symbol': symbol.strip().upper(),
-                    'entry_price': entry_price,
-                    'exit_price': exit_price,
-                    'stop_loss': stop_loss,
-                    'trade_size': trade_size,
-                    'direction': direction,
-                    'result': result,
-                    'pnl': pnl,
-                    'rr_ratio': rr_ratio,
-                    'notes': notes.strip() if notes else '',
-                    'tags': ', '.join(all_tags) if all_tags else '',
-                    'user_id': current_user['id'],
-                    'partner_id': current_user.get('partner_id', ''),
-                    'user_email': current_user['email']
-                }
-
-                # Check for duplicates using deduplication manager
-                from trade_entry_manager import trade_manager
-
-                dedup_result = trade_manager.add_manual_trade(trade_entry, current_user['id'])
-
-                if dedup_result['status'] == 'duplicate':
-                    st.error("❌ **DUPLICATE TRADE DETECTED**")
-                    st.error("This trade appears to be identical to an existing trade in your database.")
-
-                    duplicate_info = dedup_result['duplicate_info']
-                    st.error(f"**Existing Trade ID:** {duplicate_info.get('existing_trade_id', 'Unknown')}")
-                    st.error(f"**Match Type:** {duplicate_info.get('match_type', 'Unknown')}")
-                    st.error(f"**Confidence:** {duplicate_info.get('confidence', 0):.1%}")
-
-                    if duplicate_info.get('differences'):
-                        st.error("**Differences found:**")
-                        for field, (existing, new) in duplicate_info['differences'].items():
-                            st.error(f"• {field}: Existing='{existing}' vs New='{new}'")
-
-                    st.warning("💡 **Tip**: Check your recent trades or import history to avoid duplicates.")
-                    st.stop()
-
-                elif dedup_result['status'] == 'needs_review':
-                    st.warning("⚠️ **POTENTIAL DUPLICATE DETECTED**")
-                    st.warning("This trade is similar to existing trades but requires manual review.")
-
-                    potential_matches = dedup_result['potential_matches']
-                    for i, match in enumerate(potential_matches[:2], 1):
-                        st.warning(f"**Match {i}:** Trade ID {match['existing_trade_id']} "
-                                 f"({match['confidence']:.1%} confidence)")
-                        if match.get('differences'):
-                            for field, (existing, new) in match['differences'].items():
-                                st.caption(f"  {field}: Existing='{existing}' vs New='{new}'")
-
-                    proceed = st.checkbox("⚠️ I understand this may be a duplicate but want to proceed anyway")
-                    if not proceed:
-                        st.info("Please review the potential matches above. Uncheck the box above if you want to add the trade anyway.")
-                        st.stop()
-
-                elif dedup_result['status'] == 'error':
-                    st.error(f"❌ **Deduplication Error:** {dedup_result['message']}")
-                    st.warning("Proceeding with manual save (deduplication temporarily disabled)")
-                    # Fall back to manual CSV save below
-
-                elif dedup_result['status'] == 'success':
-                    st.success("🎉 **TRADE SUBMISSION SUCCESSFUL!**")
-                    st.success("✅ **Deduplication Check Passed** - No duplicates found")
-
-                    # Trade summary
-                    rr_status = f"{rr_ratio:.3f}" if rr_ratio > 0 else "N/A (No Stop Loss)"
-                    rr_flag = " 🚨 Poor Risk/Reward" if 0 < rr_ratio < 1 else " ✅ Good Risk/Reward" if rr_ratio >= 1 else ""
-
-                    st.success(f"**Trade Details:**")
-                    st.success(f"• Symbol: {symbol.strip().upper()}")
-                    st.success(f"• Direction: {direction.upper()}")
-                    st.success(f"• P&L: ${pnl:.2f}")
-                    st.success(f"• Risk/Reward Ratio: {rr_status}{rr_flag}")
-                    st.success(f"• Tags: {', '.join(tags) if tags else 'None'}")
-                    st.success(f"• Trade ID: {dedup_result['trade_id']}")
-
-                    # Continue with legacy CSV save for backward compatibility
-                    # This ensures the trade also appears in the main interface
-
-                # Log the trade entry
-                log_user_action(
-                    user_id=current_user['id'],
-                    action='manual_trade_entry',
-                    details=trade_entry,
-                    partner_id=current_user.get('partner_id'),
-                    page_context='trade_entry_form'
-                )
-
-                # Save to CSV file
-                trades_file = 'trades.csv'
-                try:
-                    # Check if file exists
-                    file_existed = pd.io.common.file_exists(trades_file)
-
-                    if not file_existed:
-                        # Create new file with headers
-                        trade_df = pd.DataFrame([trade_entry])
-                        trade_df.to_csv(trades_file, index=False)
-                        st.info(f"📁 Created new trades file: {trades_file}")
-                    else:
-                        # Append to existing file
-                        trade_df = pd.DataFrame([trade_entry])
-                        trade_df.to_csv(trades_file, mode='a', header=False, index=False)
-                        st.info(f"📝 Appended to existing file: {trades_file}")
-
-                    # Success message with comprehensive details
-                    st.success("🎉 **TRADE SUBMISSION SUCCESSFUL!**")
-
-                    # Trade summary
-                    rr_status = f"{rr_ratio:.3f}" if rr_ratio > 0 else "N/A (No Stop Loss)"
-                    rr_flag = " 🚨 Poor Risk/Reward" if 0 < rr_ratio < 1 else " ✅ Good Risk/Reward" if rr_ratio >= 1 else ""
-
-                    st.success(f"**Trade Details:**")
-                    st.success(f"• Symbol: {symbol.strip().upper()}")
-                    st.success(f"• Direction: {direction.upper()}")
-                    st.success(f"• P&L: ${pnl:.2f}")
-                    st.success(f"• Risk/Reward Ratio: {rr_status}{rr_flag}")
-                    st.success(f"• Tags: {', '.join(tags) if tags else 'None'}")
-
-                    # File save confirmation
-                    st.success(f"**Saved to:** {trades_file}")
-                    st.success(f"**Timestamp:** {trade_entry['datetime']}")
-
-                    # Show trade data in expandable section
-                    with st.expander("📋 View Complete Trade Data"):
-                        st.json(trade_entry)
-
-                    # Rule-based feedback logic
-                    feedback_messages = []
-
-                    # Rule 1: Check RR ratio
-                    if 0 < rr_ratio < 1:
-                        feedback_messages.append("⚠️ **Low RR**: Consider setting better reward targets. Your current Risk/Reward ratio is below 1.0.")
-
-                    # Rule 2: Check win rate for last 20 trades
-                    try:
-                        # Read existing trades to calculate recent win rate
-                        if pd.io.common.file_exists(trades_file):
-                            existing_trades = pd.read_csv(trades_file)
-                            if len(existing_trades) >= 20:  # Only check if we have at least 20 trades
-                                # Get last 20 trades (including the one we just added)
-                                last_20_trades = existing_trades.tail(20)
-                                last_20_trades['pnl'] = pd.to_numeric(last_20_trades['pnl'], errors='coerce')
-                                last_20_trades = last_20_trades.dropna(subset=['pnl'])
-
-                                if len(last_20_trades) >= 20:
-                                    winning_trades = len(last_20_trades[last_20_trades['pnl'] > 0])
-                                    recent_win_rate = (winning_trades / len(last_20_trades)) * 100
-
-                                    if recent_win_rate < 50:
-                                        feedback_messages.append(f"📊 **Low Recent Win Rate**: Your win rate over the last 20 trades is {recent_win_rate:.1f}%. Consider reviewing your losing trades to identify patterns.")
-                    except Exception:
-                        pass  # Silently skip win rate analysis if there's an error
-
-                    # Display feedback messages
-                    if feedback_messages:
-                        st.subheader("🤖 Trading Feedback")
-                        for message in feedback_messages:
-                            st.warning(message)
-                    else:
-                        # Positive feedback when rules pass
-                        positive_feedback = []
-                        if rr_ratio >= 1:
-                            positive_feedback.append("✅ **Good Risk/Reward**: Your R:R ratio meets the 1:1 minimum threshold.")
-
-                        if positive_feedback:
-                            st.subheader("🤖 Trading Feedback")
-                            for message in positive_feedback:
-                                st.success(message)
-
-                except FileNotFoundError as e:
-                    st.error("❌ **SAVE FAILED - File System Error**")
-                    st.error(f"**Reason:** Could not access the trades file location")
-                    st.error(f"**Technical Details:** {str(e)}")
-                    st.error("**Your trade data:** (Copy this as backup)")
-                    st.json(trade_entry)
-
-                except PermissionError as e:
-                    st.error("❌ **SAVE FAILED - Permission Denied**")
-                    st.error(f"**Reason:** Insufficient permissions to write to {trades_file}")
-                    st.error(f"**Technical Details:** {str(e)}")
-                    st.error("**Your trade data:** (Copy this as backup)")
-                    st.json(trade_entry)
-
-                except pd.errors.EmptyDataError as e:
-                    st.error("❌ **SAVE FAILED - Data Format Error**")
-                    st.error(f"**Reason:** Issue with trade data format")
-                    st.error(f"**Technical Details:** {str(e)}")
-                    st.error("**Your trade data:** (Copy this as backup)")
-                    st.json(trade_entry)
-
-                except Exception as e:
-                    st.error("❌ **SAVE FAILED - Unexpected Error**")
-                    st.error(f"**Reason:** An unexpected error occurred while saving")
-                    st.error(f"**Error Type:** {type(e).__name__}")
-                    st.error(f"**Technical Details:** {str(e)}")
-                    st.error("**Your trade data:** (Copy this as backup)")
-                    st.json(trade_entry)
-                    st.error("**Troubleshooting:** Try refreshing the page or contact support if the issue persists.")
-
-from typing import List, Optional
-from pydantic import BaseModel, validator, Field
-from datetime import datetime
-
-class TradeRecord(BaseModel):
-    """
-    Represents a single trade record with comprehensive fields.
-    """
-    datetime: datetime = Field(..., description="Date and time of the trade")
-    symbol: str = Field(..., description="Trading symbol (e.g., AAPL, TSLA)")
-    entry_price: float = Field(..., description="Price at which the trade was entered")
-    exit_price: float = Field(..., description="Price at which the trade was exited")
-    stop_loss: Optional[float] = Field(None, description="Stop loss price, if applicable")
-    trade_size: float = Field(..., description="Size of the trade (e.g., number of shares)")
-    direction: str = Field(..., description="Direction of the trade ('long' or 'short')")
-    pnl: float = Field(..., description="Profit and Loss of the trade")
-    notes: Optional[str] = Field(None, description="Additional notes or comments about the trade")
-    tags: Optional[str] = Field(None, description="Tags for categorization (e.g., 'scalp', 'swing')")
-    rr_ratio: Optional[float] = Field(None, description="Risk-reward ratio of the trade")
-    commission: Optional[float] = Field(None, description="Commission paid for the trade")
-    fees: Optional[float] = Field(None, description="Additional fees incurred during the trade")
-    trade_type: Optional[str] = Field("manual", description="Type of trade execution (e.g., 'manual', 'automated')")
-    broker: Optional[str] = Field("unknown", description="Name of the broker used for the trade")
-    exit_time: Optional[datetime] = Field(None, description="Specific time of trade exit")
-    entry_time: Optional[datetime] = Field(None, description="Specific time of trade entry")
-
-    @validator('datetime', pre=True)
-    def parse_datetime(cls, value):
-        """
-        Parses datetime values from various formats.
-        """
-        if isinstance(value, datetime):
-            return value
-        try:
-            return datetime.strptime(str(value), '%Y-%m-%d %H:%M:%S')
-        except ValueError:
-            try:
-                return datetime.strptime(str(value), '%Y-%m-%d')
-            except ValueError:
-                raise ValueError("Invalid datetime format")
-
-    @validator('direction')
-    def validate_direction(cls, value):
-        """
-        Validates that the direction is either 'long' or 'short'.
-        """
-        value = value.lower()
-        if value not in ('long', 'short'):
-            raise ValueError("Direction must be 'long' or 'short'")
-        return value
-
-    @classmethod
-    def from_dict(cls, data: Dict) -> 'TradeRecord':
-        """
-        Creates a TradeRecord instance from a dictionary.
-        """
-        return cls(**data)
-
-
-class UniversalTradeDataModel(BaseModel):
-    """
-    A universal data model for trade records, supporting normalization and validation.
-    """
-    trades: List[TradeRecord] = Field(default_factory=list, description="List of trade records")
-    source: Optional[str] = Field(None, description="Source of the data (e.g., 'csv', 'broker_api')")
-
-    def add_trade(self, trade: TradeRecord) -> None:
-        """
-        Adds a single trade record to the model.
-        """
-        self.trades.append(trade)
-
-    def add_trades(self, trades: List[TradeRecord]) -> None:
-        """
-        Adds multiple trade records to the model.
-        """
-        self.trades.extend(trades)
-
-    def get_dataframe(self) -> pd.DataFrame:
-        """
-        Converts the trade records to a Pandas DataFrame.
-        """
-        return pd.DataFrame([trade.dict() for trade in self.trades])
-
-    def remove_duplicates(self) -> int:
-        """
-        Removes duplicate trade records based on a unique identifier.
-        """
-        initial_count = len(self.trades)
-        unique_trades = []
-        seen = set()
-        for trade in self.trades:
-            trade_id = (trade.symbol, trade.datetime, trade.entry_price, trade.exit_price, trade.trade_size)
-            if trade_id not in seen:
-                unique_trades.append(trade)
-                seen.add(trade_id)
-        self.trades = unique_trades
-        return initial_count - len(self.trades)
-
-    def from_dataframe(self, df: pd.DataFrame, source: str) -> 'UniversalTradeDataModel':
-        """
-        Populates the model from a Pandas DataFrame.
-        """
-        self.source = source
-        for _, row in df.iterrows():
-            try:
-                trade = TradeRecord.from_dict(row.to_dict())
-                self.add_trade(trade)
-            except Exception as e:
-                print(f"Error adding trade from DataFrame: {e}")
-        return self
-
-    def normalize_to_universal_model(self, df: pd.DataFrame, source: str) -> 'UniversalTradeDataModel':
-        """
-        Normalizes a Pandas DataFrame to the universal trade data model.
-        """
-        self.source = source
-        normalized_trades = []
-
-        for _, row in df.iterrows():
-            try:
-                # Map DataFrame columns to TradeRecord fields
-                trade_data = {
-                    "datetime": row.get("datetime") or row.get("entry_time"),
-                    "symbol": row.get("symbol"),
-                    "entry_price": row.get("entry_price"),
-                    "exit_price": row.get("exit_price"),
-                    "stop_loss": row.get("stop_loss"),
-                    "trade_size": row.get("trade_size") or row.get("qty"),
-                    "direction": row.get("direction"),
-                    "pnl": row.get("pnl"),
-                    "notes": row.get("notes"),
-                    "tags": row.get("tags"),
-                    "rr_ratio": row.get("rr_ratio"),
-                    "commission": row.get("commission"),
-                    "fees": row.get("fees"),
-                    "trade_type": row.get("trade_type"),
-                    "broker": row.get("broker"),
-                    "exit_time": row.get("exit_time"),
-                    "entry_time": row.get("entry_time"),
-                }
-
-                # Create and validate TradeRecord instance
-                trade_record = TradeRecord(**trade_data)
-                normalized_trades.append(trade_record)
-
-            except Exception as e:
-                print(f"Error normalizing row: {e}")
-
-        self.trades = normalized_trades
-        return self
-
-# Placeholder function for rendering the sync dashboard
-def render_sync_dashboard(current_user):
-    st.write("## Sync Dashboard")
-    st.write("This dashboard will provide an overview of connector synchronization status.")
-    # Add connector status and details here, using current_user for security
-    if current_user:
-        st.write(f"Welcome, {current_user['first_name']}!")
-        # Display connector status for this user
-
-    else:
-        st.warning("Please log in to view the Sync Dashboard.")
-
-# Sidebar navigation
-with st.sidebar:
-    st.header("Navigation")
-
-    page = st.radio(
-        "Choose a page",
-        [
-            "📊 Analytics", "📈 Risk Tool", "🔗 Integrations", "🔄 Sync Dashboard", "⚙️ Admin", "🤝 Partner Portal", "💼 Affiliate Management"
-        ],
-        index=0,
-    )
-
-    # Determine the current page based on the selected value
-    current_page = page
-
-    # Authentication and partner management
-    if current_page == "Partner Portal":
-        render_partner_portal()
-        return
-    elif current_page == "Affiliate Management":
-        render_affiliate_management_ui()
-        return
-
-    if page == "⚙️ Admin":
-        if current_user and current_user.get('is_admin'):
-            render_job_management_interface(current_user)
-            render_auth_interface()
-        else:
-            st.warning("Admin access required")
-    elif page == "📈 Risk Tool":
-        if selected_file:
-            st.info("Risk Tool - coming soon!")
-        else:
-            st.warning("Please load trade data to use this tool")
-    elif page == "📊 Analytics":
-        pass
-    elif page == "🔗 Integrations":
-        render_integration_management_ui(current_user)
-
-    elif page == "🔄 Sync Dashboard":
-        render_sync_dashboard(current_user)

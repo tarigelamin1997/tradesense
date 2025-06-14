@@ -78,7 +78,7 @@ class TradeDataSyncEngine:
         }
         
         self.init_sync_tables()
-        log_info("Trade Data Sync Engine initialized", category=LogCategory.SYSTEM)
+        log_info("Trade Data Sync Engine initialized", category=LogCategory.SYSTEM_ERROR)
     
     def init_sync_tables(self):
         """Initialize sync engine database tables."""
@@ -171,14 +171,14 @@ class TradeDataSyncEngine:
     def start_engine(self):
         """Start the sync engine with scheduler."""
         if self.running:
-            log_warning("Sync engine is already running", category=LogCategory.SYSTEM)
+            log_warning("Sync engine is already running", category=LogCategory.SYSTEM_ERROR)
             return
         
         self.running = True
         self.scheduler_thread = threading.Thread(target=self._scheduler_loop, daemon=True)
         self.scheduler_thread.start()
         
-        log_info("Trade Data Sync Engine started", category=LogCategory.SYSTEM)
+        log_info("Trade Data Sync Engine started", category=LogCategory.SYSTEM_ERROR)
     
     def stop_engine(self):
         """Stop the sync engine."""
@@ -191,7 +191,7 @@ class TradeDataSyncEngine:
             self.cancel_sync_job(job_id)
         
         self.executor.shutdown(wait=True)
-        log_info("Trade Data Sync Engine stopped", category=LogCategory.SYSTEM)
+        log_info("Trade Data Sync Engine stopped", category=LogCategory.SYSTEM_ERROR)
     
     def _scheduler_loop(self):
         """Main scheduler loop that runs scheduled syncs."""
@@ -201,7 +201,7 @@ class TradeDataSyncEngine:
                 self._cleanup_old_jobs()
                 time.sleep(30)  # Check every 30 seconds
             except Exception as e:
-                log_error(f"Scheduler loop error: {str(e)}", category=LogCategory.SYSTEM)
+                log_error(f"Scheduler loop error: {str(e)}", category=LogCategory.SYSTEM_ERROR)
                 time.sleep(60)  # Wait longer on errors
     
     def _process_scheduled_syncs(self):
@@ -376,7 +376,7 @@ class TradeDataSyncEngine:
             return registry.create_instance(job.provider_name)
         except Exception as e:
             log_error(f"Failed to create connector instance for {job.provider_name}: {str(e)}",
-                     category=LogCategory.SYSTEM)
+                     category=LogCategory.SYSTEM_ERROR)
             return None
     
     def _get_integration_credentials(self, job: SyncJob) -> Dict[str, str]:
@@ -517,7 +517,7 @@ class TradeDataSyncEngine:
                 try:
                     callback(job, future.result() if not future.exception() else None)
                 except Exception as e:
-                    log_error(f"Sync callback error: {str(e)}", category=LogCategory.SYSTEM)
+                    log_error(f"Sync callback error: {str(e)}", category=LogCategory.SYSTEM_ERROR)
             
             # Clean up job after some time
             def cleanup():
@@ -571,7 +571,7 @@ class TradeDataSyncEngine:
         conn.close()
         
         log_info(f"Scheduled sync for integration {integration_id} every {frequency_minutes} minutes",
-                category=LogCategory.SYSTEM)
+                category=LogCategory.SYSTEM_ERROR)
     
     def enable_realtime_sync(self, integration_id: int):
         """Enable real-time sync for an integration."""
@@ -588,7 +588,7 @@ class TradeDataSyncEngine:
         conn.close()
         
         log_info(f"Real-time sync enabled for integration {integration_id}",
-                category=LogCategory.SYSTEM)
+                category=LogCategory.SYSTEM_ERROR)
     
     def trigger_manual_sync(self, user_id: int, integration_id: int) -> SyncJob:
         """Trigger a manual sync for an integration."""
@@ -750,7 +750,7 @@ class TradeDataSyncEngine:
             
         except Exception as e:
             log_error(f"Failed to cache normalization: {str(e)}", 
-                     category=LogCategory.SYSTEM)
+                     category=LogCategory.SYSTEM_ERROR)
     
     def _update_sync_metrics(self, job: SyncJob, duration: float, success: bool):
         """Update sync performance metrics."""

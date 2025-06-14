@@ -3,19 +3,31 @@ import numpy as np
 import streamlit as st
 import logging
 from datetime import datetime
+from typing import Dict, Any, Optional
 
-# Configure logging for analytics
-logging.basicConfig(
-    filename='analytics.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filemode='a'
-)
-logger = logging.getLogger(__name__)
+# Import centralized logging
+try:
+    from logging_manager import log_error, log_warning, log_info, LogCategory
+    CENTRALIZED_LOGGING = True
+except ImportError:
+    # Fallback to basic logging if centralized logging not available
+    CENTRALIZED_LOGGING = False
+    logging.basicConfig(
+        filename='analytics.log',
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        filemode='a'
+    )
+    logger = logging.getLogger(__name__)
 
 def log_debug_info(context: str, data):
     """Log debug information to file instead of UI."""
-    logger.debug(f"{context}: {data}")
+    if CENTRALIZED_LOGGING:
+        log_info(f"Analytics debug - {context}", 
+                details={"data": str(data)[:1000]}, 
+                category=LogCategory.DATA_PROCESSING)
+    else:
+        logger.debug(f"{context}: {data}")
 
 def format_currency(value, default="–"):
     """Format currency values with $ and 2 decimal places."""
@@ -47,11 +59,25 @@ def format_number(value, decimals=2, default="–"):
 @st.cache_data
 def compute_basic_stats(df: pd.DataFrame) -> dict:
     """Compute basic trading statistics."""
-    log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
-    log_debug_info("compute_basic_stats sample data", df.head().to_dict())
+    try:
+        log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
+        log_debug_info("compute_basic_stats sample data", df.head().to_dict())
 
-    if df.empty:
-        logger.warning("Empty dataframe passed to compute_basic_stats")
+        if df.empty:
+            if CENTRALIZED_LOGGING:
+                log_warning("Empty dataframe passed to compute_basic_stats", 
+                           category=LogCategory.DATA_PROCESSING)
+            else:
+                logger.warning("Empty dataframe passed to compute_basic_stats")
+            return {}
+    except Exception as e:
+        error_msg = f"Error in compute_basic_stats initialization: {str(e)}"
+        if CENTRALIZED_LOGGING:
+            log_error(error_msg, 
+                     details={"error_type": type(e).__name__, "dataframe_shape": df.shape if not df.empty else "empty"},
+                     category=LogCategory.DATA_PROCESSING)
+        else:
+            logger.error(error_msg)
         return {}
 
     # Clean PnL data

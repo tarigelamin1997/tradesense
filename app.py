@@ -35,6 +35,35 @@ from payment import PaymentGateway
 from auth import AuthManager, require_auth
 from partner_management import render_auth_interface, PartnerManager
 from scheduler_ui import render_job_management_interface, render_sync_status_widget
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[logging.StreamHandler()])
+
+logger = logging.getLogger(__name__)
+
+def log_user_action(user_id: str, action: str, details: dict, partner_id: str = None, page_context: str = 'unknown') -> None:
+    """Log user actions with details to track usage and potential issues."""
+    log_message = f"User {user_id} - Action: {action} - Page: {page_context}"
+    if partner_id:
+        log_message += f" - Partner: {partner_id}"
+    log_message += f" - Details: {details}"
+    logger.info(log_message)
+
+
+def log_sync_failure(connector_name: str, error_message: str, user_id: str = 'system', partner_id: str = None) -> None:
+    """Log synchronization failures for connectors to monitor data import issues."""
+    log_message = f"Sync Failure: Connector {connector_name} - User: {user_id} - Error: {error_message}"
+    if partner_id:
+        log_message += f" - Partner: {partner_id}"
+    logger.error(log_message)
+
+
+def display_error_ui(message: str) -> None:
+    """Display error message in UI to inform users about issues."""
+    st.error(f"❌ Error: {message}")
 
 
 @st.cache_data
@@ -502,7 +531,7 @@ with header_col2:
             partner = auth_manager.db.get_partner(current_user['partner_id'])
             if partner:
                 partner_info = f" • {partner['name']}"
-        
+
         st.caption(f"👤 {current_user['first_name']}{partner_info}")
 
 with header_col3:
@@ -598,10 +627,30 @@ try:
     # Always show cleanup button, but make it more prominent when needed
     if memory_usage > 50:
         if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache", type="primary"):
+            # Log cache clear action
+            if current_user:
+                log_user_action(
+                    user_id=current_user['id'],
+                    action='clear_cache',
+                    details={"memory_usage_before": memory_usage},
+                    partner_id=current_user.get('partner_id'),
+                    page_context='main_sidebar'
+                )
+
             clear_memory_cache()  # Function now handles its own feedback
             st.rerun()
     else:
         if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_normal"):
+            # Log cache clear action
+            if current_user:
+                log_user_action(
+                    user_id=current_user['id'],
+                    action='clear_cache',
+                    details={"memory_usage_before": memory_usage},
+                    partner_id=current_user.get('partner_id'),
+                    page_context='main_sidebar'
+                )
+
             clear_memory_cache()  # Function now handles its own feedback
             st.rerun()
 
@@ -614,6 +663,16 @@ try:
 except:
     # Fallback cleanup button if psutil not available
     if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_fallback"):
+        # Log cache clear action
+        if current_user:
+            log_user_action(
+                user_id=current_user['id'],
+                action='clear_cache',
+                details={"memory_usage_before": memory_usage},
+                partner_id=current_user.get('partner_id'),
+                page_context='main_sidebar'
+            )
+
         clear_memory_cache()  # Function now handles its own feedback
         st.rerun()
 
@@ -669,7 +728,7 @@ if selected_file:
 
         # Show what analytics will be affected
         affected_features = []
-        if 'entry_time' not in df.columns or 'exit_time' not in df.columns:
+        if 'entry_time' not in df.columns or 'exit_time' notin df.columns:
             affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])
         if 'pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
             affected_features.extend(['P&L analytics', 'Performance metrics'])
@@ -2061,10 +2120,10 @@ if selected_file:
                     if partner:
                         partner_tags.append(f"partner:{partner['name']}")
                         partner_tags.append(f"partner_type:{partner['type']}")
-                
+
                 # Combine user tags with partner tags
                 all_tags = tags + partner_tags
-                
+
                 trade_entry = {
                     'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'symbol': symbol.strip().upper(),
@@ -2082,6 +2141,15 @@ if selected_file:
                     'partner_id': current_user.get('partner_id', ''),
                     'user_email': current_user['email']
                 }
+
+                # Log the trade entry
+                log_user_action(
+                    user_id=current_user['id'],
+                    action='manual_trade_entry',
+                    details=trade_entry,
+                    partner_id=current_user.get('partner_id'),
+                    page_context='trade_entry_form'
+                )
 
                 # Save to CSV file
                 trades_file = 'trades.csv'

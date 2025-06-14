@@ -1,13 +1,11 @@
 import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union, IO, Any
+from models.trade_model import UniversalTradeDataModel, TradeRecord
 
-REQUIRED_COLUMNS = [
-    'symbol', 'entry_time', 'exit_time', 'entry_price',
-    'exit_price', 'qty', 'direction', 'pnl', 'trade_type', 'broker'
-]
-
-OPTIONAL_COLUMNS = ['notes']
+# Legacy compatibility - use universal model schema
+REQUIRED_COLUMNS = UniversalTradeDataModel().get_required_columns()
+OPTIONAL_COLUMNS = ['notes', 'commission', 'stop_loss', 'take_profit', 'tags']
 
 class BaseImporter(ABC):
     """Abstract base class for trade data importers."""
@@ -29,6 +27,27 @@ class BaseImporter(ABC):
             raise ValueError(f"Missing required columns: {missing}")
         cols = REQUIRED_COLUMNS + [c for c in OPTIONAL_COLUMNS if c in df.columns]
         return df[cols]
+    
+    def normalize_to_universal_model(self, df: pd.DataFrame, data_source: str = "csv") -> UniversalTradeDataModel:
+        """Convert DataFrame to universal trade data model."""
+        try:
+            # Create universal model from DataFrame
+            model = UniversalTradeDataModel()
+            model = model.from_dataframe(df, data_source)
+            
+            # Validate and clean
+            report = model.validate_all()
+            
+            # Remove duplicates
+            duplicates_removed = model.remove_duplicates()
+            
+            if duplicates_removed > 0:
+                print(f"Removed {duplicates_removed} duplicate trades")
+            
+            return model
+            
+        except Exception as e:
+            raise ValueError(f"Failed to normalize data: {str(e)}")
     
     def validate_data_quality(self, df: pd.DataFrame) -> dict:
         """Validate data quality and return a detailed report."""

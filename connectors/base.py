@@ -64,9 +64,20 @@ class ConnectorBase(ABC):
             raw_data: Raw trade data from fetch_trades()
             
         Returns:
-            DataFrame with standardized columns matching REQUIRED_COLUMNS
+            DataFrame with standardized columns matching universal schema
         """
         pass
+    
+    def to_universal_model(self, raw_data: List[Dict[str, Any]]) -> 'UniversalTradeDataModel':
+        """Convert raw data to universal trade model."""
+        from models.trade_model import UniversalTradeDataModel
+        
+        # First normalize to DataFrame
+        df = self.normalize_data(raw_data)
+        
+        # Then convert to universal model
+        model = UniversalTradeDataModel()
+        return model.from_dataframe(df, self.connector_type)
     
     def validate_connection(self) -> bool:
         """Test connection to data source."""
@@ -114,9 +125,10 @@ class ConnectorBase(ABC):
                 'data_types': normalized_df.dtypes.to_dict()
             }
             
-            # Check for required columns
-            from data_import.base_importer import REQUIRED_COLUMNS
-            for col in REQUIRED_COLUMNS:
+            # Check for required columns using universal model
+            from models.trade_model import UniversalTradeDataModel
+            required_cols = UniversalTradeDataModel().get_required_columns()
+            for col in required_cols:
                 if col not in normalized_df.columns:
                     quality_report['missing_required'].append(col)
             

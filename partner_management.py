@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from typing import Dict, List, Optional
 from auth import AuthManager, require_auth, check_partner_access
+from credential_manager import render_credential_management_ui
 
 class PartnerManager:
     """Manages partner integrations and user access."""
@@ -165,7 +166,7 @@ class PartnerManager:
         """Render partner admin panel."""
         st.subheader("🛠️ Partner Administration")
         
-        tabs = st.tabs(["Users", "Settings", "Analytics", "API"])
+        tabs = st.tabs(["Users", "Settings", "Analytics", "API", "Credentials"])
         
         with tabs[0]:
             self.render_user_management(current_user)
@@ -178,6 +179,9 @@ class PartnerManager:
         
         with tabs[3]:
             self.render_api_management(current_user)
+        
+        with tabs[4]:
+            render_credential_management_ui(current_user)
     
     def render_user_management(self, current_user: Dict):
         """Render user management for partner admins."""

@@ -1399,8 +1399,7 @@ if selected_file:
         dur_col4.metric('Median Duration', f"{format_number(duration['median_minutes'], 0)} min")
 
         streak = max_streaks(filtered_df)
-        st```text
-subheader('Streak Analysis')
+        st.subheader('Streak Analysis')
 
         streak_col1, streak_col2 = st.columns(2)
         streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")

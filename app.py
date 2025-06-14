@@ -32,6 +32,8 @@ from analytics import (
 )
 from risk_tool import assess_risk
 from payment import PaymentGateway
+from auth import AuthManager, require_auth
+from partner_management import render_auth_interface, PartnerManager
 
 
 @st.cache_data
@@ -480,16 +482,29 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
 
 st.set_page_config(page_title="TradeSense", layout="wide")
 
-# Session ID already initialized above
+# Authentication Check - Must be done first
+current_user = render_auth_interface()
 
-# Header with feedback button
-header_col1, header_col2 = st.columns([4, 1])
+# Header with feedback button and user info
+header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
 
 with header_col1:
     st.title("TradeSense")
     st.caption("Smarter Decisions. Safer Trades.")
 
 with header_col2:
+    if current_user:
+        # Show user info
+        partner_info = ""
+        if current_user.get('partner_id'):
+            auth_manager = AuthManager()
+            partner = auth_manager.db.get_partner(current_user['partner_id'])
+            if partner:
+                partner_info = f" • {partner['name']}"
+        
+        st.caption(f"👤 {current_user['first_name']}{partner_info}")
+
+with header_col3:
     if st.button("📝 Feedback", help="Report issues or suggest improvements"):
         st.session_state.show_feedback_modal = True
 
@@ -879,19 +894,29 @@ if selected_file:
         else:
             selected_tags = []
 
-    # Apply filters only for available columns
-    filtered_df = df.copy()
+    # Apply user/partner isolation first
+    if 'user_id' in df.columns:
+        # Filter to only show current user's trades
+        filtered_df = df[df['user_id'] == current_user['id']].copy()
+    else:
+        filtered_df = df.copy()
+
+    # Apply partner-specific filtering if applicable
+    if current_user.get('partner_id') and 'partner_id' in filtered_df.columns:
+        partner_trades = filtered_df[filtered_df['partner_id'] == current_user['partner_id']]
+        if not partner_trades.empty:
+            filtered_df = partner_trades
 
     # Apply symbol filter
-    if 'symbol' in df.columns and symbols:
+    if 'symbol' in filtered_df.columns and symbols:
         filtered_df = filtered_df[filtered_df['symbol'].isin(symbols)]
 
     # Apply direction filter
-    if 'direction' in df.columns and directions:
+    if 'direction' in filtered_df.columns and directions:
         filtered_df = filtered_df[filtered_df['direction'].isin(directions)]
 
     # Apply date range filter
-    if 'entry_time' in df.columns and 'exit_time' in df.columns and date_range:
+    if 'entry_time' in filtered_df.columns and 'exit_time' in filtered_df.columns and date_range:
         try:
             filtered_df = filtered_df[
                 (filtered_df['entry_time'].dt.date >= date_range[0])
@@ -902,7 +927,7 @@ if selected_file:
             pass
 
     # Apply tag filter if tags column exists and tags are selected
-    if 'tags' in df.columns and selected_tags:
+    if 'tags' in filtered_df.columns and selected_tags:
         def has_selected_tag(tag_string):
             if pd.isna(tag_string) or not str(tag_string).strip():
                 return False
@@ -911,12 +936,19 @@ if selected_file:
 
         filtered_df = filtered_df[filtered_df['tags'].apply(has_selected_tag)]
 
-    # Remove broker filter since it's not always available in manual entries
-    # Keep it in sidebar for uploaded files
-    if 'broker' in df.columns:
+    # Partner-aware broker filter
+    if 'broker' in filtered_df.columns:
         st.sidebar.subheader("Additional Filters")
-        brokers = st.sidebar.multiselect('Broker', options=df['broker'].unique().tolist(), default=df['broker'].unique().tolist())
+        available_brokers = filtered_df['broker'].unique().tolist()
+        brokers = st.sidebar.multiselect('Broker', options=available_brokers, default=available_brokers)
         filtered_df = filtered_df[filtered_df['broker'].isin(brokers)]
+
+    # Show partner context in filters
+    if current_user.get('partner_id'):
+        auth_manager = AuthManager()
+        partner = auth_manager.db.get_partner(current_user['partner_id'])
+        if partner:
+            st.sidebar.info(f"🤝 Partner: {partner['name']}")
 
     # Show filter results and merged data notification
     if st.session_state.get('merged_df') is not None:
@@ -2013,7 +2045,18 @@ if selected_file:
                 else:
                     rr_ratio = 0
 
-                # Store the trade entry with current datetime and RR ratio
+                # Store the trade entry with current datetime, RR ratio, and user/partner info
+                partner_tags = []
+                if current_user.get('partner_id'):
+                    auth_manager = AuthManager()
+                    partner = auth_manager.db.get_partner(current_user['partner_id'])
+                    if partner:
+                        partner_tags.append(f"partner:{partner['name']}")
+                        partner_tags.append(f"partner_type:{partner['type']}")
+                
+                # Combine user tags with partner tags
+                all_tags = tags + partner_tags
+                
                 trade_entry = {
                     'datetime': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'symbol': symbol.strip().upper(),
@@ -2026,7 +2069,10 @@ if selected_file:
                     'pnl': pnl,
                     'rr_ratio': rr_ratio,
                     'notes': notes.strip() if notes else '',
-                    'tags': ', '.join(tags) if tags else ''
+                    'tags': ', '.join(all_tags) if all_tags else '',
+                    'user_id': current_user['id'],
+                    'partner_id': current_user.get('partner_id', ''),
+                    'user_email': current_user['email']
                 }
 
                 # Save to CSV file

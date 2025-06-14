@@ -1659,6 +1659,24 @@ if selected_file:
         pdf_bytes = generate_pdf(stats, risk)
         st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
 
+    # Integration Management Section
+    with st.expander("🔗 Broker & Prop Firm Integrations", expanded=False):
+        from integration_manager import render_integration_management_ui
+        from auth import AuthManager
+        
+        auth_manager = AuthManager()
+        current_user = auth_manager.get_current_user()
+        
+        if current_user:
+            render_integration_management_ui(current_user)
+        else:
+            st.warning("Please login to manage integrations")
+            st.info("Integration management allows you to:")
+            st.write("• Connect broker and prop firm accounts")
+            st.write("• Monitor sync status and history")
+            st.write("• Manage authentication credentials securely")
+            st.write("• Automate data synchronization")
+
     # Connector Management Section
     st.subheader('🔌 Data Connectors')
 

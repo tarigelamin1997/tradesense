@@ -1341,8 +1341,8 @@ if selected_file:
                         st.warning("⚠️ Unable to display equity curve: Invalid chart data after final validation")
                         st.info(f"Chart data points: {len(chart_data)}")
                     else:
-                        st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
-                        st.info(f"Trades before cumulative calculation: {len(equity_df)}")
+                    st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
+                    st.info(f"Trades before cumulative calculation: {len(equity_df)}")
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")

@@ -27,9 +27,9 @@ externalPort = 80
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false"]
+run = ["sh", "-c", "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --server.maxUploadSize=50"]
 deploymentTarget = "cloudrun"
 
 [env]
-REPLIT_DISABLE_PACKAGE_LAYER = "1"
-PYTHONPATH = "/home/runner/${REPL_SLUG}:$PYTHONPATH"
+PYTHONUNBUFFERED = "1"
+PYTHONPATH = "/home/runner/${REPL_SLUG}"

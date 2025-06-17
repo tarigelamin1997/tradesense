@@ -5,6 +5,8 @@ import plotly.express as px
 from typing import Dict
 import psutil
 import gc
+import sys
+import traceback
 from st_aggrid import AgGrid, GridUpdateMode
 from interactive_table import (
     compute_trade_result,
@@ -12,6 +14,39 @@ from interactive_table import (
     trade_detail,
 )
 from fpdf import FPDF
+
+# Debug configuration
+st.set_page_config(
+    page_title="TradeSense",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Global error handler for debugging
+def handle_streamlit_error():
+    """Display detailed error information for debugging."""
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    if exc_type is not None:
+        st.error("🚨 **Application Error Detected**")
+        
+        with st.expander("🔍 **Error Details**", expanded=True):
+            st.code(f"Error Type: {exc_type.__name__}")
+            st.code(f"Error Message: {str(exc_value)}")
+            st.code(f"File: {exc_traceback.tb_frame.f_code.co_filename}")
+            st.code(f"Line: {exc_traceback.tb_lineno}")
+            
+        with st.expander("📋 **Full Traceback**", expanded=False):
+            st.code(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        
+        st.info("💡 **Troubleshooting Steps:**")
+        st.write("1. Check the error details above")
+        st.write("2. Clear cache using the sidebar button")
+        st.write("3. Refresh the page")
+        st.write("4. Report this error if it persists")
+        
+        return True
+    return False
 
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
@@ -56,6 +91,9 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
 logger = logging.getLogger(__name__)
+
+# Wrap entire app in error handler
+try:
 
 def log_user_action(user_id: str, action: str, details: dict, partner_id: str = None, page_context: str = 'unknown') -> None:
     """Log user actions with details to track usage and potential issues."""
@@ -624,6 +662,35 @@ theme = st.sidebar.selectbox("Theme", ["Light", "Dark"], index=1)
 
 st.sidebar.header("Upload Trade History")
 st.sidebar.caption("We do not store or share your uploaded trade data.")
+
+# Debug Information Panel
+st.sidebar.header("🔧 Debug Information")
+
+# Python and Streamlit version info
+with st.sidebar.expander("📋 System Info", expanded=False):
+    st.write(f"**Python Version:** {sys.version.split()[0]}")
+    st.write(f"**Streamlit Version:** {st.__version__}")
+    st.write(f"**Pandas Version:** {pd.__version__}")
+    st.write(f"**NumPy Version:** {np.__version__}")
+
+# Error log viewer
+if st.sidebar.button("📄 View Error Logs"):
+    try:
+        with open('logs/tradesense_errors.log', 'r') as f:
+            recent_errors = f.readlines()[-50:]  # Last 50 lines
+        
+        with st.sidebar.expander("🚨 Recent Errors", expanded=True):
+            for error in recent_errors:
+                st.text(error.strip())
+    except FileNotFoundError:
+        st.sidebar.info("No error log file found")
+    except Exception as e:
+        st.sidebar.error(f"Could not read error log: {str(e)}")
+
+# Session state viewer
+if st.sidebar.button("🔍 Debug Session State"):
+    with st.sidebar.expander("Session State", expanded=True):
+        st.json(dict(st.session_state))
 
 # Memory monitoring with management controls
 try:
@@ -2231,3 +2298,76 @@ if selected_file:
 
             except Exception as e:
                 st.error(f"Error adding trade: {str(e)}")
+
+except Exception as main_error:
+    # Main application error handler
+    st.error("🚨 **Critical Application Error**")
+    st.error("The application encountered an unexpected error. Please see details below:")
+    
+    # Show error details
+    with st.expander("🔍 **Error Information**", expanded=True):
+        st.code(f"Error Type: {type(main_error).__name__}")
+        st.code(f"Error Message: {str(main_error)}")
+        
+        # Get traceback
+        import traceback
+        tb_str = ''.join(traceback.format_exception(type(main_error), main_error, main_error.__traceback__))
+        st.code(tb_str)
+    
+    # Troubleshooting guide
+    st.info("🛠️ **Immediate Actions:**")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🔄 Refresh Page"):
+            st.rerun()
+    
+    with col2:
+        if st.button("🧹 Clear All Cache"):
+            st.cache_data.clear()
+            if 'merged_df' in st.session_state:
+                del st.session_state['merged_df']
+            st.success("Cache cleared - please refresh")
+    
+    with col3:
+        if st.button("📊 Reset to Sample Data"):
+            for key in list(st.session_state.keys()):
+                if key not in ['session_id']:
+                    del st.session_state[key]
+            st.success("Session reset - please refresh")
+    
+    # Additional help
+    st.warning("If the error persists after trying the above steps:")
+    st.write("1. Check the console/browser developer tools for additional errors")
+    st.write("2. Try using a different browser or incognito/private mode")
+    st.write("3. Report the error details above to support")
+    
+    # Log the error
+    logger.error(f"Critical application error: {str(main_error)}", exc_info=True)
+
+# Console error detection
+st.write("""
+<script>
+// Capture console errors and display them
+window.addEventListener('error', function(e) {
+    console.error('Page Error:', e.error);
+    // Send error to parent window if in iframe
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: 'error',
+            message: e.error.message,
+            filename: e.filename,
+            lineno: e.lineno
+        }, '*');
+    }
+});
+
+// Capture console.error calls
+const originalError = console.error;
+console.error = function(...args) {
+    originalError.apply(console, args);
+    // Log errors for debugging
+    console.log('Console Error Captured:', args);
+};
+</script>
+""", unsafe_allow_html=True)

@@ -3,8 +3,9 @@ import os
 import json
 import hashlib
 import secrets
+import re
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import sqlite3
 import streamlit as st
 import google.oauth2.credentials
@@ -13,6 +14,7 @@ from googleapiclient.discovery import build
 import jwt
 from passlib.context import CryptContext
 from credential_manager import CredentialManager
+from logging_manager import log_error, LogCategory
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

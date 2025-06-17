@@ -727,7 +727,6 @@ try:
                     details={"memory_usage_before": memory_usage},
                     partner_id=current_user.get('partner_id'),
                     page_context='main_sidebar'
-```python
                 )
 
             clear_memory_cache()  # Function now handles its own feedback

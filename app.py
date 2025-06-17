@@ -2136,7 +2136,7 @@ if selected_file:
                             else:
                                 st.error(f"❌ Merge failed: {result.get('message', 'Unknown error')}")
 
-                        except Exception aspython
+                        except Exception as e:
                             st.error(f"❌ Merge failed: {str(e)}")
                             st.warning("Falling back to legacy merge...")
 

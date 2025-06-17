@@ -11,21 +11,28 @@ st.set_page_config(
 
 def validate_security_environment():
     """Validate security-related environment variables."""
-    required_vars = [
-        'TRADESENSE_MASTER_KEY',
-        'GOOGLE_OAUTH_CLIENT_ID',
-        'GOOGLE_OAUTH_CLIENT_SECRET'
-    ]
+    required_vars = ['TRADESENSE_MASTER_KEY']
+    optional_vars = ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET']
     
-    missing_vars = []
+    missing_required = []
+    missing_optional = []
+    
     for var in required_vars:
         if not os.environ.get(var):
-            missing_vars.append(var)
+            missing_required.append(var)
     
-    if missing_vars:
-        st.error(f"🔐 Missing required environment variables: {', '.join(missing_vars)}")
+    for var in optional_vars:
+        if not os.environ.get(var):
+            missing_optional.append(var)
+    
+    if missing_required:
+        st.error(f"🔐 Missing required environment variables: {', '.join(missing_required)}")
         st.error("Please configure these in Replit Secrets for security.")
         st.stop()
+    
+    if missing_optional:
+        st.warning(f"⚠️ Optional OAuth variables missing: {', '.join(missing_optional)}")
+        st.info("OAuth login will be disabled. You can still use email/password authentication.")
 
 # Validate environment on startup
 validate_security_environment()

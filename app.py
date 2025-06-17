@@ -1,4 +1,36 @@
 import streamlit as st
+import os
+
+# Security configuration
+st.set_page_config(
+    page_title="TradeSense Analytics",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
+
+def validate_security_environment():
+    """Validate security-related environment variables."""
+    required_vars = [
+        'TRADESENSE_MASTER_KEY',
+        'GOOGLE_OAUTH_CLIENT_ID',
+        'GOOGLE_OAUTH_CLIENT_SECRET'
+    ]
+    
+    missing_vars = []
+    for var in required_vars:
+        if not os.environ.get(var):
+            missing_vars.append(var)
+    
+    if missing_vars:
+        st.error(f"🔐 Missing required environment variables: {', '.join(missing_vars)}")
+        st.error("Please configure these in Replit Secrets for security.")
+        st.stop()
+
+# Validate environment on startup
+validate_security_environment()
+
+
+)
 import pandas as pd
 import numpy as np
 import plotly.express as px

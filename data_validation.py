@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
+from typing import Dict, List, Tuple, Any, Optional
+import re
+from datetime import datetime
 import streamlit as st
-from typing import Dict, List, Tuple, Any
-from datetime import datetime, timedelta
+import html
+import bleach
 
 class DataValidator:
     """Comprehensive data validation and correction system for trade data."""
@@ -29,7 +32,7 @@ class DataValidator:
         # Create a copy to avoid modifying the original
         df_copy = df.copy()
         original_rows = len(df_copy)
-        
+
         # Ensure required columns exist
         from data_import.base_importer import REQUIRED_COLUMNS
         missing_required = [col for col in REQUIRED_COLUMNS if col not in df_copy.columns]
@@ -52,12 +55,12 @@ class DataValidator:
             try:
                 df_copy, type_corrections = self._fix_data_types(df_copy)
                 corrections.extend(type_corrections)
-                
+
                 # Check if DataFrame became empty after type fixing
                 if df_copy.empty:
                     issues.append("DataFrame became empty after type conversion")
                     return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
-                    
+
             except Exception as e:
                 issues.append(f"Error fixing data types: {str(e)}")
                 return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
@@ -68,12 +71,12 @@ class DataValidator:
                     try:
                         df_copy, column_issues = self._validate_column(df_copy, column, interactive)
                         issues.extend(column_issues)
-                        
+
                         # Safety check: ensure DataFrame is not empty
                         if df_copy.empty:
                             issues.append(f"DataFrame became empty after validating column {column}")
                             return df, self._generate_report(df, corrections, issues, original_rows)
-                            
+
                     except Exception as e:
                         issues.append(f"Error validating column {column}: {str(e)}")
 
@@ -81,12 +84,12 @@ class DataValidator:
             try:
                 df_copy, logic_issues = self._validate_logical_consistency(df_copy, interactive)
                 issues.extend(logic_issues)
-                
+
                 # Safety check after logical validation
                 if df_copy.empty:
                     issues.append("DataFrame became empty after logical consistency validation")
                     return df, self._generate_report(df, corrections, issues, original_rows)
-                    
+
             except Exception as e:
                 issues.append(f"Error in logical consistency validation: {str(e)}")
 
@@ -95,14 +98,14 @@ class DataValidator:
                 rows_before_removal = len(df_copy)
                 df_copy = self._remove_invalid_rows(df_copy)
                 rows_after_removal = len(df_copy)
-                
+
                 # If too many rows were removed, warn but don't return empty DataFrame
                 if rows_after_removal == 0 and rows_before_removal > 0:
                     issues.append("All rows were marked as invalid and removed")
                     return df, self._generate_report(df, corrections, issues, original_rows)
                 elif rows_after_removal < rows_before_removal * 0.1:  # More than 90% removed
                     issues.append(f"Warning: {rows_before_removal - rows_after_removal} of {rows_before_removal} rows removed ({((rows_before_removal - rows_after_removal)/rows_before_removal*100):.1f}%)")
-                    
+
             except Exception as e:
                 issues.append(f"Error removing invalid rows: {str(e)}")
 
@@ -111,7 +114,7 @@ class DataValidator:
             if final_missing:
                 issues.append(f"Required columns lost during validation: {', '.join(final_missing)}")
                 return df, self._generate_report(df, corrections, issues, original_rows)  # Return original
-                
+
             # Extra check for critical processing columns
             critical_missing = [col for col in critical_processing_cols if col not in df_copy.columns]
             if critical_missing:
@@ -197,6 +200,8 @@ class DataValidator:
 
         if len(cleaned_symbol) > 20:
             return False, cleaned_symbol[:20], "Symbol too long, truncated"
+
+        cleaned_symbol = self._sanitize_input(cleaned_symbol)
 
         return True, cleaned_symbol, ""
 
@@ -288,6 +293,7 @@ class DataValidator:
         if direction in valid_directions:
             return True, valid_directions[direction], ""
 
+        direction = self._sanitize_input(direction)
         return False, 'long', f"Invalid direction '{value}', set to 'long'"
 
     def _validate_pnl(self, value: Any, row: pd.Series = None) -> Tuple[bool, Any, str]:
@@ -326,6 +332,7 @@ class DataValidator:
         if trade_type in valid_types:
             return True, trade_type, ""
 
+        trade_type = self._sanitize_input(trade_type)
         return True, 'manual', f"Unknown trade_type '{value}', set to 'manual'"
 
     def _validate_broker(self, value: Any, row: pd.Series = None) -> Tuple[bool, Any, str]:
@@ -334,6 +341,7 @@ class DataValidator:
             return True, 'unknown', "Set broker to 'unknown'"
 
         broker = str(value).strip()
+        broker = self._sanitize_input(broker)
         return True, broker, ""
 
     def _calculate_pnl_from_row(self, row: pd.Series) -> float:
@@ -389,13 +397,13 @@ class DataValidator:
         # Only remove rows if they have missing data in critical fields
         # But ensure we don't remove ALL rows
         initial_rows = len(df)
-        
+
         for field in critical_fields:
             if field in df.columns:
                 rows_before = len(df)
                 df = df[df[field].notna()]
                 rows_after = len(df)
-                
+
                 # If this removal would empty the DataFrame, stop and return what we have
                 if rows_after == 0 and initial_rows > 0:
                     # Restore the DataFrame to the previous state
@@ -432,6 +440,19 @@ class DataValidator:
             'data_quality_score': data_quality_score
         }
         return report
+
+    def _sanitize_input(self, value: str) -> str:
+        """Sanitize untrusted input to prevent XSS and other injection attacks."""
+
+        # Escape HTML entities
+        value = html.escape(value)
+
+        # Use bleach to strip unwanted tags and attributes
+        allowed_tags = ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'span']
+        allowed_attributes = {'a': ['href', 'title'], 'span': ['style']}
+        value = bleach.clean(value, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+        return value
 
 
 def create_data_correction_interface(df: pd.DataFrame, validator: DataValidator) -> pd.DataFrame:
@@ -579,9 +600,12 @@ def create_manual_correction_interface(df: pd.DataFrame, report: Dict) -> pd.Dat
                                 key=f"edit_{row_idx}_{col}"
                             )
                         else:
+                            # Sanitize text input
+                            text_value = str(value) if pd.notna(value) else ""
+                            sanitized_value = validator._sanitize_input(text_value)
                             updated_values[col] = st.text_input(
                                 f"{col}:",
-                                value=str(value) if pd.notna(value) else "",
+                                value=sanitized_value,
                                 key=f"edit_{row_idx}_{col}"
                             )
 

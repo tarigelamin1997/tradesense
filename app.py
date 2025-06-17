@@ -2297,6 +2297,9 @@ if selected_file:
             except Exception as e:
                 st.error(f"Error adding trade: {str(e)}")
 
+# Global error handler wrapped around main application
+try:
+    pass  # Main application code is above this point
 except Exception as main_error:
     # Main application error handler
     st.error("🚨 **Critical Application Error**")

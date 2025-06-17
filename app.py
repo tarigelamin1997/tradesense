@@ -93,15 +93,13 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 # Wrap entire app in error handler
-try:
-
-    def log_user_action(user_id: str, action: str, details: dict, partner_id: str = None, page_context: str = 'unknown') -> None:
-        """Log user actions with details to track usage and potential issues."""
-        log_message = f"User {user_id} - Action: {action} - Page: {page_context}"
-        if partner_id:
-            log_message += f" - Partner: {partner_id}"
-        log_message += f" - Details: {details}"
-        logger.info(log_message)
+def log_user_action(user_id: str, action: str, details: dict, partner_id: str = None, page_context: str = 'unknown') -> None:
+    """Log user actions with details to track usage and potential issues."""
+    log_message = f"User {user_id} - Action: {action} - Page: {page_context}"
+    if partner_id:
+        log_message += f" - Partner: {partner_id}"
+    log_message += f" - Details: {details}"
+    logger.info(log_message)
 
 
 def log_sync_failure(connector_name: str, error_message: str, user_id: str = 'system', partner_id: str = None) -> None:

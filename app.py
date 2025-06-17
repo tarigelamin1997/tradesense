@@ -29,22 +29,22 @@ def handle_streamlit_error():
     exc_type, exc_value, exc_traceback = sys.exc_info()
     if exc_type is not None:
         st.error("🚨 **Application Error Detected**")
-        
+
         with st.expander("🔍 **Error Details**", expanded=True):
             st.code(f"Error Type: {exc_type.__name__}")
             st.code(f"Error Message: {str(exc_value)}")
             st.code(f"File: {exc_traceback.tb_frame.f_code.co_filename}")
             st.code(f"Line: {exc_traceback.tb_lineno}")
-            
+
         with st.expander("📋 **Full Traceback**", expanded=False):
             st.code(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-        
+
         st.info("💡 **Troubleshooting Steps:**")
         st.write("1. Check the error details above")
         st.write("2. Clear cache using the sidebar button")
         st.write("3. Refresh the page")
         st.write("4. Report this error if it persists")
-        
+
         return True
     return False
 
@@ -676,7 +676,7 @@ if st.sidebar.button("📄 View Error Logs"):
     try:
         with open('logs/tradesense_errors.log', 'r') as f:
             recent_errors = f.readlines()[-50:]  # Last 50 lines
-        
+
         with st.sidebar.expander("🚨 Recent Errors", expanded=True):
             for error in recent_errors:
                 st.text(error.strip())
@@ -726,6 +726,7 @@ try:
                     action='clear_cache',
                     details={"memory_usage_before": memory_usage},
                     partner_id=current_user.get('partner_id'),
+                    ```python
                     page_context='main_sidebar'
                 )
 
@@ -1415,7 +1416,8 @@ if selected_file:
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
-            st.info("**Troubleshooting:** Try using the data validation tool above to clean your data")
+            st.info("**Troubleshooting:** Try using the data validation tool above to```python
+ clean your data")
             # Log the error for debugging
             import traceback
             st.expander("Technical Details").code(traceback.format_exc())
@@ -1758,17 +1760,17 @@ if selected_file:
 
             # QA and Security Section
             st.subheader("🔧 Quality Assurance & Security")
-            
+
             qa_col1, qa_col2, qa_col3 = st.columns(3)
-            
+
             with qa_col1:
                 if st.button("🧪 QA Dashboard", use_container_width=True):
                     st.session_state.show_qa_dashboard = True
-            
+
             with qa_col2:
                 if st.button("🛡️ Security Dashboard", use_container_width=True):
                     st.session_state.show_security_dashboard = True
-            
+
             with qa_col3:
                 if st.button("📋 Compliance Dashboard", use_container_width=True):
                     st.session_state.show_compliance_dashboard = True
@@ -1778,7 +1780,7 @@ if selected_file:
                 with st.modal("🔧 Continuous QA Dashboard", width="large"):
                     from continuous_qa_system import render_qa_dashboard
                     render_qa_dashboard()
-                    
+
                     if st.button("✅ Close QA Dashboard"):
                         st.session_state.show_qa_dashboard = False
                         st.rerun()
@@ -1788,7 +1790,7 @@ if selected_file:
                 with st.modal("🛡️ Security Dashboard", width="large"):
                     from security_scanner import render_security_dashboard
                     render_security_dashboard()
-                    
+
                     if st.button("✅ Close Security Dashboard"):
                         st.session_state.show_security_dashboard = False
                         st.rerun()
@@ -1798,7 +1800,7 @@ if selected_file:
                 with st.modal("📋 Compliance Dashboard", width="large"):
                     from compliance_framework import render_compliance_dashboard
                     render_compliance_dashboard()
-                    
+
                     if st.button("✅ Close Compliance Dashboard"):
                         st.session_state.show_compliance_dashboard = False
                         st.rerun()
@@ -2301,45 +2303,45 @@ except Exception as main_error:
     # Main application error handler
     st.error("🚨 **Critical Application Error**")
     st.error("The application encountered an unexpected error. Please see details below:")
-    
+
     # Show error details
     with st.expander("🔍 **Error Information**", expanded=True):
         st.code(f"Error Type: {type(main_error).__name__}")
         st.code(f"Error Message: {str(main_error)}")
-        
+
         # Get traceback
         import traceback
         tb_str = ''.join(traceback.format_exception(type(main_error), main_error, main_error.__traceback__))
         st.code(tb_str)
-    
+
     # Troubleshooting guide
     st.info("🛠️ **Immediate Actions:**")
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         if st.button("🔄 Refresh Page"):
             st.rerun()
-    
+
     with col2:
         if st.button("🧹 Clear All Cache"):
             st.cache_data.clear()
             if 'merged_df' in st.session_state:
                 del st.session_state['merged_df']
             st.success("Cache cleared - please refresh")
-    
+
     with col3:
         if st.button("📊 Reset to Sample Data"):
             for key in list(st.session_state.keys()):
                 if key not in ['session_id']:
                     del st.session_state[key]
             st.success("Session reset - please refresh")
-    
+
     # Additional help
     st.warning("If the error persists after trying the above steps:")
     st.write("1. Check the console/browser developer tools for additional errors")
     st.write("2. Try using a different browser or incognito/private mode")
     st.write("3. Report the error details above to support")
-    
+
     # Log the error
     logger.error(f"Critical application error: {str(main_error)}", exc_info=True)
 

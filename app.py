@@ -726,7 +726,6 @@ try:
                     action='clear_cache',
                     details={"memory_usage_before": memory_usage},
                     partner_id=current_user.get('partner_id'),
-                    ```python
                     page_context='main_sidebar'
                 )
 

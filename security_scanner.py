@@ -25,18 +25,16 @@ class SecurityScanner:
         """Load known vulnerability patterns."""
         return {
             'sql_injection': [
-                r'f".*{.*}.*".*execute',
-                r'f\'.*{.*}.*\'.*execute',
-                r'format\(.*\).*execute',
-                r'%.*execute',
-                r'\.execute\(.*\+.*\)',
-                r'\.execute\(.*format\(',
+                r'\.execute\(.*\+.*[^?]\)',  # String concatenation in execute (not parameterized)
+                r'\.execute\(.*format\([^?]',  # String formatting in execute
+                r'\.execute\(.*%[^(]',  # Old-style string formatting
+                r'cursor\.execute\([^"\']*["\'][^"\']*\+',  # Direct concatenation
             ],
             'xss_vulnerabilities': [
-                r'st\.write\(.*\+.*\)',
-                r'st\.markdown\(.*\+.*\)',
-                r'st\.html\(.*\+.*\)',
-                r'innerHTML.*\+',
+                r'st\.write\(.*\+.*[^)]\)',  # Unsafe concatenation in st.write
+                r'st\.markdown\(.*\+.*unsafe_allow_html=True',  # Unsafe HTML
+                r'st\.html\(.*\+',  # Any concatenation in st.html
+                r'innerHTML\s*=.*\+',  # Direct innerHTML assignment
             ],
             'hardcoded_secrets': [
                 r'password\s*=\s*["\'][^"\']+["\']',

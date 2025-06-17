@@ -17,6 +17,48 @@ from credential_manager import CredentialManager
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+class RateLimiter:
+    """Simple rate limiter for authentication attempts."""
+    
+    def __init__(self):
+        self.attempts = {}  # email -> {'count': int, 'last_attempt': datetime}
+        self.max_attempts = 5
+        self.lockout_duration = 300  # 5 minutes
+    
+    def is_rate_limited(self, email: str) -> bool:
+        """Check if email is rate limited."""
+        now = datetime.now()
+        
+        if email not in self.attempts:
+            return False
+        
+        attempt_data = self.attempts[email]
+        
+        # Reset if lockout period has passed
+        if (now - attempt_data['last_attempt']).seconds > self.lockout_duration:
+            del self.attempts[email]
+            return False
+        
+        return attempt_data['count'] >= self.max_attempts
+    
+    def record_attempt(self, email: str, success: bool):
+        """Record authentication attempt."""
+        now = datetime.now()
+        
+        if success:
+            # Clear attempts on successful login
+            if email in self.attempts:
+                del self.attempts[email]
+        else:
+            # Increment failed attempts
+            if email not in self.attempts:
+                self.attempts[email] = {'count': 1, 'last_attempt': now}
+            else:
+                self.attempts[email]['count'] += 1
+                self.attempts[email]['last_attempt'] = now
+
+
 class AuthDatabase:
     """Database manager for authentication and user management."""
     
@@ -139,29 +181,49 @@ class AuthDatabase:
     
     def authenticate_user(self, email: str, password: str) -> Optional[Dict]:
         """Authenticate user with email and password."""
+        # Input validation
+        if not email or not password:
+            return None
+        
+        # Sanitize email input
+        email = email.strip().lower()
+        if not self._is_valid_email(email):
+            return None
+        
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        cursor.execute('''
-            SELECT id, email, password_hash, first_name, last_name, 
-                   partner_id, partner_role, is_active, subscription_tier
-            FROM users WHERE email = ? AND is_active = TRUE
-        ''', (email,))
-        
-        user = cursor.fetchone()
-        conn.close()
-        
-        if user and pwd_context.verify(password, user[2]):
-            return {
-                "id": user[0],
-                "email": user[1],
-                "first_name": user[3],
-                "last_name": user[4],
-                "partner_id": user[5],
-                "partner_role": user[6],
-                "subscription_tier": user[8]
-            }
+        try:
+            cursor.execute('''
+                SELECT id, email, password_hash, first_name, last_name, 
+                       partner_id, partner_role, is_active, subscription_tier
+                FROM users WHERE email = ? AND is_active = TRUE
+            ''', (email,))
+            
+            user = cursor.fetchone()
+            
+            if user and pwd_context.verify(password, user[2]):
+                return {
+                    "id": user[0],
+                    "email": user[1],
+                    "first_name": user[3],
+                    "last_name": user[4],
+                    "partner_id": user[5],
+                    "partner_role": user[6],
+                    "subscription_tier": user[8]
+                }
+        except Exception as e:
+            log_error(f"Authentication error: {str(e)}", category=LogCategory.SYSTEM_ERROR)
+        finally:
+            conn.close()
+            
         return None
+    
+    def _is_valid_email(self, email: str) -> bool:
+        """Validate email format."""
+        import re
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
     
     def get_user_by_oauth(self, provider: str, oauth_id: str) -> Optional[Dict]:
         """Get user by OAuth provider and ID."""
@@ -300,13 +362,25 @@ class AuthManager:
     def __init__(self):
         self.db = AuthDatabase()
         self.credential_manager = CredentialManager(self.db.db_path)
+        self.rate_limiter = RateLimiter()
         self.setup_oauth()
     
     def setup_oauth(self):
         """Setup OAuth2 configuration."""
         try:
-            oauth_config = json.loads(os.environ.get('GOOGLE_OAUTH_SECRETS', '{}'))
-            if oauth_config:
+            # Use environment variables for OAuth configuration
+            client_id = os.environ.get('GOOGLE_OAUTH_CLIENT_ID')
+            client_secret = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET')
+            
+            if client_id and client_secret:
+                oauth_config = {
+                    "web": {
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token"
+                    }
+                }
                 self.oauth_flow = google_auth_oauthlib.flow.Flow.from_client_config(
                     oauth_config,
                     scopes=[
@@ -317,24 +391,65 @@ class AuthManager:
                 )
             else:
                 self.oauth_flow = None
-        except:
+        except Exception as e:
+            log_warning(f"OAuth setup failed: {str(e)}", category=LogCategory.SYSTEM_ERROR)
             self.oauth_flow = None
     
     def register_user(self, email: str, password: str, first_name: str = "",
                      last_name: str = "", partner_id: Optional[str] = None) -> Dict:
         """Register a new user."""
-        if len(password) < 8:
-            return {"success": False, "error": "Password must be at least 8 characters"}
+        # Validate password strength
+        password_validation = self._validate_password_strength(password)
+        if not password_validation['valid']:
+            return {"success": False, "error": password_validation['error']}
+        
+        # Sanitize inputs
+        from data_validation import InputSanitizer
+        email = InputSanitizer.sanitize_string(email).lower()
+        first_name = InputSanitizer.sanitize_string(first_name)
+        last_name = InputSanitizer.sanitize_string(last_name)
         
         return self.db.create_user(email, password, first_name, last_name, partner_id)
     
+    def _validate_password_strength(self, password: str) -> Dict[str, Any]:
+        """Validate password meets security requirements."""
+        if len(password) < 12:
+            return {"valid": False, "error": "Password must be at least 12 characters"}
+        
+        if not re.search(r'[A-Z]', password):
+            return {"valid": False, "error": "Password must contain at least one uppercase letter"}
+        
+        if not re.search(r'[a-z]', password):
+            return {"valid": False, "error": "Password must contain at least one lowercase letter"}
+        
+        if not re.search(r'\d', password):
+            return {"valid": False, "error": "Password must contain at least one number"}
+        
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            return {"valid": False, "error": "Password must contain at least one special character"}
+        
+        # Check for common weak passwords
+        weak_patterns = ['password', '123456', 'qwerty', 'admin', 'letmein']
+        if any(weak in password.lower() for weak in weak_patterns):
+            return {"valid": False, "error": "Password contains common weak patterns"}
+        
+        return {"valid": True, "error": None}
+    
     def login_user(self, email: str, password: str) -> Dict:
         """Login user with email and password."""
+        # Check rate limiting
+        if self.rate_limiter.is_rate_limited(email):
+            return {"success": False, "error": "Too many failed attempts. Please try again later."}
+        
         user = self.db.authenticate_user(email, password)
+        
         if user:
+            self.rate_limiter.record_attempt(email, True)
             session_id = self.db.create_session(user["id"], user["partner_id"])
             return {"success": True, "session_id": session_id, "user": user}
-        return {"success": False, "error": "Invalid credentials"}
+        else:
+            self.rate_limiter.record_attempt(email, False)
+            return {"success": False, "error": "Invalid credentials"}
     
     def oauth_login_url(self, redirect_uri: str, partner_id: Optional[str] = None) -> Optional[str]:
         """Get OAuth login URL."""

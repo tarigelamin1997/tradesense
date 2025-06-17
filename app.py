@@ -12,18 +12,18 @@ st.set_page_config(
 def validate_security_environment():
     """Validate security-related environment variables."""
     required_vars = ['TRADESENSE_MASTER_KEY']
-    
+
     missing_required = []
-    
+
     for var in required_vars:
         if not os.environ.get(var):
             missing_required.append(var)
-    
+
     if missing_required:
         st.error(f"🔐 Missing required environment variables: {', '.join(missing_required)}")
         st.error("Please configure these in Replit Secrets for security.")
         st.stop()
-    
+
     st.success("✅ Authentication system ready - using secure email/password login")
 
 # Validate environment on startup

@@ -363,9 +363,16 @@ class AuthManager:
     
     def __init__(self):
         self.db = AuthDatabase()
-        self.credential_manager = CredentialManager(self.db.db_path)
         self.rate_limiter = RateLimiter()
         self.setup_oauth()
+        # Initialize credential manager after OAuth setup to avoid blocking
+        try:
+            self.credential_manager = CredentialManager(self.db.db_path)
+        except Exception as e:
+            # If credential manager fails to initialize, create a minimal version
+            self.credential_manager = None
+            if hasattr(st, 'session_state'):
+                st.session_state.credential_manager_error = str(e)
     
     def setup_oauth(self):
         """Setup OAuth2 configuration - disabled for individual users."""

@@ -30,3 +30,7 @@ externalPort = 3000
 [nix]
 channel = "stable-24_05"
 packages = ["cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
+
+[deployment]
+run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"]
+deploymentTarget = "cloudrun"

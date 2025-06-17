@@ -366,34 +366,9 @@ class AuthManager:
         self.setup_oauth()
     
     def setup_oauth(self):
-        """Setup OAuth2 configuration."""
-        try:
-            # Use environment variables for OAuth configuration
-            client_id = os.environ.get('GOOGLE_OAUTH_CLIENT_ID')
-            client_secret = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET')
-            
-            if client_id and client_secret:
-                oauth_config = {
-                    "web": {
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token"
-                    }
-                }
-                self.oauth_flow = google_auth_oauthlib.flow.Flow.from_client_config(
-                    oauth_config,
-                    scopes=[
-                        "https://www.googleapis.com/auth/userinfo.email",
-                        "openid",
-                        "https://www.googleapis.com/auth/userinfo.profile"
-                    ]
-                )
-            else:
-                self.oauth_flow = None
-        except Exception as e:
-            log_warning(f"OAuth setup failed: {str(e)}", category=LogCategory.SYSTEM_ERROR)
-            self.oauth_flow = None
+        """Setup OAuth2 configuration - disabled for individual users."""
+        # OAuth disabled - using email/password authentication only
+        self.oauth_flow = None
     
     def register_user(self, email: str, password: str, first_name: str = "",
                      last_name: str = "", partner_id: Optional[str] = None) -> Dict:
@@ -598,18 +573,6 @@ def render_auth_interface():
         
         with tab2:
             render_register_form(auth_manager)
-        
-        # OAuth login
-        if auth_manager.oauth_flow:
-            st.divider()
-            st.subheader("🔗 Quick Login")
-            
-            if st.button("Sign in with Google", type="secondary"):
-                redirect_uri = "https://your-app.replit.dev/oauth2callback"
-                oauth_url = auth_manager.oauth_login_url(redirect_uri)
-                if oauth_url:
-                    st.markdown(f'<meta http-equiv="refresh" content="0; url={oauth_url}">', 
-                              unsafe_allow_html=True)
         
         st.stop()
 

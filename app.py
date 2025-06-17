@@ -1416,8 +1416,7 @@ if selected_file:
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
-            st.info("**Troubleshooting:** Try using the data validation tool above to```python
- clean your data")
+            st.info("**Troubleshooting:** Try using the data validation tool above to clean your data")
             # Log the error for debugging
             import traceback
             st.expander("Technical Details").code(traceback.format_exc())

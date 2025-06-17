@@ -727,6 +727,7 @@ try:
                     details={"memory_usage_before": memory_usage},
                     partner_id=current_user.get('partner_id'),
                     page_context='main_sidebar'
+```python
                 )
 
             clear_memory_cache()  # Function now handles its own feedback
@@ -1416,7 +1417,7 @@ if selected_file:
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
             st.info("**Troubleshooting:** Try using the data validation tool above to clean your data")
-            # Log the error for debugging
+            # Log the error```python
             import traceback
             st.expander("Technical Details").code(traceback.format_exc())
 
@@ -2136,7 +2137,7 @@ if selected_file:
                             else:
                                 st.error(f"❌ Merge failed: {result.get('message', 'Unknown error')}")
 
-                        except Exception as e:
+                        except Exception aspython
                             st.error(f"❌ Merge failed: {str(e)}")
                             st.warning("Falling back to legacy merge...")
 

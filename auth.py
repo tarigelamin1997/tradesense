@@ -12,6 +12,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 import jwt
+import logging
 from passlib.context import CryptContext
 from credential_manager import CredentialManager
 from logging_manager import log_error, LogCategory
@@ -223,7 +224,6 @@ class AuthDatabase:
     
     def _is_valid_email(self, email: str) -> bool:
         """Validate email format."""
-        import re
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(pattern, email) is not None
     

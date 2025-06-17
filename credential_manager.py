@@ -60,13 +60,10 @@ class CredentialManager:
         # Store backup in database
         self._store_backup_key_in_db(key_b64)
         
-        # Alert user to store this key securely
-        st.warning("🔐 **New encryption key generated**")
-        st.code(key_b64, language="text")
-        st.error("🚨 **IMPORTANT**: Add this key to Replit Secrets as `TRADESENSE_MASTER_KEY`")
-        st.info("1. Click the 🔒 Secrets tool in the sidebar")
-        st.info("2. Add secret: Key=`TRADESENSE_MASTER_KEY`, Value=`(copy key above)`")
-        st.info("3. This key will encrypt all your stored credentials")
+        # Store key info in session state for later display
+        if hasattr(st, 'session_state'):
+            st.session_state.new_encryption_key = key_b64
+            st.session_state.show_key_setup = True
         
         return key
     
@@ -550,6 +547,11 @@ class CredentialManager:
     
     def get_key_status_display(self) -> None:
         """Display current encryption key status in Streamlit."""
+        # Check if we need to show key setup
+        if hasattr(st, 'session_state') and getattr(st.session_state, 'show_key_setup', False):
+            self._display_key_setup_ui()
+            return
+        
         status = self.validate_encryption_key()
         
         if status["is_valid"]:
@@ -580,6 +582,24 @@ class CredentialManager:
                 st.info("💾 Backup key available - attempting recovery...")
             else:
                 st.warning("💾 No backup key available")
+    
+    def _display_key_setup_ui(self) -> None:
+        """Display the key setup UI when a new key is generated."""
+        key_b64 = getattr(st.session_state, 'new_encryption_key', None)
+        
+        if key_b64:
+            st.warning("🔐 **New encryption key generated**")
+            st.code(key_b64, language="text")
+            st.error("🚨 **IMPORTANT**: Add this key to Replit Secrets as `TRADESENSE_MASTER_KEY`")
+            st.info("1. Click the 🔒 Secrets tool in the sidebar")
+            st.info("2. Add secret: Key=`TRADESENSE_MASTER_KEY`, Value=`(copy key above)`")
+            st.info("3. This key will encrypt all your stored credentials")
+            
+            if st.button("✅ I've added the key to Secrets"):
+                st.session_state.show_key_setup = False
+                if hasattr(st.session_state, 'new_encryption_key'):
+                    del st.session_state.new_encryption_key
+                st.rerun()
 
 
 # Integration with existing auth system

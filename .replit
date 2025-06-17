@@ -25,6 +25,7 @@ externalPort = 80
 
 [nix]
 channel = "stable-24_05"
+packages = ["cargo", "glibcLocales", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
 
 [deployment]
 run = ["sh", "-c", "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --server.maxUploadSize=50"]

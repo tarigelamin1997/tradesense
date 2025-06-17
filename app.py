@@ -20,11 +20,20 @@ def validate_security_environment():
             missing_required.append(var)
 
     if missing_required:
-        st.error(f"🔐 Missing required environment variables: {', '.join(missing_required)}")
-        st.error("Please configure these in Replit Secrets for security.")
-        st.stop()
-
-    st.success("✅ Authentication system ready - using secure email/password login")
+        st.warning(f"🔐 Missing environment variables: {', '.join(missing_required)}")
+        st.info("⚙️ **For deployment:** Add these to Replit Secrets in the Deployments tab")
+        
+        # Generate a temporary key for development/demo
+        if 'temp_master_key' not in st.session_state:
+            import secrets
+            temp_key = secrets.token_urlsafe(32)
+            st.session_state.temp_master_key = temp_key
+            os.environ['TRADESENSE_MASTER_KEY'] = temp_key
+            st.info("🔧 Generated temporary encryption key for this session")
+        else:
+            os.environ['TRADESENSE_MASTER_KEY'] = st.session_state.temp_master_key
+    else:
+        st.success("✅ Authentication system ready - using secure email/password login")
 
 # Validate environment on startup
 validate_security_environment()

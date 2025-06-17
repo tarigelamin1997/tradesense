@@ -373,6 +373,8 @@ class AuthManager:
             self.credential_manager = None
             if hasattr(st, 'session_state'):
                 st.session_state.credential_manager_error = str(e)
+            # Log the error but don't stop the app
+            print(f"Warning: Credential manager initialization failed: {str(e)}")
     
     def setup_oauth(self):
         """Setup OAuth2 configuration - disabled for individual users."""

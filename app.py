@@ -30,8 +30,6 @@ def validate_security_environment():
 # Validate environment on startup
 validate_security_environment()
 
-
-)
 import pandas as pd
 import numpy as np
 import plotly.express as px

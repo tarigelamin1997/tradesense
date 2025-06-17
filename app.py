@@ -12,27 +12,19 @@ st.set_page_config(
 def validate_security_environment():
     """Validate security-related environment variables."""
     required_vars = ['TRADESENSE_MASTER_KEY']
-    optional_vars = ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET']
     
     missing_required = []
-    missing_optional = []
     
     for var in required_vars:
         if not os.environ.get(var):
             missing_required.append(var)
-    
-    for var in optional_vars:
-        if not os.environ.get(var):
-            missing_optional.append(var)
     
     if missing_required:
         st.error(f"🔐 Missing required environment variables: {', '.join(missing_required)}")
         st.error("Please configure these in Replit Secrets for security.")
         st.stop()
     
-    if missing_optional:
-        st.warning(f"⚠️ Optional OAuth variables missing: {', '.join(missing_optional)}")
-        st.info("OAuth login will be disabled. You can still use email/password authentication.")
+    st.success("✅ Authentication system ready - using secure email/password login")
 
 # Validate environment on startup
 validate_security_environment()
@@ -53,13 +45,7 @@ from interactive_table import (
 )
 from fpdf import FPDF
 
-# Debug configuration
-st.set_page_config(
-    page_title="TradeSense",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Debug configuration - removed duplicate set_page_config
 
 # Global error handler for debugging
 def handle_streamlit_error():

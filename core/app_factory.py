@@ -36,23 +36,19 @@ class AppFactory:
                 if st.button("🔄 Run Comprehensive Analysis", type="primary"):
                     self._run_analysis()
 
-            # Sidebar navigation
-            with st.sidebar:
-                st.header("Navigation")
-                page = st.selectbox(
-                    "Select Page",
-                    ["Dashboard", "Analytics", "Trade Data", "Settings"],
-                    key="main_nav"
-                )
-
-            # Main content area
-            if page == "Dashboard":
+            # Navigation tabs
+            tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📈 Analytics", "📋 Trade Data", "⚙️ Settings"])
+            
+            with tab1:
                 self._render_dashboard()
-            elif page == "Analytics":
+            
+            with tab2:
                 self._render_analytics()
-            elif page == "Trade Data":
+            
+            with tab3:
                 self._render_trade_data()
-            elif page == "Settings":
+            
+            with tab4:
                 self._render_settings()
 
         except Exception as e:

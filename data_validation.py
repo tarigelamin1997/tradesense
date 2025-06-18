@@ -2,10 +2,69 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import streamlit as st
 import html
 import bleach
+
+
+class InputSanitizer:
+    """Input sanitization utilities for security."""
+    
+    @staticmethod
+    def sanitize_string(value: str) -> str:
+        """Sanitize string input to prevent XSS and injection attacks."""
+        if not value:
+            return ""
+        
+        # Remove null bytes and control characters
+        value = ''.join(char for char in value if ord(char) >= 32 or char in ['\n', '\r', '\t'])
+        
+        # HTML escape
+        value = html.escape(value)
+        
+        # Use bleach for additional sanitization
+        allowed_tags = []  # No tags allowed for basic string input
+        value = bleach.clean(value, tags=allowed_tags, strip=True)
+        
+        # Limit length to prevent buffer overflow
+        max_length = 255
+        if len(value) > max_length:
+            value = value[:max_length]
+        
+        return value.strip()
+    
+    @staticmethod
+    def sanitize_email(email: str) -> str:
+        """Sanitize email input."""
+        if not email:
+            return ""
+        
+        # Basic email sanitization
+        email = email.strip().lower()
+        
+        # Remove dangerous characters
+        allowed_chars = 'abcdefghijklmnopqrstuvwxyz0123456789@.-_+'
+        email = ''.join(char for char in email if char in allowed_chars)
+        
+        return email
+    
+    @staticmethod
+    def sanitize_filename(filename: str) -> str:
+        """Sanitize filename to prevent path traversal."""
+        if not filename:
+            return ""
+        
+        # Remove path separators and dangerous characters
+        dangerous_chars = ['/', '\\', '..', '<', '>', ':', '"', '|', '?', '*']
+        for char in dangerous_chars:
+            filename = filename.replace(char, '_')
+        
+        # Limit length
+        if len(filename) > 255:
+            filename = filename[:255]
+        
+        return filename.strip()
 
 class DataValidator:
     """Comprehensive data validation and correction system for trade data."""

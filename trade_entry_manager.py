@@ -101,7 +101,7 @@ class TradeEntryManager:
             from data_validation import DataValidator
             validator = DataValidator()
             df_cleaned, validation_report = validator.validate_and_clean_data(df, interactive=False)
-            
+
             # Convert DataFrame to universal model
             file_model = UniversalTradeDataModel()
             file_model = file_model.from_dataframe(df_cleaned, data_source)

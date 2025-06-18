@@ -68,17 +68,17 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
                 logger.warning("Empty dataframe passed to compute_basic_stats")
             return {
                 'total_trades': 0,
-                'win_rate': 0,
-                'average_win': 0,
-                'average_loss': 0,
-                'reward_risk': 0,
-                'expectancy': 0,
-                'profit_factor': 0,
-                'max_drawdown': 0,
-                'sharpe_ratio': 0,
-                'equity_curve': pd.Series()
+                'win_rate': 0.0,
+                'average_win': 0.0,
+                'average_loss': 0.0,
+                'reward_risk': 0.0,
+                'expectancy': 0.0,
+                'profit_factor': 0.0,
+                'max_drawdown': 0.0,
+                'sharpe_ratio': 0.0,
+                'equity_curve': pd.Series(dtype=float)
             }
-            
+
         log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
         log_debug_info("compute_basic_stats sample data", df.head().to_dict())
 
@@ -92,41 +92,41 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
             logger.error(error_msg)
         return {
             'total_trades': 0,
-            'win_rate': 0,
-            'average_win': 0,
-            'average_loss': 0,
-            'reward_risk': 0,
-            'expectancy': 0,
-            'profit_factor': 0,
-            'max_drawdown': 0,
-            'sharpe_ratio': 0,
-            'equity_curve': pd.Series()
+            'win_rate': 0.0,
+            'average_win': 0.0,
+            'average_loss': 0.0,
+            'reward_risk': 0.0,
+            'expectancy': 0.0,
+            'profit_factor': 0.0,
+            'max_drawdown': 0.0,
+            'sharpe_ratio': 0.0,
+            'equity_curve': pd.Series(dtype=float)
         }
 
     # Clean PnL data
     df = df.copy()
-    
+
     # Ensure PnL column exists
     if 'pnl' not in df.columns:
         logger.error("PnL column not found in dataframe")
         return {
             'total_trades': 0,
-            'win_rate': 0,
-            'average_win': 0,
-            'average_loss': 0,
-            'reward_risk': 0,
-            'expectancy': 0,
-            'profit_factor': 0,
-            'max_drawdown': 0,
-            'sharpe_ratio': 0,
-            'equity_curve': pd.Series()
+            'win_rate': 0.0,
+            'average_win': 0.0,
+            'average_loss': 0.0,
+            'reward_risk': 0.0,
+            'expectancy': 0.0,
+            'profit_factor': 0.0,
+            'max_drawdown': 0.0,
+            'sharpe_ratio': 0.0,
+            'equity_curve': pd.Series(dtype=float)
         }
-    
+
     # Convert PnL to numeric and clean
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
     df = df[np.isfinite(df['pnl'])]
-    
+
     # Remove extreme outliers that could break calculations
     if not df.empty:
         q1 = df['pnl'].quantile(0.01)
@@ -142,15 +142,15 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
         logger.warning("No valid PnL data after cleaning")
         return {
             'total_trades': 0,
-            'win_rate': 0,
-            'average_win': 0,
-            'average_loss': 0,
-            'reward_risk': 0,
-            'expectancy': 0,
-            'profit_factor': 0,
-            'max_drawdown': 0,
-            'sharpe_ratio': 0,
-            'equity_curve': pd.Series()
+            'win_rate': 0.0,
+            'average_win': 0.0,
+            'average_loss': 0.0,
+            'reward_risk': 0.0,
+            'expectancy': 0.0,
+            'profit_factor': 0.0,
+            'max_drawdown': 0.0,
+            'sharpe_ratio': 0.0,
+            'equity_curve': pd.Series(dtype=float)
         }
 
     log_debug_info("Cleaned PnL data", df['pnl'].describe().to_dict())
@@ -218,11 +218,11 @@ def performance_over_time(df: pd.DataFrame, freq: str = 'M') -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
-    
+
     # Clean PnL data more thoroughly
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
-    
+
     # Remove infinite values
     df = df[np.isfinite(df['pnl'])]
     df = df[df['pnl'] != np.inf]
@@ -235,7 +235,7 @@ def performance_over_time(df: pd.DataFrame, freq: str = 'M') -> pd.DataFrame:
     # Clean exit_time data
     df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
     df = df.dropna(subset=['exit_time'])
-    
+
     # Remove rows with invalid dates (like NaT or extreme dates)
     valid_date_mask = (df['exit_time'] > pd.Timestamp('1970-01-01')) & (df['exit_time'] < pd.Timestamp('2100-01-01'))
     df = df[valid_date_mask]
@@ -248,13 +248,13 @@ def performance_over_time(df: pd.DataFrame, freq: str = 'M') -> pd.DataFrame:
         # Group by time period
         df['period'] = df['exit_time'].dt.to_period(freq)
         df = df.dropna(subset=['period'])  # Remove any NaT periods
-        
+
         if df.empty:
             logger.warning("No valid periods after conversion")
             return pd.DataFrame()
-        
+
         grouped = df.groupby('period')
-        
+
         if len(grouped) == 0:
             logger.warning("No groups found after grouping")
             return pd.DataFrame()
@@ -264,14 +264,14 @@ def performance_over_time(df: pd.DataFrame, freq: str = 'M') -> pd.DataFrame:
         trades = []
         pnls = []
         win_rates = []
-        
+
         for period, group in grouped:
             if len(group) > 0:
                 periods.append(period)
                 trades.append(len(group))
                 group_pnl = group['pnl'].sum()
                 pnls.append(group_pnl if np.isfinite(group_pnl) else 0)
-                
+
                 # Calculate win rate safely
                 wins = (group['pnl'] > 0).sum()
                 total = len(group)
@@ -297,7 +297,7 @@ def performance_over_time(df: pd.DataFrame, freq: str = 'M') -> pd.DataFrame:
 
         log_debug_info("performance_over_time result", result.to_dict())
         return result
-        
+
     except Exception as e:
         logger.error(f"Error in performance_over_time: {str(e)}")
         return pd.DataFrame()
@@ -417,12 +417,12 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
     df = df.copy()
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
-    
+
     # Additional cleaning to prevent infinite values
     df = df[np.isfinite(df['pnl'])]
     df = df[df['pnl'] != np.inf]
     df = df[df['pnl'] != -np.inf]
-    
+
     # Remove extreme outliers that could cause infinite values
     if not df.empty:
         q99 = df['pnl'].quantile(0.99)
@@ -431,12 +431,12 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
             # Cap values to prevent infinite calculations
             max_val = abs(q99 - q1) * 100  # Allow up to 100x IQR
             df = df[abs(df['pnl']) <= max_val]
-    
+
     # Check again after cleaning
     if df.empty or len(df) < window:
         log_debug_info("rolling_metrics", f"Insufficient data after cleaning: {len(df)} < {window}")
         return pd.DataFrame()
-    
+
     # Sort by exit_time if available, otherwise by index
     if 'exit_time' in df.columns:
         df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
@@ -450,20 +450,20 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
     rolling_data = []
     for i in range(window, len(df) + 1):
         subset = df.iloc[i-window:i]
-        
+
         # Ensure subset has valid data
         if subset.empty or len(subset) != window:
             continue
-            
+
         wins = (subset['pnl'] > 0).sum()
         win_rate = wins / window * 100
 
         winning_trades = subset[subset['pnl'] > 0]
         losing_trades = subset[subset['pnl'] < 0]
-        
+
         gross_profit = winning_trades['pnl'].sum() if not winning_trades.empty else 0
         gross_loss = abs(losing_trades['pnl'].sum()) if not losing_trades.empty else 0
-        
+
         # Calculate profit factor with safety checks
         if gross_loss > 0 and np.isfinite(gross_loss) and np.isfinite(gross_profit):
             profit_factor = gross_profit / gross_loss
@@ -491,19 +491,19 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
         return pd.DataFrame()
 
     result = pd.DataFrame(rolling_data)
-    
+
     # Final validation of result data
     if not result.empty:
         # Remove any remaining infinite values
         result = result.replace([np.inf, -np.inf], np.nan)
         result = result.dropna()
-        
+
         # Ensure reasonable ranges
         if 'win_rate' in result.columns:
             result['win_rate'] = result['win_rate'].clip(0, 100)
         if 'profit_factor' in result.columns:
             result['profit_factor'] = result['profit_factor'].clip(0, 50)
-    
+
     log_debug_info("rolling_metrics result", f"Generated {len(result)} rolling periods")
     return result
 

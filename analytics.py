@@ -60,16 +60,28 @@ def format_number(value, decimals=2, default="–"):
 def compute_basic_stats(df: pd.DataFrame) -> dict:
     """Compute basic trading statistics."""
     try:
-        log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
-        log_debug_info("compute_basic_stats sample data", df.head().to_dict())
-
         if df.empty:
             if CENTRALIZED_LOGGING:
                 log_warning("Empty dataframe passed to compute_basic_stats", 
                            category=LogCategory.DATA_PROCESSING)
             else:
                 logger.warning("Empty dataframe passed to compute_basic_stats")
-            return {}
+            return {
+                'total_trades': 0,
+                'win_rate': 0,
+                'average_win': 0,
+                'average_loss': 0,
+                'reward_risk': 0,
+                'expectancy': 0,
+                'profit_factor': 0,
+                'max_drawdown': 0,
+                'sharpe_ratio': 0,
+                'equity_curve': pd.Series()
+            }
+            
+        log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
+        log_debug_info("compute_basic_stats sample data", df.head().to_dict())
+
     except Exception as e:
         error_msg = f"Error in compute_basic_stats initialization: {str(e)}"
         if CENTRALIZED_LOGGING:
@@ -78,17 +90,68 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
                      category=LogCategory.DATA_PROCESSING)
         else:
             logger.error(error_msg)
-        return {}
+        return {
+            'total_trades': 0,
+            'win_rate': 0,
+            'average_win': 0,
+            'average_loss': 0,
+            'reward_risk': 0,
+            'expectancy': 0,
+            'profit_factor': 0,
+            'max_drawdown': 0,
+            'sharpe_ratio': 0,
+            'equity_curve': pd.Series()
+        }
 
     # Clean PnL data
     df = df.copy()
+    
+    # Ensure PnL column exists
+    if 'pnl' not in df.columns:
+        logger.error("PnL column not found in dataframe")
+        return {
+            'total_trades': 0,
+            'win_rate': 0,
+            'average_win': 0,
+            'average_loss': 0,
+            'reward_risk': 0,
+            'expectancy': 0,
+            'profit_factor': 0,
+            'max_drawdown': 0,
+            'sharpe_ratio': 0,
+            'equity_curve': pd.Series()
+        }
+    
+    # Convert PnL to numeric and clean
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
     df = df[np.isfinite(df['pnl'])]
+    
+    # Remove extreme outliers that could break calculations
+    if not df.empty:
+        q1 = df['pnl'].quantile(0.01)
+        q99 = df['pnl'].quantile(0.99)
+        if np.isfinite(q1) and np.isfinite(q99):
+            iqr = q99 - q1
+            if iqr > 0:
+                lower_bound = q1 - 3 * iqr
+                upper_bound = q99 + 3 * iqr
+                df = df[(df['pnl'] >= lower_bound) & (df['pnl'] <= upper_bound)]
 
     if df.empty:
         logger.warning("No valid PnL data after cleaning")
-        return {}
+        return {
+            'total_trades': 0,
+            'win_rate': 0,
+            'average_win': 0,
+            'average_loss': 0,
+            'reward_risk': 0,
+            'expectancy': 0,
+            'profit_factor': 0,
+            'max_drawdown': 0,
+            'sharpe_ratio': 0,
+            'equity_curve': pd.Series()
+        }
 
     log_debug_info("Cleaned PnL data", df['pnl'].describe().to_dict())
 

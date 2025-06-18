@@ -357,20 +357,36 @@ def trade_duration_stats(df: pd.DataFrame) -> dict:
         return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
 
     df = df.copy()
+    
+    # Ensure datetime conversion
     df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
     df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+    
+    # Remove rows with invalid dates
     df = df.dropna(subset=['entry_time', 'exit_time'])
+    
+    # Additional validation - ensure exit_time is after entry_time
+    df = df[df['exit_time'] > df['entry_time']]
 
     if df.empty:
+        log_debug_info("trade_duration_stats", "No valid time data after cleaning")
         return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
 
+    # Calculate duration in minutes
     df['duration'] = (df['exit_time'] - df['entry_time']).dt.total_seconds() / 60
+    
+    # Remove any negative or zero durations
+    df = df[df['duration'] > 0]
+    
+    if df.empty:
+        log_debug_info("trade_duration_stats", "No valid durations after filtering")
+        return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
 
     result = {
-        'average_minutes': df['duration'].mean(),
-        'min_minutes': df['duration'].min(),
-        'max_minutes': df['duration'].max(),
-        'median_minutes': df['duration'].median()
+        'average_minutes': float(df['duration'].mean()) if not df['duration'].empty else 0,
+        'min_minutes': float(df['duration'].min()) if not df['duration'].empty else 0,
+        'max_minutes': float(df['duration'].max()) if not df['duration'].empty else 0,
+        'median_minutes': float(df['duration'].median()) if not df['duration'].empty else 0
     }
 
     log_debug_info("trade_duration_stats", result)

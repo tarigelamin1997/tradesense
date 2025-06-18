@@ -1,5 +1,11 @@
 import streamlit as st
 import os
+import sys
+
+# Fix Python path for Replit .pythonlibs
+pythonlibs_path = "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages"
+if pythonlibs_path not in sys.path:
+    sys.path.insert(0, pythonlibs_path)
 
 # Security configuration
 st.set_page_config(

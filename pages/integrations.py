@@ -33,7 +33,7 @@ def main():
         return
     
     # Render the integration management UI
-    render_integration_management_ui(current_user)
+    render_integration_management_ui()
     
     # Additional help section
     with st.sidebar:

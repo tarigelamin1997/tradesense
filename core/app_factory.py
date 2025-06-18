@@ -357,44 +357,195 @@ class AppFactory:
             st.markdown("---")
             
             # Enhanced Streak Analysis
-            st.markdown("## 🔥 Streak Analysis & Consistency")
+            st.markdown("## 🔥 Streak Analysis & Trading Psychology")
             streaks = analytics.get('streaks', {})
             
-            streak_col1, streak_col2, streak_col3 = st.columns([1, 1, 1])
-            
-            with streak_col1:
-                max_win_streak = streaks.get('max_win_streak', 0)
-                win_streak_emoji = "🔥" if max_win_streak >= 10 else "✨" if max_win_streak >= 5 else "📈"
-                st.metric(
-                    label=f"**{win_streak_emoji} Max Win Streak**", 
-                    value=f"{max_win_streak} trades",
-                    help="Longest consecutive winning streak"
-                )
-            
-            with streak_col2:
-                max_loss_streak = streaks.get('max_loss_streak', 0)
-                loss_streak_emoji = "❄️" if max_loss_streak >= 10 else "📉" if max_loss_streak >= 5 else "🔻"
-                st.metric(
-                    label=f"**{loss_streak_emoji} Max Loss Streak**", 
-                    value=f"{max_loss_streak} trades",
-                    help="Longest consecutive losing streak"
-                )
-            
-            with streak_col3:
-                # Calculate streak ratio for consistency
-                if max_loss_streak > 0:
-                    streak_ratio = max_win_streak / max_loss_streak
-                    consistency_rating = "Excellent" if streak_ratio >= 2.0 else "Good" if streak_ratio >= 1.5 else "Fair"
-                else:
-                    streak_ratio = float('inf')
-                    consistency_rating = "Perfect"
+            # Create a prominent container for streak analysis
+            with st.container():
+                st.markdown("### Consecutive Trade Performance")
                 
-                st.metric(
-                    label="**🎯 Consistency Rating**", 
-                    value=consistency_rating,
-                    delta=f"Win/Loss ratio: {streak_ratio:.1f}" if streak_ratio != float('inf') else "No losing streaks!",
-                    help="Consistency based on streak patterns"
-                )
+                # Get streak values
+                max_win_streak = streaks.get('max_win_streak', 0)
+                max_loss_streak = streaks.get('max_loss_streak', 0)
+                
+                # Main streak display
+                streak_col1, streak_col2, streak_col3, streak_col4 = st.columns([1, 1, 1, 1])
+                
+                with streak_col1:
+                    # Enhanced win streak display
+                    if max_win_streak >= 15:
+                        win_streak_emoji = "🔥🔥🔥"
+                        win_streak_color = "🟢"
+                        win_streak_desc = "EXCEPTIONAL"
+                    elif max_win_streak >= 10:
+                        win_streak_emoji = "🔥🔥"
+                        win_streak_color = "🟢"
+                        win_streak_desc = "EXCELLENT"
+                    elif max_win_streak >= 5:
+                        win_streak_emoji = "🔥"
+                        win_streak_color = "🟡"
+                        win_streak_desc = "GOOD"
+                    elif max_win_streak >= 3:
+                        win_streak_emoji = "✨"
+                        win_streak_color = "🟡"
+                        win_streak_desc = "MODERATE"
+                    else:
+                        win_streak_emoji = "📈"
+                        win_streak_color = "🔴"
+                        win_streak_desc = "LOW"
+                    
+                    st.metric(
+                        label=f"**{win_streak_emoji} Longest Win Streak**", 
+                        value=f"{max_win_streak} consecutive wins",
+                        delta=f"{win_streak_color} {win_streak_desc}",
+                        help=f"Your best winning streak shows discipline and strategy execution. {max_win_streak} wins in a row!"
+                    )
+                
+                with streak_col2:
+                    # Enhanced loss streak display
+                    if max_loss_streak >= 15:
+                        loss_streak_emoji = "❄️❄️❄️"
+                        loss_streak_color = "🔴"
+                        loss_streak_desc = "CONCERNING"
+                    elif max_loss_streak >= 10:
+                        loss_streak_emoji = "❄️❄️"
+                        loss_streak_color = "🔴"
+                        loss_streak_desc = "HIGH"
+                    elif max_loss_streak >= 5:
+                        loss_streak_emoji = "❄️"
+                        loss_streak_color = "🟡"
+                        loss_streak_desc = "MODERATE"
+                    elif max_loss_streak >= 3:
+                        loss_streak_emoji = "📉"
+                        loss_streak_color = "🟡"
+                        loss_streak_desc = "NORMAL"
+                    else:
+                        loss_streak_emoji = "🔻"
+                        loss_streak_color = "🟢"
+                        loss_streak_desc = "EXCELLENT"
+                    
+                    st.metric(
+                        label=f"**{loss_streak_emoji} Longest Loss Streak**", 
+                        value=f"{max_loss_streak} consecutive losses",
+                        delta=f"{loss_streak_color} {loss_streak_desc}",
+                        help=f"Risk management is key. Your worst streak was {max_loss_streak} losses in a row."
+                    )
+                
+                with streak_col3:
+                    # Streak Recovery Ratio
+                    if max_loss_streak > 0 and max_win_streak > 0:
+                        recovery_ratio = max_win_streak / max_loss_streak
+                        if recovery_ratio >= 2.0:
+                            recovery_emoji = "🚀"
+                            recovery_desc = "STRONG RECOVERY"
+                            recovery_color = "🟢"
+                        elif recovery_ratio >= 1.5:
+                            recovery_emoji = "⚡"
+                            recovery_desc = "GOOD RECOVERY"
+                            recovery_color = "🟡"
+                        elif recovery_ratio >= 1.0:
+                            recovery_emoji = "🎯"
+                            recovery_desc = "BALANCED"
+                            recovery_color = "🟡"
+                        else:
+                            recovery_emoji = "⚠️"
+                            recovery_desc = "NEEDS WORK"
+                            recovery_color = "🔴"
+                        
+                        st.metric(
+                            label=f"**{recovery_emoji} Recovery Power**", 
+                            value=f"{recovery_ratio:.1f}x ratio",
+                            delta=f"{recovery_color} {recovery_desc}",
+                            help=f"Win streak vs loss streak ratio. Higher is better for psychological resilience."
+                        )
+                    else:
+                        st.metric(
+                            label="**🎯 Recovery Power**", 
+                            value="Perfect!",
+                            delta="🟢 No significant streaks",
+                            help="Balanced trading without extreme streaks"
+                        )
+                
+                with streak_col4:
+                    # Psychological Impact Score
+                    psychology_score = 0
+                    if max_win_streak >= 5:
+                        psychology_score += 30
+                    if max_loss_streak <= 5:
+                        psychology_score += 30
+                    if max_win_streak > max_loss_streak:
+                        psychology_score += 25
+                    if max_loss_streak <= 3:
+                        psychology_score += 15
+                    
+                    if psychology_score >= 80:
+                        psych_emoji = "🧠✨"
+                        psych_desc = "EXCELLENT MINDSET"
+                        psych_color = "🟢"
+                    elif psychology_score >= 60:
+                        psych_emoji = "🧠"
+                        psych_desc = "SOLID PSYCHOLOGY"
+                        psych_color = "🟡"
+                    elif psychology_score >= 40:
+                        psych_emoji = "🤔"
+                        psych_desc = "ROOM FOR GROWTH"
+                        psych_color = "🟡"
+                    else:
+                        psych_emoji = "😤"
+                        psych_desc = "FOCUS ON DISCIPLINE"
+                        psych_color = "🔴"
+                    
+                    st.metric(
+                        label=f"**{psych_emoji} Psychology Score**", 
+                        value=f"{psychology_score}/100",
+                        delta=f"{psych_color} {psych_desc}",
+                        help="Based on streak patterns. Good traders minimize loss streaks and build win streaks."
+                    )
+                
+                # Add streak insights
+                st.markdown("---")
+                st.markdown("### 🧠 **Streak Insights & Psychology**")
+                
+                insight_col1, insight_col2 = st.columns(2)
+                
+                with insight_col1:
+                    st.markdown("#### 💡 **Key Observations**")
+                    if max_win_streak >= 10:
+                        st.success(f"🔥 **Hot Hand Effect**: Your {max_win_streak}-trade win streak shows excellent momentum trading!")
+                    elif max_win_streak >= 5:
+                        st.info(f"✨ **Solid Execution**: {max_win_streak} consecutive wins demonstrates good strategy consistency.")
+                    else:
+                        st.warning(f"📈 **Build Momentum**: Work on extending win streaks beyond {max_win_streak} trades.")
+                    
+                    if max_loss_streak <= 3:
+                        st.success(f"🛡️ **Excellent Risk Control**: Max {max_loss_streak} losses shows great discipline!")
+                    elif max_loss_streak <= 5:
+                        st.info(f"⚖️ **Good Discipline**: {max_loss_streak} max losses is within acceptable range.")
+                    else:
+                        st.error(f"⚠️ **Risk Alert**: {max_loss_streak} consecutive losses - review risk management!")
+                
+                with insight_col2:
+                    st.markdown("#### 📊 **Performance Psychology**")
+                    
+                    # Calculate streak efficiency
+                    total_possible_streaks = max_win_streak + max_loss_streak
+                    if total_possible_streaks > 0:
+                        win_streak_pct = (max_win_streak / total_possible_streaks) * 100
+                        st.write(f"**Positive Momentum**: {win_streak_pct:.1f}% of your extreme streaks were winning streaks")
+                    
+                    # Streak balance analysis
+                    if max_win_streak > max_loss_streak * 1.5:
+                        st.success("🎯 **Momentum Trader**: You excel at riding winning streaks!")
+                    elif max_loss_streak > max_win_streak * 1.5:
+                        st.warning("🛑 **Risk Review**: Loss streaks exceed win streaks - check your strategy!")
+                    else:
+                        st.info("⚖️ **Balanced Approach**: Your streaks show measured risk-taking.")
+                    
+                    # Provide actionable advice
+                    if max_loss_streak >= 7:
+                        st.error("💡 **Tip**: Consider implementing a 'circuit breaker' after 3-5 consecutive losses.")
+                    elif max_win_streak >= 10:
+                        st.success("💡 **Tip**: Document what you did during your win streak to replicate success!")
             
             st.markdown("---")
             

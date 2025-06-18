@@ -40,16 +40,32 @@ class AppFactory:
             tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📈 Analytics", "📋 Trade Data", "⚙️ Settings"])
             
             with tab1:
-                self._render_dashboard()
+                try:
+                    self._render_dashboard()
+                except Exception as e:
+                    st.error(f"Dashboard error: {str(e)}")
+                    logger.error(f"Dashboard rendering error: {str(e)}")
             
             with tab2:
-                self._render_analytics()
+                try:
+                    self._render_analytics()
+                except Exception as e:
+                    st.error(f"Analytics error: {str(e)}")
+                    logger.error(f"Analytics rendering error: {str(e)}")
             
             with tab3:
-                self._render_trade_data()
+                try:
+                    self._render_trade_data()
+                except Exception as e:
+                    st.error(f"Trade Data error: {str(e)}")
+                    logger.error(f"Trade data rendering error: {str(e)}")
             
             with tab4:
-                self._render_settings()
+                try:
+                    self._render_settings()
+                except Exception as e:
+                    st.error(f"Settings error: {str(e)}")
+                    logger.error(f"Settings rendering error: {str(e)}")
 
         except Exception as e:
             st.error(f"Failed to initialize application: {str(e)}")
@@ -117,12 +133,14 @@ class AppFactory:
 
     def _render_dashboard(self):
         """Render main dashboard."""
-        if st.session_state.get('trade_data') is not None:
+        trade_data = st.session_state.get('trade_data')
+        if trade_data is not None and not trade_data.empty:
             st.write("Dashboard content would go here")
 
             # Show basic stats if available
-            if st.session_state.get('analytics_result'):
-                analytics = st.session_state.analytics_result
+            analytics_result = st.session_state.get('analytics_result')
+            if analytics_result is not None:
+                analytics = analytics_result
                 basic_stats = analytics.get('basic_stats', {})
 
                 col1, col2, col3, col4 = st.columns(4)
@@ -139,8 +157,9 @@ class AppFactory:
 
     def _render_analytics(self):
         """Render analytics page."""
-        if st.session_state.get('analytics_result'):
-            analytics = st.session_state.analytics_result
+        analytics_result = st.session_state.get('analytics_result')
+        if analytics_result is not None:
+            analytics = analytics_result
             
             st.subheader("📊 Trading Performance Analytics")
             
@@ -257,21 +276,33 @@ class AppFactory:
             
             if rolling_metrics and len(rolling_metrics) > 0:
                 import pandas as pd
-                df_rolling = pd.DataFrame(rolling_metrics)
-                if not df_rolling.empty and len(df_rolling) > 0:
-                    st.write(f"Showing rolling metrics for {len(df_rolling)} periods")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if 'win_rate' in df_rolling.columns:
-                            st.line_chart(df_rolling['win_rate'], height=300)
-                            st.caption("Rolling Win Rate (%)")
-                    with col2:
-                        if 'profit_factor' in df_rolling.columns:
-                            st.line_chart(df_rolling['profit_factor'], height=300)
-                            st.caption("Rolling Profit Factor")
-                else:
-                    st.info("No rolling metrics data available")
+                try:
+                    df_rolling = pd.DataFrame(rolling_metrics)
+                    if not df_rolling.empty and len(df_rolling) > 0:
+                        st.write(f"Showing rolling metrics for {len(df_rolling)} periods")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if 'win_rate' in df_rolling.columns:
+                                st.line_chart(df_rolling['win_rate'], height=300)
+                                st.caption("Rolling Win Rate (%)")
+                        with col2:
+                            if 'profit_factor' in df_rolling.columns:
+                                st.line_chart(df_rolling['profit_factor'], height=300)
+                                st.caption("Rolling Profit Factor")
+                                
+                        # Add cumulative P&L chart if basic_stats has equity_curve
+                        if 'basic_stats' in analytics and 'equity_curve' in analytics['basic_stats']:
+                            equity_curve = analytics['basic_stats']['equity_curve']
+                            if equity_curve is not None and len(equity_curve) > 0:
+                                st.subheader("💰 Equity Curve")
+                                st.line_chart(equity_curve, height=400)
+                                st.caption("Cumulative P&L over time")
+                    else:
+                        st.info("No rolling metrics data available")
+                except Exception as e:
+                    st.error(f"Error displaying rolling metrics: {str(e)}")
+                    st.info("Rolling metrics data is available but cannot be displayed")
             else:
                 st.info("No rolling metrics data available")
                 
@@ -280,10 +311,10 @@ class AppFactory:
 
     def _render_trade_data(self):
         """Render trade data page."""
-        if st.session_state.get('trade_data') is not None:
-            df = st.session_state.trade_data
-            st.write(f"Showing {len(df)} trades")
-            st.dataframe(df)
+        trade_data = st.session_state.get('trade_data')
+        if trade_data is not None and not trade_data.empty:
+            st.write(f"Showing {len(trade_data)} trades")
+            st.dataframe(trade_data, use_container_width=True)
         else:
             st.info("No trade data available")
 

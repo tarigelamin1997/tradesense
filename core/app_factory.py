@@ -1,11 +1,49 @@
-def _initialize_app(self):
+
+#!/usr/bin/env python3
+"""
+TradeSense App Factory
+Handles main application initialization and routing
+"""
+
+import streamlit as st
+import logging
+
+logger = logging.getLogger(__name__)
+
+class AppFactory:
+    """Factory class for creating and initializing the main TradeSense application."""
+    
+    def __init__(self):
+        """Initialize the app factory."""
+        self.app_initialized = False
+    
+    def create_app(self):
+        """Create and initialize the main application."""
+        try:
+            if not self.app_initialized:
+                self._initialize_app()
+                self.app_initialized = True
+        except Exception as e:
+            st.error(f"Failed to create application: {str(e)}")
+            logger.error(f"App creation error: {str(e)}")
+    
+    def _initialize_app(self):
         """Initialize the main application."""
         try:
             # Page config is now handled in app.py to avoid duplicate calls
             
-            # Import main modules
-            from analytics import TradingAnalytics
-            from interactive_table import render_interactive_table
+            # Import main modules (with error handling for missing modules)
+            try:
+                from analytics import TradingAnalytics
+            except ImportError:
+                st.warning("Analytics module not fully available - some features may be limited")
+                TradingAnalytics = None
+            
+            try:
+                from interactive_table import render_interactive_table
+            except ImportError:
+                st.warning("Interactive table module not available - using basic displays")
+                render_interactive_table = None
             
             # Create main application interface
             st.title("📈 TradeSense - Trading Analytics Platform")
@@ -31,8 +69,7 @@ def _initialize_app(self):
                 
         except Exception as e:
             st.error(f"Failed to initialize application: {str(e)}")
-            import logging
-            logging.error(f"App initialization error: {str(e)}")
+            logger.error(f"App initialization error: {str(e)}")
     
     def _render_dashboard(self):
         """Render the main dashboard."""

@@ -9,7 +9,7 @@ class ErrorHandler:
     """Context manager and decorator for error handling."""
     
     def __init__(self, 
-                 category: LogCategory = LogCategory.SYSTEM,
+                 category: LogCategory = LogCategory.SYSTEM_ERROR,
                  user_friendly_message: str = "An error occurred. Please try again.",
                  show_in_ui: bool = True,
                  reraise: bool = False,
@@ -77,7 +77,7 @@ class ErrorHandler:
                 if hasattr(st, 'session_state') and getattr(st.session_state, 'show_debug', False):
                     st.code(f"Traceback:\n{''.join(traceback.format_tb(exc_traceback))}")
 
-def handle_errors(category: LogCategory = LogCategory.SYSTEM,
+def handle_errors(category: LogCategory = LogCategory.SYSTEM_ERROR,
                  user_friendly_message: str = "An error occurred. Please try again.",
                  show_in_ui: bool = True,
                  reraise: bool = False):
@@ -112,7 +112,7 @@ def handle_errors(category: LogCategory = LogCategory.SYSTEM,
 def safe_execute(func: Callable, 
                 error_message: str = "Operation failed",
                 default_return=None,
-                category: LogCategory = LogCategory.SYSTEM,
+                category: LogCategory = LogCategory.SYSTEM_ERROR,
                 show_error: bool = True) -> Any:
     """Safely execute a function with error handling."""
     try:

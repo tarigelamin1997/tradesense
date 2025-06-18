@@ -37,17 +37,8 @@ def initialize_session_state():
 
 def main():
     """Main application entry point."""
-    # Prevent multiple executions of startup
-    if 'startup_complete' in st.session_state and st.session_state.startup_complete:
-        from core.app_factory import AppFactory
-        app_factory = AppFactory()
-        app_factory.create_app()
-        return
-        
     try:
-        logger.info("Starting TradeSense application...")
-
-        # Initialize session state
+        # Initialize session state first
         initialize_session_state()
 
         # Import authentication after session state is initialized
@@ -70,13 +61,9 @@ def main():
             app_factory = AppFactory()
             app_factory.create_app()
             
-            # Mark startup as complete
-            st.session_state.startup_complete = True
-
-            # Check if data was just uploaded and trigger analysis
-            if st.session_state.get('data_uploaded', False):
-                st.session_state.data_uploaded = False  # Reset flag to prevent loop
-                logger.info("Triggering comprehensive data analysis...")
+            # Mark startup as complete only once
+            if not st.session_state.get('startup_complete', False):
+                st.session_state.startup_complete = True
 
     except ImportError as e:
         st.error(f"Import Error: {str(e)}")

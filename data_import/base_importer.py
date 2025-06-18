@@ -2,7 +2,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union, IO, Any
 from models.trade_model import UniversalTradeDataModel, TradeRecord
-        from data_validation import DataValidator
+from data_validation import DataValidator
 
 # Legacy compatibility - use universal model schema
 REQUIRED_COLUMNS = UniversalTradeDataModel().get_required_columns()

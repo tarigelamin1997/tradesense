@@ -426,37 +426,186 @@ class AppFactory:
                     help="Typical losing trade size"
                 )
             
-            # Symbol Performance
-            st.subheader("🎯 Performance by Symbol")
+            st.markdown("---")
+            
+            # Enhanced Symbol Performance Section
+            st.markdown("## 🎯 Performance by Symbol")
             symbol_performance = analytics.get('symbol_performance', [])
             
             if symbol_performance is not None and len(symbol_performance) > 0:
                 import pandas as pd
                 df_symbols = pd.DataFrame(symbol_performance)
                 if not df_symbols.empty:
-                    st.dataframe(df_symbols, use_container_width=True)
+                    # Create attractive columns for symbol metrics
+                    col1, col2 = st.columns([2, 1])
+                    
+                    with col1:
+                        st.markdown("### 📊 Symbol Breakdown")
+                        st.dataframe(df_symbols, use_container_width=True)
+                    
+                    with col2:
+                        st.markdown("### 🏆 Top Performers")
+                        if 'profit_factor' in df_symbols.columns:
+                            top_symbols = df_symbols.nlargest(3, 'profit_factor')
+                            for idx, row in top_symbols.iterrows():
+                                st.metric(
+                                    label=f"**{row['symbol']}**",
+                                    value=f"{row['profit_factor']:.2f}",
+                                    help="Profit Factor"
+                                )
                 else:
-                    st.info("No symbol performance data available")
+                    # Enhanced empty state for symbols
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        padding: 2rem;
+                        border-radius: 15px;
+                        text-align: center;
+                        color: white;
+                        margin: 1rem 0;
+                    ">
+                        <h3 style="margin: 0; color: white;">🚀 Symbol Analysis Coming Soon!</h3>
+                        <p style="margin: 0.5rem 0; opacity: 0.9;">Upload more trades to see detailed performance breakdowns by trading instrument</p>
+                        <div style="margin-top: 1rem;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Profit Factors</span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🎯 Win Rates</span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">💰 P&L Analysis</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
-                st.info("No symbol performance data available")
+                # Enhanced empty state for symbols
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 2rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    margin: 1rem 0;
+                ">
+                    <h3 style="margin: 0; color: white;">🚀 Symbol Analysis Coming Soon!</h3>
+                    <p style="margin: 0.5rem 0; opacity: 0.9;">Upload more trades to see detailed performance breakdowns by trading instrument</p>
+                    <div style="margin-top: 1rem;">
+                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Profit Factors</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🎯 Win Rates</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">💰 P&L Analysis</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             
-            # Monthly Performance
-            st.subheader("📅 Monthly Performance")
+            st.markdown("---")
+            
+            # Enhanced Monthly Performance Section
+            st.markdown("## 📅 Monthly Performance Trends")
             monthly_performance = analytics.get('monthly_performance', [])
             
             if monthly_performance is not None and len(monthly_performance) > 0:
                 import pandas as pd
                 df_monthly = pd.DataFrame(monthly_performance)
                 if not df_monthly.empty:
-                    st.dataframe(df_monthly, use_container_width=True)
+                    # Create tabs for different views
+                    month_tab1, month_tab2 = st.tabs(["📊 Data Table", "📈 Visual Trends"])
                     
-                    # Simple chart if data is available
-                    if 'pnl' in df_monthly.columns:
-                        st.line_chart(df_monthly.set_index('period')['pnl'])
+                    with month_tab1:
+                        st.markdown("### Monthly Performance Summary")
+                        st.dataframe(df_monthly, use_container_width=True)
+                        
+                        # Quick monthly stats
+                        if 'pnl' in df_monthly.columns:
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                best_month = df_monthly.loc[df_monthly['pnl'].idxmax()]
+                                st.metric(
+                                    "🏆 Best Month", 
+                                    f"${best_month['pnl']:,.2f}",
+                                    delta=f"{best_month['period']}"
+                                )
+                            with col2:
+                                avg_monthly = df_monthly['pnl'].mean()
+                                st.metric(
+                                    "📊 Avg Monthly", 
+                                    f"${avg_monthly:,.2f}",
+                                    help="Average monthly P&L"
+                                )
+                            with col3:
+                                total_months = len(df_monthly)
+                                profitable_months = len(df_monthly[df_monthly['pnl'] > 0])
+                                st.metric(
+                                    "✅ Success Rate", 
+                                    f"{profitable_months}/{total_months}",
+                                    delta=f"{profitable_months/total_months*100:.1f}%"
+                                )
+                    
+                    with month_tab2:
+                        st.markdown("### Performance Visualization")
+                        if 'pnl' in df_monthly.columns:
+                            import plotly.graph_objects as go
+                            
+                            fig = go.Figure()
+                            
+                            # Add bar chart for monthly P&L
+                            colors = ['green' if x > 0 else 'red' for x in df_monthly['pnl']]
+                            fig.add_trace(go.Bar(
+                                x=df_monthly['period'].astype(str),
+                                y=df_monthly['pnl'],
+                                marker_color=colors,
+                                name='Monthly P&L',
+                                text=[f'${x:,.0f}' for x in df_monthly['pnl']],
+                                textposition='outside'
+                            ))
+                            
+                            fig.update_layout(
+                                title='📈 Monthly Performance Breakdown',
+                                xaxis_title='Month',
+                                yaxis_title='P&L ($)',
+                                showlegend=False,
+                                height=400
+                            )
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                        else:
+                            st.line_chart(df_monthly.set_index('period').select_dtypes(include=[np.number]))
                 else:
-                    st.info("No monthly performance data available")
+                    # Enhanced empty state for monthly performance
+                    st.markdown("""
+                    <div style="
+                        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                        padding: 2rem;
+                        border-radius: 15px;
+                        text-align: center;
+                        color: white;
+                        margin: 1rem 0;
+                    ">
+                        <h3 style="margin: 0; color: white;">📈 Monthly Trends Await!</h3>
+                        <p style="margin: 0.5rem 0; opacity: 0.9;">Track your trading performance across different months and seasons</p>
+                        <div style="margin-top: 1rem;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📊 Monthly Charts</span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🔄 Seasonal Patterns</span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Growth Trends</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
-                st.info("No monthly performance data available")
+                # Enhanced empty state for monthly performance
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                    padding: 2rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    margin: 1rem 0;
+                ">
+                    <h3 style="margin: 0; color: white;">📈 Monthly Trends Await!</h3>
+                    <p style="margin: 0.5rem 0; opacity: 0.9;">Track your trading performance across different months and seasons</p>
+                    <div style="margin-top: 1rem;">
+                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📊 Monthly Charts</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🔄 Seasonal Patterns</span>
+                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Growth Trends</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             
             # Rolling Metrics
             st.subheader("📊 Rolling Performance (10-trade windows)")

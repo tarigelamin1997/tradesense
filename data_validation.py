@@ -10,60 +10,60 @@ import bleach
 
 class InputSanitizer:
     """Input sanitization utilities for security."""
-    
+
     @staticmethod
     def sanitize_string(value: str) -> str:
         """Sanitize string input to prevent XSS and injection attacks."""
         if not value:
             return ""
-        
+
         # Remove null bytes and control characters
         value = ''.join(char for char in value if ord(char) >= 32 or char in ['\n', '\r', '\t'])
-        
+
         # HTML escape
         value = html.escape(value)
-        
+
         # Use bleach for additional sanitization
         allowed_tags = []  # No tags allowed for basic string input
         value = bleach.clean(value, tags=allowed_tags, strip=True)
-        
+
         # Limit length to prevent buffer overflow
         max_length = 255
         if len(value) > max_length:
             value = value[:max_length]
-        
+
         return value.strip()
-    
+
     @staticmethod
     def sanitize_email(email: str) -> str:
         """Sanitize email input."""
         if not email:
             return ""
-        
+
         # Basic email sanitization
         email = email.strip().lower()
-        
+
         # Remove dangerous characters
         allowed_chars = 'abcdefghijklmnopqrstuvwxyz0123456789@.-_+'
         email = ''.join(char for char in email if char in allowed_chars)
-        
+
         return email
-    
+
     @staticmethod
     def sanitize_filename(filename: str) -> str:
         """Sanitize filename to prevent path traversal."""
         if not filename:
             return ""
-        
+
         # Remove path separators and dangerous characters
         dangerous_chars = ['/', '\\', '..', '<', '>', ':', '"', '|', '?', '*']
         for char in dangerous_chars:
             filename = filename.replace(char, '_')
-        
+
         # Limit length
         if len(filename) > 255:
             filename = filename[:255]
-        
+
         return filename.strip()
 
 class DataValidator:
@@ -512,6 +512,20 @@ class DataValidator:
         value = bleach.clean(value, tags=allowed_tags, attributes=allowed_attributes, strip=True)
 
         return value
+
+    def validate_and_clean(self, df: pd.DataFrame, interactive: bool = True) -> Tuple[pd.DataFrame, dict]:
+        """Compatibility alias for validate_and_clean_data method."""
+        return self.validate_and_clean_data(df, interactive)
+
+    def _empty_analytics(self) -> Dict[str, Any]:
+        """Return empty analytics structure."""
+        return {
+            'original_rows': 0,
+            'issues_found': [],
+            'corrections_made': [],
+            'final_rows': 0,
+            'data_quality_score': 0.0
+        }
 
 
 def create_data_correction_interface(df: pd.DataFrame, validator: DataValidator) -> pd.DataFrame:

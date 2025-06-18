@@ -2,6 +2,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union, IO, Any
 from models.trade_model import UniversalTradeDataModel, TradeRecord
+        from data_validation import DataValidator
 
 # Legacy compatibility - use universal model schema
 REQUIRED_COLUMNS = UniversalTradeDataModel().get_required_columns()
@@ -31,9 +32,13 @@ class BaseImporter(ABC):
     def normalize_to_universal_model(self, df: pd.DataFrame, data_source: str = "csv") -> UniversalTradeDataModel:
         """Convert DataFrame to universal trade data model."""
         try:
-            # Create universal model from DataFrame
+            # Validate and clean data first
+            validator = DataValidator()
+            df_cleaned, validation_report = validator.validate_and_clean_data(df, interactive=False)
+
+            # Create universal model from cleaned DataFrame
             model = UniversalTradeDataModel()
-            model = model.from_dataframe(df, data_source)
+            model = model.from_dataframe(df_cleaned, data_source)
 
             # Validate and clean
             report = model.validate_all()

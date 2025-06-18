@@ -97,12 +97,17 @@ class TradeEntryManager:
     def add_file_trades(self, df: pd.DataFrame, data_source: str = "file", user_id: int = None) -> Dict[str, Any]:
         """Add trades from file upload (CSV/Excel) with deduplication."""
         try:
+            # Validate and clean data first
+            from data_validation import DataValidator
+            validator = DataValidator()
+            df_cleaned, validation_report = validator.validate_and_clean_data(df, interactive=False)
+            
             # Convert DataFrame to universal model
             file_model = UniversalTradeDataModel()
-            file_model = file_model.from_dataframe(df, data_source)
+            file_model = file_model.from_dataframe(df_cleaned, data_source)
 
             # Validate data
-            validation_report = file_model.validate_all()
+            model_validation_report = file_model.validate_all()
 
             # Remove duplicates within the file
             internal_duplicates_removed = file_model.remove_duplicates()
@@ -136,7 +141,8 @@ class TradeEntryManager:
                 "status": "success",
                 "trades_added": len(file_model.trades),
                 "internal_duplicates_removed": internal_duplicates_removed,
-                "validation_report": validation_report
+                "validation_report": validation_report,
+                "model_validation_report": model_validation_report
             }
 
             # Add deduplication results if performed
@@ -238,6 +244,10 @@ class TradeEntryManager:
     def get_all_trades_dataframe(self) -> pd.DataFrame:
         """Get unified DataFrame of all trades from all sources."""
         return self.model.get_dataframe()
+
+    def get_unified_dataframe(self) -> pd.DataFrame:
+        """Alias for get_all_trades_dataframe for compatibility."""
+        return self.get_all_trades_dataframe()
 
     def get_unified_analytics(self, fresh_calculation: bool = False) -> Dict[str, Any]:
         """Get comprehensive analytics for all trades regardless of source."""

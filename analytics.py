@@ -406,19 +406,39 @@ def max_streaks(df: pd.DataFrame) -> dict:
     if df.empty:
         return {'max_win_streak': 0, 'max_loss_streak': 0}
 
-    df = df.sort_values('exit_time' if 'exit_time' in df.columns else df.index)
+    # Sort by exit_time if available, otherwise by index
+    if 'exit_time' in df.columns:
+        df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
+        df = df.dropna(subset=['exit_time'])
+        df = df.sort_values('exit_time')
+    else:
+        df = df.sort_index()
+
+    if df.empty:
+        return {'max_win_streak': 0, 'max_loss_streak': 0}
+
+    # Determine wins and losses
     df['is_win'] = df['pnl'] > 0
-
-    # Calculate streaks
-    df['streak_id'] = (df['is_win'] != df['is_win'].shift()).cumsum()
-    streaks = df.groupby(['streak_id', 'is_win']).size()
-
-    win_streaks = streaks[streaks.index.get_level_values(1) == True]
-    loss_streaks = streaks[streaks.index.get_level_values(1) == False]
+    
+    # Calculate streaks manually for better control
+    max_win_streak = 0
+    max_loss_streak = 0
+    current_win_streak = 0
+    current_loss_streak = 0
+    
+    for is_win in df['is_win']:
+        if is_win:
+            current_win_streak += 1
+            current_loss_streak = 0
+            max_win_streak = max(max_win_streak, current_win_streak)
+        else:
+            current_loss_streak += 1
+            current_win_streak = 0
+            max_loss_streak = max(max_loss_streak, current_loss_streak)
 
     result = {
-        'max_win_streak': win_streaks.max() if not win_streaks.empty else 0,
-        'max_loss_streak': loss_streaks.max() if not loss_streaks.empty else 0
+        'max_win_streak': int(max_win_streak),
+        'max_loss_streak': int(max_loss_streak)
     }
 
     log_debug_info("max_streaks", result)

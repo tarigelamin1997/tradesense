@@ -161,82 +161,269 @@ class AppFactory:
         if analytics_result is not None:
             analytics = analytics_result
             
-            st.subheader("📊 Trading Performance Analytics")
+            # Hero Section with Overall Performance
+            st.markdown("# 📊 Trading Performance Analytics")
+            st.markdown("---")
             
-            # Key Performance Indicators
-            st.subheader("🎯 Key Performance Indicators")
+            # Overall Performance Overview
             kpis = analytics.get('kpis', {})
-            
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Trades", kpis.get('total_trades', 0))
-            with col2:
-                st.metric("Gross P&L", f"${kpis.get('gross_pnl', 0):,.2f}")
-            with col3:
-                st.metric("Net P&L", f"${kpis.get('net_pnl_after_commission', 0):,.2f}")
-            with col4:
-                st.metric("Win Rate", f"{kpis.get('win_rate_percent', 0):.1f}%")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Max Win", f"${kpis.get('max_single_trade_win', 0):,.2f}")
-            with col2:
-                st.metric("Max Loss", f"${kpis.get('max_single_trade_loss', 0):,.2f}")
-            with col3:
-                st.metric("Total Commission", f"${kpis.get('total_commission', 0):,.2f}")
-            with col4:
-                st.metric("Avg R:R Ratio", f"{kpis.get('average_rr', 0):.2f}")
-            
-            # Basic Statistics
-            st.subheader("📈 Trading Statistics")
             basic_stats = analytics.get('basic_stats', {})
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Average Win", f"${basic_stats.get('average_win', 0):,.2f}")
-                st.metric("Profit Factor", f"{basic_stats.get('profit_factor', 0):.2f}")
-            with col2:
-                st.metric("Average Loss", f"${basic_stats.get('average_loss', 0):,.2f}")
-                st.metric("Expectancy", f"${basic_stats.get('expectancy', 0):,.2f}")
-            with col3:
-                st.metric("Max Drawdown", f"${basic_stats.get('max_drawdown', 0):,.2f}")
-                st.metric("Sharpe Ratio", f"{basic_stats.get('sharpe_ratio', 0):.2f}")
+            # Hero metrics with color coding
+            hero_col1, hero_col2, hero_col3 = st.columns(3)
             
-            # Performance Analysis
-            st.subheader("⏱️ Trade Duration Analysis")
+            with hero_col1:
+                net_pnl = kpis.get('net_pnl_after_commission', 0)
+                pnl_color = "normal" if net_pnl >= 0 else "inverse"
+                st.metric(
+                    label="💰 **Net P&L**", 
+                    value=f"${net_pnl:,.2f}",
+                    delta=f"After ${kpis.get('total_commission', 0):,.2f} commission"
+                )
+            
+            with hero_col2:
+                win_rate = kpis.get('win_rate_percent', 0)
+                win_rate_delta = "Strong" if win_rate >= 60 else "Moderate" if win_rate >= 50 else "Needs Improvement"
+                st.metric(
+                    label="🎯 **Win Rate**",
+                    value=f"{win_rate:.1f}%",
+                    delta=win_rate_delta
+                )
+            
+            with hero_col3:
+                profit_factor = basic_stats.get('profit_factor', 0)
+                pf_delta = "Excellent" if profit_factor >= 2.0 else "Good" if profit_factor >= 1.5 else "Fair" if profit_factor >= 1.0 else "Poor"
+                st.metric(
+                    label="📈 **Profit Factor**",
+                    value=f"{profit_factor:.2f}",
+                    delta=pf_delta
+                )
+            
+            st.markdown("---")
+            
+            # Key Performance Indicators Section
+            st.markdown("## 🎯 Key Performance Indicators")
+            
+            # Create tabs for different metric categories
+            kpi_tab1, kpi_tab2, kpi_tab3 = st.tabs(["💵 Financial Metrics", "📊 Performance Ratios", "🎲 Risk Metrics"])
+            
+            with kpi_tab1:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    total_trades = kpis.get('total_trades', 0)
+                    st.metric(
+                        label="**Total Trades**", 
+                        value=f"{total_trades:,}",
+                        help="Total number of completed trades"
+                    )
+                with col2:
+                    gross_pnl = kpis.get('gross_pnl', 0)
+                    st.metric(
+                        label="**Gross P&L**", 
+                        value=f"${gross_pnl:,.2f}",
+                        help="Profit/Loss before commissions"
+                    )
+                with col3:
+                    max_win = kpis.get('max_single_trade_win', 0)
+                    st.metric(
+                        label="**Best Trade**", 
+                        value=f"${max_win:,.2f}",
+                        help="Largest single trade profit"
+                    )
+                with col4:
+                    max_loss = kpis.get('max_single_trade_loss', 0)
+                    st.metric(
+                        label="**Worst Trade**", 
+                        value=f"${max_loss:,.2f}",
+                        help="Largest single trade loss"
+                    )
+            
+            with kpi_tab2:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    avg_win = basic_stats.get('average_win', 0)
+                    st.metric(
+                        label="**Average Win**", 
+                        value=f"${avg_win:,.2f}",
+                        help="Average profit per winning trade"
+                    )
+                with col2:
+                    avg_loss = basic_stats.get('average_loss', 0)
+                    st.metric(
+                        label="**Average Loss**", 
+                        value=f"${avg_loss:,.2f}",
+                        help="Average loss per losing trade"
+                    )
+                with col3:
+                    rr_ratio = kpis.get('average_rr', 0)
+                    st.metric(
+                        label="**Risk:Reward**", 
+                        value=f"1:{rr_ratio:.2f}",
+                        help="Average risk to reward ratio"
+                    )
+                with col4:
+                    expectancy = basic_stats.get('expectancy', 0)
+                    st.metric(
+                        label="**Expectancy**", 
+                        value=f"${expectancy:,.2f}",
+                        help="Expected value per trade"
+                    )
+            
+            with kpi_tab3:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    max_dd = basic_stats.get('max_drawdown', 0)
+                    st.metric(
+                        label="**Max Drawdown**", 
+                        value=f"${max_dd:,.2f}",
+                        help="Largest peak-to-trough decline"
+                    )
+                with col2:
+                    sharpe = basic_stats.get('sharpe_ratio', 0)
+                    sharpe_rating = "Excellent" if sharpe >= 2.0 else "Good" if sharpe >= 1.0 else "Fair" if sharpe >= 0.5 else "Poor"
+                    st.metric(
+                        label="**Sharpe Ratio**", 
+                        value=f"{sharpe:.2f}",
+                        delta=sharpe_rating,
+                        help="Risk-adjusted return measure"
+                    )
+                with col3:
+                    commission = kpis.get('total_commission', 0)
+                    comm_pct = (commission / gross_pnl * 100) if gross_pnl != 0 else 0
+                    st.metric(
+                        label="**Total Commission**", 
+                        value=f"${commission:,.2f}",
+                        delta=f"{comm_pct:.1f}% of gross P&L",
+                        help="Total trading commissions paid"
+                    )
+                with col4:
+                    # Performance score calculation
+                    score = 0
+                    if win_rate >= 50: score += 25
+                    if profit_factor >= 1.0: score += 25
+                    if sharpe >= 0.5: score += 25
+                    if expectancy > 0: score += 25
+                    
+                    score_color = "🟢" if score >= 75 else "🟡" if score >= 50 else "🔴"
+                    st.metric(
+                        label="**Performance Score**", 
+                        value=f"{score_color} {score}/100",
+                        help="Overall performance rating"
+                    )
+            
+            st.markdown("---")
+            
+            # Enhanced Performance Analysis Section
+            st.markdown("## ⏱️ Trade Duration & Timing Analysis")
             duration_stats = analytics.get('duration_stats', {})
             
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Avg Duration", f"{duration_stats.get('average_minutes', 0):.1f} min")
-            with col2:
-                st.metric("Min Duration", f"{duration_stats.get('min_minutes', 0):.1f} min")
-            with col3:
-                st.metric("Max Duration", f"{duration_stats.get('max_minutes', 0):.1f} min")
-            with col4:
-                st.metric("Median Duration", f"{duration_stats.get('median_minutes', 0):.1f} min")
+            # Create an attractive container for duration stats
+            with st.container():
+                duration_col1, duration_col2, duration_col3, duration_col4 = st.columns(4)
+                
+                with duration_col1:
+                    avg_duration = duration_stats.get('average_minutes', 0)
+                    st.metric(
+                        label="**⏱️ Avg Duration**", 
+                        value=f"{avg_duration:.1f} min",
+                        help="Average time spent in trades"
+                    )
+                
+                with duration_col2:
+                    min_duration = duration_stats.get('min_minutes', 0)
+                    st.metric(
+                        label="**⚡ Fastest Trade**", 
+                        value=f"{min_duration:.1f} min",
+                        help="Shortest trade duration"
+                    )
+                
+                with duration_col3:
+                    max_duration = duration_stats.get('max_minutes', 0)
+                    st.metric(
+                        label="**🕐 Longest Trade**", 
+                        value=f"{max_duration:.1f} min",
+                        help="Longest trade duration"
+                    )
+                
+                with duration_col4:
+                    median_duration = duration_stats.get('median_minutes', 0)
+                    st.metric(
+                        label="**📊 Median Duration**", 
+                        value=f"{median_duration:.1f} min",
+                        help="Middle value of all trade durations"
+                    )
             
-            # Streak Analysis
-            st.subheader("🔥 Streak Analysis")
+            st.markdown("---")
+            
+            # Enhanced Streak Analysis
+            st.markdown("## 🔥 Streak Analysis & Consistency")
             streaks = analytics.get('streaks', {})
             
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Max Win Streak", streaks.get('max_win_streak', 0))
-            with col2:
-                st.metric("Max Loss Streak", streaks.get('max_loss_streak', 0))
+            streak_col1, streak_col2, streak_col3 = st.columns([1, 1, 1])
             
-            # Median Results
-            st.subheader("📊 Median Results")
+            with streak_col1:
+                max_win_streak = streaks.get('max_win_streak', 0)
+                win_streak_emoji = "🔥" if max_win_streak >= 10 else "✨" if max_win_streak >= 5 else "📈"
+                st.metric(
+                    label=f"**{win_streak_emoji} Max Win Streak**", 
+                    value=f"{max_win_streak} trades",
+                    help="Longest consecutive winning streak"
+                )
+            
+            with streak_col2:
+                max_loss_streak = streaks.get('max_loss_streak', 0)
+                loss_streak_emoji = "❄️" if max_loss_streak >= 10 else "📉" if max_loss_streak >= 5 else "🔻"
+                st.metric(
+                    label=f"**{loss_streak_emoji} Max Loss Streak**", 
+                    value=f"{max_loss_streak} trades",
+                    help="Longest consecutive losing streak"
+                )
+            
+            with streak_col3:
+                # Calculate streak ratio for consistency
+                if max_loss_streak > 0:
+                    streak_ratio = max_win_streak / max_loss_streak
+                    consistency_rating = "Excellent" if streak_ratio >= 2.0 else "Good" if streak_ratio >= 1.5 else "Fair"
+                else:
+                    streak_ratio = float('inf')
+                    consistency_rating = "Perfect"
+                
+                st.metric(
+                    label="**🎯 Consistency Rating**", 
+                    value=consistency_rating,
+                    delta=f"Win/Loss ratio: {streak_ratio:.1f}" if streak_ratio != float('inf') else "No losing streaks!",
+                    help="Consistency based on streak patterns"
+                )
+            
+            st.markdown("---")
+            
+            # Enhanced Median Results
+            st.markdown("## 📊 Distribution Analysis")
             median_results = analytics.get('median_results', {})
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Median P&L", f"${median_results.get('median_pnl', 0):,.2f}")
-            with col2:
-                st.metric("Median Win", f"${median_results.get('median_win', 0):,.2f}")
-            with col3:
-                st.metric("Median Loss", f"${median_results.get('median_loss', 0):,.2f}")
+            median_col1, median_col2, median_col3 = st.columns(3)
+            with median_col1:
+                median_pnl = median_results.get('median_pnl', 0)
+                pnl_trend = "📈" if median_pnl > 0 else "📉" if median_pnl < 0 else "➡️"
+                st.metric(
+                    label=f"**{pnl_trend} Median P&L**", 
+                    value=f"${median_pnl:,.2f}",
+                    help="Middle value of all trade P&L"
+                )
+            with median_col2:
+                median_win = median_results.get('median_win', 0)
+                st.metric(
+                    label="**🟢 Median Win**", 
+                    value=f"${median_win:,.2f}",
+                    help="Typical winning trade size"
+                )
+            with median_col3:
+                median_loss = median_results.get('median_loss', 0)
+                st.metric(
+                    label="**🔴 Median Loss**", 
+                    value=f"${median_loss:,.2f}",
+                    help="Typical losing trade size"
+                )
             
             # Symbol Performance
             st.subheader("🎯 Performance by Symbol")

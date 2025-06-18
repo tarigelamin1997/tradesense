@@ -680,33 +680,321 @@ class AppFactory:
             
             st.markdown("---")
             
-            # Enhanced Median Results
-            st.markdown("## 📊 Distribution Analysis")
+            # Enhanced Distribution Analysis with Beautiful Visuals
+            st.markdown("## 📊 Trade Distribution & Risk Analytics")
             median_results = analytics.get('median_results', {})
+            basic_stats = analytics.get('basic_stats', {})
             
-            median_col1, median_col2, median_col3 = st.columns(3)
-            with median_col1:
+            # Add enhanced CSS for distribution analysis
+            st.markdown("""
+            <style>
+            .distribution-container {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 2rem;
+                border-radius: 20px;
+                margin: 1.5rem 0;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+                backdrop-filter: blur(10px);
+            }
+            .distribution-title {
+                color: white;
+                font-size: 1.8rem;
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 2rem;
+                text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+            }
+            .metric-card {
+                background: rgba(255,255,255,0.15);
+                backdrop-filter: blur(15px);
+                border-radius: 15px;
+                padding: 1.5rem;
+                margin: 0.5rem;
+                border: 2px solid rgba(255,255,255,0.2);
+                text-align: center;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            }
+            .metric-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            }
+            .metric-value {
+                font-size: 2.2rem;
+                font-weight: bold;
+                color: white;
+                margin: 0.5rem 0;
+                text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            }
+            .metric-label {
+                color: rgba(255,255,255,0.9);
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+            .metric-subtitle {
+                color: rgba(255,255,255,0.7);
+                font-size: 0.9rem;
+                margin-top: 0.5rem;
+            }
+            .insight-card {
+                background: linear-gradient(45deg, #ff6b6b 0%, #feca57 100%);
+                padding: 1.5rem;
+                border-radius: 15px;
+                margin: 1rem 0;
+                color: white;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            }
+            .distribution-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1rem;
+                margin: 1.5rem 0;
+            }
+            .percentile-box {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                padding: 1.2rem;
+                border-radius: 12px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            # Main Distribution Container
+            st.markdown('<div class="distribution-container">', unsafe_allow_html=True)
+            st.markdown('<div class="distribution-title">📈 Trade Distribution Analysis 📊</div>', unsafe_allow_html=True)
+            
+            # Enhanced Median Metrics with Beautiful Cards
+            dist_col1, dist_col2, dist_col3 = st.columns(3)
+            
+            with dist_col1:
                 median_pnl = median_results.get('median_pnl', 0)
                 pnl_trend = "📈" if median_pnl > 0 else "📉" if median_pnl < 0 else "➡️"
-                st.metric(
-                    label=f"**{pnl_trend} Median P&L**", 
-                    value=f"${median_pnl:,.2f}",
-                    help="Middle value of all trade P&L"
-                )
-            with median_col2:
+                pnl_color = "#00C851" if median_pnl > 0 else "#FF3547" if median_pnl < 0 else "#FFC107"
+                
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 5px solid {pnl_color};">
+                    <div class="metric-label">{pnl_trend} Median P&L</div>
+                    <div class="metric-value">${median_pnl:,.2f}</div>
+                    <div class="metric-subtitle">Middle trade value</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with dist_col2:
                 median_win = median_results.get('median_win', 0)
-                st.metric(
-                    label="**🟢 Median Win**", 
-                    value=f"${median_win:,.2f}",
-                    help="Typical winning trade size"
-                )
-            with median_col3:
+                win_trend = "🚀" if median_win > 100 else "✅" if median_win > 50 else "📈"
+                
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 5px solid #00C851;">
+                    <div class="metric-label">{win_trend} Typical Win</div>
+                    <div class="metric-value">${median_win:,.2f}</div>
+                    <div class="metric-subtitle">50% of wins exceed this</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with dist_col3:
                 median_loss = median_results.get('median_loss', 0)
-                st.metric(
-                    label="**🔴 Median Loss**", 
-                    value=f"${median_loss:,.2f}",
-                    help="Typical losing trade size"
-                )
+                loss_trend = "🛡️" if median_loss > -100 else "⚠️" if median_loss > -200 else "🚨"
+                
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 5px solid #FF3547;">
+                    <div class="metric-label">{loss_trend} Typical Loss</div>
+                    <div class="metric-value">${median_loss:,.2f}</div>
+                    <div class="metric-subtitle">50% of losses exceed this</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)  # Close main container
+            
+            # Enhanced Distribution Insights
+            st.markdown("### 🎯 Distribution Intelligence")
+            
+            # Get actual trade data for enhanced analysis
+            trade_data = st.session_state.get('trade_data')
+            if trade_data is not None and not trade_data.empty and 'pnl' in trade_data.columns:
+                # Calculate additional distribution metrics
+                pnl_data = pd.to_numeric(trade_data['pnl'], errors='coerce').dropna()
+                
+                if not pnl_data.empty:
+                    # Calculate percentiles
+                    p25 = pnl_data.quantile(0.25)
+                    p75 = pnl_data.quantile(0.75)
+                    p10 = pnl_data.quantile(0.10)
+                    p90 = pnl_data.quantile(0.90)
+                    
+                    # Risk-Reward Distribution Analysis
+                    insight_col1, insight_col2 = st.columns(2)
+                    
+                    with insight_col1:
+                        st.markdown('<div class="insight-card">', unsafe_allow_html=True)
+                        st.markdown("#### 📊 **Percentile Breakdown**")
+                        
+                        # Risk distribution analysis
+                        risk_ratio = abs(median_win / median_loss) if median_loss != 0 else 0
+                        if risk_ratio >= 1.5:
+                            risk_assessment = "🎯 **Favorable Distribution** - Your typical wins significantly outweigh typical losses!"
+                        elif risk_ratio >= 1.0:
+                            risk_assessment = "⚖️ **Balanced Distribution** - Your wins and losses are reasonably balanced."
+                        else:
+                            risk_assessment = "⚠️ **Risk Alert** - Your typical losses exceed typical wins. Review position sizing!"
+                        
+                        st.markdown(risk_assessment)
+                        
+                        # Distribution consistency
+                        iqr = p75 - p25
+                        if iqr < 100:
+                            consistency = "🎯 **Highly Consistent** - Your trade outcomes are very predictable!"
+                        elif iqr < 200:
+                            consistency = "✅ **Good Consistency** - Your trade results show moderate variation."
+                        else:
+                            consistency = "🎲 **High Variation** - Your trade outcomes vary significantly."
+                        
+                        st.markdown(consistency)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    with insight_col2:
+                        st.markdown('<div class="insight-card">', unsafe_allow_html=True)
+                        st.markdown("#### 🎯 **Distribution Quality Score**")
+                        
+                        # Calculate distribution score
+                        score = 0
+                        if median_pnl > 0: score += 25
+                        if risk_ratio >= 1.0: score += 25
+                        if iqr < 150: score += 25  # Consistency bonus
+                        if p10 > -200: score += 25  # Tail risk bonus
+                        
+                        if score >= 75:
+                            score_emoji = "🌟"
+                            score_desc = "EXCELLENT DISTRIBUTION"
+                            score_color = "#00C851"
+                        elif score >= 50:
+                            score_emoji = "⭐"
+                            score_desc = "GOOD DISTRIBUTION"
+                            score_color = "#4CAF50"
+                        elif score >= 25:
+                            score_emoji = "⚡"
+                            score_desc = "NEEDS IMPROVEMENT"
+                            score_color = "#FFC107"
+                        else:
+                            score_emoji = "⚠️"
+                            score_desc = "REQUIRES ATTENTION"
+                            score_color = "#FF3547"
+                        
+                        st.markdown(f"""
+                        <div style="text-align: center; padding: 1rem;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">{score_emoji}</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: white; margin-bottom: 0.5rem;">{score}/100</div>
+                            <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; display: inline-block;">
+                                <span style="color: white; font-weight: bold;">{score_desc}</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    # Percentile Grid Display
+                    st.markdown("### 📈 **Trade Outcome Percentiles**")
+                    
+                    percentile_col1, percentile_col2, percentile_col3, percentile_col4 = st.columns(4)
+                    
+                    with percentile_col1:
+                        st.markdown(f"""
+                        <div class="percentile-box">
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔸</div>
+                            <div style="font-weight: bold; font-size: 1.1rem;">25th Percentile</div>
+                            <div style="font-size: 1.8rem; font-weight: bold; margin: 0.5rem 0;">${p25:.2f}</div>
+                            <div style="opacity: 0.8; font-size: 0.9rem;">Bottom quartile</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with percentile_col2:
+                        st.markdown(f"""
+                        <div class="percentile-box">
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔹</div>
+                            <div style="font-weight: bold; font-size: 1.1rem;">75th Percentile</div>
+                            <div style="font-size: 1.8rem; font-weight: bold; margin: 0.5rem 0;">${p75:.2f}</div>
+                            <div style="opacity: 0.8; font-size: 0.9rem;">Top quartile</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with percentile_col3:
+                        st.markdown(f"""
+                        <div class="percentile-box">
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔻</div>
+                            <div style="font-weight: bold; font-size: 1.1rem;">10th Percentile</div>
+                            <div style="font-size: 1.8rem; font-weight: bold; margin: 0.5rem 0;">${p10:.2f}</div>
+                            <div style="opacity: 0.8; font-size: 0.9rem;">Worst 10%</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with percentile_col4:
+                        st.markdown(f"""
+                        <div class="percentile-box">
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔺</div>
+                            <div style="font-weight: bold; font-size: 1.1rem;">90th Percentile</div>
+                            <div style="font-size: 1.8rem; font-weight: bold; margin: 0.5rem 0;">${p90:.2f}</div>
+                            <div style="opacity: 0.8; font-size: 0.9rem;">Best 10%</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Distribution Visualization
+                    st.markdown("### 📊 **P&L Distribution Visualization**")
+                    
+                    try:
+                        import plotly.graph_objects as go
+                        import plotly.express as px
+                        
+                        # Create histogram of P&L distribution
+                        fig = go.Figure()
+                        
+                        # Add histogram
+                        fig.add_trace(go.Histogram(
+                            x=pnl_data,
+                            nbinsx=30,
+                            marker_color='rgba(55, 128, 191, 0.7)',
+                            marker_line_color='rgba(55, 128, 191, 1.0)',
+                            marker_line_width=1,
+                            name='Trade Distribution'
+                        ))
+                        
+                        # Add median line
+                        fig.add_vline(
+                            x=median_pnl, 
+                            line_dash="dash", 
+                            line_color="red",
+                            annotation_text=f"Median: ${median_pnl:.2f}"
+                        )
+                        
+                        # Add mean line
+                        mean_pnl = pnl_data.mean()
+                        fig.add_vline(
+                            x=mean_pnl, 
+                            line_dash="dot", 
+                            line_color="green",
+                            annotation_text=f"Mean: ${mean_pnl:.2f}"
+                        )
+                        
+                        fig.update_layout(
+                            title='📊 P&L Distribution Analysis',
+                            xaxis_title='P&L ($)',
+                            yaxis_title='Number of Trades',
+                            showlegend=False,
+                            height=400,
+                            template='plotly_white'
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                    except ImportError:
+                        # Fallback to simple histogram using streamlit
+                        st.bar_chart(pnl_data.value_counts().sort_index())
+                        st.caption("P&L Distribution (Simple View)")
+                
+                else:
+                    st.info("📊 No valid P&L data available for distribution analysis")
+            else:
+                st.info("📊 Upload trade data to view detailed distribution analysis")
             
             st.markdown("---")
             

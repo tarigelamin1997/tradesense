@@ -47,7 +47,40 @@ class AppFactory:
             
             # Create main application interface
             st.title("📈 TradeSense - Trading Analytics Platform")
-
+            
+            # Data upload section
+            self._render_data_upload_section()
+            
+            # Show analysis if data is available
+            if st.session_state.get('analysis_complete', False):
+                st.info("✅ Analysis completed! Results are displayed above.")
+            elif st.session_state.get('trade_data') is not None:
+                if st.button("🔄 Run Comprehensive Analysis", type="primary"):
+                    st.session_state.data_uploaded = True
+                    st.rerun()
+            
+            # Sidebar navigation
+            with st.sidebar:
+                st.header("Navigation")
+                page = st.selectbox(
+                    "Select Page",
+                    ["Dashboard", "Analytics", "Trade Data", "Settings"],
+                    key="main_nav"
+                )
+            
+            # Main content area
+            if page == "Dashboard":
+                self._render_dashboard()
+            elif page == "Analytics":
+                self._render_analytics()
+            elif page == "Trade Data":
+                self._render_trade_data()
+            elif page == "Settings":
+                self._render_settings()
+                
+        except Exception as e:
+            st.error(f"Failed to initialize application: {str(e)}")
+            logger.error(f"App initialization error: {str(e)}")
     
     def _render_data_upload_section(self):
         """Render data upload interface."""
@@ -98,42 +131,6 @@ class AppFactory:
             except Exception as e:
                 st.error(f"Error processing file: {str(e)}")
                 st.info("Please ensure your file has the required columns: symbol, entry_time, exit_time, entry_price, exit_price, pnl, direction")
-
-
-            
-            # Data upload section
-            self._render_data_upload_section()
-            
-            # Show analysis if data is available
-            if st.session_state.get('analysis_complete', False):
-                st.info("✅ Analysis completed! Results are displayed above.")
-            elif st.session_state.get('trade_data') is not None:
-                if st.button("🔄 Run Comprehensive Analysis", type="primary"):
-                    st.session_state.data_uploaded = True
-                    st.rerun()
-            
-            # Sidebar navigation
-            with st.sidebar:
-                st.header("Navigation")
-                page = st.selectbox(
-                    "Select Page",
-                    ["Dashboard", "Analytics", "Trade Data", "Settings"],
-                    key="main_nav"
-                )
-            
-            # Main content area
-            if page == "Dashboard":
-                self._render_dashboard()
-            elif page == "Analytics":
-                self._render_analytics()
-            elif page == "Trade Data":
-                self._render_trade_data()
-            elif page == "Settings":
-                self._render_settings()
-                
-        except Exception as e:
-            st.error(f"Failed to initialize application: {str(e)}")
-            logger.error(f"App initialization error: {str(e)}")
     
     def _render_dashboard(self):
         """Render the main dashboard."""

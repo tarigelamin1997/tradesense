@@ -8,12 +8,11 @@ if pythonlibs_path not in sys.path:
     sys.path.insert(0, pythonlibs_path)
 
 # Security configuration
-st.set_page_config(
-    page_title="TradeSense Analytics",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="TradeSense Analytics",
+                   page_icon="📈",
+                   layout="wide",
+                   initial_sidebar_state="expanded")
+
 
 def validate_security_environment():
     """Validate security-related environment variables."""
@@ -26,9 +25,12 @@ def validate_security_environment():
             missing_required.append(var)
 
     if missing_required:
-        st.warning(f"🔐 Missing environment variables: {', '.join(missing_required)}")
-        st.info("⚙️ **For deployment:** Add these to Replit Secrets in the Deployments tab")
-        
+        st.warning(
+            f"🔐 Missing environment variables: {', '.join(missing_required)}")
+        st.info(
+            "⚙️ **For deployment:** Add these to Replit Secrets in the Deployments tab"
+        )
+
         # Generate a temporary key for development/demo
         if 'temp_master_key' not in st.session_state:
             import secrets
@@ -37,9 +39,13 @@ def validate_security_environment():
             os.environ['TRADESENSE_MASTER_KEY'] = temp_key
             st.info("🔧 Generated temporary encryption key for this session")
         else:
-            os.environ['TRADESENSE_MASTER_KEY'] = st.session_state.temp_master_key
+            os.environ[
+                'TRADESENSE_MASTER_KEY'] = st.session_state.temp_master_key
     else:
-        st.success("✅ Authentication system ready - using secure email/password login")
+        st.success(
+            "✅ Authentication system ready - using secure email/password login"
+        )
+
 
 # Validate environment on startup
 validate_security_environment()
@@ -58,9 +64,10 @@ from interactive_table import (
     get_grid_options,
     trade_detail,
 )
-from fpdf2 import FPDF
+from fpdf import FPDF
 
 # Debug configuration - removed duplicate set_page_config
+
 
 # Global error handler for debugging
 def handle_streamlit_error():
@@ -76,7 +83,9 @@ def handle_streamlit_error():
             st.code(f"Line: {exc_traceback.tb_lineno}")
 
         with st.expander("📋 **Full Traceback**", expanded=False):
-            st.code(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            st.code(''.join(
+                traceback.format_exception(exc_type, exc_value,
+                                           exc_traceback)))
 
         st.info("💡 **Troubleshooting Steps:**")
         st.write("1. Check the error details above")
@@ -86,6 +95,7 @@ def handle_streamlit_error():
 
         return True
     return False
+
 
 from data_import.futures_importer import FuturesImporter
 from data_import.base_importer import REQUIRED_COLUMNS
@@ -114,14 +124,10 @@ from affiliate_integration import integrate_affiliate_tracking, track_new_user_c
 from bulk_provisioning import render_bulk_provisioning_ui
 from partner_billing import render_partner_billing_dashboard, PartnerBillingManager
 from scheduler_ui import render_job_management_interface, render_sync_status_widget
-from notification_system import (
-    render_notification_center, 
-    render_real_time_sync_status, 
-    show_error_help_center,
-    create_system_alert,
-    NotificationType,
-    NotificationPriority
-)
+from notification_system import (render_notification_center,
+                                 render_real_time_sync_status,
+                                 show_error_help_center, create_system_alert,
+                                 NotificationType, NotificationPriority)
 import logging
 
 # Configure logging
@@ -131,8 +137,13 @@ logging.basicConfig(level=logging.INFO,
 
 logger = logging.getLogger(__name__)
 
+
 # Wrap entire app in error handler
-def log_user_action(user_id: str, action: str, details: dict, partner_id: str = None, page_context: str = 'unknown') -> None:
+def log_user_action(user_id: str,
+                    action: str,
+                    details: dict,
+                    partner_id: str = None,
+                    page_context: str = 'unknown') -> None:
     """Log user actions with details to track usage and potential issues."""
     log_message = f"User {user_id} - Action: {action} - Page: {page_context}"
     if partner_id:
@@ -141,7 +152,10 @@ def log_user_action(user_id: str, action: str, details: dict, partner_id: str = 
     logger.info(log_message)
 
 
-def log_sync_failure(connector_name: str, error_message: str, user_id: str = 'system', partner_id: str = None) -> None:
+def log_sync_failure(connector_name: str,
+                     error_message: str,
+                     user_id: str = 'system',
+                     partner_id: str = None) -> None:
     """Log synchronization failures for connectors to monitor data import issues."""
     log_message = f"Sync Failure: Connector {connector_name} - User: {user_id} - Error: {error_message}"
     if partner_id:
@@ -180,7 +194,9 @@ def process_trade_dataframe(df_hash, df_data):
 
     # Check which datetime columns are available
     datetime_cols = ['entry_time', 'exit_time']
-    available_datetime_cols = [col for col in datetime_cols if col in df.columns]
+    available_datetime_cols = [
+        col for col in datetime_cols if col in df.columns
+    ]
 
     # Process available datetime columns with error handling
     try:
@@ -193,17 +209,22 @@ def process_trade_dataframe(df_hash, df_data):
             df = df.dropna(subset=available_datetime_cols)
 
             if len(df) == 0 and original_rows > 0:
-                raise ValueError("No valid datetime data found after processing")
+                raise ValueError(
+                    "No valid datetime data found after processing")
 
             if len(df) < original_rows:
                 # Log information about removed rows
                 removed_rows = original_rows - len(df)
-                print(f"Removed {removed_rows} rows with invalid datetime data")
+                print(
+                    f"Removed {removed_rows} rows with invalid datetime data")
 
         # Calculate P&L if missing but we have price and quantity data
         if 'pnl' not in df.columns:
-            required_for_pnl = ['entry_price', 'exit_price', 'qty', 'direction']
+            required_for_pnl = [
+                'entry_price', 'exit_price', 'qty', 'direction'
+            ]
             if all(col in df.columns for col in required_for_pnl):
+
                 def calc_pnl(row):
                     try:
                         entry = float(row['entry_price'])
@@ -264,7 +285,8 @@ def compute_cached_analytics(filtered_df_hash, filtered_df_data):
     # Compute KPIs if P&L is available
     try:
         if 'pnl' in filtered_df.columns:
-            result['kpis'] = calculate_kpis(filtered_df, commission_per_trade=3.5)
+            result['kpis'] = calculate_kpis(filtered_df,
+                                            commission_per_trade=3.5)
         else:
             result['kpis'] = {'total_trades': len(filtered_df)}
     except Exception as e:
@@ -288,8 +310,8 @@ def clear_memory_cache():
 
         # Clear session state of large data objects
         keys_to_clear = [
-            'merged_df', 'processed_df', 'cached_analytics', 
-            'journal_entries', 'show_feedback_modal', 'data_updated'
+            'merged_df', 'processed_df', 'cached_analytics', 'journal_entries',
+            'show_feedback_modal', 'data_updated'
         ]
         cleared_keys = []
         for key in keys_to_clear:
@@ -333,6 +355,7 @@ def clear_memory_cache():
         st.sidebar.error(f"Error clearing cache: {str(e)}")
         return False
 
+
 def log_feedback(page: str, feedback: str) -> None:
     """Log user feedback to feedback.csv with timestamp and page info."""
     import os
@@ -357,7 +380,10 @@ def log_feedback(page: str, feedback: str) -> None:
         else:
             # Append to existing file
             feedback_df = pd.DataFrame([feedback_entry])
-            feedback_df.to_csv(feedback_file, mode='a', header=False, index=False)
+            feedback_df.to_csv(feedback_file,
+                               mode='a',
+                               header=False,
+                               index=False)
 
         return True
     except Exception as e:
@@ -401,7 +427,8 @@ def safe_format_number(number, format_type="number", precision=2):
         return "N/A"
 
 
-def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dict) -> bytes:
+def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict,
+                               stats: dict) -> bytes:
     """Generate a comprehensive PDF report with filtered trades, KPIs, and analytics."""
     import io
     import base64
@@ -412,11 +439,24 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
 
     # Title and Header
     pdf.set_font("Arial", "B", 20)
-    pdf.cell(0, 15, "TradeSense - Comprehensive Trading Report", ln=1, align='C')
+    pdf.cell(0,
+             15,
+             "TradeSense - Comprehensive Trading Report",
+             ln=1,
+             align='C')
 
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 8, f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=1, align='C')
-    pdf.cell(0, 8, f"Filtered Dataset: {len(filtered_df)} trades", ln=1, align='C')
+    pdf.cell(
+        0,
+        8,
+        f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        ln=1,
+        align='C')
+    pdf.cell(0,
+             8,
+             f"Filtered Dataset: {len(filtered_df)} trades",
+             ln=1,
+             align='C')
     pdf.ln(5)
 
     # Executive Summary Section
@@ -427,12 +467,17 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
     # Summary metrics in a clean format
     summary_data = [
         ("Total Trades", f"{kpis['total_trades']:,}"),
-        ("Net P&L (After Commission)", safe_format_number(kpis['net_pnl_after_commission'], "currency", 2)),
+        ("Net P&L (After Commission)",
+         safe_format_number(kpis['net_pnl_after_commission'], "currency", 2)),
         ("Win Rate", f"{kpis['win_rate_percent']:.1f}%"),
-        ("Average R:R Ratio", f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞"),
-        ("Best Single Trade", safe_format_number(kpis['max_single_trade_win'], "currency", 2)),
-        ("Worst Single Trade", safe_format_number(kpis['max_single_trade_loss'], "currency", 2)),
-        ("Total Commission Paid", safe_format_number(kpis['total_commission'], "currency", 2))
+        ("Average R:R Ratio",
+         f"{kpis['average_rr']:.2f}" if kpis['average_rr'] != np.inf else "∞"),
+        ("Best Single Trade",
+         safe_format_number(kpis['max_single_trade_win'], "currency", 2)),
+        ("Worst Single Trade",
+         safe_format_number(kpis['max_single_trade_loss'], "currency", 2)),
+        ("Total Commission Paid",
+         safe_format_number(kpis['total_commission'], "currency", 2))
     ]
 
     for label, value in summary_data:
@@ -449,10 +494,13 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
     performance_data = [
         ("Profit Factor", f"{stats['profit_factor']:.2f}"),
         ("Expectancy", safe_format_number(stats['expectancy'], "currency", 2)),
-        ("Max Drawdown", safe_format_number(stats['max_drawdown'], "currency", 2)),
+        ("Max Drawdown",
+         safe_format_number(stats['max_drawdown'], "currency", 2)),
         ("Sharpe Ratio", f"{stats['sharpe_ratio']:.2f}"),
-        ("Average Win", safe_format_number(stats['average_win'], "currency", 2)),
-        ("Average Loss", safe_format_number(stats['average_loss'], "currency", 2)),
+        ("Average Win", safe_format_number(stats['average_win'], "currency",
+                                           2)),
+        ("Average Loss",
+         safe_format_number(stats['average_loss'], "currency", 2)),
         ("Reward:Risk Ratio", f"{stats['reward_risk']:.2f}")
     ]
 
@@ -471,7 +519,8 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
         # Group by symbol
         symbol_stats = filtered_df.groupby('symbol').agg({
             'pnl': ['count', 'sum', 'mean'],
-            'direction': lambda x: (filtered_df.loc[x.index, 'pnl'] > 0).mean() * 100
+            'direction':
+            lambda x: (filtered_df.loc[x.index, 'pnl'] > 0).mean() * 100
         }).round(2)
 
         symbol_stats.columns = ['Trades', 'Total_PnL', 'Avg_PnL', 'Win_Rate']
@@ -482,15 +531,36 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
         pdf.cell(25, 8, "Trades", border=1, align='C')
         pdf.cell(35, 8, "Total P&L", border=1, align='C')
         pdf.cell(35, 8, "Avg P&L", border=1, align='C')
-        pdf.cell(30, 8, "Win Rate %", border=1, align='C', new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(30,
+                 8,
+                 "Win Rate %",
+                 border=1,
+                 align='C',
+                 new_x="LMARGIN",
+                 new_y="NEXT")
 
         # Table data
-        for _, row in symbol_stats.head(10).iterrows():  # Limit to top 10 symbols
+        for _, row in symbol_stats.head(
+                10).iterrows():  # Limit to top 10 symbols
             pdf.cell(30, 6, str(row['symbol']), border=1, align='C')
             pdf.cell(25, 6, str(int(row['Trades'])), border=1, align='C')
-            pdf.cell(35, 6, safe_format_number(row['Total_PnL'], "currency", 2), border=1, align='C')
-            pdf.cell(35, 6, safe_format_number(row['Avg_PnL'], "currency", 2), border=1, align='C')
-            pdf.cell(30, 6, f"{row['Win_Rate']:.1f}%", border=1, align='C', new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(35,
+                     6,
+                     safe_format_number(row['Total_PnL'], "currency", 2),
+                     border=1,
+                     align='C')
+            pdf.cell(35,
+                     6,
+                     safe_format_number(row['Avg_PnL'], "currency", 2),
+                     border=1,
+                     align='C')
+            pdf.cell(30,
+                     6,
+                     f"{row['Win_Rate']:.1f}%",
+                     border=1,
+                     align='C',
+                     new_x="LMARGIN",
+                     new_y="NEXT")
 
     pdf.ln(10)
 
@@ -502,8 +572,10 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
     if not filtered_df.empty:
         # Prepare display columns
         recent_trades = filtered_df.tail(10).copy()
-        recent_trades['pnl_formatted'] = recent_trades['pnl'].apply(lambda x: safe_format_number(x, "currency"))
-        recent_trades['date_formatted'] = pd.to_datetime(recent_trades['exit_time']).dt.strftime('%Y-%m-%d')
+        recent_trades['pnl_formatted'] = recent_trades['pnl'].apply(
+            lambda x: safe_format_number(x, "currency"))
+        recent_trades['date_formatted'] = pd.to_datetime(
+            recent_trades['exit_time']).dt.strftime('%Y-%m-%d')
 
         # Table headers for recent trades
         pdf.cell(25, 6, "Date", border=1, align='C')
@@ -518,10 +590,19 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
         for _, trade in recent_trades.iterrows():
             result = "Win" if trade['pnl'] > 0 else "Loss"
             pdf.cell(25, 5, trade['date_formatted'], border=1, align='C')
-            pdf.cell(20, 5, str(trade['symbol'])[:8], border=1, align='C')  # Truncate long symbols
+            pdf.cell(20, 5, str(trade['symbol'])[:8], border=1,
+                     align='C')  # Truncate long symbols
             pdf.cell(18, 5, str(trade['direction'])[:6], border=1, align='C')
-            pdf.cell(25, 5, safe_format_number(trade['entry_price'], "number", 2), border=1, align='C')
-            pdf.cell(25, 5, safe_format_number(trade['exit_price'], "number", 2), border=1, align='C')
+            pdf.cell(25,
+                     5,
+                     safe_format_number(trade['entry_price'], "number", 2),
+                     border=1,
+                     align='C')
+            pdf.cell(25,
+                     5,
+                     safe_format_number(trade['exit_price'], "number", 2),
+                     border=1,
+                     align='C')
             pdf.cell(25, 5, trade['pnl_formatted'], border=1, align='C')
             pdf.cell(20, 5, result, border=1, align='C', ln=1)
 
@@ -542,19 +623,30 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
 
         pdf.cell(0, 8, "Performance by Direction:", ln=1)
         for direction, row in direction_stats.iterrows():
-            pdf.cell(0, 6, f"  {direction.upper()}: {int(row['Trades'])} trades, {safe_format_number(row['Total_PnL'], 'currency', 2)} P&L, {row['Win_Rate']:.1f}% win rate", ln=1)
+            pdf.cell(
+                0,
+                6,
+                f"  {direction.upper()}: {int(row['Trades'])} trades, {safe_format_number(row['Total_PnL'], 'currency', 2)} P&L, {row['Win_Rate']:.1f}% win rate",
+                ln=1)
 
         pdf.ln(5)
 
         # Monthly performance if data spans multiple months
         monthly_perf = filtered_df.copy()
-        monthly_perf['month'] = pd.to_datetime(monthly_perf['exit_time']).dt.to_period('M')
-        monthly_stats = monthly_perf.groupby('month')['pnl'].agg(['count', 'sum']).round(2)
+        monthly_perf['month'] = pd.to_datetime(
+            monthly_perf['exit_time']).dt.to_period('M')
+        monthly_stats = monthly_perf.groupby('month')['pnl'].agg(
+            ['count', 'sum']).round(2)
 
         if len(monthly_stats) > 1:
             pdf.cell(0, 8, "Monthly Performance:", ln=1)
-            for month, row in monthly_stats.head(6).iterrows():  # Show last 6 months
-                pdf.cell(0, 6, f"  {month}: {int(row['count'])} trades, {safe_format_number(row['sum'], 'currency', 2)} P&L", ln=1)
+            for month, row in monthly_stats.head(
+                    6).iterrows():  # Show last 6 months
+                pdf.cell(
+                    0,
+                    6,
+                    f"  {month}: {int(row['count'])} trades, {safe_format_number(row['sum'], 'currency', 2)} P&L",
+                    ln=1)
 
     pdf.ln(10)
 
@@ -569,11 +661,18 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
         winning_trades = filtered_df[filtered_df['pnl'] > 0]
 
         risk_metrics = [
-            ("Largest Loss", safe_format_number(filtered_df['pnl'].min(), "currency", 2)),
-            ("Average Loss", safe_format_number(losing_trades['pnl'].mean(), "currency", 2) if not losing_trades.empty else "$0.00"),
-            ("Largest Win", safe_format_number(filtered_df['pnl'].max(), "currency", 2)),
-            ("Average Win", safe_format_number(winning_trades['pnl'].mean(), "currency", 2) if not winning_trades.empty else "$0.00"),
-            ("Win/Loss Ratio", f"{len(winning_trades)}:{len(losing_trades)}" if not losing_trades.empty else f"{len(winning_trades)}:0")
+            ("Largest Loss",
+             safe_format_number(filtered_df['pnl'].min(), "currency", 2)),
+            ("Average Loss",
+             safe_format_number(losing_trades['pnl'].mean(), "currency", 2)
+             if not losing_trades.empty else "$0.00"),
+            ("Largest Win",
+             safe_format_number(filtered_df['pnl'].max(), "currency", 2)),
+            ("Average Win",
+             safe_format_number(winning_trades['pnl'].mean(), "currency", 2)
+             if not winning_trades.empty else "$0.00"),
+            ("Win/Loss Ratio", f"{len(winning_trades)}:{len(losing_trades)}"
+             if not losing_trades.empty else f"{len(winning_trades)}:0")
         ]
 
         for label, value in risk_metrics:
@@ -584,8 +683,18 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
 
     # Footer
     pdf.set_font("Arial", "I", 8)
-    pdf.cell(0, 10, "Generated by TradeSense - Professional Trading Analytics Platform", ln=1, align='C')
-    pdf.cell(0, 5, "This report contains confidential trading information and should be handled accordingly.", ln=1, align='C')
+    pdf.cell(
+        0,
+        10,
+        "Generated by TradeSense - Professional Trading Analytics Platform",
+        ln=1,
+        align='C')
+    pdf.cell(
+        0,
+        5,
+        "This report contains confidential trading information and should be handled accordingly.",
+        ln=1,
+        align='C')
 
     # Handle fpdf2 output properly
     try:
@@ -597,7 +706,6 @@ def generate_comprehensive_pdf(filtered_df: pd.DataFrame, kpis: dict, stats: dic
     except Exception:
         # Fallback for older fpdf versions
         return pdf.output(dest="S").encode("latin1")
-
 
 
 # Authentication Check - Must be done first
@@ -646,13 +754,12 @@ if st.session_state.get('show_feedback_modal', False):
         feedback_text = st.text_area(
             "Your feedback:",
             placeholder="Describe the issue, suggestion, or your experience...",
-            height=100
-        )
+            height=100)
 
-        feedback_type = st.selectbox(
-            "Type:",
-            ["Bug Report", "Feature Request", "General Feedback", "UI/UX Issue", "Performance Issue"]
-        )
+        feedback_type = st.selectbox("Type:", [
+            "Bug Report", "Feature Request", "General Feedback", "UI/UX Issue",
+            "Performance Issue"
+        ])
 
         col1, col2 = st.columns(2)
 
@@ -662,11 +769,14 @@ if st.session_state.get('show_feedback_modal', False):
                     full_feedback = f"[{feedback_type}] {feedback_text}"
                     success = log_feedback(current_page, full_feedback)
                     if success:
-                        st.success("✅ Feedback submitted! Thank you for helping us improve TradeSense.")
+                        st.success(
+                            "✅ Feedback submitted! Thank you for helping us improve TradeSense."
+                        )
                         st.session_state.show_feedback_modal = False
                         st.rerun()
                     else:
-                        st.error("❌ Failed to submit feedback. Please try again.")
+                        st.error(
+                            "❌ Failed to submit feedback. Please try again.")
                 else:
                     st.warning("Please enter your feedback before submitting.")
 
@@ -686,11 +796,9 @@ if "session_id" not in st.session_state:
 # Onboarding message shown only on first load
 if st.session_state.get("show_tour", True):
     with st.expander("Getting Started", expanded=True):
-        st.markdown(
-            "1. Upload a CSV/Excel file or use the sample data.\n"
-            "2. Review performance metrics and risk stats.\n"
-            "3. Filter trades and download reports."
-        )
+        st.markdown("1. Upload a CSV/Excel file or use the sample data.\n"
+                    "2. Review performance metrics and risk stats.\n"
+                    "3. Filter trades and download reports.")
         if st.button("Got it", key="close_tour"):
             st.session_state.show_tour = False
 
@@ -736,37 +844,39 @@ try:
 
     # Always show memory info and cleanup button
     st.sidebar.metric(
-        "Memory Usage", 
+        "Memory Usage",
         f"{memory_usage:.1f}%",
-        help=f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
+        help=
+        f"RAM: {memory_info.used / (1024**3):.1f}GB / {memory_info.total / (1024**3):.1f}GB"
     )
 
     # Always show cleanup button, but make it more prominent when needed
     if memory_usage > 50:
-        if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache", type="primary"):
+        if st.sidebar.button("🧹 Clear Cache",
+                             help="Clear cache to free memory",
+                             key="clear_cache",
+                             type="primary"):
             # Log cache clear action
             if current_user:
-                log_user_action(
-                    user_id=current_user['id'],
-                    action='clear_cache',
-                    details={"memory_usage_before": memory_usage},
-                    partner_id=current_user.get('partner_id'),
-                    page_context='main_sidebar'
-                )
+                log_user_action(user_id=current_user['id'],
+                                action='clear_cache',
+                                details={"memory_usage_before": memory_usage},
+                                partner_id=current_user.get('partner_id'),
+                                page_context='main_sidebar')
 
             clear_memory_cache()  # Function now handles its own feedback
             st.rerun()
     else:
-        if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_normal"):
+        if st.sidebar.button("🧹 Clear Cache",
+                             help="Clear cache to free memory",
+                             key="clear_cache_normal"):
             # Log cache clear action
             if current_user:
-                log_user_action(
-                    user_id=current_user['id'],
-                    action='clear_cache',
-                    details={"memory_usage_before": memory_usage},
-                    partner_id=current_user.get('partner_id'),
-                    page_context='main_sidebar'
-                )
+                log_user_action(user_id=current_user['id'],
+                                action='clear_cache',
+                                details={"memory_usage_before": memory_usage},
+                                partner_id=current_user.get('partner_id'),
+                                page_context='main_sidebar')
 
             clear_memory_cache()  # Function now handles its own feedback
             st.rerun()
@@ -779,16 +889,16 @@ try:
 
 except:
     # Fallback cleanup button if psutil not available
-    if st.sidebar.button("🧹 Clear Cache", help="Clear cache to free memory", key="clear_cache_fallback"):
+    if st.sidebar.button("🧹 Clear Cache",
+                         help="Clear cache to free memory",
+                         key="clear_cache_fallback"):
         # Log cache clear action
         if current_user:
-            log_user_action(
-                user_id=current_user['id'],
-                action='clear_cache',
-                details={"memory_usage_before": memory_usage},
-                partner_id=current_user.get('partner_id'),
-                page_context='main_sidebar'
-            )
+            log_user_action(user_id=current_user['id'],
+                            action='clear_cache',
+                            details={"memory_usage_before": memory_usage},
+                            partner_id=current_user.get('partner_id'),
+                            page_context='main_sidebar')
 
         clear_memory_cache()  # Function now handles its own feedback
         st.rerun()
@@ -806,20 +916,29 @@ if current_user:
         from deduplication_manager import dedup_manager
 
         try:
-            dedup_stats = dedup_manager.get_deduplication_stats(current_user['id'], days=30)
+            dedup_stats = dedup_manager.get_deduplication_stats(
+                current_user['id'], days=30)
 
-            st.metric("Registered Trades", dedup_stats['total_registered_trades'])
+            st.metric("Registered Trades",
+                      dedup_stats['total_registered_trades'])
 
             if dedup_stats['resolution_stats']:
                 st.write("**Last 30 days:**")
                 for stat in dedup_stats['resolution_stats']:
-                    confidence_badge = "🟢" if stat['avg_confidence'] > 0.95 else "🟡" if stat['avg_confidence'] > 0.85 else "🔴"
-                    st.caption(f"{confidence_badge} {stat['action'].replace('_', ' ').title()}: {stat['count']}")
+                    confidence_badge = "🟢" if stat[
+                        'avg_confidence'] > 0.95 else "🟡" if stat[
+                            'avg_confidence'] > 0.85 else "🔴"
+                    st.caption(
+                        f"{confidence_badge} {stat['action'].replace('_', ' ').title()}: {stat['count']}"
+                    )
             else:
                 st.caption("No duplicates found recently")
 
-            if st.button("🧹 Cleanup Old Data", help="Remove old fingerprints to improve performance"):
-                cleaned = dedup_manager.cleanup_old_fingerprints(days_to_keep=365)
+            if st.button(
+                    "🧹 Cleanup Old Data",
+                    help="Remove old fingerprints to improve performance"):
+                cleaned = dedup_manager.cleanup_old_fingerprints(
+                    days_to_keep=365)
                 if cleaned > 0:
                     st.success(f"Cleaned {cleaned} old records")
                 else:
@@ -832,7 +951,8 @@ if current_user:
 sample_file = "sample_data/futures_sample.csv"
 use_sample = st.sidebar.checkbox("Use sample data", value=True)
 
-uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel", type=['csv','xlsx','xls'])
+uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel",
+                                         type=['csv', 'xlsx', 'xls'])
 
 if use_sample:
     selected_file = sample_file
@@ -846,7 +966,8 @@ else:
 if selected_file:
     try:
         # Check if we have merged data from external CSV upload
-        if st.session_state.get('data_updated', False) and 'merged_df' in st.session_state:
+        if st.session_state.get('data_updated',
+                                False) and 'merged_df' in st.session_state:
             df = st.session_state['merged_df']
             st.session_state['data_updated'] = False  # Reset flag
             st.info(f"📊 **Using merged dataset:** {len(df)} total trades")
@@ -869,7 +990,9 @@ if selected_file:
         df['tags'] = ''
 
     # Analyze column availability instead of blocking
-    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    missing_columns = [
+        col for col in REQUIRED_COLUMNS if col not in df.columns
+    ]
     available_columns = [col for col in REQUIRED_COLUMNS if col in df.columns]
 
     if missing_columns:
@@ -880,8 +1003,11 @@ if selected_file:
         # Show what analytics will be affected
         affected_features = []
         if 'entry_time' not in df.columns or 'exit_time' not in df.columns:
-            affected_features.extend(['Time-series analysis', 'Duration analysis', 'Calendar view'])            
-        if 'pnl' not in df.columns and not all(col in df.columns for col in ['entry_price', 'exit_price', 'qty']):
+            affected_features.extend(
+                ['Time-series analysis', 'Duration analysis', 'Calendar view'])
+        if 'pnl' not in df.columns and not all(
+                col in df.columns
+                for col in ['entry_price', 'exit_price', 'qty']):
             affected_features.extend(['P&L analytics', 'Performance metrics'])
         if 'symbol' not in df.columns:
             affected_features.extend(['Symbol-based analysis'])
@@ -889,7 +1015,9 @@ if selected_file:
             affected_features.extend(['Direction-based analysis'])
 
         if affected_features:
-            st.warning(f"📉 **Limited analytics:** {', '.join(affected_features)} will be unavailable.")
+            st.warning(
+                f"📉 **Limited analytics:** {', '.join(affected_features)} will be unavailable."
+            )
 
         # Offer column mapping option
         with st.expander("🔧 Map Your Columns (Optional)", expanded=False):
@@ -900,11 +1028,10 @@ if selected_file:
 
             for i, req_col in enumerate(missing_columns):
                 with col_map1 if i % 2 == 0 else col_map2:
-                    mapping[req_col] = st.selectbox(
-                        f"Map '{req_col}' to:", 
-                        options=["(Skip)"] + list(df.columns),
-                        key=f"map_{req_col}"
-                    )
+                    mapping[req_col] = st.selectbox(f"Map '{req_col}' to:",
+                                                    options=["(Skip)"] +
+                                                    list(df.columns),
+                                                    key=f"map_{req_col}")
 
             if st.button("Apply Column Mapping", key="apply_column_mapping"):
                 try:
@@ -914,9 +1041,14 @@ if selected_file:
                             df[req_col] = df[selected_col]
 
                     # Update missing columns list
-                    new_missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+                    new_missing = [
+                        col for col in REQUIRED_COLUMNS
+                        if col not in df.columns
+                    ]
                     if len(new_missing) < len(missing_columns):
-                        st.success(f"✅ Successfully mapped {len(missing_columns) - len(new_missing)} columns!")
+                        st.success(
+                            f"✅ Successfully mapped {len(missing_columns) - len(new_missing)} columns!"
+                        )
                         st.rerun()
                     else:
                         st.info("No new columns were mapped.")
@@ -948,22 +1080,31 @@ if selected_file:
     if not df.empty:
         st.write(f"**Initial columns:** {list(df.columns)}")
     else:
-        st.error("❌ **Critical Error:** DataFrame is empty after initial loading!")
+        st.error(
+            "❌ **Critical Error:** DataFrame is empty after initial loading!")
         st.error("This suggests an issue with the data loading process.")
         st.stop()
 
     # Check for datetime columns - warn but don't stop if missing
-    datetime_cols_available = [col for col in ['entry_time', 'exit_time'] if col in df.columns]
-    missing_datetime_cols = [col for col in ['entry_time', 'exit_time'] if col not in df.columns]
+    datetime_cols_available = [
+        col for col in ['entry_time', 'exit_time'] if col in df.columns
+    ]
+    missing_datetime_cols = [
+        col for col in ['entry_time', 'exit_time'] if col not in df.columns
+    ]
 
     if missing_datetime_cols:
-        st.warning(f"⚠️ **Missing datetime columns:** {', '.join(missing_datetime_cols)}")
+        st.warning(
+            f"⚠️ **Missing datetime columns:** {', '.join(missing_datetime_cols)}"
+        )
         st.info("Time-based analytics will be limited or unavailable.")
 
         # If both datetime columns are missing, create dummy ones for basic processing
         if not datetime_cols_available:
             st.info("🔧 Creating dummy timestamps to enable basic analytics...")
-            df['entry_time'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D')
+            df['entry_time'] = pd.date_range(start='2024-01-01',
+                                             periods=len(df),
+                                             freq='D')
             df['exit_time'] = df['entry_time'] + pd.Timedelta(hours=1)
             datetime_cols_available = ['entry_time', 'exit_time']
 
@@ -975,7 +1116,8 @@ if selected_file:
     # Quick quality check with error handling
     with st.spinner("Checking data quality..."):
         try:
-            cleaned_df_preview, quick_report = validator.validate_and_clean_data(df.copy(), interactive=False)
+            cleaned_df_preview, quick_report = validator.validate_and_clean_data(
+                df.copy(), interactive=False)
             # Don't replace original df yet, just get the report
         except Exception as e:
             st.error(f"❌ **Data validation error:** {str(e)}")
@@ -992,26 +1134,37 @@ if selected_file:
 
     # Show quality status
     if quality_score >= 90:
-        st.success(f"✅ **Excellent Data Quality** ({quality_score:.1f}%) - Ready for analysis!")
-        show_validation = st.checkbox("🔧 Advanced Validation Options", value=False)
+        st.success(
+            f"✅ **Excellent Data Quality** ({quality_score:.1f}%) - Ready for analysis!"
+        )
+        show_validation = st.checkbox("🔧 Advanced Validation Options",
+                                      value=False)
     elif quality_score >= 70:
-        st.warning(f"⚠️ **Good Data Quality** ({quality_score:.1f}%) - Minor issues detected")
+        st.warning(
+            f"⚠️ **Good Data Quality** ({quality_score:.1f}%) - Minor issues detected"
+        )
         show_validation = st.checkbox("🔧 Review and Fix Issues", value=True)
     else:
-        st.error(f"❌ **Data Quality Issues** ({quality_score:.1f}%) - Validation recommended")
-        show_validation = st.checkbox("🔧 Fix Data Issues (Recommended)", value=True)
+        st.error(
+            f"❌ **Data Quality Issues** ({quality_score:.1f}%) - Validation recommended"
+        )
+        show_validation = st.checkbox("🔧 Fix Data Issues (Recommended)",
+                                      value=True)
 
     if show_validation:
         try:
             validated_df = create_data_correction_interface(df, validator)
             # Only update if validation didn't empty the DataFrame and has required columns
-            if (not validated_df.empty and 
-                len(validated_df.columns) > 0 and 
-                all(col in validated_df.columns for col in ['entry_time', 'exit_time'])):
+            if (not validated_df.empty and len(validated_df.columns) > 0
+                    and all(col in validated_df.columns
+                            for col in ['entry_time', 'exit_time'])):
                 df = validated_df
-                st.success("✅ Data validation complete. Proceeding with analysis...")
+                st.success(
+                    "✅ Data validation complete. Proceeding with analysis...")
             else:
-                st.warning("⚠️ Validation resulted in empty DataFrame or missing required columns. Using original data.")
+                st.warning(
+                    "⚠️ Validation resulted in empty DataFrame or missing required columns. Using original data."
+                )
         except Exception as e:
             st.error(f"❌ **Validation error:** {str(e)}")
             st.warning("Using original data instead.")
@@ -1034,16 +1187,20 @@ if selected_file:
 
     # Check for required columns before processing
     required_processing_cols = ['entry_time', 'exit_time']
-    missing_cols = [col for col in required_processing_cols if col not in df.columns]
+    missing_cols = [
+        col for col in required_processing_cols if col not in df.columns
+    ]
 
     if missing_cols:
         st.error(f"❌ **Required columns missing:** {', '.join(missing_cols)}")
         st.error(f"**Available columns:** {list(df.columns)}")
         st.error("**Required for analysis:** entry_time, exit_time")
-        st.error("Please ensure your data contains the required datetime columns.")
+        st.error(
+            "Please ensure your data contains the required datetime columns.")
         st.stop()
 
-    st.write(f"**Debug Info:** Final DataFrame shape before processing: {df.shape}")
+    st.write(
+        f"**Debug Info:** Final DataFrame shape before processing: {df.shape}")
     st.write(f"**Final columns:** {list(df.columns)}")
 
     # Optimize data processing with cached operations
@@ -1062,7 +1219,9 @@ if selected_file:
 
         except ValueError as e:
             st.error(f"❌ **Data processing error:** {str(e)}")
-            st.error("**Proceeding with limited analytics using available data...**")
+            st.error(
+                "**Proceeding with limited analytics using available data...**"
+            )
             # Continue with original data if processing fails
             pass
 
@@ -1073,7 +1232,9 @@ if selected_file:
     with filter_col1:
         # Symbol filter (only if symbol column exists)
         if 'symbol' in df.columns:
-            symbols = st.multiselect('Symbols', options=df['symbol'].unique().tolist(), default=df['symbol'].unique().tolist())
+            symbols = st.multiselect('Symbols',
+                                     options=df['symbol'].unique().tolist(),
+                                     default=df['symbol'].unique().tolist())
         else:
             symbols = []
             st.info("ℹ️ Symbol filter unavailable (missing 'symbol' column)")
@@ -1081,11 +1242,17 @@ if selected_file:
         # Date range filter (only if datetime columns exist)
         if 'entry_time' in df.columns and 'exit_time' in df.columns:
             try:
-                min_date = df['entry_time'].min().date() if pd.notna(df['entry_time'].min()) else pd.Timestamp.now().date()
-                max_date = df['exit_time'].max().date() if pd.notna(df['exit_time'].max()) else pd.Timestamp.now().date()
-                date_range = st.date_input('Date Range', value=[min_date, max_date])
+                min_date = df['entry_time'].min().date() if pd.notna(
+                    df['entry_time'].min()) else pd.Timestamp.now().date()
+                max_date = df['exit_time'].max().date() if pd.notna(
+                    df['exit_time'].max()) else pd.Timestamp.now().date()
+                date_range = st.date_input('Date Range',
+                                           value=[min_date, max_date])
             except:
-                date_range = [pd.Timestamp.now().date(), pd.Timestamp.now().date()]
+                date_range = [
+                    pd.Timestamp.now().date(),
+                    pd.Timestamp.now().date()
+                ]
         else:
             date_range = []
             st.info("ℹ️ Date filter unavailable (missing datetime columns)")
@@ -1093,18 +1260,25 @@ if selected_file:
     with filter_col2:
         # Direction filter (only if direction column exists)
         if 'direction' in df.columns:
-            directions = st.multiselect('Directions', options=df['direction'].unique().tolist(), default=df['direction'].unique().tolist())
+            directions = st.multiselect(
+                'Directions',
+                options=df['direction'].unique().tolist(),
+                default=df['direction'].unique().tolist())
         else:
             directions = []
-            st.info("ℹ️ Direction filter unavailable (missing 'direction' column)")
+            st.info(
+                "ℹ️ Direction filter unavailable (missing 'direction' column)")
 
         # Tags filter (only if tags column exists)
         if 'tags' in df.columns:
             all_tags = set()
             for tag_string in df['tags'].dropna():
                 if tag_string and str(tag_string).strip():
-                    all_tags.update([tag.strip() for tag in str(tag_string).split(',')])
-            selected_tags = st.multiselect('Tags', options=sorted(all_tags), default=sorted(all_tags))
+                    all_tags.update(
+                        [tag.strip() for tag in str(tag_string).split(',')])
+            selected_tags = st.multiselect('Tags',
+                                           options=sorted(all_tags),
+                                           default=sorted(all_tags))
         else:
             selected_tags = []
 
@@ -1117,7 +1291,8 @@ if selected_file:
 
     # Apply partner-specific filtering if applicable
     if current_user.get('partner_id') and 'partner_id' in filtered_df.columns:
-        partner_trades = filtered_df[filtered_df['partner_id'] == current_user['partner_id']]
+        partner_trades = filtered_df[filtered_df['partner_id'] ==
+                                     current_user['partner_id']]
         if not partner_trades.empty:
             filtered_df = partner_trades
 
@@ -1134,14 +1309,14 @@ if selected_file:
         try:
             filtered_df = filtered_df[
                 (filtered_df['entry_time'].dt.date >= date_range[0])
-                & (filtered_df['exit_time'].dt.date <= date_range[1])
-            ]
+                & (filtered_df['exit_time'].dt.date <= date_range[1])]
         except:
             # Skip date filtering if there's an error
             pass
 
     # Apply tag filter if tags column exists and tags are selected
     if 'tags' in filtered_df.columns and selected_tags:
+
         def has_selected_tag(tag_string):
             if pd.isna(tag_string) or not str(tag_string).strip():
                 return False
@@ -1154,7 +1329,9 @@ if selected_file:
     if 'broker' in filtered_df.columns:
         st.sidebar.subheader("Additional Filters")
         available_brokers = filtered_df['broker'].unique().tolist()
-        brokers = st.sidebar.multiselect('Broker', options=available_brokers, default=available_brokers)
+        brokers = st.sidebar.multiselect('Broker',
+                                         options=available_brokers,
+                                         default=available_brokers)
         filtered_df = filtered_df[filtered_df['broker'].isin(brokers)]
 
     # Show partner context in filters
@@ -1166,22 +1343,29 @@ if selected_file:
 
     # Show filter results and merged data notification
     if st.session_state.get('merged_df') is not None:
-        st.success(f"🔄 **Analytics Updated:** Showing {len(filtered_df)} of {len(df)} total trades (including imported data)")
+        st.success(
+            f"🔄 **Analytics Updated:** Showing {len(filtered_df)} of {len(df)} total trades (including imported data)"
+        )
     else:
-        st.info(f"📈 Showing {len(filtered_df)} of {len(df)} total trades after applying filters")
+        st.info(
+            f"📈 Showing {len(filtered_df)} of {len(df)} total trades after applying filters"
+        )
 
     st.divider()
 
     # Use cached expensive calculations with graceful P&L handling
-    filtered_df_hash = hash(f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}")
+    filtered_df_hash = hash(
+        f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}")
 
     with st.spinner("Computing available analytics..."):
         # Only process P&L if the column exists
         if 'pnl' in filtered_df.columns:
-            filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+            filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'],
+                                               errors='coerce')
             filtered_df = filtered_df.dropna(subset=['pnl'])
         else:
-            st.warning("⚠️ P&L column missing - Financial analytics will be limited")
+            st.warning(
+                "⚠️ P&L column missing - Financial analytics will be limited")
 
         if filtered_df.empty:
             st.error("No valid trade data found after filtering.")
@@ -1189,21 +1373,27 @@ if selected_file:
 
         # Use cached analytics computation with error handling
         try:
-            cached_results = compute_cached_analytics(filtered_df_hash, filtered_df.to_dict('records'))
+            cached_results = compute_cached_analytics(
+                filtered_df_hash, filtered_df.to_dict('records'))
 
             if cached_results is None:
                 # Create minimal stats if cached computation fails
                 cached_results = {
-                    'stats': {'total_trades': len(filtered_df)},
+                    'stats': {
+                        'total_trades': len(filtered_df)
+                    },
                     'perf': pd.DataFrame(),
-                    'kpis': {'total_trades': len(filtered_df)}
+                    'kpis': {
+                        'total_trades': len(filtered_df)
+                    }
                 }
 
             stats = cached_results['stats']
             perf = cached_results['perf']
             kpis = cached_results['kpis']
         except Exception as e:
-            st.warning(f"⚠️ Some analytics unavailable due to missing data: {str(e)}")
+            st.warning(
+                f"⚠️ Some analytics unavailable due to missing data: {str(e)}")
             # Create basic fallback stats
             stats = {'total_trades': len(filtered_df)}
             perf = pd.DataFrame()
@@ -1217,42 +1407,35 @@ if selected_file:
     kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
 
     kpi_col1.metric(
-        label='Total Trades', 
+        label='Total Trades',
         value=f"{kpis['total_trades']:,}" if kpis['total_trades'] > 0 else "–",
-        help="Total number of completed trades"
-    )
-    kpi_col1.metric(
-        label='Win Rate', 
-        value=format_percentage(kpis['win_rate_percent']),
-        help="Percentage of profitable trades"
-    )
+        help="Total number of completed trades")
+    kpi_col1.metric(label='Win Rate',
+                    value=format_percentage(kpis['win_rate_percent']),
+                    help="Percentage of profitable trades")
+    kpi_col2.metric(label='Average R:R',
+                    value=format_number(kpis['average_rr'])
+                    if kpis['average_rr'] != np.inf else "∞",
+                    help="Average reward-to-risk ratio")
     kpi_col2.metric(
-        label='Average R:R', 
-        value=format_number(kpis['average_rr']) if kpis['average_rr'] != np.inf else "∞",
-        help="Average reward-to-risk ratio"
-    )
-    kpi_col2.metric(
-        label='Net P&L (After Commission)', 
+        label='Net P&L (After Commission)',
         value=format_currency(kpis['net_pnl_after_commission']),
-        delta=f"{format_currency(kpis['gross_pnl'] - kpis['net_pnl_after_commission'])} commission",
-        help="Total profit/loss after commission"
-    )
-    kpi_col3.metric(
-        label='Best Trade', 
-        value=format_currency(kpis['max_single_trade_win']),
-        help="Largest single winning trade"
-    )
-    kpi_col3.metric(
-        label='Worst Trade', 
-        value=format_currency(kpis['max_single_trade_loss']),
-        help="Largest single losing trade"
-    )
+        delta=
+        f"{format_currency(kpis['gross_pnl'] - kpis['net_pnl_after_commission'])} commission",
+        help="Total profit/loss after commission")
+    kpi_col3.metric(label='Best Trade',
+                    value=format_currency(kpis['max_single_trade_win']),
+                    help="Largest single winning trade")
+    kpi_col3.metric(label='Worst Trade',
+                    value=format_currency(kpis['max_single_trade_loss']),
+                    help="Largest single losing trade")
 
     # Show commission breakdown in expandable section
     with st.expander("💰 Commission Breakdown"):
         col_a, col_b, col_c = st.columns(3)
         col_a.metric('Gross P&L', format_currency(kpis['gross_pnl']))
-        col_b.metric('Total Commission', format_currency(kpis['total_commission']))
+        col_b.metric('Total Commission',
+                     format_currency(kpis['total_commission']))
         col_c.metric('Commission per Trade', "$3.50")
 
     # Daily Loss Limit Section
@@ -1260,15 +1443,15 @@ if selected_file:
 
     # User input for daily loss limit
     daily_loss_limit = st.number_input(
-        'Daily Loss Limit ($)', 
-        min_value=0.0, 
-        value=1000.0, 
+        'Daily Loss Limit ($)',
+        min_value=0.0,
+        value=1000.0,
         step=50.0,
-        help="Set your maximum acceptable loss per day"
-    )
+        help="Set your maximum acceptable loss per day")
 
     # Calculate daily PnL and violations
-    daily_pnl = filtered_df.groupby(filtered_df['exit_time'].dt.date)['pnl'].sum().reset_index()
+    daily_pnl = filtered_df.groupby(
+        filtered_df['exit_time'].dt.date)['pnl'].sum().reset_index()
     daily_pnl.columns = ['date', 'net_pnl']
     daily_pnl['violation'] = daily_pnl['net_pnl'] < -daily_loss_limit
 
@@ -1279,7 +1462,7 @@ if selected_file:
     # Display KPI
     violation_col1, violation_col2 = st.columns(2)
     violation_col1.metric(
-        label='Daily Loss Limit Violations', 
+        label='Daily Loss Limit Violations',
         value=f"{violation_days}" if violation_days >= 0 else "–",
         delta=f"out of {total_trading_days} trading days",
         help=f"Days where net loss exceeded {format_currency(daily_loss_limit)}"
@@ -1288,10 +1471,9 @@ if selected_file:
     if violation_days > 0:
         violation_percentage = (violation_days / total_trading_days) * 100
         violation_col2.metric(
-            label='Violation Rate', 
+            label='Violation Rate',
             value=format_percentage(violation_percentage),
-            help="Percentage of trading days with losses exceeding limit"
-        )
+            help="Percentage of trading days with losses exceeding limit")
 
     # Display violation details if any exist
     if violation_days > 0:
@@ -1299,16 +1481,24 @@ if selected_file:
         st.caption(f'Days where net loss exceeded ${daily_loss_limit:,.2f}')
 
         violation_details = daily_pnl[daily_pnl['violation']].copy()
-        violation_details['net_pnl_formatted'] = violation_details['net_pnl'].apply(lambda x: f"${x:,.2f}")
-        violation_details['excess_loss'] = violation_details['net_pnl'] + daily_loss_limit
-        violation_details['excess_loss_formatted'] = violation_details['excess_loss'].apply(lambda x: f"${x:,.2f}")
+        violation_details['net_pnl_formatted'] = violation_details[
+            'net_pnl'].apply(lambda x: f"${x:,.2f}")
+        violation_details[
+            'excess_loss'] = violation_details['net_pnl'] + daily_loss_limit
+        violation_details['excess_loss_formatted'] = violation_details[
+            'excess_loss'].apply(lambda x: f"${x:,.2f}")
 
         # Display violations table
-        display_violations = violation_details[['date', 'net_pnl_formatted', 'excess_loss_formatted']].copy()
+        display_violations = violation_details[[
+            'date', 'net_pnl_formatted', 'excess_loss_formatted'
+        ]].copy()
         display_violations.columns = ['Date', 'Net P&L', 'Excess Loss']
-        display_violations = display_violations.sort_values('Date', ascending=False)
+        display_violations = display_violations.sort_values('Date',
+                                                            ascending=False)
 
-        st.dataframe(display_violations, use_container_width=True, hide_index=True)
+        st.dataframe(display_violations,
+                     use_container_width=True,
+                     hide_index=True)
 
         # Summary stats for violations
         worst_day_loss = violation_details['net_pnl'].min()
@@ -1316,15 +1506,20 @@ if selected_file:
 
         viol_col1, viol_col2 = st.columns(2)
         viol_col1.metric('Worst Day Loss', format_currency(worst_day_loss))
-        viol_col2.metric('Total Excess Loss', format_currency(total_excess_loss))
+        viol_col2.metric('Total Excess Loss',
+                         format_currency(total_excess_loss))
     else:
-        st.success(f"✅ No days exceeded the daily loss limit of {format_currency(daily_loss_limit)}")
+        st.success(
+            f"✅ No days exceeded the daily loss limit of {format_currency(daily_loss_limit)}"
+        )
 
     st.divider()
 
     overview_tab, symbol_tab, drawdown_tab, calendar_tab, journal_tab, jobs_tab, status_tab = st.tabs(
-        ["Overview", "Symbols", "Drawdowns", "Calendar", "Journal", "Background Jobs", "System Status"]
-    )
+        [
+            "Overview", "Symbols", "Drawdowns", "Calendar", "Journal",
+            "Background Jobs", "System Status"
+        ])
 
     # Track current tab for feedback context
     if 'current_tab' not in st.session_state:
@@ -1366,33 +1561,44 @@ if selected_file:
 
             # Cap extreme values to prevent infinite accumulation
             max_single_trade = 100000  # Cap single trade at $100k
-            equity_df['pnl'] = equity_df['pnl'].clip(-max_single_trade, max_single_trade)
+            equity_df['pnl'] = equity_df['pnl'].clip(-max_single_trade,
+                                                     max_single_trade)
 
             # Step 2: Clean and validate exit_time
             if 'exit_time' in equity_df.columns:
-                equity_df['exit_time'] = pd.to_datetime(equity_df['exit_time'], errors='coerce')
+                equity_df['exit_time'] = pd.to_datetime(equity_df['exit_time'],
+                                                        errors='coerce')
                 equity_df = equity_df.dropna(subset=['exit_time'])
 
             # Remove invalid dates with more strict validation
             current_time = pd.Timestamp.now()
             min_valid_date = pd.Timestamp('2000-01-01')
-            max_valid_date = current_time + pd.Timedelta(days=7)  # Allow up to 1 week in future
+            max_valid_date = current_time + pd.Timedelta(
+                days=7)  # Allow up to 1 week in future
 
-            valid_date_mask = (
-                (equity_df['exit_time'] >= min_valid_date) & 
-                (equity_df['exit_time'] <= max_valid_date) &
-                (equity_df['exit_time'].notna())
-            )
+            valid_date_mask = ((equity_df['exit_time'] >= min_valid_date) &
+                               (equity_df['exit_time'] <= max_valid_date) &
+                               (equity_df['exit_time'].notna()))
             equity_df = equity_df[valid_date_mask]
 
             # Step 3: Ensure we have valid data for charting
             if equity_df.empty:
-                st.warning("⚠️ Unable to display equity curve: No valid trade data after cleaning")
-                st.info(f"Started with {original_rows} trades, all were removed during data cleaning")
-                st.info("**Common causes:** Invalid P&L values, missing dates, extreme outliers")
+                st.warning(
+                    "⚠️ Unable to display equity curve: No valid trade data after cleaning"
+                )
+                st.info(
+                    f"Started with {original_rows} trades, all were removed during data cleaning"
+                )
+                st.info(
+                    "**Common causes:** Invalid P&L values, missing dates, extreme outliers"
+                )
             elif len(equity_df) < 2:
-                st.warning("⚠️ Unable to display equity curve: Need at least 2 valid trades")
-                st.info(f"Available trades after cleaning: {len(equity_df)} of {original_rows}")
+                st.warning(
+                    "⚠️ Unable to display equity curve: Need at least 2 valid trades"
+                )
+                st.info(
+                    f"Available trades after cleaning: {len(equity_df)} of {original_rows}"
+                )
             else:
                 # Step 4: Sort and create cumulative PnL with additional safety
                 equity_df = equity_df.sort_values('exit_time')
@@ -1417,14 +1623,16 @@ if selected_file:
 
                 if not equity_df.empty and len(equity_df) >= 2:
                     # Step 5: Create chart data with additional safety measures
-                    chart_data = equity_df.set_index('exit_time')['cumulative_pnl']
+                    chart_data = equity_df.set_index(
+                        'exit_time')['cumulative_pnl']
 
                     # Remove any remaining infinite values
                     chart_data = chart_data[np.isfinite(chart_data)]
                     chart_data = chart_data[~np.isinf(chart_data)]
 
                     # Handle duplicate timestamps by keeping the last value
-                    chart_data = chart_data[~chart_data.index.duplicated(keep='last')]
+                    chart_data = chart_data[~chart_data.index.duplicated(
+                        keep='last')]
 
                     # Ensure index is properly formatted datetime
                     chart_data.index = pd.to_datetime(chart_data.index)
@@ -1444,17 +1652,27 @@ if selected_file:
                         # Plot the equity curve
                         st.line_chart(chart_data, height=400)
 
-                        st.caption(f"📊 Equity curve based on {len(equity_df)} valid trades")
+                        st.caption(
+                            f"📊 Equity curve based on {len(equity_df)} valid trades"
+                        )
                     else:
-                        st.warning("⚠️ Unable to display equity curve: Invalid chart data after final validation")
+                        st.warning(
+                            "⚠️ Unable to display equity curve: Invalid chart data after final validation"
+                        )
                         st.info(f"Chart data points: {len(chart_data)}")
                 else:
-                    st.warning("⚠️ Unable to display equity curve: No valid cumulative P&L data")
-                    st.info(f"Trades before cumulative calculation: {len(equity_df)}")
+                    st.warning(
+                        "⚠️ Unable to display equity curve: No valid cumulative P&L data"
+                    )
+                    st.info(
+                        f"Trades before cumulative calculation: {len(equity_df)}"
+                    )
 
         except Exception as e:
             st.error(f"❌ Error generating equity curve: {str(e)}")
-            st.info("**Troubleshooting:** Try using the data validation tool above to clean your data")
+            st.info(
+                "**Troubleshooting:** Try using the data validation tool above to clean your data"
+            )
             # Log the error```python
             import traceback
             st.expander("Technical Details").code(traceback.format_exc())
@@ -1464,7 +1682,8 @@ if selected_file:
             if not perf.empty and len(perf) >= 2:
                 # Clean the performance data more thoroughly
                 clean_perf = perf.copy()
-                clean_perf['pnl'] = pd.to_numeric(clean_perf['pnl'], errors='coerce')
+                clean_perf['pnl'] = pd.to_numeric(clean_perf['pnl'],
+                                                  errors='coerce')
                 clean_perf = clean_perf.dropna(subset=['pnl'])
                 clean_perf = clean_perf[np.isfinite(clean_perf['pnl'])]
                 clean_perf = clean_perf[clean_perf['pnl'] != np.inf]
@@ -1474,9 +1693,13 @@ if selected_file:
                     chart_data = clean_perf.set_index('period')['pnl']
                     st.bar_chart(chart_data)
                 else:
-                    st.warning("⚠️ Unable to display performance chart: Insufficient valid data points after cleaning")
+                    st.warning(
+                        "⚠️ Unable to display performance chart: Insufficient valid data points after cleaning"
+                    )
             else:
-                st.warning("⚠️ Unable to display performance chart: Need at least 2 periods of data")
+                st.warning(
+                    "⚠️ Unable to display performance chart: Need at least 2 periods of data"
+                )
 
         except Exception as e:
             st.error(f"❌ Error generating performance chart: {str(e)}")
@@ -1497,17 +1720,24 @@ if selected_file:
         st.subheader('Trade Duration Analysis')
 
         dur_col1, dur_col2, dur_col3, dur_col4 = st.columns(4)
-        dur_col1.metric('Average Duration', f"{format_number(duration['average_minutes'], 0)} min")
-        dur_col2.metric('Shortest Trade', f"{format_number(duration['min_minutes'], 0)} min")
-        dur_col3.metric('Longest Trade', f"{format_number(duration['max_minutes'], 0)} min")
-        dur_col4.metric('Median Duration', f"{format_number(duration['median_minutes'], 0)} min")
+        dur_col1.metric(
+            'Average Duration',
+            f"{format_number(duration['average_minutes'], 0)} min")
+        dur_col2.metric('Shortest Trade',
+                        f"{format_number(duration['min_minutes'], 0)} min")
+        dur_col3.metric('Longest Trade',
+                        f"{format_number(duration['max_minutes'], 0)} min")
+        dur_col4.metric('Median Duration',
+                        f"{format_number(duration['median_minutes'], 0)} min")
 
         streak = max_streaks(filtered_df)
         st.subheader('Streak Analysis')
 
         streak_col1, streak_col2 = st.columns(2)
-        streak_col1.metric('Max Win Streak', f"{streak['max_win_streak']} trades")
-        streak_col2.metric('Max Loss Streak', f"{streak['max_loss_streak']} trades")
+        streak_col1.metric('Max Win Streak',
+                           f"{streak['max_win_streak']} trades")
+        streak_col2.metric('Max Loss Streak',
+                           f"{streak['max_loss_streak']} trades")
 
         # Rolling metrics with better validation
         min_trades_for_rolling = 15  # Need more than the window size for meaningful analysis
@@ -1523,11 +1753,14 @@ if selected_file:
                     if not rolling.empty:
                         avg_win_rate = rolling['win_rate'].mean()
                         avg_pf = rolling['profit_factor'].mean()
-                        col_r2.metric('Avg Rolling Win Rate', f"{avg_win_rate:.1f}%")
+                        col_r2.metric('Avg Rolling Win Rate',
+                                      f"{avg_win_rate:.1f}%")
                         col_r3.metric('Avg Rolling PF', f"{avg_pf:.2f}")
 
                     # Clean chart data
-                    chart_data = rolling.set_index('end_index')[['win_rate', 'profit_factor']].copy()
+                    chart_data = rolling.set_index('end_index')[[
+                        'win_rate', 'profit_factor'
+                    ]].copy()
 
                     # Replace infinite values and clean data
                     chart_data = chart_data.replace([np.inf, -np.inf], np.nan)
@@ -1536,27 +1769,39 @@ if selected_file:
                     if not chart_data.empty and len(chart_data) >= 2:
                         st.line_chart(chart_data, height=400)
                     else:
-                        st.warning("⚠️ Unable to display rolling metrics chart: Insufficient valid data points after cleaning")
-                        st.info(f"Rolling data generated: {len(rolling)} periods, Chart data after cleaning: {len(chart_data)}")
+                        st.warning(
+                            "⚠️ Unable to display rolling metrics chart: Insufficient valid data points after cleaning"
+                        )
+                        st.info(
+                            f"Rolling data generated: {len(rolling)} periods, Chart data after cleaning: {len(chart_data)}"
+                        )
                 else:
-                    st.warning(f"⚠️ Unable to generate rolling metrics: Generated {len(rolling)} rolling periods (need at least 2)")
-                    st.info(f"Available trades: {len(filtered_df)}, Required for rolling analysis: {min_trades_for_rolling}")
+                    st.warning(
+                        f"⚠️ Unable to generate rolling metrics: Generated {len(rolling)} rolling periods (need at least 2)"
+                    )
+                    st.info(
+                        f"Available trades: {len(filtered_df)}, Required for rolling analysis: {min_trades_for_rolling}"
+                    )
 
             except Exception as e:
-                    st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
-                    logger.error(f"Rolling metrics error: {str(e)}")
+                st.error(f"❌ Error generating rolling metrics chart: {str(e)}")
+                logger.error(f"Rolling metrics error: {str(e)}")
             else:
-                st.info(f"ℹ️ Rolling metrics analysis requires at least {min_trades_for_rolling} trades. You have {len(filtered_df)} trades.")
-                st.caption("Add more trades to see rolling performance analysis over 10-trade windows.")
+                st.info(
+                    f"ℹ️ Rolling metrics analysis requires at least {min_trades_for_rolling} trades. You have {len(filtered_df)} trades."
+                )
+                st.caption(
+                    "Add more trades to see rolling performance analysis over 10-trade windows."
+                )
 
         st.subheader('Trades')
         table_df = compute_trade_result(filtered_df)
 
-            # Calculate Risk-Reward ratio for conditional formatting
+        # Calculate Risk-Reward ratio for conditional formatting
         table_df_formatted = table_df.copy()
 
-            # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
-            # Reward = exit_price - entry_price for long, entry_price - exit_price for short
+        # Calculate RR ratio (Risk = entry_price - stop_loss for long, stop_loss - entry_price for short)
+        # Reward = exit_price - entry_price for long, entry_price - exit_price for short
         def calculate_rr(row):
             entry = float(row['entry_price'])
             exit = float(row['exit_price'])
@@ -1575,17 +1820,19 @@ if selected_file:
 
             return reward / risk if risk > 0 else 0
 
-        table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr, axis=1)
+        table_df_formatted['rr_ratio'] = table_df_formatted.apply(calculate_rr,
+                                                                  axis=1)
 
-            # Create styled dataframe with conditional formatting
+        # Create styled dataframe with conditional formatting
         def style_trades(df):
+
             def highlight_row(row):
                 styles = [''] * len(row)
 
-                    # Get PnL value (handle string values from CSV)
+                # Get PnL value (handle string values from CSV)
                 pnl_val = pd.to_numeric(row['pnl'], errors='coerce')
 
-                    # Get RR value and ensure it's numeric
+                # Get RR value and ensure it's numeric
                 rr_val = row.get('rr_ratio', 0)
                 if isinstance(rr_val, str):
                     try:
@@ -1595,57 +1842,66 @@ if selected_file:
 
                     # Highlight entire row based on conditions
                 if not pd.isna(pnl_val) and pnl_val > 100:
-                        # Green for high P&L trades
-                    styles = ['background-color: #d4edda; color: #155724'] * len(row)
+                    # Green for high P&L trades
+                    styles = ['background-color: #d4edda; color: #155724'
+                              ] * len(row)
                 elif rr_val > 0 and rr_val < 1:
-                        # Red for poor RR trades
-                    styles = ['background-color: #f8d7da; color: #721c24'] * len(row)
+                    # Red for poor RR trades
+                    styles = ['background-color: #f8d7da; color: #721c24'
+                              ] * len(row)
 
                 return styles
 
             return df.style.apply(highlight_row, axis=1)
 
             # Display formatted table
+
         st.subheader('Trades with Conditional Formatting')
         st.caption('🟢 Green: Net P&L > $100 | 🔴 Red: Risk-Reward < 1.0')
 
-            # Prepare display columns
-        display_cols = ['symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss', 
-                               'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time']
-        display_df = table_df_formatted[[col for col in display_cols if col in table_df_formatted.columns]]
+        # Prepare display columns
+        display_cols = [
+            'symbol', 'direction', 'entry_price', 'exit_price', 'stop_loss',
+            'pnl', 'rr_ratio', 'trade_result', 'entry_time', 'exit_time'
+        ]
+        display_df = table_df_formatted[[
+            col for col in display_cols if col in table_df_formatted.columns
+        ]]
 
-            # Format numeric columns properly to avoid pandas warnings
+        # Format numeric columns properly to avoid pandas warnings
         if 'rr_ratio' in display_df.columns:
             display_df = display_df.copy()
-            display_df['rr_ratio'] = display_df['rr_ratio'].apply(lambda x: f"{x:.2f}" if x > 0 else "N/A")
+            display_df['rr_ratio'] = display_df['rr_ratio'].apply(
+                lambda x: f"{x:.2f}" if x > 0 else "N/A")
         if 'pnl' in display_df.columns:
             display_df = display_df.copy()
             pnl_numeric = pd.to_numeric(display_df['pnl'], errors='coerce')
-            display_df['pnl'] = pnl_numeric.apply(lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
+            display_df['pnl'] = pnl_numeric.apply(
+                lambda x: f"${x:.2f}" if not pd.isna(x) else "$0.00")
 
             # Apply styling and display
         styled_df = style_trades(display_df)
         st.dataframe(styled_df, use_container_width=True)
 
-            # Original interactive grid for selection
+        # Original interactive grid for selection
         st.subheader('Interactive Trades Table')
         options = get_grid_options(table_df)
         grid = AgGrid(
-                table_df,
-                gridOptions=options,
-                update_mode=GridUpdateMode.SELECTION_CHANGED,
-                allow_unsafe_jscode=True,
-                fit_columns_on_grid_load=True,
-            )
+            table_df,
+            gridOptions=options,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            allow_unsafe_jscode=True,
+            fit_columns_on_grid_load=True,
+        )
 
         if grid['selected_rows']:
             row = pd.Series(grid['selected_rows'][0])
             details = trade_detail(row)
             with st.modal('Trade Details'):
                 chart_df = pd.DataFrame({
-                        'time': [row['entry_time'], row['exit_time']],
-                        'price': [row['entry_price'], row['exit_price']],
-                    })
+                    'time': [row['entry_time'], row['exit_time']],
+                    'price': [row['entry_price'], row['exit_price']],
+                })
                 st.line_chart(chart_df.set_index('time'))
                 st.write(f"Duration: {details['duration']}")
                 st.write(f"MAE: {details['mae']}  MFE: {details['mfe']}")
@@ -1665,11 +1921,16 @@ if selected_file:
                 grp = symbol_df.groupby('symbol')
 
                 symbol_stats = pd.DataFrame({
-                        'Trades': grp['pnl'].count(),
-                        'Total PnL': grp['pnl'].sum().apply(format_currency),
-                        'Avg PnL': grp['pnl'].mean().apply(format_currency),
-                        'Win Rate': grp['pnl'].apply(lambda x: format_percentage((x > 0).mean() * 100)),
-                    })
+                    'Trades':
+                    grp['pnl'].count(),
+                    'Total PnL':
+                    grp['pnl'].sum().apply(format_currency),
+                    'Avg PnL':
+                    grp['pnl'].mean().apply(format_currency),
+                    'Win Rate':
+                    grp['pnl'].apply(lambda x: format_percentage(
+                        (x > 0).mean() * 100)),
+                })
 
                 st.dataframe(symbol_stats, use_container_width=True)
             else:
@@ -1682,7 +1943,7 @@ if selected_file:
         st.session_state.current_tab = 'Drawdowns'
         equity = stats['equity_curve']
         drawdown = equity.cummax() - equity
-            # Choose colors based on theme
+        # Choose colors based on theme
         if theme == "Light":
             area_color = '#dc2626'  # Professional red for drawdown in light theme
             chart_bg = '#ffffff'
@@ -1692,49 +1953,56 @@ if selected_file:
             chart_bg = '#0e1117'
             text_color = '#fafafa'
 
-        fig = px.area(x=drawdown.index, y=drawdown.values,
-                      labels={'x': 'Trade', 'y': 'Drawdown'},
+        fig = px.area(x=drawdown.index,
+                      y=drawdown.values,
+                      labels={
+                          'x': 'Trade',
+                          'y': 'Drawdown'
+                      },
                       title='Drawdown Analysis')
         fig.update_layout(
             plot_bgcolor=chart_bg,
             paper_bgcolor=chart_bg,
-            font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
+            font=dict(
+                family=
+                "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+                color=text_color),
             title_font_color=text_color,
-            xaxis=dict(
-                color=text_color, 
-                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
-                gridwidth=1,
-                showgrid=True,
-                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                linewidth=2,
-                title='Trade Number'
-            ),
-            yaxis=dict(
-                color=text_color, 
-                gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
-                gridwidth=1,
-                showgrid=True,
-                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                linewidth=2,
-                title='Drawdown ($)'
-            ),
-            margin=dict(l=60, r=60, t=60, b=60)
-        )
-        fig.update_traces(fill='tonexty', fillcolor=area_color, line_color=area_color)
+            xaxis=dict(color=text_color,
+                       gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                       gridwidth=1,
+                       showgrid=True,
+                       linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                       linewidth=2,
+                       title='Trade Number'),
+            yaxis=dict(color=text_color,
+                       gridcolor='#e5e7eb' if theme == "Light" else '#4a4a4a',
+                       gridwidth=1,
+                       showgrid=True,
+                       linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                       linewidth=2,
+                       title='Drawdown ($)'),
+            margin=dict(l=60, r=60, t=60, b=60))
+        fig.update_traces(fill='tonexty',
+                          fillcolor=area_color,
+                          line_color=area_color)
         st.plotly_chart(fig, use_container_width=True)
 
     with calendar_tab:
         st.session_state.current_tab = 'Calendar'
-        daily_pnl = filtered_df.groupby(filtered_df['exit_time'].dt.date)['pnl'].sum()
+        daily_pnl = filtered_df.groupby(
+            filtered_df['exit_time'].dt.date)['pnl'].sum()
         cal_df = daily_pnl.reset_index()
         cal_df.columns = ['date', 'pnl']
         cal_df['date'] = pd.to_datetime(cal_df['date'])
         cal_df['month'] = cal_df['date'].dt.month
         cal_df['day'] = cal_df['date'].dt.day
         pivot = cal_df.pivot(index='day', columns='month', values='pnl')
-            # Choose color scale based on theme
+        # Choose color scale based on theme
         if theme == "Light":
-            color_scale = [[0.0, '#dc2626'], [0.5, '#f3f4f6'], [1.0, '#059669']]  # Professional red-gray-green scale
+            color_scale = [[0.0, '#dc2626'], [0.5, '#f3f4f6'],
+                           [1.0,
+                            '#059669']]  # Professional red-gray-green scale
             chart_bg = '#ffffff'
             text_color = '#1a1a1a'
         else:
@@ -1742,29 +2010,34 @@ if selected_file:
             chart_bg = '#0e1117'
             text_color = '#fafafa'
 
-        fig = px.imshow(pivot, 
-                        labels={'x': 'Month', 'y': 'Day', 'color': 'PnL'},
+        fig = px.imshow(pivot,
+                        labels={
+                            'x': 'Month',
+                            'y': 'Day',
+                            'color': 'PnL'
+                        },
                         aspect='auto',
                         color_continuous_scale=color_scale,
                         title='Daily P&L Calendar Heatmap')
         fig.update_layout(
             plot_bgcolor=chart_bg,
             paper_bgcolor=chart_bg,
-            font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color=text_color),
+            font=dict(
+                family=
+                "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+                color=text_color),
             title_font_color=text_color,
-            xaxis=dict(
-                color=text_color,
-                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                linewidth=2
-            ),
-            yaxis=dict(
-                color=text_color,
-                linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
-                linewidth=2
-            ),
-            margin=dict(l=60, r=60, t=60, b=60)
-        )
-        fig.update_traces(fill='tonexty', fillcolor=color_scale[0][1] if theme == "Light" else area_color, line_color=color_scale[0][1] if theme == "Light" else area_color)
+            xaxis=dict(color=text_color,
+                       linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                       linewidth=2),
+            yaxis=dict(color=text_color,
+                       linecolor='#d1d5db' if theme == "Light" else '#4a4a4a',
+                       linewidth=2),
+            margin=dict(l=60, r=60, t=60, b=60))
+        fig.update_traces(
+            fill='tonexty',
+            fillcolor=color_scale[0][1] if theme == "Light" else area_color,
+            line_color=color_scale[0][1] if theme == "Light" else area_color)
         st.plotly_chart(fig, use_container_width=True)
 
     with journal_tab:
@@ -1775,8 +2048,10 @@ if selected_file:
         if st.button('Add Entry'):
             if note:
                 st.session_state.journal_entries.append({
-                    'date': pd.Timestamp.now().date(),
-                    'note': note,
+                    'date':
+                    pd.Timestamp.now().date(),
+                    'note':
+                    note,
                 })
                 st.success('Entry added')
         if st.session_state.journal_entries:
@@ -1789,7 +2064,7 @@ if selected_file:
     with status_tab:
         st.session_state.current_tab = 'System Status'
 
-            # Real-time sync status
+        # Real-time sync status
         if current_user:
             render_real_time_sync_status(current_user['id'])
 
@@ -1805,11 +2080,13 @@ if selected_file:
                     st.session_state.show_qa_dashboard = True
 
             with qa_col2:
-                if st.button("🛡️ Security Dashboard", use_container_width=True):
+                if st.button("🛡️ Security Dashboard",
+                             use_container_width=True):
                     st.session_state.show_security_dashboard = True
 
             with qa_col3:
-                if st.button("📋 Compliance Dashboard", use_container_width=True):
+                if st.button("📋 Compliance Dashboard",
+                             use_container_width=True):
                     st.session_state.show_compliance_dashboard = True
 
             # Show QA Dashboard Modal
@@ -1844,37 +2121,30 @@ if selected_file:
 
             st.divider()
 
-                # Error help center
+            # Error help center
             show_error_help_center()
 
             st.divider()
 
-                # System alerts and notifications
+            # System alerts and notifications
             col1, col2 = st.columns(2)
 
             with col1:
                 if st.button("🧪 Test Success Notification"):
-                    create_system_alert(
-                            "Test Success", 
-                            "This is a test success notification",
-                            NotificationType.SUCCESS,
-                            NotificationPriority.LOW
-                        )
+                    create_system_alert("Test Success",
+                                        "This is a test success notification",
+                                        NotificationType.SUCCESS,
+                                        NotificationPriority.LOW)
                     st.rerun()
 
             with col2:
                 if st.button("🧪 Test Error Notification"):
                     create_system_alert(
-                            "Test Error", 
-                            "This is a test error notification",
-                            NotificationType.ERROR,
-                            NotificationPriority.HIGH,
-                            [
-                                "1. Check system logs",
-                                "2. Verify configuration",
-                                "3. Contact support if needed"
-                            ]
-                        )
+                        "Test Error", "This is a test error notification",
+                        NotificationType.ERROR, NotificationPriority.HIGH, [
+                            "1. Check system logs", "2. Verify configuration",
+                            "3. Contact support if needed"
+                        ])
                     st.rerun()
         else:
             st.warning("Please login to view system status")
@@ -1888,20 +2158,28 @@ if selected_file:
     if 'max_daily_loss' not in st.session_state:
         st.session_state.max_daily_loss = 500.0
 
-    account_size = st.number_input('Account Size', value=st.session_state.account_size, key='account_size')
-    risk_per_trade = st.number_input('Risk % per Trade', value=st.session_state.risk_per_trade, key='risk_per_trade')
-    max_daily_loss = st.number_input('Max Daily Loss', value=st.session_state.max_daily_loss, key='max_daily_loss')
+    account_size = st.number_input('Account Size',
+                                   value=st.session_state.account_size,
+                                   key='account_size')
+    risk_per_trade = st.number_input('Risk % per Trade',
+                                     value=st.session_state.risk_per_trade,
+                                     key='risk_per_trade')
+    max_daily_loss = st.number_input('Max Daily Loss',
+                                     value=st.session_state.max_daily_loss,
+                                     key='max_daily_loss')
 
     risk = {}
     if st.button('Assess Risk'):
-        risk = assess_risk(filtered_df, account_size, risk_per_trade, max_daily_loss)
+        risk = assess_risk(filtered_df, account_size, risk_per_trade,
+                           max_daily_loss)
         if risk['risk_alert']:
             st.error(risk['risk_alert'])
         st.write(risk)
 
     if risk:
         pdf_bytes = generate_pdf(stats, risk)
-        st.download_button('Download Analytics Report', pdf_bytes, 'analytics_report.pdf')
+        st.download_button('Download Analytics Report', pdf_bytes,
+                           'analytics_report.pdf')
 
     # Integration Management Section
     with st.expander("🔗 Broker & Prop Firm Integrations", expanded=False):
@@ -1930,7 +2208,9 @@ if selected_file:
             load_results = load_connectors()
             st.session_state.connectors_loaded = True
             if load_results['errors']:
-                st.warning(f"⚠️ {len(load_results['errors'])} connector loading errors")
+                st.warning(
+                    f"⚠️ {len(load_results['errors'])} connector loading errors"
+                )
                 with st.expander("View Errors"):
                     for error in load_results['errors']:
                         st.error(f"File: {error['file']} - {error['error']}")
@@ -1942,15 +2222,16 @@ if selected_file:
         if available_connectors:
             st.write(f"**Available Connectors:** {len(available_connectors)}")
 
-            connector_options = [f"{conn['name']} ({conn.get('type', 'unknown')})" 
-                               for conn in available_connectors if 'error' not in conn]
+            connector_options = [
+                f"{conn['name']} ({conn.get('type', 'unknown')})"
+                for conn in available_connectors if 'error' not in conn
+            ]
 
             if connector_options:
                 selected_connector = st.selectbox(
                     "Select Connector:",
                     options=[""] + connector_options,
-                    help="Choose a connector to import trade data"
-                )
+                    help="Choose a connector to import trade data")
 
                 if selected_connector:
                     connector_name = selected_connector.split(' (')[0]
@@ -1961,7 +2242,9 @@ if selected_file:
                         metadata = instance.get_metadata()
 
                         st.write(f"**Connector Type:** {metadata['type']}")
-                        st.write(f"**Supported Formats:** {', '.join(metadata['supported_formats'])}")
+                        st.write(
+                            f"**Supported Formats:** {', '.join(metadata['supported_formats'])}"
+                        )
 
                         # Configuration form
                         if metadata['config_required']:
@@ -1973,111 +2256,173 @@ if selected_file:
                                     uploaded_file = st.file_uploader(
                                         f"Upload {metadata['supported_formats'][0].upper()} file",
                                         type=metadata['supported_formats'],
-                                        key=f"connector_{connector_name}_file"
-                                    )
+                                        key=f"connector_{connector_name}_file")
                                     if uploaded_file:
                                         # Save uploaded file temporarily
                                         import tempfile
-                                        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
-                                            tmp_file.write(uploaded_file.getvalue())
+                                        with tempfile.NamedTemporaryFile(
+                                                delete=False,
+                                                suffix=
+                                                f".{uploaded_file.name.split('.')[-1]}"
+                                        ) as tmp_file:
+                                            tmp_file.write(
+                                                uploaded_file.getvalue())
                                             config['file_path'] = tmp_file.name
                                 else:
                                     config[config_key] = st.text_input(
                                         f"{config_key.replace('_', ' ').title()}:",
-                                        key=f"connector_{connector_name}_{config_key}",
-                                        type="password" if "secret" in config_key.lower() or "key" in config_key.lower() else "default"
-                                    )
+                                        key=
+                                        f"connector_{connector_name}_{config_key}",
+                                        type="password" if
+                                        "secret" in config_key.lower() or "key"
+                                        in config_key.lower() else "default")
 
                             # Test connection and import data
                             col_test, col_import = st.columns(2)
 
                             with col_test:
-                                if st.button("🔍 Test Connection", key=f"test_{connector_name}"):
+                                if st.button("🔍 Test Connection",
+                                             key=f"test_{connector_name}"):
                                     if all(config.values()):
-                                        with st.spinner("Testing connection..."):
+                                        with st.spinner(
+                                                "Testing connection..."):
                                             # Authenticate
-                                            auth_success = instance.authenticate(config)
+                                            auth_success = instance.authenticate(
+                                                config)
                                             if auth_success:
                                                 # Test data quality
-                                                test_result = test_connector(connector_name, config)
+                                                test_result = test_connector(
+                                                    connector_name, config)
 
-                                                if test_result['connection_status'] == 'ok':
-                                                    st.success("✅ Connection successful!")
+                                                if test_result[
+                                                        'connection_status'] == 'ok':
+                                                    st.success(
+                                                        "✅ Connection successful!"
+                                                    )
 
-                                                    quality = test_result['quality_report']
-                                                    if quality['status'] == 'success':
-                                                        st.success(f"📊 Sample data: {quality['sample_size']} trades")
-                                                        if quality['missing_required']:
-                                                            st.warning(f"⚠️ Missing columns: {', '.join(quality['missing_required'])}")
+                                                    quality = test_result[
+                                                        'quality_report']
+                                                    if quality[
+                                                            'status'] == 'success':
+                                                        st.success(
+                                                            f"📊 Sample data: {quality['sample_size']} trades"
+                                                        )
+                                                        if quality[
+                                                                'missing_required']:
+                                                            st.warning(
+                                                                f"⚠️ Missing columns: {', '.join(quality['missing_required'])}"
+                                                            )
                                                     else:
-                                                        st.error(f"❌ Data quality issue: {quality.get('message', 'Unknown error')}")
+                                                        st.error(
+                                                            f"❌ Data quality issue: {quality.get('message', 'Unknown error')}"
+                                                        )
                                                 else:
-                                                    st.error("❌ Connection failed")
+                                                    st.error(
+                                                        "❌ Connection failed")
                                             else:
-                                                st.error("❌ Authentication failed")
+                                                st.error(
+                                                    "❌ Authentication failed")
                                     else:
-                                        st.warning("Please fill in all required configuration fields")
+                                        st.warning(
+                                            "Please fill in all required configuration fields"
+                                        )
 
                             with col_import:
-                                if st.button("📥 Import Data", key=f"import_{connector_name}", type="primary"):
+                                if st.button("📥 Import Data",
+                                             key=f"import_{connector_name}",
+                                             type="primary"):
                                     if all(config.values()):
-                                        with st.spinner("Importing trade data..."):
+                                        with st.spinner(
+                                                "Importing trade data..."):
                                             try:
                                                 # Authenticate and fetch data
-                                                auth_success = instance.authenticate(config)
+                                                auth_success = instance.authenticate(
+                                                    config)
                                                 if auth_success:
-                                                    raw_trades = instance.fetch_trades()
+                                                    raw_trades = instance.fetch_trades(
+                                                    )
                                                     if raw_trades:
-                                                        normalized_df = instance.normalize_data(raw_trades)
+                                                        normalized_df = instance.normalize_data(
+                                                            raw_trades)
 
                                                         if not normalized_df.empty:
                                                             # Clear old cache
-                                                            st.cache_data.clear()
+                                                            st.cache_data.clear(
+                                                            )
 
                                                             # Merge with existing data if available
                                                             if 'merged_df' in st.session_state or not df.empty:
-                                                                existing_df = st.session_state.get('merged_df', df)
-                                                                merged_df = pd.concat([existing_df, normalized_df], ignore_index=True)
-                                                                st.session_state['merged_df'] = merged_df
+                                                                existing_df = st.session_state.get(
+                                                                    'merged_df',
+                                                                    df)
+                                                                merged_df = pd.concat(
+                                                                    [
+                                                                        existing_df,
+                                                                        normalized_df
+                                                                    ],
+                                                                    ignore_index
+                                                                    =True)
+                                                                st.session_state[
+                                                                    'merged_df'] = merged_df
                                                             else:
-                                                                st.session_state['merged_df'] = normalized_df
+                                                                st.session_state[
+                                                                    'merged_df'] = normalized_df
 
-                                                            st.session_state['data_updated'] = True
+                                                            st.session_state[
+                                                                'data_updated'] = True
 
-                                                            st.success(f"🎉 Imported {len(normalized_df)} trades from {connector_name}")
-                                                            st.info("🔄 Page will refresh to show updated analytics...")
+                                                            st.success(
+                                                                f"🎉 Imported {len(normalized_df)} trades from {connector_name}"
+                                                            )
+                                                            st.info(
+                                                                "🔄 Page will refresh to show updated analytics..."
+                                                            )
                                                             st.rerun()
                                                         else:
-                                                            st.warning("No valid trade data found after normalization")
+                                                            st.warning(
+                                                                "No valid trade data found after normalization"
+                                                            )
                                                     else:
-                                                        st.warning("No trade data available from connector")
+                                                        st.warning(
+                                                            "No trade data available from connector"
+                                                        )
                                                 else:
-                                                    st.error("Authentication failed")
+                                                    st.error(
+                                                        "Authentication failed"
+                                                    )
                                             except Exception as e:
-                                                st.error(f"Import error: {str(e)}")
+                                                st.error(
+                                                    f"Import error: {str(e)}")
                                     else:
-                                        st.warning("Please complete configuration first")
+                                        st.warning(
+                                            "Please complete configuration first"
+                                        )
                         else:
-                            st.info("No configuration required for this connector")
+                            st.info(
+                                "No configuration required for this connector")
 
                     except Exception as e:
                         st.error(f"Error loading connector: {str(e)}")
             else:
                 st.warning("No working connectors available")
         else:
-            st.warning("No connectors found. Check connector loading errors above.")
+            st.warning(
+                "No connectors found. Check connector loading errors above.")
 
     # External CSV Upload Section
     st.subheader('📂 Import External CSV Trades')
 
     with st.expander("Import CSV Trade Data", expanded=False):
-        st.write("Upload a CSV file with your trade history to merge with existing data.")
+        st.write(
+            "Upload a CSV file with your trade history to merge with existing data."
+        )
 
         external_csv = st.file_uploader(
-            "Choose CSV file", 
-            type=['csv'], 
+            "Choose CSV file",
+            type=['csv'],
             key="external_csv_upload",
-            help="Upload CSV with columns: symbol, entry_time, exit_time, entry_price, exit_price, qty, direction, pnl, trade_type, broker"
+            help=
+            "Upload CSV with columns: symbol, entry_time, exit_time, entry_price, exit_price, qty, direction, pnl, trade_type, broker"
         )
 
         if external_csv is not None:
@@ -2104,13 +2449,16 @@ if selected_file:
                     estimated_valid = quality_report['valid_rows']
                     total_rows = quality_report['total_rows']
                     if estimated_valid < total_rows:
-                        st.info(f"📈 **Estimated valid trades after cleaning:** {estimated_valid} of {total_rows} ({(estimated_valid/total_rows*100):.1f}%)")
+                        st.info(
+                            f"📈 **Estimated valid trades after cleaning:** {estimated_valid} of {total_rows} ({(estimated_valid/total_rows*100):.1f}%)"
+                        )
 
                 st.write("**Column validation:**")
-# Use universal model for normalization and validation
+                # Use universal model for normalization and validation
                 try:
                     # Convert to universal model
-                    trade_model = importer.normalize_to_universal_model(external_df, "external_csv")
+                    trade_model = importer.normalize_to_universal_model(
+                        external_df, "external_csv")
                     normalized_df = trade_model.get_dataframe()
 
                     if normalized_df.empty:
@@ -2131,30 +2479,47 @@ if selected_file:
                         st.metric("Total P&L", f"${total_pnl:,.2f}")
 
                     # Merge data using advanced deduplication
-                    if st.button("🔄 Merge with Existing Data", key="merge_external_csv"):
+                    if st.button("🔄 Merge with Existing Data",
+                                 key="merge_external_csv"):
                         try:
                             from trade_entry_manager import trade_manager
 
                             # Use trade manager with deduplication
-                            result = trade_manager.add_file_trades(normalized_df, "external_csv", current_user['id'])
+                            result = trade_manager.add_file_trades(
+                                normalized_df, "external_csv",
+                                current_user['id'])
 
                             if result['status'] == 'success':
                                 st.success(f"🎉 **Advanced Merge Complete!**")
-                                st.success(f"• Processed {result.get('deduplication_summary', {}).get('original_count', len(normalized_df))} trades")
-                                st.success(f"• Added {result['trades_added']} unique trades")
+                                st.success(
+                                    f"• Processed {result.get('deduplication_summary', {}).get('original_count', len(normalized_df))} trades"
+                                )
+                                st.success(
+                                    f"• Added {result['trades_added']} unique trades"
+                                )
 
                                 # Show deduplication results
-                                if 'internal_duplicates_removed' in result and result['internal_duplicates_removed'] > 0:
-                                    st.success(f"• Removed {result['internal_duplicates_removed']} internal duplicates")
+                                if 'internal_duplicates_removed' in result and result[
+                                        'internal_duplicates_removed'] > 0:
+                                    st.success(
+                                        f"• Removed {result['internal_duplicates_removed']} internal duplicates"
+                                    )
 
-                                if 'cross_source_duplicates_removed' in result and result['cross_source_duplicates_removed'] > 0:
-                                    st.success(f"• Removed {result['cross_source_duplicates_removed']} cross-source duplicates")
+                                if 'cross_source_duplicates_removed' in result and result[
+                                        'cross_source_duplicates_removed'] > 0:
+                                    st.success(
+                                        f"• Removed {result['cross_source_duplicates_removed']} cross-source duplicates"
+                                    )
 
-                                if 'conflicts_requiring_review' in result and result['conflicts_requiring_review'] > 0:
-                                    st.warning(f"⚠️ {result['conflicts_requiring_review']} trades require manual review")
+                                if 'conflicts_requiring_review' in result and result[
+                                        'conflicts_requiring_review'] > 0:
+                                    st.warning(
+                                        f"⚠️ {result['conflicts_requiring_review']} trades require manual review"
+                                    )
 
                                 # Get unified data from trade manager
-                                unified_df = trade_manager.get_all_trades_dataframe()
+                                unified_df = trade_manager.get_all_trades_dataframe(
+                                )
 
                                 if not unified_df.empty:
                                     # Clear old cache before saving new data
@@ -2167,13 +2532,17 @@ if selected_file:
                                     # Force garbage collection after data operations
                                     gc.collect()
 
-                                    st.info("🔄 **Page will refresh to show updated analytics...**")
+                                    st.info(
+                                        "🔄 **Page will refresh to show updated analytics...**"
+                                    )
                                     st.rerun()
                                 else:
                                     st.warning("No data available after merge")
 
                             else:
-                                st.error(f"❌ Merge failed: {result.get('message', 'Unknown error')}")
+                                st.error(
+                                    f"❌ Merge failed: {result.get('message', 'Unknown error')}"
+                                )
 
                         except Exception as e:
                             st.error(f"❌ Merge failed: {str(e)}")
@@ -2181,12 +2550,17 @@ if selected_file:
 
                             # Fallback to original merge logic
                             existing_model = UniversalTradeDataModel()
-                            existing_model = existing_model.from_dataframe(df, "existing")
+                            existing_model = existing_model.from_dataframe(
+                                df, "existing")
 
-                            new_trades = [TradeRecord.from_dict(row.to_dict()) for _, row in normalized_df.iterrows()]
+                            new_trades = [
+                                TradeRecord.from_dict(row.to_dict())
+                                for _, row in normalized_df.iterrows()
+                            ]
                             existing_model.add_trades(new_trades)
 
-                            duplicates_removed = existing_model.remove_duplicates()
+                            duplicates_removed = existing_model.remove_duplicates(
+                            )
                             merged_df = existing_model.get_dataframe()
 
                             if len(merged_df) > len(df):
@@ -2205,38 +2579,36 @@ if selected_file:
     col_download1, col_download2, col_download3 = st.columns(3)
 
     with col_download1:
-        st.download_button(
-            'Download All Trades CSV',
-            df.to_csv(index=False),
-            'all_trades.csv',
-            help="Download complete trade dataset"
-        )
+        st.download_button('Download All Trades CSV',
+                           df.to_csv(index=False),
+                           'all_trades.csv',
+                           help="Download complete trade dataset")
 
     with col_download2:
-        st.download_button(
-            'Download Filtered Trades CSV',
-            filtered_df.to_csv(index=False),
-            'filtered_trades.csv',
-            help=f"Download {len(filtered_df)} filtered trades"
-        )
+        st.download_button('Download Filtered Trades CSV',
+                           filtered_df.to_csv(index=False),
+                           'filtered_trades.csv',
+                           help=f"Download {len(filtered_df)} filtered trades")
 
     with col_download3:
         # Generate comprehensive PDF report
         try:
-            comprehensive_pdf_bytes = generate_comprehensive_pdf(filtered_df, kpis, stats)
+            comprehensive_pdf_bytes = generate_comprehensive_pdf(
+                filtered_df, kpis, stats)
             st.download_button(
                 '📄 Download PDF Report',
                 comprehensive_pdf_bytes,
                 f'tradesense_report_{pd.Timestamp.now().strftime("%Y%m%d_%H%M")}.pdf',
-                help=f"Download comprehensive PDF report with {len(filtered_df)} filtered trades, KPIs, and analytics",
-                type="primary"
-            )
+                help=
+                f"Download comprehensive PDF report with {len(filtered_df)} filtered trades, KPIs, and analytics",
+                type="primary")
         except Exception as e:
             st.error(f"Error generating PDF report: {str(e)}")
             # Fallback to basic PDF
             if risk:
                 pdf_bytes = generate_pdf(stats, risk)
-                st.download_button('📄 Download Basic PDF Report', pdf_bytes, 'basic_analytics_report.pdf')
+                st.download_button('📄 Download Basic PDF Report', pdf_bytes,
+                                   'basic_analytics_report.pdf')
 
     # Trade Entry Form
     st.subheader('Manual Trade Entry')
@@ -2245,12 +2617,24 @@ if selected_file:
 
         with col1:
             symbol = st.text_input('Symbol', placeholder='e.g. AAPL, TSLA')
-            entry_price = st.number_input('Entry Price', min_value=0.0, step=0.01, format="%.2f")
-            exit_price = st.number_input('Exit Price', min_value=0.0, step=0.01, format="%.2f")
-            stop_loss = st.number_input('Stop Loss', min_value=0.0, step=0.01, format="%.2f")
+            entry_price = st.number_input('Entry Price',
+                                          min_value=0.0,
+                                          step=0.01,
+                                          format="%.2f")
+            exit_price = st.number_input('Exit Price',
+                                         min_value=0.0,
+                                         step=0.01,
+                                         format="%.2f")
+            stop_loss = st.number_input('Stop Loss',
+                                        min_value=0.0,
+                                        step=0.01,
+                                        format="%.2f")
 
         with col2:
-            trade_size = st.number_input('Trade Size', min_value=0.0, step=0.01, format="%.2f")
+            trade_size = st.number_input('Trade Size',
+                                         min_value=0.0,
+                                         step=0.01,
+                                         format="%.2f")
             direction = st.selectbox('Direction', options=['long', 'short'])
             result = st.selectbox('Result', options=['win', 'loss'])
 
@@ -2261,7 +2645,11 @@ if selected_file:
 
         with col_tag1:
             # Predefined tag suggestions
-            suggested_tags = ['scalp', 'swing', 'breakout', 'reversal', 'momentum', 'support', 'resistance', 'earnings', 'news', 'gap', 'pullback', 'bounce', 'trend', 'counter-trend']
+            suggested_tags = [
+                'scalp', 'swing', 'breakout', 'reversal', 'momentum',
+                'support', 'resistance', 'earnings', 'news', 'gap', 'pullback',
+                'bounce', 'trend', 'counter-trend'
+            ]
 
             # Get existing tags from current trades if file exists
             existing_tags = set(suggested_tags)
@@ -2272,19 +2660,25 @@ if selected_file:
                     if 'tags' in existing_trades.columns:
                         for tag_string in existing_trades['tags'].dropna():
                             if tag_string and str(tag_string).strip():
-                                existing_tag_list = [tag.strip() for tag in str(tag_string).split(',')]
+                                existing_tag_list = [
+                                    tag.strip()
+                                    for tag in str(tag_string).split(',')
+                                ]
                                 try:
-                                  existing_tags.update(existing_tag_list)
+                                    existing_tags.update(existing_tag_list)
                                 except:
                                     pass
                 except:
                     pass
 
             available_tags = sorted(list(existing_tags))
-            selected_tags = st.multiselect("Tags (select or create new)", options=available_tags, default=[])
+            selected_tags = st.multiselect("Tags (select or create new)",
+                                           options=available_tags,
+                                           default=[])
 
         with col_tag2:
-            new_tag = st.text_input("Create new tag", placeholder="Enter new tag name")
+            new_tag = st.text_input("Create new tag",
+                                    placeholder="Enter new tag name")
             if st.button("Add new tag"):
                 if new_tag and new_tag.strip():
                     selected_tags.append(new_tag.strip())
@@ -2294,25 +2688,43 @@ if selected_file:
 
         if submitted:
             # Validate required fields
-            if not all([symbol, entry_price, exit_price, trade_size, direction, result]):
+            if not all([
+                    symbol, entry_price, exit_price, trade_size, direction,
+                    result
+            ]):
                 st.error("Please fill in all required fields.")
                 st.stop()
 
             # Prepare data for the new trade entry
             new_trade = {
-                'symbol': symbol,
-                'entry_time': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'exit_time': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'entry_price': float(entry_price),
-                'exit_price': float(exit_price),
-                'qty': float(trade_size),
-                'direction': direction,
-                'pnl': float(exit_price - entry_price) * float(trade_size) if direction == 'long' else float(entry_price - exit_price) * float(trade_size),
-                'trade_type': result,
-                'broker': 'Manual Entry',
-                'tags': ','.join(selected_tags) if selected_tags else '',
-                'stop_loss': float(stop_loss) if stop_loss else 0.0,
-                'notes': notes
+                'symbol':
+                symbol,
+                'entry_time':
+                pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'exit_time':
+                pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'entry_price':
+                float(entry_price),
+                'exit_price':
+                float(exit_price),
+                'qty':
+                float(trade_size),
+                'direction':
+                direction,
+                'pnl':
+                float(exit_price - entry_price) * float(trade_size)
+                if direction == 'long' else float(entry_price - exit_price) *
+                float(trade_size),
+                'trade_type':
+                result,
+                'broker':
+                'Manual Entry',
+                'tags':
+                ','.join(selected_tags) if selected_tags else '',
+                'stop_loss':
+                float(stop_loss) if stop_loss else 0.0,
+                'notes':
+                notes
             }
 
             # Handle user association
@@ -2326,7 +2738,8 @@ if selected_file:
                 # Try to load existing data
                 try:
                     existing_trades = pd.read_csv('trades.csv')
-                    all_trades = pd.concat([existing_trades, new_trade_df], ignore_index=True)
+                    all_trades = pd.concat([existing_trades, new_trade_df],
+                                           ignore_index=True)
                 except FileNotFoundError:
                     all_trades = new_trade_df
 
@@ -2337,7 +2750,9 @@ if selected_file:
                 st.error(f"Error adding trade: {str(e)}")
 
 # Console error detection script at end of file
-    st.error("The application encountered an unexpected error. Please see details below:")
+    st.error(
+        "The application encountered an unexpected error. Please see details below:"
+    )
 
     # Show error details
     with st.expander("🔍 **Error Information**", expanded=True):
@@ -2346,7 +2761,9 @@ if selected_file:
 
         # Get traceback
         import traceback
-        tb_str = ''.join(traceback.format_exception(type(main_error), main_error, main_error.__traceback__))
+        tb_str = ''.join(
+            traceback.format_exception(type(main_error), main_error,
+                                       main_error.__traceback__))
         st.code(tb_str)
 
     # Troubleshooting guide
@@ -2373,12 +2790,14 @@ if selected_file:
 
     # Additional help
     st.warning("If the error persists after trying the above steps:")
-    st.write("1. Check the console/browser developer tools for additional errors")
+    st.write(
+        "1. Check the console/browser developer tools for additional errors")
     st.write("2. Try using a different browser or incognito/private mode")
     st.write("3. Report the error details above to support")
 
     # Log the error
-    logger.error(f"Critical application error: {str(main_error)}", exc_info=True)
+    logger.error(f"Critical application error: {str(main_error)}",
+                 exc_info=True)
 
 # Console error detection
 st.write("""
@@ -2405,4 +2824,5 @@ console.error = function(...args) {
     console.log('Console Error Captured:', args);
 };
 </script>
-""", unsafe_allow_html=True)
+""",
+         unsafe_allow_html=True)

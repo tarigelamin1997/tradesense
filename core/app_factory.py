@@ -432,8 +432,10 @@ class AppFactory:
             st.markdown("## 🎯 Performance by Symbol")
             symbol_performance = analytics.get('symbol_performance', [])
             
+            # Import pandas at the start to avoid scope issues
+            import pandas as pd
+            
             if symbol_performance is not None and len(symbol_performance) > 0:
-                import pandas as pd
                 df_symbols = pd.DataFrame(symbol_performance)
                 if not df_symbols.empty:
                     # Create attractive columns for symbol metrics
@@ -501,7 +503,6 @@ class AppFactory:
             monthly_performance = analytics.get('monthly_performance', [])
             
             if monthly_performance is not None and len(monthly_performance) > 0:
-                import pandas as pd
                 df_monthly = pd.DataFrame(monthly_performance)
                 if not df_monthly.empty:
                     # Create tabs for different views
@@ -630,7 +631,6 @@ class AppFactory:
             rolling_metrics = analytics.get('rolling_metrics', [])
             
             if rolling_metrics is not None and len(rolling_metrics) > 0:
-                import pandas as pd
                 try:
                     df_rolling = pd.DataFrame(rolling_metrics)
                     if not df_rolling.empty and len(df_rolling) > 0:

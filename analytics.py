@@ -29,6 +29,26 @@ def log_debug_info(context: str, data):
     else:
         logger.debug(f"{context}: {data}")
 
+# Module availability check (without UI messages)
+def check_module_availability():
+    """Check if analytics modules are available without displaying messages."""
+    analytics_available = True
+    interactive_table_available = True
+    
+    try:
+        import streamlit as st
+        import pandas as pd
+        import numpy as np
+    except ImportError:
+        analytics_available = False
+    
+    try:
+        from st_aggrid import AgGrid
+    except ImportError:
+        interactive_table_available = False
+    
+    return analytics_available, interactive_table_available
+
 def format_currency(value, default="–"):
     """Format currency values with $ and 2 decimal places."""
     try:

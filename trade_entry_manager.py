@@ -25,6 +25,21 @@ except ImportError:
     CENTRALIZED_LOGGING = False
     logger = logging.getLogger(__name__)
 
+# Check module availability without displaying warnings
+ANALYTICS_AVAILABLE = True
+INTERACTIVE_TABLE_AVAILABLE = True
+
+try:
+    import analytics
+except ImportError:
+    ANALYTICS_AVAILABLE = False
+
+try:
+    import interactive_table
+    from st_aggrid import AgGrid
+except ImportError:
+    INTERACTIVE_TABLE_AVAILABLE = False
+
 
 class TradeEntryManager:
     """Universal manager for all trade entry sources with unified analytics."""

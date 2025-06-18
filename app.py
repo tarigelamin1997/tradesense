@@ -1,17 +1,35 @@
-import streamlit as st
-import os
+#!/usr/bin/env python3
+"""TradeSense - Production Entry Point"""
+
 import sys
+import os
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
 
 # Fix Python path for Replit .pythonlibs
 pythonlibs_path = "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages"
 if pythonlibs_path not in sys.path:
     sys.path.insert(0, pythonlibs_path)
 
-# Security configuration
-st.set_page_config(page_title="TradeSense Analytics",
-                   page_icon="📈",
-                   layout="wide",
-                   initial_sidebar_state="expanded")
+# Production startup
+if __name__ == "__main__":
+    try:
+        from startup import main
+        main()
+    except ImportError:
+        # Fallback to direct import if startup module not available
+        print("⚠️ Using fallback startup mode")
+        import streamlit as st
+        
+        st.set_page_config(
+            page_title="TradeSense Analytics",
+            page_icon="📈", 
+            layout="wide",
+            initial_sidebar_state="expanded"
+        )
 
 
 def validate_security_environment():
@@ -71,9 +89,16 @@ from fpdf import FPDF
 
 # Global error handler for debugging
 def handle_streamlit_error():
-    """Display detailed error information for debugging."""
+    """Display detailed error information for debugging with proper logging."""
     exc_type, exc_value, exc_traceback = sys.exc_info()
     if exc_type is not None:
+        # Log error for monitoring
+        error_id = str(uuid.uuid4())[:8]
+        logger.error(f"Error ID {error_id}: {exc_type.__name__}: {str(exc_value)}", exc_info=True)
+        
+        # Show user-friendly error with tracking ID
+        st.error(f"🚨 **Application Error** (ID: {error_id})")
+        st.info("This error has been logged for investigation.")
         st.error("🚨 **Application Error Detected**")
 
         with st.expander("🔍 **Error Details**", expanded=True):
@@ -168,14 +193,17 @@ def display_error_ui(message: str) -> None:
     st.error(f"❌ Error: {message}")
 
 
-@st.cache_data
+@st.cache_data(ttl=300, max_entries=2)  # 5 minute TTL, max 2 entries
 def load_cached_trade_data(file_path_or_content):
-    """Cached version of trade data loading."""
+    """Cached version of trade data loading with proper limits."""
     if isinstance(file_path_or_content, str):
-        # File path
         return load_trade_data(file_path_or_content)
     else:
-        # File content - convert to string for hashing
+        # Convert file content to bytes for proper hashing
+        if hasattr(file_path_or_content, 'read'):
+            content = file_path_or_content.read()
+            file_path_or_content.seek(0)  # Reset file pointer
+            return load_trade_data(file_path_or_content)
         return load_trade_data(file_path_or_content)
 
 
@@ -1353,9 +1381,18 @@ if selected_file:
 
     st.divider()
 
-    # Use cached expensive calculations with graceful P&L handling
-    filtered_df_hash = hash(
-        f"{len(filtered_df)}_{hash(str(symbols))}_{hash(str(directions))}")
+    # Use cached expensive calculations with efficient hashing
+    try:
+        # Create hash from key properties to avoid expensive string operations
+        hash_components = [
+            len(filtered_df),
+            len(symbols) if symbols else 0,
+            len(directions) if directions else 0,
+            filtered_df['pnl'].sum() if 'pnl' in filtered_df.columns and not filtered_df.empty else 0
+        ]
+        filtered_df_hash = hash(tuple(hash_components))
+    except Exception:
+        filtered_df_hash = hash(f"fallback_{len(filtered_df)}")
 
     with st.spinner("Computing available analytics..."):
         # Only process P&L if the column exists

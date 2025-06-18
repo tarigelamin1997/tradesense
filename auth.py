@@ -533,6 +533,11 @@ def require_auth(func):
             st.error("🔒 Authentication required")
             st.stop()
         
+        # Ensure user has required fields
+        if not isinstance(user, dict) or 'id' not in user:
+            st.error("🔒 Invalid user session. Please log in again.")
+            st.stop()
+        
         # Add user to kwargs
         kwargs['current_user'] = user
         return func(*args, **kwargs)

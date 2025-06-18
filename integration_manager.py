@@ -280,6 +280,11 @@ def render_integration_management_ui(current_user: Dict):
     st.subheader("🔗 Broker & Prop Firm Integrations")
     st.caption("Connect and manage your trading accounts for automatic data sync")
     
+    # Validate current_user data
+    if not current_user or 'id' not in current_user:
+        st.error("❌ User authentication error. Please try logging in again.")
+        st.stop()
+    
     integration_manager = IntegrationManager()
     user_id = current_user['id']
     

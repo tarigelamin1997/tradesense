@@ -360,15 +360,61 @@ class AppFactory:
             st.markdown("## 🔥 Streak Analysis & Trading Psychology")
             streaks = analytics.get('streaks', {})
             
-            # Create a prominent container for streak analysis
+            # Create a prominent container for streak analysis with enhanced styling
             with st.container():
-                st.markdown("### Consecutive Trade Performance")
+                # Add custom CSS for better visual appeal
+                st.markdown("""
+                <style>
+                .streak-container {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 2rem;
+                    border-radius: 15px;
+                    margin: 1rem 0;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+                }
+                .streak-title {
+                    color: white;
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    text-align: center;
+                    margin-bottom: 1.5rem;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                }
+                .metric-container {
+                    background: rgba(255,255,255,0.1);
+                    backdrop-filter: blur(10px);
+                    border-radius: 10px;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    border: 1px solid rgba(255,255,255,0.2);
+                }
+                .insight-box {
+                    background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    margin: 1rem 0;
+                    color: white;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                }
+                .psychology-box {
+                    background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    margin: 1rem 0;
+                    color: white;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                st.markdown('<div class="streak-container">', unsafe_allow_html=True)
+                st.markdown('<div class="streak-title">⚡ Consecutive Trade Performance Analysis ⚡</div>', unsafe_allow_html=True)
                 
                 # Get streak values
                 max_win_streak = streaks.get('max_win_streak', 0)
                 max_loss_streak = streaks.get('max_loss_streak', 0)
                 
-                # Main streak display
+                # Main streak display with enhanced visuals
                 streak_col1, streak_col2, streak_col3, streak_col4 = st.columns([1, 1, 1, 1])
                 
                 with streak_col1:
@@ -377,29 +423,43 @@ class AppFactory:
                         win_streak_emoji = "🔥🔥🔥"
                         win_streak_color = "🟢"
                         win_streak_desc = "EXCEPTIONAL"
+                        win_streak_bg = "#00C851"
                     elif max_win_streak >= 10:
                         win_streak_emoji = "🔥🔥"
                         win_streak_color = "🟢"
                         win_streak_desc = "EXCELLENT"
+                        win_streak_bg = "#4CAF50"
                     elif max_win_streak >= 5:
                         win_streak_emoji = "🔥"
                         win_streak_color = "🟡"
                         win_streak_desc = "GOOD"
+                        win_streak_bg = "#FFC107"
                     elif max_win_streak >= 3:
                         win_streak_emoji = "✨"
                         win_streak_color = "🟡"
                         win_streak_desc = "MODERATE"
+                        win_streak_bg = "#FF9800"
                     else:
                         win_streak_emoji = "📈"
                         win_streak_color = "🔴"
                         win_streak_desc = "LOW"
+                        win_streak_bg = "#F44336"
                     
-                    st.metric(
-                        label=f"**{win_streak_emoji} Longest Win Streak**", 
-                        value=f"{max_win_streak} consecutive wins",
-                        delta=f"{win_streak_color} {win_streak_desc}",
-                        help=f"Your best winning streak shows discipline and strategy execution. {max_win_streak} wins in a row!"
-                    )
+                    # Custom styled metric box
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, {win_streak_bg} 0%, {win_streak_bg}80 100%); 
+                                padding: 1.5rem; border-radius: 15px; text-align: center; 
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 1rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">{win_streak_emoji}</div>
+                        <div style="color: white; font-weight: bold; font-size: 1.1rem;">Longest Win Streak</div>
+                        <div style="color: white; font-size: 2.5rem; font-weight: bold; margin: 0.5rem 0;">{max_win_streak}</div>
+                        <div style="color: white; opacity: 0.9;">consecutive wins</div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 20px; 
+                                    margin-top: 0.5rem; display: inline-block;">
+                            <span style="color: white; font-weight: bold;">{win_streak_desc}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 with streak_col2:
                     # Enhanced loss streak display
@@ -407,29 +467,43 @@ class AppFactory:
                         loss_streak_emoji = "❄️❄️❄️"
                         loss_streak_color = "🔴"
                         loss_streak_desc = "CONCERNING"
+                        loss_streak_bg = "#D32F2F"
                     elif max_loss_streak >= 10:
                         loss_streak_emoji = "❄️❄️"
                         loss_streak_color = "🔴"
                         loss_streak_desc = "HIGH"
+                        loss_streak_bg = "#F44336"
                     elif max_loss_streak >= 5:
                         loss_streak_emoji = "❄️"
                         loss_streak_color = "🟡"
                         loss_streak_desc = "MODERATE"
+                        loss_streak_bg = "#FF9800"
                     elif max_loss_streak >= 3:
                         loss_streak_emoji = "📉"
                         loss_streak_color = "🟡"
                         loss_streak_desc = "NORMAL"
+                        loss_streak_bg = "#FFC107"
                     else:
                         loss_streak_emoji = "🔻"
                         loss_streak_color = "🟢"
                         loss_streak_desc = "EXCELLENT"
+                        loss_streak_bg = "#4CAF50"
                     
-                    st.metric(
-                        label=f"**{loss_streak_emoji} Longest Loss Streak**", 
-                        value=f"{max_loss_streak} consecutive losses",
-                        delta=f"{loss_streak_color} {loss_streak_desc}",
-                        help=f"Risk management is key. Your worst streak was {max_loss_streak} losses in a row."
-                    )
+                    # Custom styled metric box for loss streak
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, {loss_streak_bg} 0%, {loss_streak_bg}80 100%); 
+                                padding: 1.5rem; border-radius: 15px; text-align: center; 
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 1rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">{loss_streak_emoji}</div>
+                        <div style="color: white; font-weight: bold; font-size: 1.1rem;">Longest Loss Streak</div>
+                        <div style="color: white; font-size: 2.5rem; font-weight: bold; margin: 0.5rem 0;">{max_loss_streak}</div>
+                        <div style="color: white; opacity: 0.9;">consecutive losses</div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 20px; 
+                                    margin-top: 0.5rem; display: inline-block;">
+                            <span style="color: white; font-weight: bold;">{loss_streak_desc}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 with streak_col3:
                     # Streak Recovery Ratio
@@ -438,33 +512,42 @@ class AppFactory:
                         if recovery_ratio >= 2.0:
                             recovery_emoji = "🚀"
                             recovery_desc = "STRONG RECOVERY"
-                            recovery_color = "🟢"
+                            recovery_bg = "#00C851"
                         elif recovery_ratio >= 1.5:
                             recovery_emoji = "⚡"
                             recovery_desc = "GOOD RECOVERY"
-                            recovery_color = "🟡"
+                            recovery_bg = "#4CAF50"
                         elif recovery_ratio >= 1.0:
                             recovery_emoji = "🎯"
                             recovery_desc = "BALANCED"
-                            recovery_color = "🟡"
+                            recovery_bg = "#FFC107"
                         else:
                             recovery_emoji = "⚠️"
                             recovery_desc = "NEEDS WORK"
-                            recovery_color = "🔴"
+                            recovery_bg = "#F44336"
                         
-                        st.metric(
-                            label=f"**{recovery_emoji} Recovery Power**", 
-                            value=f"{recovery_ratio:.1f}x ratio",
-                            delta=f"{recovery_color} {recovery_desc}",
-                            help=f"Win streak vs loss streak ratio. Higher is better for psychological resilience."
-                        )
+                        recovery_value = f"{recovery_ratio:.1f}x"
                     else:
-                        st.metric(
-                            label="**🎯 Recovery Power**", 
-                            value="Perfect!",
-                            delta="🟢 No significant streaks",
-                            help="Balanced trading without extreme streaks"
-                        )
+                        recovery_emoji = "🎯"
+                        recovery_desc = "BALANCED"
+                        recovery_bg = "#4CAF50"
+                        recovery_value = "∞"
+                    
+                    # Custom styled metric box for recovery power
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, {recovery_bg} 0%, {recovery_bg}80 100%); 
+                                padding: 1.5rem; border-radius: 15px; text-align: center; 
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 1rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">{recovery_emoji}</div>
+                        <div style="color: white; font-weight: bold; font-size: 1.1rem;">Recovery Power</div>
+                        <div style="color: white; font-size: 2.5rem; font-weight: bold; margin: 0.5rem 0;">{recovery_value}</div>
+                        <div style="color: white; opacity: 0.9;">win/loss ratio</div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 20px; 
+                                    margin-top: 0.5rem; display: inline-block;">
+                            <span style="color: white; font-weight: bold;">{recovery_desc}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 with streak_col4:
                     # Psychological Impact Score
@@ -481,71 +564,119 @@ class AppFactory:
                     if psychology_score >= 80:
                         psych_emoji = "🧠✨"
                         psych_desc = "EXCELLENT MINDSET"
-                        psych_color = "🟢"
+                        psych_bg = "#00C851"
                     elif psychology_score >= 60:
                         psych_emoji = "🧠"
                         psych_desc = "SOLID PSYCHOLOGY"
-                        psych_color = "🟡"
+                        psych_bg = "#4CAF50"
                     elif psychology_score >= 40:
                         psych_emoji = "🤔"
                         psych_desc = "ROOM FOR GROWTH"
-                        psych_color = "🟡"
+                        psych_bg = "#FFC107"
                     else:
                         psych_emoji = "😤"
                         psych_desc = "FOCUS ON DISCIPLINE"
-                        psych_color = "🔴"
+                        psych_bg = "#F44336"
                     
-                    st.metric(
-                        label=f"**{psych_emoji} Psychology Score**", 
-                        value=f"{psychology_score}/100",
-                        delta=f"{psych_color} {psych_desc}",
-                        help="Based on streak patterns. Good traders minimize loss streaks and build win streaks."
-                    )
+                    # Custom styled metric box for psychology score
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, {psych_bg} 0%, {psych_bg}80 100%); 
+                                padding: 1.5rem; border-radius: 15px; text-align: center; 
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 1rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">{psych_emoji}</div>
+                        <div style="color: white; font-weight: bold; font-size: 1.1rem;">Psychology Score</div>
+                        <div style="color: white; font-size: 2.5rem; font-weight: bold; margin: 0.5rem 0;">{psychology_score}</div>
+                        <div style="color: white; opacity: 0.9;">out of 100</div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 20px; 
+                                    margin-top: 0.5rem; display: inline-block;">
+                            <span style="color: white; font-weight: bold;">{psych_desc}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
-                # Add streak insights
+                st.markdown('</div>', unsafe_allow_html=True)  # Close streak-container
+                
+                # Enhanced streak insights with beautiful styling
                 st.markdown("---")
-                st.markdown("### 🧠 **Streak Insights & Psychology**")
+                
+                # Key Observations Section
+                st.markdown('<div class="insight-box">', unsafe_allow_html=True)
+                st.markdown("### 💡 **Key Observations & Insights**")
                 
                 insight_col1, insight_col2 = st.columns(2)
                 
                 with insight_col1:
-                    st.markdown("#### 💡 **Key Observations**")
+                    st.markdown("#### 🎯 **Win Streak Analysis**")
                     if max_win_streak >= 10:
-                        st.success(f"🔥 **Hot Hand Effect**: Your {max_win_streak}-trade win streak shows excellent momentum trading!")
+                        st.markdown(f"🔥 **Hot Hand Effect**: Your **{max_win_streak}-trade** win streak shows excellent momentum trading!")
                     elif max_win_streak >= 5:
-                        st.info(f"✨ **Solid Execution**: {max_win_streak} consecutive wins demonstrates good strategy consistency.")
+                        st.markdown(f"✨ **Solid Execution**: **{max_win_streak}** consecutive wins demonstrates good strategy consistency.")
                     else:
-                        st.warning(f"📈 **Build Momentum**: Work on extending win streaks beyond {max_win_streak} trades.")
+                        st.markdown(f"📈 **Build Momentum**: Work on extending win streaks beyond **{max_win_streak}** trades.")
                     
-                    if max_loss_streak <= 3:
-                        st.success(f"🛡️ **Excellent Risk Control**: Max {max_loss_streak} losses shows great discipline!")
-                    elif max_loss_streak <= 5:
-                        st.info(f"⚖️ **Good Discipline**: {max_loss_streak} max losses is within acceptable range.")
-                    else:
-                        st.error(f"⚠️ **Risk Alert**: {max_loss_streak} consecutive losses - review risk management!")
+                    # Win streak quality assessment
+                    if max_win_streak >= 15:
+                        st.markdown("🌟 **Elite Performance**: You're in the top 5% of traders with this streak!")
+                    elif max_win_streak >= 10:
+                        st.markdown("🏆 **Professional Level**: This streak indicates strong psychological control.")
                 
                 with insight_col2:
-                    st.markdown("#### 📊 **Performance Psychology**")
+                    st.markdown("#### 🛡️ **Risk Control Analysis**")
+                    if max_loss_streak <= 3:
+                        st.markdown(f"🛡️ **Excellent Risk Control**: Max **{max_loss_streak}** losses shows great discipline!")
+                    elif max_loss_streak <= 5:
+                        st.markdown(f"⚖️ **Good Discipline**: **{max_loss_streak}** max losses is within acceptable range.")
+                    else:
+                        st.markdown(f"⚠️ **Risk Alert**: **{max_loss_streak}** consecutive losses - review risk management!")
                     
+                    # Loss streak impact assessment
+                    if max_loss_streak <= 5:
+                        st.markdown("💎 **Diamond Hands**: You cut losses quickly and maintain discipline.")
+                    elif max_loss_streak <= 8:
+                        st.markdown("⚡ **Room for Improvement**: Consider tighter stop-loss protocols.")
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Performance Psychology Section
+                st.markdown('<div class="psychology-box">', unsafe_allow_html=True)
+                st.markdown("### 🧠 **Performance Psychology Analysis**")
+                
+                psych_col1, psych_col2 = st.columns(2)
+                
+                with psych_col1:
+                    st.markdown("#### 📈 **Momentum Metrics**")
                     # Calculate streak efficiency
                     total_possible_streaks = max_win_streak + max_loss_streak
                     if total_possible_streaks > 0:
                         win_streak_pct = (max_win_streak / total_possible_streaks) * 100
-                        st.write(f"**Positive Momentum**: {win_streak_pct:.1f}% of your extreme streaks were winning streaks")
+                        st.markdown(f"**Positive Momentum**: **{win_streak_pct:.1f}%** of your extreme streaks were winning streaks")
                     
+                    # Streak momentum indicator
+                    momentum_score = (max_win_streak / (max_loss_streak + 1)) * 10
+                    if momentum_score >= 20:
+                        st.markdown("🚀 **Momentum Master**: You build and maintain winning streaks effectively!")
+                    elif momentum_score >= 15:
+                        st.markdown("⚡ **Strong Momentum**: You capitalize well on winning opportunities.")
+                    else:
+                        st.markdown("🎯 **Build Momentum**: Focus on extending profitable runs.")
+                
+                with psych_col2:
+                    st.markdown("#### 🎭 **Trading Psychology**")
                     # Streak balance analysis
                     if max_win_streak > max_loss_streak * 1.5:
-                        st.success("🎯 **Momentum Trader**: You excel at riding winning streaks!")
+                        st.markdown("🎯 **Momentum Trader**: You excel at riding winning streaks!")
                     elif max_loss_streak > max_win_streak * 1.5:
-                        st.warning("🛑 **Risk Review**: Loss streaks exceed win streaks - check your strategy!")
+                        st.markdown("🛑 **Risk Review**: Loss streaks exceed win streaks - check your strategy!")
                     else:
-                        st.info("⚖️ **Balanced Approach**: Your streaks show measured risk-taking.")
+                        st.markdown("⚖️ **Balanced Approach**: Your streaks show measured risk-taking.")
                     
                     # Provide actionable advice
                     if max_loss_streak >= 7:
-                        st.error("💡 **Tip**: Consider implementing a 'circuit breaker' after 3-5 consecutive losses.")
+                        st.markdown("💡 **Pro Tip**: Consider implementing a 'circuit breaker' after 3-5 consecutive losses.")
                     elif max_win_streak >= 10:
-                        st.success("💡 **Tip**: Document what you did during your win streak to replicate success!")
+                        st.markdown("💡 **Pro Tip**: Document what you did during your win streak to replicate success!")
+                
+                st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown("---")
             

@@ -454,45 +454,45 @@ class AppFactory:
                                     help="Profit Factor"
                                 )
                 else:
-                    # Enhanced empty state for symbols
-                    st.markdown("""
-                    <div style="
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        padding: 2rem;
-                        border-radius: 15px;
-                        text-align: center;
-                        color: white;
-                        margin: 1rem 0;
-                    ">
-                        <h3 style="margin: 0; color: white;">🚀 Symbol Analysis Coming Soon!</h3>
-                        <p style="margin: 0.5rem 0; opacity: 0.9;">Upload more trades to see detailed performance breakdowns by trading instrument</p>
-                        <div style="margin-top: 1rem;">
-                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Profit Factors</span>
-                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🎯 Win Rates</span>
-                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">💰 P&L Analysis</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.info("📊 Symbol performance data is being processed...")
             else:
-                # Enhanced empty state for symbols
-                st.markdown("""
-                <div style="
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 2rem;
-                    border-radius: 15px;
-                    text-align: center;
-                    color: white;
-                    margin: 1rem 0;
-                ">
-                    <h3 style="margin: 0; color: white;">🚀 Symbol Analysis Coming Soon!</h3>
-                    <p style="margin: 0.5rem 0; opacity: 0.9;">Upload more trades to see detailed performance breakdowns by trading instrument</p>
-                    <div style="margin-top: 1rem;">
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Profit Factors</span>
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🎯 Win Rates</span>
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">💰 P&L Analysis</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                # Get the actual trade data to show symbol performance manually
+                trade_data = st.session_state.get('trade_data')
+                if trade_data is not None and not trade_data.empty:
+                    # Calculate symbol performance manually
+                    if 'symbol' in trade_data.columns and 'pnl' in trade_data.columns:
+                        symbol_stats = []
+                        for symbol in trade_data['symbol'].unique():
+                            symbol_trades = trade_data[trade_data['symbol'] == symbol]
+                            total_trades = len(symbol_trades)
+                            total_pnl = symbol_trades['pnl'].sum()
+                            wins = len(symbol_trades[symbol_trades['pnl'] > 0])
+                            losses = len(symbol_trades[symbol_trades['pnl'] < 0])
+                            win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+                            
+                            # Calculate profit factor
+                            gross_profit = symbol_trades[symbol_trades['pnl'] > 0]['pnl'].sum()
+                            gross_loss = abs(symbol_trades[symbol_trades['pnl'] < 0]['pnl'].sum())
+                            profit_factor = gross_profit / gross_loss if gross_loss > 0 else gross_profit if gross_profit > 0 else 0
+                            
+                            symbol_stats.append({
+                                'Symbol': symbol,
+                                'Trades': total_trades,
+                                'Total P&L': f"${total_pnl:,.2f}",
+                                'Win Rate': f"{win_rate:.1f}%",
+                                'Profit Factor': f"{profit_factor:.2f}"
+                            })
+                        
+                        if symbol_stats:
+                            st.markdown("### 📊 Performance by Symbol")
+                            df_symbols = pd.DataFrame(symbol_stats)
+                            st.dataframe(df_symbols, use_container_width=True)
+                        else:
+                            st.info("📊 No symbol data available")
+                    else:
+                        st.info("📊 Symbol or P&L data not found in trade data")
+                else:
+                    st.info("📊 No trade data available for symbol analysis")
             
             st.markdown("---")
             
@@ -540,72 +540,90 @@ class AppFactory:
                     with month_tab2:
                         st.markdown("### Performance Visualization")
                         if 'pnl' in df_monthly.columns:
-                            import plotly.graph_objects as go
-                            
-                            fig = go.Figure()
-                            
-                            # Add bar chart for monthly P&L
-                            colors = ['green' if x > 0 else 'red' for x in df_monthly['pnl']]
-                            fig.add_trace(go.Bar(
-                                x=df_monthly['period'].astype(str),
-                                y=df_monthly['pnl'],
-                                marker_color=colors,
-                                name='Monthly P&L',
-                                text=[f'${x:,.0f}' for x in df_monthly['pnl']],
-                                textposition='outside'
-                            ))
-                            
-                            fig.update_layout(
-                                title='📈 Monthly Performance Breakdown',
-                                xaxis_title='Month',
-                                yaxis_title='P&L ($)',
-                                showlegend=False,
-                                height=400
-                            )
-                            
-                            st.plotly_chart(fig, use_container_width=True)
+                            try:
+                                import plotly.graph_objects as go
+                                
+                                fig = go.Figure()
+                                
+                                # Add bar chart for monthly P&L
+                                colors = ['green' if x > 0 else 'red' for x in df_monthly['pnl']]
+                                fig.add_trace(go.Bar(
+                                    x=df_monthly['period'].astype(str),
+                                    y=df_monthly['pnl'],
+                                    marker_color=colors,
+                                    name='Monthly P&L',
+                                    text=[f'${x:,.0f}' for x in df_monthly['pnl']],
+                                    textposition='outside'
+                                ))
+                                
+                                fig.update_layout(
+                                    title='📈 Monthly Performance Breakdown',
+                                    xaxis_title='Month',
+                                    yaxis_title='P&L ($)',
+                                    showlegend=False,
+                                    height=400
+                                )
+                                
+                                st.plotly_chart(fig, use_container_width=True)
+                            except ImportError:
+                                st.line_chart(df_monthly.set_index('period')['pnl'], height=400)
                         else:
                             st.line_chart(df_monthly.set_index('period').select_dtypes(include=[np.number]))
                 else:
-                    # Enhanced empty state for monthly performance
-                    st.markdown("""
-                    <div style="
-                        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-                        padding: 2rem;
-                        border-radius: 15px;
-                        text-align: center;
-                        color: white;
-                        margin: 1rem 0;
-                    ">
-                        <h3 style="margin: 0; color: white;">📈 Monthly Trends Await!</h3>
-                        <p style="margin: 0.5rem 0; opacity: 0.9;">Track your trading performance across different months and seasons</p>
-                        <div style="margin-top: 1rem;">
-                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📊 Monthly Charts</span>
-                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🔄 Seasonal Patterns</span>
-                            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Growth Trends</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.info("📅 Monthly performance data is being processed...")
             else:
-                # Enhanced empty state for monthly performance
-                st.markdown("""
-                <div style="
-                    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-                    padding: 2rem;
-                    border-radius: 15px;
-                    text-align: center;
-                    color: white;
-                    margin: 1rem 0;
-                ">
-                    <h3 style="margin: 0; color: white;">📈 Monthly Trends Await!</h3>
-                    <p style="margin: 0.5rem 0; opacity: 0.9;">Track your trading performance across different months and seasons</p>
-                    <div style="margin-top: 1rem;">
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📊 Monthly Charts</span>
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">🔄 Seasonal Patterns</span>
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.5rem;">📈 Growth Trends</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                # Get the actual trade data to show monthly performance manually
+                trade_data = st.session_state.get('trade_data')
+                if trade_data is not None and not trade_data.empty:
+                    # Calculate monthly performance manually
+                    if 'exit_time' in trade_data.columns and 'pnl' in trade_data.columns:
+                        try:
+                            trade_data_copy = trade_data.copy()
+                            trade_data_copy['exit_time'] = pd.to_datetime(trade_data_copy['exit_time'], errors='coerce')
+                            trade_data_copy = trade_data_copy.dropna(subset=['exit_time'])
+                            
+                            if not trade_data_copy.empty:
+                                # Group by month-year
+                                trade_data_copy['month_year'] = trade_data_copy['exit_time'].dt.to_period('M')
+                                monthly_stats = trade_data_copy.groupby('month_year').agg({
+                                    'pnl': ['sum', 'count', lambda x: (x > 0).sum()]
+                                }).round(2)
+                                
+                                monthly_stats.columns = ['Total P&L', 'Total Trades', 'Winning Trades']
+                                monthly_stats['Win Rate'] = (monthly_stats['Winning Trades'] / monthly_stats['Total Trades'] * 100).round(1)
+                                monthly_stats.index = monthly_stats.index.astype(str)
+                                
+                                st.markdown("### 📅 Monthly Performance")
+                                
+                                # Display metrics
+                                if len(monthly_stats) > 0:
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        best_month_idx = monthly_stats['Total P&L'].idxmax()
+                                        best_pnl = monthly_stats.loc[best_month_idx, 'Total P&L']
+                                        st.metric("🏆 Best Month", f"${best_pnl:,.2f}", delta=f"{best_month_idx}")
+                                    with col2:
+                                        avg_monthly = monthly_stats['Total P&L'].mean()
+                                        st.metric("📊 Avg Monthly", f"${avg_monthly:,.2f}")
+                                    with col3:
+                                        profitable_months = len(monthly_stats[monthly_stats['Total P&L'] > 0])
+                                        total_months = len(monthly_stats)
+                                        st.metric("✅ Success Rate", f"{profitable_months}/{total_months}", 
+                                                delta=f"{profitable_months/total_months*100:.1f}%")
+                                
+                                # Display table
+                                st.dataframe(monthly_stats, use_container_width=True)
+                                
+                                # Simple chart
+                                st.bar_chart(monthly_stats['Total P&L'])
+                            else:
+                                st.info("📅 No valid date data for monthly analysis")
+                        except Exception as e:
+                            st.error(f"📅 Error calculating monthly performance: {str(e)}")
+                    else:
+                        st.info("📅 Exit time or P&L data not found in trade data")
+                else:
+                    st.info("📅 No trade data available for monthly analysis")
             
             # Rolling Metrics
             st.subheader("📊 Rolling Performance (10-trade windows)")

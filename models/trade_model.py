@@ -148,23 +148,29 @@ class TradeRecord:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'TradeRecord':
         """Create TradeRecord from dictionary."""
-        # Handle enum conversion
-        if isinstance(data.get('direction'), str):
-            data['direction'] = TradeDirection(data['direction'].lower())
+        # Get expected fields from the class
+        expected_fields = {field.name for field in cls.__dataclass_fields__.values()}
         
-        if isinstance(data.get('trade_type'), str):
-            data['trade_type'] = TradeType(data['trade_type'].lower())
+        # Filter data to only include expected fields
+        filtered_data = {k: v for k, v in data.items() if k in expected_fields}
+        
+        # Handle enum conversion
+        if isinstance(filtered_data.get('direction'), str):
+            filtered_data['direction'] = TradeDirection(filtered_data['direction'].lower())
+        
+        if isinstance(filtered_data.get('trade_type'), str):
+            filtered_data['trade_type'] = TradeType(filtered_data['trade_type'].lower())
         
         # Handle datetime conversion
         for time_field in ['entry_time', 'exit_time', 'import_timestamp']:
-            if time_field in data and isinstance(data[time_field], str):
-                data[time_field] = pd.to_datetime(data[time_field])
+            if time_field in filtered_data and isinstance(filtered_data[time_field], str):
+                filtered_data[time_field] = pd.to_datetime(filtered_data[time_field])
         
         # Handle tags conversion
-        if 'tags' in data and isinstance(data['tags'], str):
-            data['tags'] = [tag.strip() for tag in data['tags'].split(',') if tag.strip()]
+        if 'tags' in filtered_data and isinstance(filtered_data['tags'], str):
+            filtered_data['tags'] = [tag.strip() for tag in filtered_data['tags'].split(',') if tag.strip()]
         
-        return cls(**data)
+        return cls(**filtered_data)
 
 class UniversalTradeDataModel:
     """Universal data model for managing trade records from all sources."""

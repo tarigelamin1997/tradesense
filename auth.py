@@ -295,6 +295,7 @@ class AuthDatabase:
         if session:
             return {
                 "user_id": session[0],
+                "id": session[0],  # Add 'id' field for compatibility
                 "partner_id": session[1],
                 "email": session[2],
                 "first_name": session[3],
@@ -512,7 +513,18 @@ class AuthManager:
         """Get current authenticated user."""
         session_id = st.session_state.get('session_id')
         if session_id:
-            return self.db.validate_session(session_id)
+            session_data = self.db.validate_session(session_id)
+            if session_data:
+                # Ensure the session data has the expected structure
+                return {
+                    "id": session_data.get("user_id"),
+                    "email": session_data.get("email"),
+                    "first_name": session_data.get("first_name"),
+                    "last_name": session_data.get("last_name"),
+                    "partner_id": session_data.get("partner_id"),
+                    "partner_role": session_data.get("partner_role"),
+                    "subscription_tier": session_data.get("subscription_tier")
+                }
         return None
     
     def logout_user(self) -> None:

@@ -49,7 +49,7 @@ def main():
 
             if current_user:
                 st.session_state.authenticated = True
-                st.session_state.user_id = current_user.get('user_id')
+                st.session_state.user_id = current_user.get('id') or current_user.get('user_id')
                 st.rerun()
         else:
             # User is authenticated, show main application

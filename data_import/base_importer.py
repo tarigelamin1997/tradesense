@@ -27,28 +27,28 @@ class BaseImporter(ABC):
             raise ValueError(f"Missing required columns: {missing}")
         cols = REQUIRED_COLUMNS + [c for c in OPTIONAL_COLUMNS if c in df.columns]
         return df[cols]
-    
+
     def normalize_to_universal_model(self, df: pd.DataFrame, data_source: str = "csv") -> UniversalTradeDataModel:
         """Convert DataFrame to universal trade data model."""
         try:
             # Create universal model from DataFrame
             model = UniversalTradeDataModel()
             model = model.from_dataframe(df, data_source)
-            
+
             # Validate and clean
             report = model.validate_all()
-            
+
             # Remove duplicates
             duplicates_removed = model.remove_duplicates()
-            
+
             if duplicates_removed > 0:
                 print(f"Removed {duplicates_removed} duplicate trades")
-            
+
             return model
-            
+
         except Exception as e:
             raise ValueError(f"Failed to normalize data: {str(e)}")
-    
+
     def validate_data_quality(self, df: pd.DataFrame) -> dict:
         """Validate data quality and return a detailed report."""
         report = {
@@ -57,11 +57,11 @@ class BaseImporter(ABC):
             'issues': [],
             'warnings': []
         }
-        
+
         if df.empty:
             report['issues'].append("Dataset is empty")
             return report
-        
+
         # Check for missing values in critical columns
         critical_cols = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price']
         for col in critical_cols:
@@ -69,7 +69,7 @@ class BaseImporter(ABC):
                 missing_count = df[col].isna().sum()
                 if missing_count > 0:
                     report['warnings'].append(f"{col}: {missing_count} missing values")
-        
+
         # Check for invalid dates
         if 'entry_time' in df.columns and 'exit_time' in df.columns:
             try:
@@ -80,7 +80,7 @@ class BaseImporter(ABC):
                     report['warnings'].append(f"Found {invalid_dates} trades with exit_time <= entry_time")
             except Exception:
                 report['issues'].append("Unable to parse datetime columns")
-        
+
         # Check for invalid prices
         price_cols = ['entry_price', 'exit_price']
         for col in price_cols:
@@ -92,15 +92,15 @@ class BaseImporter(ABC):
                         report['warnings'].append(f"{col}: {negative_prices} non-positive values")
                 except Exception:
                     report['issues'].append(f"Unable to convert {col} to numeric")
-        
+
         # Estimate valid rows after basic cleaning
         valid_mask = pd.Series(True, index=df.index)
-        
+
         # Remove rows with missing critical data
         for col in critical_cols:
             if col in df.columns:
                 valid_mask &= df[col].notna()
-        
+
         report['valid_rows'] = valid_mask.sum()
-        
+
         return report

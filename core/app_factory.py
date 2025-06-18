@@ -223,10 +223,13 @@ class AppFactory:
             st.subheader("🎯 Performance by Symbol")
             symbol_performance = analytics.get('symbol_performance', [])
             
-            if symbol_performance:
+            if symbol_performance and len(symbol_performance) > 0:
                 import pandas as pd
                 df_symbols = pd.DataFrame(symbol_performance)
-                st.dataframe(df_symbols, use_container_width=True)
+                if not df_symbols.empty:
+                    st.dataframe(df_symbols, use_container_width=True)
+                else:
+                    st.info("No symbol performance data available")
             else:
                 st.info("No symbol performance data available")
             
@@ -234,7 +237,7 @@ class AppFactory:
             st.subheader("📅 Monthly Performance")
             monthly_performance = analytics.get('monthly_performance', [])
             
-            if monthly_performance:
+            if monthly_performance and len(monthly_performance) > 0:
                 import pandas as pd
                 df_monthly = pd.DataFrame(monthly_performance)
                 if not df_monthly.empty:
@@ -252,7 +255,7 @@ class AppFactory:
             st.subheader("📊 Rolling Performance (10-trade windows)")
             rolling_metrics = analytics.get('rolling_metrics', [])
             
-            if rolling_metrics:
+            if rolling_metrics and len(rolling_metrics) > 0:
                 import pandas as pd
                 df_rolling = pd.DataFrame(rolling_metrics)
                 if not df_rolling.empty and len(df_rolling) > 0:

@@ -315,7 +315,8 @@ class AppFactory:
             
             # Enhanced Performance Analysis Section
             st.markdown("## ⏱️ Trade Duration & Timing Analysis")
-            duration_stats = analytics.get('duration_stats', {})
+            # Get duration stats from the correct key
+            duration_stats = analytics.get('trade_duration_stats', {})
             
             # Create an attractive container for duration stats
             with st.container():

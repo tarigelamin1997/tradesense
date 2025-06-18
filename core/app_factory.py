@@ -685,6 +685,10 @@ class AppFactory:
             median_results = analytics.get('median_results', {})
             basic_stats = analytics.get('basic_stats', {})
             
+            # Import pandas for distribution analysis
+            import pandas as pd
+            import numpy as np
+            
             # Add enhanced CSS for distribution analysis
             st.markdown("""
             <style>

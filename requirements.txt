@@ -13,7 +13,7 @@ psutil==5.9.6
 apscheduler==3.10.4
 bleach==6.1.0
 flask-cors==4.0.0
-fpdf==4.0.1
+fpdf2==2.7.4
 passlib==1.7.4
 plotly==5.17.0
 pyjwt==2.8.0

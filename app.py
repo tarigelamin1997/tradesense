@@ -52,7 +52,7 @@ from interactive_table import (
     get_grid_options,
     trade_detail,
 )
-from fpdf import FPDF
+from fpdf2 import FPDF
 
 # Debug configuration - removed duplicate set_page_config
 

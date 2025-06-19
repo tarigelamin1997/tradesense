@@ -71,6 +71,14 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "export PYTHONPATH=\"$PWD\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export LD_LIBRARY_PATH=\"/nix/store/*-glibc-*/lib:/nix/store/*-gcc-*/lib\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "pkill -f streamlit || true"
 
 [[workflows.workflow.tasks]]
@@ -79,8 +87,16 @@ args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "python -m pip install --no-cache-dir --upgrade pip"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "pip install --no-cache-dir -r core-requirements.txt"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false"
+args = "python -c \"import pandas, numpy, streamlit; print('Dependencies OK')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --logger.level=error"

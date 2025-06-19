@@ -1,29 +1,36 @@
+
 modules = ["python-3.12"]
-run = "streamlit run app.py"
 
-[nix]
-channel = "stable-24_05"
-packages = ["glibcLocales"]
+[run]
+command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
 
-[deployment]
-run = ["sh", "-c", "streamlit run app.py"]
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
+[interpreter]
+modules = ["python-3.12"]
 
 [workflows]
-runButton = "Run"
+runButton = "Run TradeSense"
 
 [[workflows.workflow]]
-name = "Run"
+name = "Run TradeSense"
 author = 43683701
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableXsrfProtection=false"
+args = "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[nix]
+channel = "stable-24_05"
+packages = ["cargo", "glibcLocales", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
+
+[deployment]
+run = ["sh", "-c", "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --server.maxUploadSize=50"]
+deploymentTarget = "cloudrun"
+
+[env]
+PYTHONUNBUFFERED = "1"
+PYTHONPATH = "/home/runner/${REPL_SLUG}"

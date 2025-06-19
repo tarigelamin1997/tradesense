@@ -80,6 +80,16 @@ def main():
 
         if st.button("🔄 Retry Loading"):
             st.rerun()
+            
+    except ValueError as e:
+        if "truth value of a DataFrame is ambiguous" in str(e):
+            st.error("❌ DataFrame Comparison Error: Please refresh the page")
+            logger.error(f"DataFrame ambiguity error: {str(e)}")
+            if st.button("🔄 Refresh Page"):
+                st.rerun()
+        else:
+            st.error(f"❌ Value Error: {str(e)}")
+            show_debug_info()
 
     except Exception as e:
         st.error(f"❌ Application Error: {str(e)}")

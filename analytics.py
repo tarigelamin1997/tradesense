@@ -357,14 +357,14 @@ def trade_duration_stats(df: pd.DataFrame) -> dict:
         return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
 
     df = df.copy()
-    
+
     # Ensure datetime conversion
     df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
     df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
-    
+
     # Remove rows with invalid dates
     df = df.dropna(subset=['entry_time', 'exit_time'])
-    
+
     # Additional validation - ensure exit_time is after entry_time
     df = df[df['exit_time'] > df['entry_time']]
 
@@ -374,10 +374,10 @@ def trade_duration_stats(df: pd.DataFrame) -> dict:
 
     # Calculate duration in minutes
     df['duration'] = (df['exit_time'] - df['entry_time']).dt.total_seconds() / 60
-    
+
     # Remove any negative or zero durations
     df = df[df['duration'] > 0]
-    
+
     if df.empty:
         log_debug_info("trade_duration_stats", "No valid durations after filtering")
         return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
@@ -419,13 +419,13 @@ def max_streaks(df: pd.DataFrame) -> dict:
 
     # Determine wins and losses
     df['is_win'] = df['pnl'] > 0
-    
+
     # Calculate streaks manually for better control
     max_win_streak = 0
     max_loss_streak = 0
     current_win_streak = 0
     current_loss_streak = 0
-    
+
     for is_win in df['is_win']:
         if is_win:
             current_win_streak += 1
@@ -524,8 +524,9 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
             'profit_factor': profit_factor
         })
 
-    if not rolling_data:
-        log_debug_info("rolling_metrics", "No valid rolling data generated")
+    # Check for empty DataFrame
+    if rolling_data is None or len(rolling_data) == 0:
+        logger.warning("No rolling data available for the specified window")
         return pd.DataFrame()
 
     result = pd.DataFrame(rolling_data)

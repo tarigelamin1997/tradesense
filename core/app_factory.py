@@ -88,3 +88,7 @@ class AppFactory:
             with st.expander("🔍 Debug Information"):
                 st.code(f"Error: {str(e)}")
                 st.code(f"Session State Keys: {list(st.session_state.keys())}")
+                
+                # Add traceback for debugging
+                import traceback
+                st.code(f"Traceback:\n{traceback.format_exc()}")

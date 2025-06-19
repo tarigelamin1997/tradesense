@@ -5,6 +5,7 @@ command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --se
 
 [nix]
 channel = "stable-24_05"
+packages = ["cargo", "glibcLocales", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
 
 [deployment]
 run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true"]
@@ -19,53 +20,101 @@ PYTHONPATH = "/home/runner/${REPL_SLUG}"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 
 [workflows]
-runButton = "Clean Start"
+runButton = "Complete App Recovery"
 
 [[workflows.workflow]]
-name = "Clean Start"
+name = "Complete App Recovery"
 author = 43683701
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🧹 Cleaning environment...\""
+args = "echo \"🧹 Phase 1: Complete Environment Cleanup...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "rm -rf ~/.local/lib/python*"
+args = "rm -rf ~/.local/lib/python* ~/.cache/pip ~/.pythonlibs ~/.nix-profile/lib/python*"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "rm -rf ~/.cache/pip"
+args = "echo \"🔄 Phase 2: Force Nix Rebuild...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🔧 Testing Python...\""
+args = "nix-collect-garbage -d"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 --version"
+args = "echo \"🐍 Phase 3: Test Clean Python...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"📦 Installing dependencies...\""
+args = "python3 --version && which python3"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m pip install --user --no-cache-dir streamlit==1.29.0"
+args = "echo \"📦 Phase 4: Install Core Dependencies...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m pip install --user --no-cache-dir pandas==2.0.3 numpy==1.24.4"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall streamlit==1.29.0"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m pip install --user --no-cache-dir plotly==5.17.0"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall pandas==2.0.3 numpy==1.24.4"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🚀 Starting TradeSense...\""
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall plotly==5.17.0"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall python-dateutil==2.8.2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall bcrypt==4.0.1"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall \"passlib[bcrypt]==4.0.1\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall cryptography==41.0.7"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall pyjwt==2.8.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall psutil==5.9.6"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall openpyxl==3.1.2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall xlsxwriter==3.1.9"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir --force-reinstall setuptools==68.2.2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Phase 5: Verify Installation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ All core modules imported successfully')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Phase 6: Launch TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"

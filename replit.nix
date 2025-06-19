@@ -30,5 +30,15 @@
     PYTHONDONTWRITEBYTECODE = "1";
     LC_ALL = "C.UTF-8";
     LANG = "C.UTF-8";
+    PATH = "${pkgs.python311Full}/bin:$PATH";
   };
+  
+  shellHook = ''
+    # Create python symlink if it doesn't exist
+    if [ ! -f "$HOME/.local/bin/python" ]; then
+      mkdir -p "$HOME/.local/bin"
+      ln -sf $(which python3) "$HOME/.local/bin/python"
+      export PATH="$HOME/.local/bin:$PATH"
+    fi
+  '';
 }

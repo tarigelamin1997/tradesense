@@ -85,33 +85,107 @@ class AppFactory:
 
         if uploaded_file is not None:
             try:
-                # Process the uploaded file
+                # Process the uploaded file with enhanced error handling
                 from trade_entry_manager import trade_manager
                 import pandas as pd
+                import io
 
-                # Read the file
-                if uploaded_file.name.endswith('.csv'):
-                    df = pd.read_csv(uploaded_file)
-                else:
-                    df = pd.read_excel(uploaded_file)
-
-                # Add trades to manager
-                result = trade_manager.add_file_trades(df, f"file_{uploaded_file.name}")
-
-                if result['status'] == 'success':
-                    st.success(f"✅ Successfully processed {result['trades_added']} trades")
-                    st.session_state.trade_data = trade_manager.get_all_trades_dataframe()
-
-                    # Display basic info about uploaded data
+                # Read the file with better error handling
+                try:
+                    if uploaded_file.name.endswith('.csv'):
+                        # Try different encodings to handle various CSV formats
+                        try:
+                            df = pd.read_csv(uploaded_file, encoding='utf-8')
+                        except UnicodeDecodeError:
+                            uploaded_file.seek(0)  # Reset file pointer
+                            df = pd.read_csv(uploaded_file, encoding='latin-1')
+                    else:
+                        df = pd.read_excel(uploaded_file)
+                        
+                    # Display file info first
                     st.write(f"**File:** {uploaded_file.name}")
                     st.write(f"**Size:** {uploaded_file.size / 1024:.1f}KB")
-                else:
-                    st.error(f"Error processing file: {result['message']}")
-                    st.info("Please ensure your file has the required columns: symbol, entry_time, exit_time, entry_price, exit_price, pnl, direction")
+                    st.write(f"**Rows:** {len(df)}")
+                    st.write(f"**Columns:** {list(df.columns)}")
+                    
+                    # Show a preview of the data
+                    with st.expander("📄 Data Preview", expanded=False):
+                        st.dataframe(df.head(), use_container_width=True)
+                    
+                except Exception as read_error:
+                    st.error(f"Error reading file: {str(read_error)}")
+                    st.info("The file might be corrupted or in an unsupported format. Please try a different file.")
+                    return
+
+                # Add trades to manager with enhanced error handling
+                try:
+                    result = trade_manager.add_file_trades(df, f"file_{uploaded_file.name}")
+
+                    if result['status'] == 'success':
+                        st.success(f"✅ Successfully processed {result['trades_added']} trades")
+                        st.session_state.trade_data = trade_manager.get_all_trades_dataframe()
+                        
+                        # Auto-run analysis after successful upload
+                        st.session_state.auto_run_analysis = True
+                        
+                    else:
+                        st.error(f"Error processing file: {result['message']}")
+                        
+                        # Show detailed column information to help user
+                        st.info("**Required columns:** symbol, entry_time, exit_time, entry_price, exit_price, pnl, direction")
+                        st.info(f"**Your file has:** {', '.join(df.columns)}")
+                        
+                        # Suggest column mapping if similar columns exist
+                        required_cols = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'pnl', 'direction']
+                        suggestions = []
+                        for req_col in required_cols:
+                            for file_col in df.columns:
+                                if req_col.lower() in file_col.lower() or file_col.lower() in req_col.lower():
+                                    suggestions.append(f"'{file_col}' might map to '{req_col}'")
+                        
+                        if suggestions:
+                            st.info("**Possible column mappings:**")
+                            for suggestion in suggestions:
+                                st.info(f"• {suggestion}")
+                                
+                except Exception as processing_error:
+                    st.error(f"Error during trade processing: {str(processing_error)}")
+                    
+                    # If it's a library error, try a simpler processing approach
+                    if "libstdc++" in str(processing_error) or "shared object" in str(processing_error):
+                        st.warning("🔧 System library issue detected. Trying alternative processing method...")
+                        
+                        try:
+                            # Simple validation without heavy analytics
+                            required_columns = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'pnl', 'direction']
+                            missing_cols = [col for col in required_columns if col not in df.columns]
+                            
+                            if missing_cols:
+                                st.error(f"Missing required columns: {', '.join(missing_cols)}")
+                            else:
+                                # Store raw data temporarily
+                                st.session_state.trade_data = df
+                                st.success("✅ File uploaded successfully! Some advanced analytics may be limited due to system constraints.")
+                                st.info("📊 Basic analytics are available in the Analytics tab.")
+                                
+                        except Exception as fallback_error:
+                            st.error(f"Fallback processing also failed: {str(fallback_error)}")
+                            st.info("Please try uploading a smaller file or contact support.")
 
             except Exception as e:
-                st.error(f"Error processing file: {str(e)}")
+                st.error(f"Unexpected error: {str(e)}")
                 st.info("Please ensure your file has the required columns: symbol, entry_time, exit_time, entry_price, exit_price, pnl, direction")
+                
+                # System diagnostics
+                st.expander("🔧 System Diagnostics", expanded=False)
+                with st.expander("🔧 System Diagnostics"):
+                    st.code(f"Error type: {type(e).__name__}")
+                    st.code(f"Error message: {str(e)}")
+                    
+                    # Check if it's a system library issue
+                    if "libstdc++" in str(e) or "shared object" in str(e):
+                        st.warning("This appears to be a system library issue. The Replit environment may need additional dependencies.")
+                        st.info("Try refreshing the page or restarting the Repl if the issue persists.")
 
     def _run_analysis(self):
         """Run comprehensive analysis without causing infinite loops."""

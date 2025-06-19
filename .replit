@@ -19,16 +19,28 @@ PYTHONPATH = "/home/runner/${REPL_SLUG}"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 
 [workflows]
-runButton = "TradeSense App"
+runButton = "Clean Start"
 
 [[workflows.workflow]]
-name = "TradeSense App"
+name = "Clean Start"
 author = 43683701
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🚀 Starting TradeSense...\""
+args = "echo \"🧹 Cleaning environment...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf ~/.local/lib/python*"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf ~/.cache/pip"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 Testing Python...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -36,7 +48,23 @@ args = "python3 --version"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m pip install --user -q -r requirements.txt"
+args = "echo \"📦 Installing dependencies...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir streamlit==1.29.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir pandas==2.0.3 numpy==1.24.4"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir plotly==5.17.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Starting TradeSense...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

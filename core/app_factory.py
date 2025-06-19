@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TradeSense App Factory
-Handles main application initialization and routing
+Lightweight coordinator for the modular TradeSense application
 """
 
 import streamlit as st
@@ -11,7 +11,7 @@ from module_checker import module_checker
 logger = logging.getLogger(__name__)
 
 class AppFactory:
-    """Factory class for creating and managing the TradeSense application."""
+    """Lightweight factory class for creating and managing the TradeSense application."""
 
     def __init__(self):
         self.initialized = False
@@ -26,50 +26,42 @@ class AppFactory:
             if st.session_state.get('trade_data') is not None:
                 module_checker.display_warnings_if_needed()
 
+            # Import and render components
+            from core.data_upload_handler import render_data_upload_section
+            from core.analysis_engine import render_analysis_controls
+            from core.dashboard_manager import render_dashboard_tabs
+
             # Data upload section
-            self._render_data_upload_section()
+            render_data_upload_section()
 
-            # Show analysis if data is available
-            if st.session_state.get('analysis_complete', False):
-                st.info("✅ Analysis completed! Results are displayed above.")
-            elif st.session_state.get('trade_data') is not None:
-                if st.button("🔄 Run Comprehensive Analysis", type="primary"):
-                    self._run_analysis()
+            # Analysis controls
+            render_analysis_controls()
 
-            # Navigation tabs
-            tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📈 Analytics", "📋 Trade Data", "⚙️ Settings"])
-            
-            with tab1:
-                try:
-                    self._render_dashboard()
-                except Exception as e:
-                    st.error(f"Dashboard error: {str(e)}")
-                    logger.error(f"Dashboard rendering error: {str(e)}")
-            
-            with tab2:
-                try:
-                    self._render_analytics()
-                except Exception as e:
-                    st.error(f"Analytics error: {str(e)}")
-                    logger.error(f"Analytics rendering error: {str(e)}")
-            
-            with tab3:
-                try:
-                    self._render_trade_data()
-                except Exception as e:
-                    st.error(f"Trade Data error: {str(e)}")
-                    logger.error(f"Trade data rendering error: {str(e)}")
-            
-            with tab4:
-                try:
-                    self._render_settings()
-                except Exception as e:
-                    st.error(f"Settings error: {str(e)}")
-                    logger.error(f"Settings rendering error: {str(e)}")
+            # Main dashboard tabs
+            render_dashboard_tabs()
 
         except Exception as e:
             st.error(f"Failed to initialize application: {str(e)}")
             logger.error(f"App initialization error: {str(e)}")
+
+            # Show fallback interface
+            self._render_fallback_interface()
+
+    def _render_fallback_interface(self):
+        """Render a basic interface when main app fails to load."""
+        st.warning("🔧 Application is in recovery mode")
+
+        # Basic file upload
+        uploaded_file = st.file_uploader("Upload CSV trade data", type=['csv'])
+        if uploaded_file is not None:
+            try:
+                import pandas as pd
+                df = pd.read_csv(uploaded_file)
+                st.success(f"✅ Loaded {len(df)} rows")
+                st.dataframe(df.head())
+                st.session_state.trade_data = df
+            except Exception as e:
+                st.error(f"Error loading file: {str(e)}")
 
     def _render_data_upload_section(self):
         """Render data upload interface."""
@@ -1361,3 +1353,4 @@ class AppFactory:
     def _render_settings(self):
         """Render settings page."""
         st.write("Settings page - configuration options would go here")
+``````python

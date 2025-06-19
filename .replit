@@ -1,131 +1,30 @@
-
 modules = ["python-3.12"]
+
+[run]
+command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+
 
 [nix]
 channel = "stable-24_05"
-
-[run]
-command = "pip install -r core-requirements.txt && streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+packages = [
+  "glibcLocales",
+  "gcc",
+  "glibc",
+  "libstdcxx5",
+  "zlib",
+  "openssl",
+  "pkg-config",
+  "python312Full",
+  "python312Packages.pip"
+]
 
 [deployment]
-run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"]
+run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true"]
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
-[workflows]
-runButton = "Production Start"
-
-[[workflows.workflow]]
-name = "Run"
-author = 43683701
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f streamlit || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 2"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"
-
-[[workflows.workflow]]
-name = "Run with Caching"
-author = 43683701
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export PIP_CACHE_DIR=\"$HOME/.cache/pip\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install -r core-requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"
-
-[[workflows.workflow]]
-name = "Clean Run"
-author = 43683701
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install --no-cache-dir -r core-requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
-
-[[workflows.workflow]]
-name = "Stable Run"
-author = 43683701
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export PYTHONPATH=\"$PWD\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export LD_LIBRARY_PATH=\"/nix/store/*-glibc-*/lib:/nix/store/*-gcc-*/lib\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f streamlit || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 2"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -m pip install --no-cache-dir --upgrade pip"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install --no-cache-dir -r core-requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -c \"import pandas, numpy, streamlit; print('Dependencies OK')\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --logger.level=error"
-
-[[workflows.workflow]]
-name = "Production Start"
-author = 43683701
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export PYTHONPATH=\"$PWD\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f streamlit || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 2"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -m pip install --user --no-cache-dir -r core-requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -c \"import streamlit, pandas, numpy, plotly; print('✅ All dependencies verified')\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+[env]
+PYTHONUNBUFFERED = "1"
+PYTHONPATH = "/home/runner/${REPL_SLUG}"

@@ -19,7 +19,7 @@ PYTHONPATH = "/home/runner/${REPL_SLUG}"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 
 [workflows]
-runButton = "Quick Start"
+runButton = "Start TradeSense"
 
 [[workflows.workflow]]
 name = "Quick Start"
@@ -57,6 +57,47 @@ args = "python3 -m pip install --user --no-cache-dir -r core-requirements.txt"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ All packages verified')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+
+[[workflows.workflow]]
+name = "Start TradeSense"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export PYTHONPATH=\"$PWD:$PYTHONPATH\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export PATH=\"$HOME/.local/bin:$PATH\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 Setting up Python environment...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📦 Installing core dependencies...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --quiet --no-cache-dir -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Starting TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -c \"import streamlit; print('✅ Streamlit ready')\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

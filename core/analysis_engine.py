@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Analysis Engine
@@ -19,25 +18,34 @@ def render_analysis_controls():
             run_analysis()
 
 def run_analysis():
-    """Run comprehensive analysis with error handling."""
+    """Run comprehensive analysis on trade data."""
+    try:
+        trade_data = st.session_state.get('trade_data')
+        if trade_data is None or len(trade_data) == 0:
+            st.warning("⚠️ No trade data available for analysis.")
+            return
+    except Exception as e:
+        st.error(f"❌ Error accessing trade data: {str(e)}")
+        return
+
     try:
         with st.spinner("Running analysis..."):
             from trade_entry_manager import trade_manager
-            
+
             # Get analytics
             analytics_result = trade_manager.get_unified_analytics()
-            
+
             # Store results
             st.session_state.analytics_result = analytics_result
             st.session_state.analysis_complete = True
-            
+
             st.success("✅ Analysis completed successfully!")
             st.rerun()
-            
+
     except Exception as e:
         st.error(f"Analysis failed: {str(e)}")
         logger.error(f"Analysis error: {str(e)}")
-        
+
         # Try basic analysis
         _run_basic_analysis()
 
@@ -47,7 +55,7 @@ def _run_basic_analysis():
         trade_data = st.session_state.get('trade_data')
         if trade_data is not None and not trade_data.empty:
             import pandas as pd
-            
+
             # Basic calculations
             total_trades = len(trade_data)
             if 'pnl' in trade_data.columns:
@@ -55,7 +63,7 @@ def _run_basic_analysis():
                 total_pnl = pnl_data.sum()
                 wins = len(pnl_data[pnl_data > 0])
                 win_rate = (wins / len(pnl_data) * 100) if len(pnl_data) > 0 else 0
-                
+
                 # Store basic results
                 basic_analytics = {
                     'basic_stats': {
@@ -66,7 +74,7 @@ def _run_basic_analysis():
                         'losses': len(pnl_data) - wins
                     }
                 }
-                
+
                 st.session_state.analytics_result = basic_analytics
                 st.session_state.analysis_complete = True
                 st.success("✅ Basic analysis completed!")

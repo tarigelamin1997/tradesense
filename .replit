@@ -19,16 +19,16 @@ PYTHONPATH = "/home/runner/${REPL_SLUG}"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 
 [workflows]
-runButton = "TradeSense Pro"
+runButton = "TradeSense Launcher"
 
 [[workflows.workflow]]
-name = "TradeSense Pro"
+name = "TradeSense Launcher"
 author = 43683701
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "export PYTHONPATH=\"$PWD:$PYTHONPATH\""
+args = "export PYTHONPATH=\"$PWD\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -36,7 +36,7 @@ args = "export PATH=\"$HOME/.local/bin:$PATH\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🚀 Starting TradeSense...\""
+args = "echo \"🚀 Starting TradeSense Application...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -48,16 +48,24 @@ args = "echo \"📦 Installing dependencies...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m pip install --user --quiet --no-cache-dir -r core-requirements.txt"
+args = "python3 -m pip install --user --upgrade pip"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"✅ Dependencies installed\""
+args = "python3 -m pip install --user -r core-requirements.txt"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🎯 Launching TradeSense on port 5000...\""
+args = "echo \"🔍 Checking Python modules...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableXsrfProtection=false"
+args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ All core modules loaded')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🌟 Launching TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"

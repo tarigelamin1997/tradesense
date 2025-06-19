@@ -15,7 +15,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Stable Run"
+runButton = "Production Start"
 
 [[workflows.workflow]]
 name = "Run"
@@ -100,3 +100,20 @@ args = "python -c \"import pandas, numpy, streamlit; print('Dependencies OK')\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --logger.level=error"
+
+[[workflows.workflow]]
+name = "Production Start"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \"import streamlit, pandas, numpy; print('✅ Dependencies verified')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true"

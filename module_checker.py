@@ -44,4 +44,4 @@ class ModuleChecker:
 
 
 # Global instance
-module_checker = ModuleChecker()er()
+module_checker = ModuleChecker()

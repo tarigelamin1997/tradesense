@@ -1,11 +1,22 @@
-
 modules = ["python-3.12"]
 
 [nix]
 channel = "stable-24_05"
+packages = [
+  "glibcLocales",
+  "libiconv",
+  "libxcrypt",
+  "openssl",
+  "pkg-config",
+  "libstdcxx",    # ✅ Needed to fix the libstdc++.so.6 error
+]
 
 [deployment]
-run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"]
+run = [
+  "sh",
+  "-c",
+  "streamlit run app.py --server.port=5000 --server.address=0.0.0.0",
+]
 
 [[ports]]
 localPort = 5000

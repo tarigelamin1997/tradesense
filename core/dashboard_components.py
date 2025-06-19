@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Dashboard Components
@@ -9,6 +8,15 @@ import streamlit as st
 
 def render_dashboard():
     """Render main dashboard."""
+    # Dashboard header with export option
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.header("📈 Trading Dashboard")
+    with col2:
+        if st.session_state.get('data_uploaded', False):
+            if st.button("📤 Quick Export", key="dashboard_export"):
+                st.info("💡 Go to Analytics tab for full export options")
+
     trade_data = st.session_state.get('trade_data')
     if trade_data is not None and not trade_data.empty:
         analytics_result = st.session_state.get('analytics_result')
@@ -23,10 +31,10 @@ def render_dashboard():
 def _render_kpi_metrics(analytics_result):
     """Render KPI metrics."""
     st.markdown("## 📊 Key Performance Indicators")
-    
+
     basic_stats = analytics_result.get('basic_stats', {})
     kpis = analytics_result.get('kpis', {})
-    
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Trades", basic_stats.get('total_trades', 0))
@@ -40,7 +48,7 @@ def _render_kpi_metrics(analytics_result):
 def _render_performance_charts(analytics_result):
     """Render performance charts."""
     st.markdown("## 📈 Performance Overview")
-    
+
     # Try to render equity curve
     try:
         equity_curve = analytics_result.get('basic_stats', {}).get('equity_curve')

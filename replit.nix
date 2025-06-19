@@ -9,17 +9,12 @@
     pkgs.zlib
     pkgs.libffi
     pkgs.openssl
-    pkgs.sqlite
+    pkgs.git
   ];
   
   env = {
-    LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-      pkgs.stdenv.cc.cc.lib
-      pkgs.glibc
-      pkgs.zlib
-      pkgs.libffi
-      pkgs.openssl
-    ];
-    PYTHONPATH = "$PYTHONPATH";
+    PYTHONPATH = "$PWD";
+    LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.glibc}/lib";
+    PYTHONUNBUFFERED = "1";
   };
 }

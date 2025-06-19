@@ -71,6 +71,14 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "pkill -f streamlit || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "pip install --no-cache-dir -r core-requirements.txt"
 
 [[workflows.workflow.tasks]]

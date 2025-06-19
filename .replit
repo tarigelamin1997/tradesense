@@ -1,36 +1,78 @@
 
 modules = ["python-3.12"]
 
+[nix]
+channel = "stable-24_05"
+
 [run]
-command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+command = "pip install -r core-requirements.txt && streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
 
-[interpreter]
-modules = ["python-3.12"]
-
-[workflows]
-runButton = "Run TradeSense"
-
-[[workflows.workflow]]
-name = "Run TradeSense"
-author = 43683701
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false"
+[deployment]
+run = ["sh", "-c", "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"]
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
-[nix]
-channel = "stable-24_05"
-packages = ["cargo", "glibcLocales", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
+[workflows]
+runButton = "Stable Run"
 
-[deployment]
-run = ["sh", "-c", "python -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false --server.enableWebsocketCompression=false --server.maxUploadSize=50"]
-deploymentTarget = "cloudrun"
+[[workflows.workflow]]
+name = "Run"
+author = 43683701
+mode = "sequential"
 
-[env]
-PYTHONUNBUFFERED = "1"
-PYTHONPATH = "/home/runner/${REPL_SLUG}"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f streamlit || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"
+
+[[workflows.workflow]]
+name = "Run with Caching"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export PIP_CACHE_DIR=\"$HOME/.cache/pip\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.enableWebsocketCompression=false --server.enableXsrfProtection=false --server.fileWatcherType=none --server.headless=true"
+
+[[workflows.workflow]]
+name = "Clean Run"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install --no-cache-dir -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0"
+
+[[workflows.workflow]]
+name = "Stable Run"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install --no-cache-dir -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true"

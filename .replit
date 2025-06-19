@@ -108,12 +108,24 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pip install -r core-requirements.txt"
+args = "export PYTHONPATH=\"$PWD\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -c \"import streamlit, pandas, numpy; print('✅ Dependencies verified')\""
+args = "pkill -f streamlit || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pip install --user --no-cache-dir -r core-requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \"import streamlit, pandas, numpy, plotly; print('✅ All dependencies verified')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"

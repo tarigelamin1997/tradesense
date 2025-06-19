@@ -416,6 +416,9 @@ class AppFactory:
                 
                 # If streaks are 0, try to calculate them directly from trade data
                 if max_win_streak == 0 and max_loss_streak == 0:
+                    # Import pandas for streak calculations
+                    import pandas as pd
+                    
                     trade_data = st.session_state.get('trade_data')
                     if trade_data is not None and not trade_data.empty and 'pnl' in trade_data.columns:
                         # Calculate streaks manually as fallback

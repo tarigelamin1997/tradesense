@@ -47,15 +47,29 @@ def initialize_session_state():
 
 def check_system_dependencies():
     """Check if critical system dependencies are available."""
+    missing_deps = []
+    
     try:
         import pandas as pd
+    except ImportError:
+        missing_deps.append("pandas")
+    
+    try:
         import numpy as np
+    except ImportError:
+        missing_deps.append("numpy")
+    
+    try:
         import plotly.graph_objects as go
-        return True
-    except ImportError as e:
-        st.error(f"Missing critical dependency: {str(e)}")
-        st.info("Please refresh the page to reinstall dependencies.")
+    except ImportError:
+        missing_deps.append("plotly")
+    
+    if missing_deps:
+        st.error(f"Missing critical dependencies: {', '.join(missing_deps)}")
+        st.info("🔄 Installing dependencies... Please wait and refresh the page.")
         return False
+    
+    return True
 
 
 def main():

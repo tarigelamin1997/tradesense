@@ -302,6 +302,12 @@ class TradeEntryManager:
                 }
             }
 
+            # Get streaks with detailed logging
+            streaks = max_streaks(df_clean)
+            log_info(f"Calculated streaks: {streaks}", 
+                    details={"streaks": streaks}, 
+                    category=LogCategory.DATA_PROCESSING)
+
             # Cache results
             self._analytics_cache = analytics
             self._cache_dirty = False

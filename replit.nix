@@ -1,10 +1,17 @@
 { pkgs }: {
   deps = [
-    pkgs.python312
-    pkgs.python312Packages.pip
-    pkgs.python312Packages.setuptools
-    pkgs.openssl
-    pkgs.libxcrypt
+    pkgs.python312Full
+    pkgs.replitPackages.prybar-python312
+    pkgs.replitPackages.stderred
+    pkgs.gcc-unwrapped.lib
+    pkgs.stdenv.cc.cc.lib
     pkgs.zlib
   ];
+  env = {
+    LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [
+      pkgs.gcc-unwrapped.lib
+      pkgs.stdenv.cc.cc.lib
+      pkgs.zlib
+    ]}";
+  };
 }

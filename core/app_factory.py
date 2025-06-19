@@ -410,9 +410,43 @@ class AppFactory:
                 st.markdown('<div class="streak-container">', unsafe_allow_html=True)
                 st.markdown('<div class="streak-title">⚡ Consecutive Trade Performance Analysis ⚡</div>', unsafe_allow_html=True)
                 
-                # Get streak values
+                # Get streak values with fallback calculation
                 max_win_streak = streaks.get('max_win_streak', 0)
                 max_loss_streak = streaks.get('max_loss_streak', 0)
+                
+                # If streaks are 0, try to calculate them directly from trade data
+                if max_win_streak == 0 and max_loss_streak == 0:
+                    trade_data = st.session_state.get('trade_data')
+                    if trade_data is not None and not trade_data.empty and 'pnl' in trade_data.columns:
+                        # Calculate streaks manually as fallback
+                        pnl_data = pd.to_numeric(trade_data['pnl'], errors='coerce').dropna()
+                        if not pnl_data.empty:
+                            # Sort by exit_time if available
+                            if 'exit_time' in trade_data.columns:
+                                sorted_data = trade_data.sort_values('exit_time')['pnl']
+                            else:
+                                sorted_data = pnl_data
+                            
+                            # Calculate streaks manually
+                            current_win_streak = 0
+                            current_loss_streak = 0
+                            max_win_streak = 0
+                            max_loss_streak = 0
+                            
+                            for pnl in sorted_data:
+                                if pd.notna(pnl):
+                                    if pnl > 0:  # Win
+                                        current_win_streak += 1
+                                        current_loss_streak = 0
+                                        max_win_streak = max(max_win_streak, current_win_streak)
+                                    elif pnl < 0:  # Loss
+                                        current_loss_streak += 1
+                                        current_win_streak = 0
+                                        max_loss_streak = max(max_loss_streak, current_loss_streak)
+                
+                # Ensure we have valid values
+                max_win_streak = max(0, int(max_win_streak)) if pd.notna(max_win_streak) else 0
+                max_loss_streak = max(0, int(max_loss_streak)) if pd.notna(max_loss_streak) else 0
                 
                 # Main streak display with enhanced visuals
                 streak_col1, streak_col2, streak_col3, streak_col4 = st.columns([1, 1, 1, 1])

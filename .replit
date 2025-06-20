@@ -22,7 +22,7 @@ LC_ALL = "C"
 LANG = "C"
 
 [workflows]
-runButton = "Use Dependencies Tool"
+runButton = "Force User Install"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -296,6 +296,30 @@ args = "python3 -m pip install --user --break-system-packages --no-cache-dir num
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 -m pip install --user --break-system-packages --no-cache-dir plotly==5.17.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir python-dateutil==2.8.2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir bcrypt==4.0.1"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir \"passlib[bcrypt]==4.0.1\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir cryptography==41.0.7"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir pyjwt==2.8.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir psutil==5.9.6"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

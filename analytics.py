@@ -29,8 +29,6 @@ def log_debug_info(context: str, data):
     else:
         logger.debug(f"{context}: {data}")
 
-# Module availability will be checked only when modules are actually used
-
 def format_currency(value, default="–"):
     """Format currency values with $ and 2 decimal places."""
     try:
@@ -62,28 +60,16 @@ def format_number(value, decimals=2, default="–"):
 def compute_basic_stats(df: pd.DataFrame) -> dict:
     """Compute basic trading statistics."""
     try:
+        log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
+        log_debug_info("compute_basic_stats sample data", df.head().to_dict())
+
         if df.empty:
             if CENTRALIZED_LOGGING:
                 log_warning("Empty dataframe passed to compute_basic_stats", 
                            category=LogCategory.DATA_PROCESSING)
             else:
                 logger.warning("Empty dataframe passed to compute_basic_stats")
-            return {
-                'total_trades': 0,
-                'win_rate': 0.0,
-                'average_win': 0.0,
-                'average_loss': 0.0,
-                'reward_risk': 0.0,
-                'expectancy': 0.0,
-                'profit_factor': 0.0,
-                'max_drawdown': 0.0,
-                'sharpe_ratio': 0.0,
-                'equity_curve': pd.Series(dtype=float)
-            }
-
-        log_debug_info("compute_basic_stats input dtypes", df.dtypes.to_dict())
-        log_debug_info("compute_basic_stats sample data", df.head().to_dict())
-
+            return {}
     except Exception as e:
         error_msg = f"Error in compute_basic_stats initialization: {str(e)}"
         if CENTRALIZED_LOGGING:
@@ -92,68 +78,17 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
                      category=LogCategory.DATA_PROCESSING)
         else:
             logger.error(error_msg)
-        return {
-            'total_trades': 0,
-            'win_rate': 0.0,
-            'average_win': 0.0,
-            'average_loss': 0.0,
-            'reward_risk': 0.0,
-            'expectancy': 0.0,
-            'profit_factor': 0.0,
-            'max_drawdown': 0.0,
-            'sharpe_ratio': 0.0,
-            'equity_curve': pd.Series(dtype=float)
-        }
+        return {}
 
     # Clean PnL data
     df = df.copy()
-
-    # Ensure PnL column exists
-    if 'pnl' not in df.columns:
-        logger.error("PnL column not found in dataframe")
-        return {
-            'total_trades': 0,
-            'win_rate': 0.0,
-            'average_win': 0.0,
-            'average_loss': 0.0,
-            'reward_risk': 0.0,
-            'expectancy': 0.0,
-            'profit_factor': 0.0,
-            'max_drawdown': 0.0,
-            'sharpe_ratio': 0.0,
-            'equity_curve': pd.Series(dtype=float)
-        }
-
-    # Convert PnL to numeric and clean
     df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce')
     df = df.dropna(subset=['pnl'])
     df = df[np.isfinite(df['pnl'])]
 
-    # Remove extreme outliers that could break calculations
-    if not df.empty:
-        q1 = df['pnl'].quantile(0.01)
-        q99 = df['pnl'].quantile(0.99)
-        if np.isfinite(q1) and np.isfinite(q99):
-            iqr = q99 - q1
-            if iqr > 0:
-                lower_bound = q1 - 3 * iqr
-                upper_bound = q99 + 3 * iqr
-                df = df[(df['pnl'] >= lower_bound) & (df['pnl'] <= upper_bound)]
-
     if df.empty:
         logger.warning("No valid PnL data after cleaning")
-        return {
-            'total_trades': 0,
-            'win_rate': 0.0,
-            'average_win': 0.0,
-            'average_loss': 0.0,
-            'reward_risk': 0.0,
-            'expectancy': 0.0,
-            'profit_factor': 0.0,
-            'max_drawdown': 0.0,
-            'sharpe_ratio': 0.0,
-            'equity_curve': pd.Series(dtype=float)
-        }
+        return {}
 
     log_debug_info("Cleaned PnL data", df['pnl'].describe().to_dict())
 
@@ -357,36 +292,20 @@ def trade_duration_stats(df: pd.DataFrame) -> dict:
         return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
 
     df = df.copy()
-
-    # Ensure datetime conversion
     df['entry_time'] = pd.to_datetime(df['entry_time'], errors='coerce')
     df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
-
-    # Remove rows with invalid dates
     df = df.dropna(subset=['entry_time', 'exit_time'])
 
-    # Additional validation - ensure exit_time is after entry_time
-    df = df[df['exit_time'] > df['entry_time']]
-
     if df.empty:
-        log_debug_info("trade_duration_stats", "No valid time data after cleaning")
         return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
 
-    # Calculate duration in minutes
     df['duration'] = (df['exit_time'] - df['entry_time']).dt.total_seconds() / 60
 
-    # Remove any negative or zero durations
-    df = df[df['duration'] > 0]
-
-    if df.empty:
-        log_debug_info("trade_duration_stats", "No valid durations after filtering")
-        return {'average_minutes': 0, 'min_minutes': 0, 'max_minutes': 0, 'median_minutes': 0}
-
     result = {
-        'average_minutes': float(df['duration'].mean()) if not df['duration'].empty else 0,
-        'min_minutes': float(df['duration'].min()) if not df['duration'].empty else 0,
-        'max_minutes': float(df['duration'].max()) if not df['duration'].empty else 0,
-        'median_minutes': float(df['duration'].median()) if not df['duration'].empty else 0
+        'average_minutes': df['duration'].mean(),
+        'min_minutes': df['duration'].min(),
+        'max_minutes': df['duration'].max(),
+        'median_minutes': df['duration'].median()
     }
 
     log_debug_info("trade_duration_stats", result)
@@ -406,39 +325,19 @@ def max_streaks(df: pd.DataFrame) -> dict:
     if df.empty:
         return {'max_win_streak': 0, 'max_loss_streak': 0}
 
-    # Sort by exit_time if available, otherwise by index
-    if 'exit_time' in df.columns:
-        df['exit_time'] = pd.to_datetime(df['exit_time'], errors='coerce')
-        df = df.dropna(subset=['exit_time'])
-        df = df.sort_values('exit_time')
-    else:
-        df = df.sort_index()
-
-    if df.empty:
-        return {'max_win_streak': 0, 'max_loss_streak': 0}
-
-    # Determine wins and losses
+    df = df.sort_values('exit_time' if 'exit_time' in df.columns else df.index)
     df['is_win'] = df['pnl'] > 0
 
-    # Calculate streaks manually for better control
-    max_win_streak = 0
-    max_loss_streak = 0
-    current_win_streak = 0
-    current_loss_streak = 0
+    # Calculate streaks
+    df['streak_id'] = (df['is_win'] != df['is_win'].shift()).cumsum()
+    streaks = df.groupby(['streak_id', 'is_win']).size()
 
-    for is_win in df['is_win']:
-        if is_win:
-            current_win_streak += 1
-            current_loss_streak = 0
-            max_win_streak = max(max_win_streak, current_win_streak)
-        else:
-            current_loss_streak += 1
-            current_win_streak = 0
-            max_loss_streak = max(max_loss_streak, current_loss_streak)
+    win_streaks = streaks[streaks.index.get_level_values(1) == True]
+    loss_streaks = streaks[streaks.index.get_level_values(1) == False]
 
     result = {
-        'max_win_streak': int(max_win_streak),
-        'max_loss_streak': int(max_loss_streak)
+        'max_win_streak': win_streaks.max() if not win_streaks.empty else 0,
+        'max_loss_streak': loss_streaks.max() if not loss_streaks.empty else 0
     }
 
     log_debug_info("max_streaks", result)
@@ -524,9 +423,8 @@ def rolling_metrics(df: pd.DataFrame, window: int = 10) -> pd.DataFrame:
             'profit_factor': profit_factor
         })
 
-    # Check for empty DataFrame
-    if rolling_data is None or len(rolling_data) == 0:
-        logger.warning("No rolling data available for the specified window")
+    if not rolling_data:
+        log_debug_info("rolling_metrics", "No valid rolling data generated")
         return pd.DataFrame()
 
     result = pd.DataFrame(rolling_data)

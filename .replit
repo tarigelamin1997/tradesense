@@ -22,7 +22,7 @@ LC_ALL = "C"
 LANG = "C"
 
 [workflows]
-runButton = "Force User Install"
+runButton = "Clean Install and Run"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -332,6 +332,43 @@ args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ Modules
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"🚀 Launching TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+
+[[workflows.workflow]]
+name = "Clean Install and Run"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧹 Cleaning environment...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf ~/.local/lib/python* ~/.cache/pip ~/.pythonlibs"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📦 Installing dependencies with Python 3.12...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --break-system-packages --no-cache-dir --force-reinstall -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Testing imports...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ All modules imported successfully')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Starting TradeSense...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

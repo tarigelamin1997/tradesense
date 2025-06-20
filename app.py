@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 TradeSense - Advanced Trading Analytics Platform
@@ -31,6 +30,13 @@ if missing_modules:
 
 # Now safely import Streamlit
 import streamlit as st
+import os
+import sys
+
+# Fix Python path for Replit .pythonlibs
+pythonlibs_path = "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages"
+if pythonlibs_path not in sys.path:
+    sys.path.insert(0, pythonlibs_path)
 import logging
 
 # Configure Streamlit page FIRST - before any other Streamlit commands
@@ -74,7 +80,7 @@ def main():
     try:
         # Initialize session state
         initialize_session_state()
-        
+
         # Try to import the main app factory
         try:
             from core.app_factory import create_app
@@ -84,14 +90,14 @@ def main():
             # Fallback to basic app structure
             st.title("🏆 TradeSense - Trading Analytics")
             st.info("Welcome to TradeSense! The application is starting up...")
-            
+
             # Basic file uploader as fallback
             uploaded_file = st.file_uploader(
                 "Upload your trading data",
                 type=['csv', 'xlsx', 'xls'],
                 help="Upload your trade history file to get started with analytics"
             )
-            
+
             if uploaded_file:
                 st.success("File uploaded successfully!")
                 st.info("Analytics engine is initializing...")
@@ -103,7 +109,7 @@ def main():
                 3. Analyze your trading performance with interactive charts
                 4. Get risk management recommendations
                 """)
-                
+
     except Exception as e:
         logger.error(f"Application error: {e}")
         st.error(f"Application Error: {str(e)}")

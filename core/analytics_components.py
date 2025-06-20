@@ -55,7 +55,7 @@ def _render_hero_metrics(analytics_result):
 
     with col3:
         profit_factor = basic_stats.get('profit_factor', 0)
-        st.metric("📈 Profit Factor", f"{profit_factor:.2f}")
+        st.metric("📈 Profit Factor", f"${profit_factor:.2f}")
 
 def _render_streak_analysis(analytics_result):
     """Render streak analysis."""
@@ -287,27 +287,72 @@ def export_to_excel(trade_data, analysis_results=None):
                             'Value': value,
                             'Category': 'Basic Stats'
                         })
-                # Risk metrics - not implemented, keep for future use
-                #if 'risk_metrics' in analysis_results:
-                #    for key, value in analysis_results['risk_metrics'].items():
-                #        analytics_data.append({
-                #            'Metric': key.replace('_', ' ').title(),
-                #            'Value': value,
-                #            'Category': 'Risk'
-                #        })
+
+                # Enhanced risk metrics
+                if 'risk_metrics' in analysis_results:
+                    for key, value in analysis_results['risk_metrics'].items():
+                        analytics_data.append({
+                            'Metric': key.replace('_', ' ').title(),
+                            'Value': value,
+                            'Category': 'Risk'
+                        })
+
+                # Streak analysis
+                if 'streaks' in analysis_results:
+                    for key, value in analysis_results['streaks'].items():
+                        analytics_data.append({
+                            'Metric': key.replace('_', ' ').title(),
+                            'Value': value,
+                            'Category': 'Streaks'
+                        })
+
+                # Time-based analysis
+                if 'time_analysis' in analysis_results:
+                    for key, value in analysis_results['time_analysis'].items():
+                        analytics_data.append({
+                            'Metric': key.replace('_', ' ').title(),
+                            'Value': value,
+                            'Category': 'Time Analysis'
+                        })
 
                 if analytics_data:
                     analytics_df = pd.DataFrame(analytics_data)
                     analytics_df.to_excel(writer, sheet_name='Analytics Summary', index=False)
 
-            # Sheet 3: Export metadata
+                    # Add symbol performance if available
+                    if 'symbol_performance' in analysis_results and analysis_results['symbol_performance']:
+                        symbol_df = pd.DataFrame(analysis_results['symbol_performance'])
+                        symbol_df.to_excel(writer, sheet_name='Symbol Performance', index=False)
+
+            # Sheet 3: Enhanced export metadata
+            from auth import AuthManager
+            auth_manager = AuthManager()
+            current_user = auth_manager.get_current_user()
+
             metadata = pd.DataFrame([
                 {'Field': 'Export Date', 'Value': datetime.now().strftime('%Y-%m-%d %H:%M:%S')},
-                {'Field': 'Application', 'Value': 'TradeSense'},
+                {'Field': 'Application', 'Value': 'TradeSense Professional'},
+                {'Field': 'Version', 'Value': '2.0.0'},
                 {'Field': 'Total Trades', 'Value': len(trade_data) if isinstance(trade_data, pd.DataFrame) else 'N/A'},
-                {'Field': 'Export Type', 'Value': 'Complete Report'}
+                {'Field': 'Export Type', 'Value': 'Complete Report'},
+                {'Field': 'User', 'Value': current_user['username'] if current_user else 'Anonymous'},
+                {'Field': 'Partner', 'Value': current_user.get('partner_id', 'None') if current_user else 'None'}
             ])
             metadata.to_excel(writer, sheet_name='Export Info', index=False)
+
+            # Sheet 4: Risk summary (if available)
+            if analysis_results and any(key in analysis_results for key in ['risk_metrics', 'drawdown_analysis']):
+                risk_data = []
+
+                if 'risk_metrics' in analysis_results:
+                    risk_data.extend([
+                        {'Risk Metric': k.replace('_', ' ').title(), 'Value': v}
+                        for k, v in analysis_results['risk_metrics'].items()
+                    ])
+
+                if risk_data:
+                    risk_df = pd.DataFrame(risk_data)
+                    risk_df.to_excel(writer, sheet_name='Risk Analysis', index=False)
 
         excel_buffer.seek(0)
         return excel_buffer.read()

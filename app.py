@@ -81,15 +81,130 @@ def main():
         # Initialize session state
         initialize_session_state()
 
+        # Render authentication sidebar
+        from auth import render_auth_sidebar
+        render_auth_sidebar()
+
         # Try to import the main app factory
         try:
             from core.app_factory import create_app
             create_app()
         except ImportError as e:
             logger.warning(f"Could not import app_factory: {e}")
-            # Fallback to basic app structure
+            # Fallback to enhanced app structure with authentication
+            
+            from auth import AuthManager
+            auth_manager = AuthManager()
+            current_user = auth_manager.get_current_user()
+            
+            # Check for admin access
+            if current_user and current_user.get('role') == 'admin':
+                # Add admin dashboard option
+                if st.sidebar.button("🛠️ Admin Dashboard"):
+                    from admin_dashboard import AdminDashboard
+                    admin_dash = AdminDashboard()
+                    admin_dash.render_dashboard()
+                    return
+            
+            # Check for partner access
+            if current_user and current_user.get('partner_id'):
+                # Add partner portal option
+                if st.sidebar.button("🏢 Partner Portal"):
+                    from partner_management import PartnerManagement
+                    partner_mgmt = PartnerManagement()
+                    partner_mgmt.render_partner_portal()
+                    return
+            
+            # Add affiliate program option
+            if st.sidebar.button("💰 Affiliate Program"):
+                from affiliate_system import AffiliateTrackingSystem
+                affiliate_system = AffiliateTrackingSystem()
+                affiliate_system.render_affiliate_dashboard()
+                return
+            
+            # Main application
             st.title("🏆 TradeSense - Trading Analytics")
-            st.info("Welcome to TradeSense! The application is starting up...")
+            
+            if current_user:
+                st.success(f"Welcome back, {current_user['username']}! 👋")
+                
+                # Enhanced feature showcase for authenticated users
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown("### 📊 Analytics")
+                    st.write("• Advanced performance metrics")
+                    st.write("• Risk analysis & recommendations")
+                    st.write("• Interactive charts & reports")
+                
+                with col2:
+                    st.markdown("### 🔗 Integrations")
+                    st.write("• Multiple broker connections")
+                    st.write("• Automated data sync")
+                    st.write("• Real-time updates")
+                
+                with col3:
+                    st.markdown("### 🏢 Enterprise")
+                    st.write("• Partner management")
+                    st.write("• White-label solutions")
+                    st.write("• API access")
+            
+            else:
+                st.info("Welcome to TradeSense! Please login to access the full platform.")
+                
+                # Feature showcase for non-authenticated users
+                st.markdown("### 🚀 Platform Features")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("""
+                    #### 📊 Trading Analytics
+                    - **Performance Metrics**: Win rate, profit factor, Sharpe ratio
+                    - **Risk Analysis**: Drawdown, position sizing, risk metrics
+                    - **Interactive Charts**: Equity curves, performance over time
+                    - **Export Reports**: PDF and Excel report generation
+                    """)
+                
+                with col2:
+                    st.markdown("""
+                    #### 🔗 Broker Integrations
+                    - **Interactive Brokers**: Real-time data sync
+                    - **TD Ameritrade**: Automated trade import
+                    - **Prop Firms**: Apex, TopStep, and more
+                    - **CSV Import**: Universal trade data support
+                    """)
+                
+                st.markdown("### 🏢 Enterprise Solutions")
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown("""
+                    #### 🤝 Partner Program
+                    - White-label branding
+                    - Revenue sharing
+                    - Dedicated support
+                    - Custom integrations
+                    """)
+                
+                with col2:
+                    st.markdown("""
+                    #### 💰 Affiliate Program
+                    - Up to 40% commission
+                    - Tiered rewards
+                    - Marketing materials
+                    - Real-time tracking
+                    """)
+                
+                with col3:
+                    st.markdown("""
+                    #### 🛠️ Admin Tools
+                    - User management
+                    - System monitoring
+                    - Analytics dashboard
+                    - Health monitoring
+                    """)
 
             # Basic file uploader as fallback
             uploaded_file = st.file_uploader(
@@ -102,13 +217,14 @@ def main():
                 st.success("File uploaded successfully!")
                 st.info("Analytics engine is initializing...")
             else:
-                st.markdown("""
-                ### Getting Started
-                1. Upload your trading data using the file uploader above
-                2. Review and map your data columns
-                3. Analyze your trading performance with interactive charts
-                4. Get risk management recommendations
-                """)
+                if current_user:
+                    st.markdown("""
+                    ### Getting Started
+                    1. Upload your trading data using the file uploader above
+                    2. Review and map your data columns
+                    3. Analyze your trading performance with interactive charts
+                    4. Get risk management recommendations
+                    """)
 
     except Exception as e:
         logger.error(f"Application error: {e}")

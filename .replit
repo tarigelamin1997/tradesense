@@ -18,6 +18,8 @@ externalPort = 80
 PYTHONUNBUFFERED = "1"
 PYTHONPATH = "/home/runner/${REPL_SLUG}"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
+LC_ALL = "C"
+LANG = "C"
 
 [workflows]
 runButton = "Complete App Recovery"

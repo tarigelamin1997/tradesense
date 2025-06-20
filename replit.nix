@@ -17,7 +17,7 @@
     PYTHONDONTWRITEBYTECODE = "1";
     PIP_DISABLE_PIP_VERSION_CHECK = "1";
     PIP_NO_CACHE_DIR = "1";
-    LC_ALL = "C.UTF-8";
-    LANG = "C.UTF-8";
+    LC_ALL = "C";
+    LANG = "C";
   };
 }

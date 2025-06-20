@@ -22,7 +22,7 @@ LC_ALL = "C"
 LANG = "C"
 
 [workflows]
-runButton = "Complete App Recovery"
+runButton = "Robust App Recovery"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -116,6 +116,71 @@ args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ All cor
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"🚀 Phase 6: Launch TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+
+[[workflows.workflow]]
+name = "Robust App Recovery"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 Phase 1: Force Process Cleanup...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = 'pkill -f "streamlit\|python" || true'
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧹 Phase 2: Safe Environment Cleanup...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm -rf ~/.cache/pip ~/.pythonlibs || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔄 Phase 3: Gentle Nix Cleanup...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "nix-store --gc --print-roots | head -10 || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🐍 Phase 4: Verify Python...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 --version && which python3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📦 Phase 5: Install Dependencies...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir streamlit==1.29.0 pandas==2.0.3 numpy==1.24.4 plotly==5.17.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir python-dateutil==2.8.2 bcrypt==4.0.1 cryptography==41.0.7"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Phase 6: Test Installation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('All modules imported successfully')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Phase 7: Launch TradeSense...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

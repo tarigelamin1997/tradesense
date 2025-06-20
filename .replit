@@ -22,7 +22,7 @@ LC_ALL = "C"
 LANG = "C"
 
 [workflows]
-runButton = "Robust App Recovery"
+runButton = "Direct Package Install"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -181,6 +181,71 @@ args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('All modules
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"🚀 Phase 7: Launch TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+
+[[workflows.workflow]]
+name = "Direct Package Install"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📦 Installing TradeSense Dependencies...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir streamlit==1.29.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir pandas==2.0.3"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir numpy==1.24.4"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir plotly==5.17.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir python-dateutil==2.8.2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir bcrypt==4.0.1"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir \"passlib[bcrypt]==4.0.1\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir cryptography==41.0.7"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir pyjwt==2.8.0"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pip install --user --no-cache-dir psutil==5.9.6"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Verifying installation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ Core modules imported successfully')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Launching TradeSense...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

@@ -6,6 +6,15 @@ Main Streamlit application entry point
 """
 
 import streamlit as st
+
+# Page configuration - MUST BE FIRST STREAMLIT COMMAND
+st.set_page_config(
+    page_title="TradeSense - Trading Analytics Platform",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -52,14 +61,6 @@ except ImportError as e:
     logger.error(f"Import error: {e}")
     st.error(f"Critical import error: {e}")
     st.stop()
-
-# Page configuration
-st.set_page_config(
-    page_title="TradeSense - Trading Analytics Platform",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # Custom CSS for professional styling
 st.markdown("""

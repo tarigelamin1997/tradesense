@@ -152,9 +152,12 @@ def render_analytics_tab():
 
         charts = analytics_result.get('charts', [])
         if charts:
-            # Display charts with unique keys
+            # Display charts with unique keys and timestamps
+            import time
+            timestamp = int(time.time() * 1000)  # millisecond timestamp for uniqueness
             for i, chart in enumerate(charts):
-                st.plotly_chart(chart, use_container_width=True, key=f"analytics_chart_{i}")
+                unique_key = f"analytics_chart_{i}_{timestamp}_{id(chart)}"
+                st.plotly_chart(chart, use_container_width=True, key=unique_key)
         else:
             st.markdown("""
             <div style="text-align: center; padding: 3rem;">

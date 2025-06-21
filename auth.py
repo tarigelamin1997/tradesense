@@ -82,6 +82,12 @@ class AuthManager:
                     FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             ''')
+            
+            # Check if session_token column exists, add if missing
+            cursor.execute("PRAGMA table_info(user_sessions)")
+            session_columns = [col[1] for col in cursor.fetchall()]
+            if 'session_token' not in session_columns:
+                cursor.execute('ALTER TABLE user_sessions ADD COLUMN session_token TEXT UNIQUE')
 
             # Login attempts table
             cursor.execute('''
@@ -291,6 +297,14 @@ class AuthManager:
             st.session_state.authenticated = True
 
             logger.info(f"User logged in successfully: {db_username}")
+            
+            # Show login success toast
+            try:
+                from toast_system import toast_on_login_success
+                toast_on_login_success(db_username)
+            except ImportError:
+                pass  # Toast system not available
+            
             return {"success": True, "message": "Login successful", "user": user_data}
 
         except Exception as e:
@@ -480,6 +494,18 @@ def require_auth(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+def check_partner_access(partner_id: str, user: Dict) -> bool:
+    """Check if user has access to partner resources."""
+    if not user:
+        return False
+    
+    # Admin users have access to all partners
+    if user.get('role') == 'admin':
+        return True
+    
+    # Users can only access their own partner
+    return user.get('partner_id') == partner_id
 
 def check_partner_access(partner_id: str, user: Dict) -> bool:
     """Check if user has access to partner resources."""

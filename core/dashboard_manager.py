@@ -269,5 +269,3 @@ def render_settings_tab():
                 file_name="tradesense_data.csv",
                 mime="text/csv"
             )
-# Implement the changes from the change snippets to the original code file.
-```

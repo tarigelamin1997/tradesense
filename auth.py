@@ -6,6 +6,7 @@ import secrets
 import jwt
 import bcrypt
 import os
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import logging
@@ -280,6 +281,10 @@ class AuthManager:
             logger.error(f"Login error: {e}")
             return {"success": False, "message": "An unexpected error occurred"}
 
+    def generate_session_token(self) -> str:
+        """Generate a secure session token."""
+        return secrets.token_urlsafe(32)
+
     def _create_session(self, user_id: int) -> str:
         """Create user session token."""
         session_token = secrets.token_urlsafe(32)
@@ -466,18 +471,6 @@ def require_auth(func):
         return func(*args, **kwargs)
 
     return wrapper
-
-def check_partner_access(partner_id: str, user: Dict) -> bool:
-    """Check if user has access to partner resources."""
-    if not user:
-        return False
-
-    # Admin users have access to all partners
-    if user.get('role') == 'admin':
-        return True
-
-    # Users can only access their own partner
-    return user.get('partner_id') == partner_id
 
 def check_partner_access(partner_id: str, user: Dict) -> bool:
     """Check if user has access to partner resources."""

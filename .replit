@@ -22,7 +22,7 @@ LC_ALL = "C"
 LANG = "C"
 
 [workflows]
-runButton = "Clean Install and Run"
+runButton = "Quick Start"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -369,6 +369,15 @@ args = "python3 -c \"import streamlit, pandas, numpy, plotly; print('✅ All mod
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"🚀 Starting TradeSense...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+
+[[workflows.workflow]]
+name = "Quick Start"
+author = 43683701
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

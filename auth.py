@@ -89,7 +89,19 @@ class AuthManager:
             cursor.execute("PRAGMA table_info(user_sessions)")
             session_columns = [col[1] for col in cursor.fetchall()]
             if 'session_token' not in session_columns:
-                cursor.execute('ALTER TABLE user_sessions ADD COLUMN session_token TEXT')
+                try:
+                    cursor.execute('ALTER TABLE user_sessions ADD COLUMN session_token TEXT')
+                except sqlite3.Error as e:
+                    logger.warning(f"Could not add session_token column: {e}")
+
+            # Check and add missing username column if needed
+            cursor.execute("PRAGMA table_info(users)")
+            user_columns = [col[1] for col in cursor.fetchall()]
+            if 'username' not in user_columns:
+                try:
+                    cursor.execute('ALTER TABLE users ADD COLUMN username TEXT')
+                except sqlite3.Error as e:
+                    logger.warning(f"Could not add username column: {e}")
 
             # Login attempts table
             cursor.execute('''
@@ -211,20 +223,41 @@ class AuthManager:
             conn = sqlite3.connect(self.db_path, timeout=30)
             cursor = conn.cursor()
 
-            # Get user by username or email
-            cursor.execute("""
-                SELECT id, username, email, password_hash, role, is_active, created_at 
-                FROM users 
-                WHERE (username = ? OR email = ?) AND is_active = 1
-            """, (username, username))
+            # Check what columns exist in the users table
+            cursor.execute("PRAGMA table_info(users)")
+            columns_info = cursor.fetchall()
+            column_names = [col[1] for col in columns_info]
 
-            user = cursor.fetchone()
-
-            if not user:
-                conn.close()
-                return {"success": False, "message": "Invalid credentials"}
-
-            user_id, db_username, email, password_hash, role, is_active, created_at = user
+            # Build query based on available columns
+            if 'username' in column_names:
+                # Table has username column
+                cursor.execute("""
+                    SELECT id, username, email, password_hash, role, is_active 
+                    FROM users 
+                    WHERE (username = ? OR email = ?) AND is_active = 1
+                """, (username, username))
+                
+                user = cursor.fetchone()
+                if user:
+                    user_id, db_username, email, password_hash, role, is_active = user
+                else:
+                    conn.close()
+                    return {"success": False, "message": "Invalid credentials"}
+            else:
+                # Table doesn't have username column, use email only
+                cursor.execute("""
+                    SELECT id, email, password_hash, role, is_active 
+                    FROM users 
+                    WHERE email = ? AND is_active = 1
+                """, (username,))
+                
+                user = cursor.fetchone()
+                if user:
+                    user_id, email, password_hash, role, is_active = user
+                    db_username = email  # Use email as username fallback
+                else:
+                    conn.close()
+                    return {"success": False, "message": "Invalid credentials"}
 
             # Verify password
             if not self.verify_password(password, password_hash):
@@ -235,13 +268,25 @@ class AuthManager:
             session_token = self.generate_session_token()
             expires_at = datetime.now() + timedelta(days=30)
 
+            # Check if user_sessions table has session_token column
+            cursor.execute("PRAGMA table_info(user_sessions)")
+            session_columns_info = cursor.fetchall()
+            session_column_names = [col[1] for col in session_columns_info]
+
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    cursor.execute("""
-                        INSERT INTO user_sessions (user_id, session_token, expires_at, created_at)
-                        VALUES (?, ?, ?, ?)
-                    """, (user_id, session_token, expires_at, datetime.now()))
+                    if 'session_token' in session_column_names:
+                        cursor.execute("""
+                            INSERT INTO user_sessions (user_id, session_token, expires_at, created_at)
+                            VALUES (?, ?, ?, ?)
+                        """, (user_id, session_token, expires_at, datetime.now()))
+                    else:
+                        # Fallback if session_token column doesn't exist
+                        cursor.execute("""
+                            INSERT INTO user_sessions (user_id, expires_at, created_at)
+                            VALUES (?, ?, ?)
+                        """, (user_id, expires_at, datetime.now()))
 
                     conn.commit()
                     break
@@ -251,6 +296,10 @@ class AuthManager:
                         continue
                     else:
                         raise e
+                except sqlite3.Error as e:
+                    logger.error(f"Session creation error: {e}")
+                    # Continue without session storage - auth will still work
+                    break
 
             conn.close()
 

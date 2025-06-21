@@ -864,7 +864,6 @@ def calculate_comprehensive_analytics(data):
         if 'direction' in data.columns:
             direction_counts = data['direction'].value_counts()
             total = direction_counts.sum()
-            ```python
             if total > 0:
                 stats['long_percentage'] = (direction_counts.get('Long', 0) / total * 100)
                 stats['short_percentage'] = (direction_counts.get('Short', 0) / total * 100)
@@ -1095,7 +1094,7 @@ def render_symbol_performance_chart(data):
     else:
         st.info("Symbol and P&L data required for this chart")
 
-    
+
 
 class TradingDashboard:
     """

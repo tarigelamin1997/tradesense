@@ -72,11 +72,11 @@ def render_dashboard_overview():
         st.markdown("### Quick Upload")
         try:
             from core.data_upload_handler import render_data_upload_section
-            render_data_upload_section(unique_key="dashboard_upload")
+            render_data_upload_section(unique_key="dashboard_quick_upload")
         except ImportError:
             try:
                 from core.simple_upload import simple_file_upload
-                simple_file_upload(unique_key="dashboard_simple_upload")
+                simple_file_upload(unique_key="dashboard_quick_simple_upload")
             except ImportError:
                 st.error("Upload functionality not available")
 
@@ -108,11 +108,11 @@ def render_trade_data_tab():
     # Add file upload section
     try:
         from core.data_upload_handler import render_data_upload_section
-        render_data_upload_section(unique_key="trade_data_upload")
+        render_data_upload_section(unique_key="trade_data_tab_upload")
     except ImportError:
         try:
             from core.simple_upload import simple_file_upload
-            simple_file_upload(unique_key="trade_data_simple_upload")
+            simple_file_upload(unique_key="trade_data_tab_simple_upload")
         except ImportError:
             st.error("Upload functionality not available")
 

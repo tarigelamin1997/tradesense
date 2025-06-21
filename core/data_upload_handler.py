@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Data Upload Handler
@@ -30,21 +31,46 @@ def render_data_upload_section(unique_key="default_upload"):
             df = _read_uploaded_file(uploaded_file)
 
             if df is not None:
-                # Display file info
-                st.write(f"**File:** {uploaded_file.name}")
-                st.write(f"**Size:** {uploaded_file.size / 1024:.1f}KB")
-                st.write(f"**Rows:** {len(df)}")
-                st.write(f"**Columns:** {list(df.columns)}")
+                # Display file info with enhanced styling
+                st.markdown("### 📄 **File Information**")
+                
+                info_col1, info_col2, info_col3 = st.columns(3)
+                
+                with info_col1:
+                    st.metric("📁 File Name", uploaded_file.name)
+                
+                with info_col2:
+                    file_size = len(uploaded_file.getvalue()) / 1024
+                    st.metric("📏 File Size", f"{file_size:.1f} KB")
+                
+                with info_col3:
+                    st.metric("📊 Total Rows", len(df))
 
-                # Show preview
-                with st.expander("📄 Data Preview", expanded=False):
-                    st.dataframe(df.head(), use_container_width=True)
+                # Enhanced data preview
+                with st.expander("📊 Data Preview & Analysis", expanded=True):
+                    preview_col1, preview_col2 = st.columns([2, 1])
+                    
+                    with preview_col1:
+                        st.markdown("**Sample Data:**")
+                        st.dataframe(df.head(), use_container_width=True)
+                    
+                    with preview_col2:
+                        st.markdown("**Columns Found:**")
+                        for col in df.columns:
+                            st.write(f"• {col}")
+                        
+                        # Quick data quality check
+                        missing_pct = (df.isnull().sum().sum() / (len(df) * len(df.columns))) * 100
+                        if missing_pct > 0:
+                            st.warning(f"⚠️ {missing_pct:.1f}% missing data")
+                        else:
+                            st.success("✅ No missing data")
 
                 # Process the data
                 _process_uploaded_data(df, uploaded_file.name)
 
         except Exception as e:
-            st.error(f"Unexpected error: {str(e)}")
+            st.error(f"❌ Error processing file: {str(e)}")
             logger.error(f"File upload error: {str(e)}")
 
 def _read_uploaded_file(uploaded_file):
@@ -65,61 +91,49 @@ def _read_uploaded_file(uploaded_file):
         return None
 
 def _process_uploaded_data(df, filename):
-    """Process uploaded data with fallback methods."""
+    """Process uploaded data with enhanced feedback."""
     try:
-        # Try full processing first
-        from trade_entry_manager import trade_manager
-        result = trade_manager.add_file_trades(df, f"file_{filename}")
-
-        if result['status'] == 'success':
-            st.success(f"✅ Successfully processed {result['trades_added']} trades")
-            st.session_state.trade_data = trade_manager.get_all_trades_dataframe()
+        # Store data in session state for analytics
+        st.session_state.trade_data = df
+        st.session_state.data_source = filename
+        
+        # Success message with metrics
+        total_pnl = df['pnl'].sum() if 'pnl' in df.columns else 0
+        win_rate = (len(df[df['pnl'] > 0]) / len(df) * 100) if 'pnl' in df.columns and len(df) > 0 else 0
+        
+        st.markdown("""
+        <div style="
+            background: linear-gradient(90deg, #00ff88 0%, #00d4ff 100%);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        ">
+            ✅ Successfully processed {rows:,} trades | Total P&L: ${pnl:.2f} | Win Rate: {win_rate:.1f}%
+        </div>
+        """.format(rows=len(df), pnl=total_pnl, win_rate=win_rate), unsafe_allow_html=True)
+        
+        # Validate required columns
+        required_cols = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'pnl', 'direction']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        
+        if missing_cols:
+            st.warning(f"⚠️ Missing recommended columns: {', '.join(missing_cols)}")
+            st.info("The analytics will work with available data, but some features may be limited.")
         else:
-            _handle_processing_error(result, df)
+            st.success("✅ All recommended columns found! Full analytics available.")
+            
+        st.info("💡 Navigate to the **Analytics** tab to explore your trading performance!")
 
     except Exception as e:
-        # Fallback to simple validation
-        _fallback_processing(df, str(e))
-
-def _handle_processing_error(result, df):
-    """Handle processing errors with helpful feedback."""
-    st.error(f"Error processing file: {result['message']}")
-
-    # Show column mapping suggestions
-    required_cols = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'pnl', 'direction']
-    st.info("**Required columns:** " + ", ".join(required_cols))
-    st.info(f"**Your file has:** {', '.join(df.columns)}")
-
-    # Suggest mappings
-    suggestions = []
-    for req_col in required_cols:
-        for file_col in df.columns:
-            if req_col.lower() in file_col.lower() or file_col.lower() in req_col.lower():
-                suggestions.append(f"'{file_col}' might map to '{req_col}'")
-
-    if suggestions:
-        st.info("**Possible column mappings:**")
-        for suggestion in suggestions:
-            st.info(f"• {suggestion}")
-
-def _fallback_processing(df, error):
-    """Fallback processing when main system fails."""
-    st.warning(f"🔧 Main processing failed: {error}")
-    st.info("Trying simplified processing...")
-
-    # Basic validation
-    required_columns = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'pnl', 'direction']
-    missing_cols = [col for col in required_columns if col not in df.columns]
-
-    if missing_cols:
-        st.error(f"Missing required columns: {', '.join(missing_cols)}")
-    else:
-        # Store raw data
-        st.session_state.trade_data = df
-        st.success("✅ File uploaded successfully! Limited analytics available.")
+        st.error(f"Error processing data: {str(e)}")
+        logger.error(f"Data processing error: {str(e)}")
 
 def handle_file_upload():
-    """Handle file upload with enhanced preview and validation."""
+    """Enhanced file upload handler with modern UI."""
     st.markdown("### 📁 **Upload Your Trade Data**")
 
     uploaded_file = st.file_uploader(
@@ -250,17 +264,8 @@ def handle_file_upload():
             with preview_col1:
                 st.markdown("**📋 Sample Records**")
                 # Style the dataframe
-                styled_df = df.head(5).style.format({
-                    'pnl': '${:.2f}' if 'pnl' in df.columns else lambda x: x,
-                    'entry_price': '${:.2f}' if 'entry_price' in df.columns else lambda x: x,
-                    'exit_price': '${:.2f}' if 'exit_price' in df.columns else lambda x: x
-                }).background_gradient(subset=['pnl'] if 'pnl' in df.columns else [])
-                
-                st.dataframe(
-                    styled_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
+                display_df = df.head(5)
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
             with preview_col2:
                 st.markdown("**📈 Quick Analytics**")
@@ -297,6 +302,10 @@ def handle_file_upload():
             if missing_data_pct > 20:
                 st.warning(f"⚠️ High missing data detected ({missing_data_pct:.1f}%). Consider data cleanup.")
 
+            # Store in session state
+            st.session_state.trade_data = df
+            st.session_state.data_source = uploaded_file.name
+
             return df
 
         except Exception as e:
@@ -305,4 +314,3 @@ def handle_file_upload():
             return None
 
     return None
-```

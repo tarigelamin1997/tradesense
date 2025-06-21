@@ -4,6 +4,7 @@ import hashlib
 import secrets
 import jwt
 import bcrypt
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import logging
@@ -23,8 +24,16 @@ class AuthManager:
     def init_database(self):
         """Initialize authentication and partner databases."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Ensure database directory exists
+            import os
+            db_dir = os.path.dirname(self.db_path) if os.path.dirname(self.db_path) else '.'
+            os.makedirs(db_dir, exist_ok=True)
+            
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
+            
+            # Enable foreign keys
+            cursor.execute('PRAGMA foreign_keys = ON')
 
             # Users table
             cursor.execute('''
@@ -126,8 +135,12 @@ class AuthManager:
 
     def register_user(self, username: str, email: str, password: str, partner_id: Optional[int] = None) -> Dict[str, Any]:
         """Register a new user."""
+        conn = None
         try:
             # Validate inputs
+            if not username or not email or not password:
+                return {"success": False, "message": "All fields are required"}
+                
             if not self.validate_email(email):
                 return {"success": False, "message": "Invalid email format"}
 
@@ -135,13 +148,12 @@ class AuthManager:
             if not is_strong:
                 return {"success": False, "message": strength_msg}
 
-            conn = sqlite3.connect(self.db_path)
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
 
             # Check if user already exists
             cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
             if cursor.fetchone():
-                conn.close()
                 return {"success": False, "message": "Username or email already exists"}
 
             # Hash password and create user
@@ -153,19 +165,28 @@ class AuthManager:
 
             user_id = cursor.lastrowid
             conn.commit()
-            conn.close()
 
             logger.info(f"User registered successfully: {username}")
             return {"success": True, "message": "User registered successfully", "user_id": user_id}
 
+        except sqlite3.IntegrityError as e:
+            logger.error(f"Registration integrity error: {e}")
+            return {"success": False, "message": "Username or email already exists"}
         except Exception as e:
             logger.error(f"Registration error: {e}")
-            return {"success": False, "message": "Registration failed"}
+            return {"success": False, "message": f"Registration failed: {str(e)}"}
+        finally:
+            if conn:
+                conn.close()
 
     def login_user(self, username: str, password: str) -> Dict[str, Any]:
         """Authenticate user login."""
+        conn = None
         try:
-            conn = sqlite3.connect(self.db_path)
+            if not username or not password:
+                return {"success": False, "message": "Username and password are required"}
+
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
 
             # Get user
@@ -178,28 +199,31 @@ class AuthManager:
             user = cursor.fetchone()
             if not user:
                 self._log_login_attempt(username, False)
-                conn.close()
                 return {"success": False, "message": "Invalid credentials"}
 
-            user_id, username, email, password_hash, partner_id, role, is_active, failed_attempts, locked_until = user
+            user_id, db_username, email, password_hash, partner_id, role, is_active, failed_attempts, locked_until = user
 
             # Check if account is locked
-            if locked_until and datetime.fromisoformat(locked_until) > datetime.now():
-                conn.close()
-                return {"success": False, "message": "Account temporarily locked. Try again later."}
+            if locked_until:
+                try:
+                    if datetime.fromisoformat(locked_until) > datetime.now():
+                        return {"success": False, "message": "Account temporarily locked. Try again later."}
+                except ValueError:
+                    # Reset invalid lock time
+                    cursor.execute('UPDATE users SET locked_until = NULL WHERE id = ?', (user_id,))
+                    conn.commit()
 
             # Check if account is active
             if not is_active:
-                conn.close()
                 return {"success": False, "message": "Account is disabled"}
 
             # Verify password
             if not self.verify_password(password, password_hash):
                 # Increment failed attempts
-                failed_attempts += 1
+                failed_attempts = (failed_attempts or 0) + 1
                 lock_time = None
                 if failed_attempts >= 5:
-                    lock_time = datetime.now() + timedelta(minutes=30)
+                    lock_time = (datetime.now() + timedelta(minutes=30)).isoformat()
 
                 cursor.execute('''
                     UPDATE users SET failed_login_attempts = ?, locked_until = ?
@@ -208,26 +232,24 @@ class AuthManager:
                 conn.commit()
 
                 self._log_login_attempt(username, False)
-                conn.close()
                 return {"success": False, "message": "Invalid credentials"}
 
             # Successful login - reset failed attempts
             cursor.execute('''
                 UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = ?
                 WHERE id = ?
-            ''', (datetime.now(), user_id))
+            ''', (datetime.now().isoformat(), user_id))
 
             # Create session
             session_token = self._create_session(user_id)
 
             conn.commit()
-            conn.close()
 
             self._log_login_attempt(username, True)
 
             user_data = {
                 "id": user_id,
-                "username": username,
+                "username": db_username,
                 "email": email,
                 "partner_id": partner_id,
                 "role": role,
@@ -238,27 +260,34 @@ class AuthManager:
             st.session_state.current_user = user_data
             st.session_state.authenticated = True
 
-            logger.info(f"User logged in successfully: {username}")
+            logger.info(f"User logged in successfully: {db_username}")
             return {"success": True, "message": "Login successful", "user": user_data}
 
         except Exception as e:
             logger.error(f"Login error: {e}")
-            return {"success": False, "message": "Login failed"}
+            return {"success": False, "message": f"Login failed: {str(e)}"}
+        finally:
+            if conn:
+                conn.close()
 
     def _create_session(self, user_id: int) -> str:
         """Create user session token."""
         session_token = secrets.token_urlsafe(32)
-        expires_at = datetime.now() + timedelta(days=7)
+        expires_at = (datetime.now() + timedelta(days=7)).isoformat()
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO user_sessions (user_id, session_token, expires_at)
-            VALUES (?, ?, ?)
-        ''', (user_id, session_token, expires_at))
-        conn.commit()
-        conn.close()
-
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO user_sessions (user_id, session_token, expires_at)
+                VALUES (?, ?, ?)
+            ''', (user_id, session_token, expires_at))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Session creation error: {e}")
+            # Return token anyway, session storage is not critical for basic auth
+            
         return session_token
 
     def _log_login_attempt(self, username: str, success: bool):

@@ -83,7 +83,7 @@ def main():
 
         # Initialize and test authentication system
         from auth import AuthManager, render_auth_sidebar
-        
+
         # Test authentication system
         try:
             auth_manager = AuthManager()
@@ -96,7 +96,7 @@ def main():
         except Exception as e:
             st.error(f"❌ Authentication system failed to initialize: {e}")
             st.stop()
-        
+
         # Render authentication sidebar
         render_auth_sidebar()
 
@@ -107,15 +107,15 @@ def main():
         except ImportError as e:
             logger.warning(f"Could not import app_factory: {e}")
             # Fallback to enhanced app structure with authentication
-            
+
             from auth import AuthManager
             auth_manager = AuthManager()
             current_user = auth_manager.get_current_user()
-            
+
             # Enterprise Features Navigation
             st.sidebar.markdown("---")
             st.sidebar.subheader("🏢 Enterprise Features")
-            
+
             # Check for admin access
             if current_user and current_user.get('role') == 'admin':
                 if st.sidebar.button("🛠️ Admin Dashboard", use_container_width=True):
@@ -123,7 +123,7 @@ def main():
                     admin_dash = AdminDashboard()
                     admin_dash.render_dashboard()
                     return
-            
+
             # Check for partner access
             if current_user and current_user.get('partner_id'):
                 if st.sidebar.button("🏢 Partner Portal", use_container_width=True):
@@ -131,55 +131,55 @@ def main():
                     partner_mgmt = PartnerManagement()
                     partner_mgmt.render_partner_portal()
                     return
-            
+
             # Affiliate program (available to all users)
             if st.sidebar.button("💰 Affiliate Program", use_container_width=True):
                 from affiliate_system import AffiliateTrackingSystem
                 affiliate_system = AffiliateTrackingSystem()
                 affiliate_system.render_affiliate_dashboard()
                 return
-            
+
             # Support center
             if st.sidebar.button("🆘 Support Center", use_container_width=True):
                 from error_notification_ui import render_error_notification_interface
                 render_error_notification_interface()
                 return
-            
+
             # Main application
             st.title("🏆 TradeSense - Trading Analytics")
-            
+
             if current_user:
                 st.success(f"Welcome back, {current_user['username']}! 👋")
-                
+
                 # Enhanced feature showcase for authenticated users
                 col1, col2, col3 = st.columns(3)
-                
+
                 with col1:
                     st.markdown("### 📊 Analytics")
                     st.write("• Advanced performance metrics")
                     st.write("• Risk analysis & recommendations")
                     st.write("• Interactive charts & reports")
-                
+
                 with col2:
                     st.markdown("### 🔗 Integrations")
                     st.write("• Multiple broker connections")
                     st.write("• Automated data sync")
                     st.write("• Real-time updates")
-                
+
                 with col3:
                     st.markdown("### 🏢 Enterprise")
                     st.write("• Partner management")
                     st.write("• White-label solutions")
                     st.write("• API access")
-            
+
             else:
                 st.info("Welcome to TradeSense! Please login to access the full platform.")
-                
+
                 # Feature showcase for non-authenticated users
                 st.markdown("### 🚀 Platform Features")
-                
+
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
                     st.markdown("""
                     #### 📊 Trading Analytics
@@ -188,7 +188,7 @@ def main():
                     - **Interactive Charts**: Equity curves, performance over time
                     - **Export Reports**: PDF and Excel report generation
                     """)
-                
+
                 with col2:
                     st.markdown("""
                     #### 🔗 Broker Integrations
@@ -197,11 +197,11 @@ def main():
                     - **Prop Firms**: Apex, TopStep, and more
                     - **CSV Import**: Universal trade data support
                     """)
-                
+
                 st.markdown("### 🏢 Enterprise Solutions")
-                
+
                 col1, col2, col3 = st.columns(3)
-                
+
                 with col1:
                     st.markdown("""
                     #### 🤝 Partner Program
@@ -210,7 +210,7 @@ def main():
                     - Dedicated support
                     - Custom integrations
                     """)
-                
+
                 with col2:
                     st.markdown("""
                     #### 💰 Affiliate Program
@@ -219,7 +219,7 @@ def main():
                     - Marketing materials
                     - Real-time tracking
                     """)
-                
+
                 with col3:
                     st.markdown("""
                     #### 🛠️ Admin Tools
@@ -257,3 +257,6 @@ def main():
 # Run the application
 if __name__ == "__main__":
     main()
+```
+
+**Analysis:** The code initializes the Streamlit application, checks for missing modules, configures the page, sets up logging, and defines the main function. The main function initializes the session state, attempts to initialize the authentication system, and renders the authentication sidebar. It then tries to import the app factory and create the app. If that fails, it falls back to an enhanced app structure with authentication, displaying enterprise features, affiliate programs, and support center options. A basic file uploader is also included.

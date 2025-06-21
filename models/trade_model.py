@@ -47,6 +47,25 @@ class TradeRecord:
     gross_pnl: Optional[float] = None
     net_pnl: Optional[float] = None
     
+    # Advanced behavioral analytics
+    emotional_state: Optional[str] = None  # calm/anxious/revenge/euphoric
+    market_regime: Optional[str] = None  # trending/range/volatile/low_vol
+    session_type: Optional[str] = None  # premarket/open/midday/close/after
+    trade_sequence_id: Optional[int] = None  # for detecting patterns
+    time_since_last_trade: Optional[float] = None  # minutes
+    portfolio_heat: Optional[float] = None  # risk concentration score
+    
+    # Risk metrics
+    position_size_percent: Optional[float] = None  # % of portfolio
+    max_adverse_excursion: Optional[float] = None  # MAE
+    max_favorable_excursion: Optional[float] = None  # MFE
+    risk_reward_actual: Optional[float] = None  # actual vs planned
+    
+    # Market context
+    vix_level: Optional[float] = None  # volatility context
+    spy_direction: Optional[str] = None  # market direction
+    sector_performance: Optional[float] = None  # sector relative performance
+    
     # Metadata fields
     data_source: str = "manual"
     import_timestamp: datetime = field(default_factory=datetime.now)

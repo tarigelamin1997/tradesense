@@ -789,21 +789,21 @@ def render_analytics():
     try:
         # Comprehensive analytics calculations
         total_trades = len(data)
-        
+
         if total_trades == 0:
             st.warning("No trade data found. Please upload valid trade data.")
             return None
 
         # Enhanced analytics with all requested metrics
         stats = calculate_comprehensive_analytics(data)
-        
+
         if not stats:
             st.error("Unable to calculate analytics from the provided data")
             return None
 
         # Render enhanced dashboard
         render_comprehensive_dashboard(data, stats)
-        
+
         return stats
 
     except Exception as e:
@@ -815,42 +815,42 @@ def calculate_comprehensive_analytics(data):
     """Calculate comprehensive trading analytics."""
     try:
         stats = {}
-        
+
         # Basic metrics
         stats['total_trades'] = len(data)
-        
+
         if 'pnl' in data.columns:
             pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-            
+
             if not pnl_data.empty:
                 stats['total_pnl'] = pnl_data.sum()
                 stats['avg_pnl'] = pnl_data.mean()
-                
+
                 winning_trades = pnl_data[pnl_data > 0]
                 losing_trades = pnl_data[pnl_data < 0]
-                
+
                 stats['win_rate'] = (len(winning_trades) / len(pnl_data) * 100) if len(pnl_data) > 0 else 0
                 stats['winning_trades'] = len(winning_trades)
                 stats['losing_trades'] = len(losing_trades)
-                
+
                 # Profit factor
                 gross_profit = winning_trades.sum() if len(winning_trades) > 0 else 0
                 gross_loss = abs(losing_trades.sum()) if len(losing_trades) > 0 else 0
                 stats['profit_factor'] = gross_profit / gross_loss if gross_loss > 0 else float('inf')
-                
+
                 # Best/Worst trades
                 stats['best_trade'] = pnl_data.max()
                 stats['worst_trade'] = pnl_data.min()
-                
+
                 # Expectancy
                 stats['expectancy'] = pnl_data.mean()
-        
+
         # Duration analysis
         if 'entry_time' in data.columns and 'exit_time' in data.columns:
             try:
                 data['entry_time'] = pd.to_datetime(data['entry_time'], errors='coerce')
                 data['exit_time'] = pd.to_datetime(data['exit_time'], errors='coerce')
-                
+
                 valid_duration = data.dropna(subset=['entry_time', 'exit_time'])
                 if not valid_duration.empty:
                     durations = (valid_duration['exit_time'] - valid_duration['entry_time']).dt.total_seconds() / 3600
@@ -859,15 +859,16 @@ def calculate_comprehensive_analytics(data):
             except:
                 stats['avg_holding_time'] = 0
                 stats['avg_trade_duration'] = 0
-        
+
         # Direction analysis
         if 'direction' in data.columns:
             direction_counts = data['direction'].value_counts()
             total = direction_counts.sum()
+            ```python
             if total > 0:
                 stats['long_percentage'] = (direction_counts.get('Long', 0) / total * 100)
                 stats['short_percentage'] = (direction_counts.get('Short', 0) / total * 100)
-        
+
         # Consistency score (streak analysis)
         if 'pnl' in data.columns:
             pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
@@ -876,7 +877,7 @@ def calculate_comprehensive_analytics(data):
                 wins = (pnl_data > 0).astype(int)
                 streaks = []
                 current_streak = 1
-                
+
                 for i in range(1, len(wins)):
                     if wins.iloc[i] == wins.iloc[i-1]:
                         current_streak += 1
@@ -884,27 +885,27 @@ def calculate_comprehensive_analytics(data):
                         streaks.append(current_streak)
                         current_streak = 1
                 streaks.append(current_streak)
-                
+
                 # Consistency score based on average streak length vs volatility
                 avg_streak = np.mean(streaks) if streaks else 0
                 volatility = pnl_data.std()
                 consistency_score = min(100, max(0, (avg_streak * 20) - (volatility / 100)))
                 stats['consistency_score'] = consistency_score
-        
+
         return stats
-        
+
     except Exception as e:
         logger.error(f"Error calculating comprehensive analytics: {e}")
         return {}
 
 def render_comprehensive_dashboard(data, stats):
     """Render the comprehensive analytics dashboard."""
-    
+
     # Key Metrics Cards with animations
     st.subheader("🎯 Key Performance Metrics")
-    
+
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.markdown("""
         <div class="metric-card">
@@ -912,7 +913,7 @@ def render_comprehensive_dashboard(data, stats):
             <div class="metric-value">{:,}</div>
         </div>
         """.format(stats.get('total_trades', 0)), unsafe_allow_html=True)
-    
+
     with col2:
         win_rate = stats.get('win_rate', 0)
         color = "#10b981" if win_rate > 50 else "#ef4444"
@@ -922,7 +923,7 @@ def render_comprehensive_dashboard(data, stats):
             <div class="metric-value" style="color: {color}">{win_rate:.1f}%</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col3:
         total_pnl = stats.get('total_pnl', 0)
         color = "#10b981" if total_pnl > 0 else "#ef4444"
@@ -933,7 +934,7 @@ def render_comprehensive_dashboard(data, stats):
             <div class="metric-value" style="color: {color}">{sign}${total_pnl:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col4:
         profit_factor = stats.get('profit_factor', 0)
         if profit_factor == float('inf'):
@@ -952,7 +953,7 @@ def render_comprehensive_dashboard(data, stats):
     # Second row of metrics
     st.markdown("---")
     col5, col6, col7, col8 = st.columns(4)
-    
+
     with col5:
         avg_duration = stats.get('avg_trade_duration', 0)
         st.markdown(f"""
@@ -961,7 +962,7 @@ def render_comprehensive_dashboard(data, stats):
             <div class="metric-value">{avg_duration:.1f}h</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col6:
         long_pct = stats.get('long_percentage', 50)
         st.markdown(f"""
@@ -970,7 +971,7 @@ def render_comprehensive_dashboard(data, stats):
             <div class="metric-value">{long_pct:.0f}% / {100-long_pct:.0f}%</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col7:
         best_trade = stats.get('best_trade', 0)
         st.markdown(f"""
@@ -979,7 +980,7 @@ def render_comprehensive_dashboard(data, stats):
             <div class="metric-value" style="color: #10b981">${best_trade:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col8:
         consistency = stats.get('consistency_score', 0)
         color = "#10b981" if consistency > 70 else "#f59e0b" if consistency > 40 else "#ef4444"
@@ -993,18 +994,18 @@ def render_comprehensive_dashboard(data, stats):
     # Charts section
     st.markdown("---")
     st.subheader("📈 Performance Charts")
-    
+
     chart_tabs = st.tabs(["Equity Curve", "P&L Distribution", "Performance by Symbol"])
-    
+
     with chart_tabs[0]:
         render_equity_curve_chart(data, stats)
-    
+
     with chart_tabs[1]:
         render_pnl_distribution_chart(data)
-    
+
     with chart_tabs[2]:
         render_symbol_performance_chart(data)
-    
+
     # Export options
     st.markdown("---")
     render_export_options(data, stats)
@@ -1015,7 +1016,7 @@ def render_equity_curve_chart(data, stats):
         try:
             pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
             cumulative_pnl = pnl_data.cumsum()
-            
+
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 y=cumulative_pnl,
@@ -1023,7 +1024,7 @@ def render_equity_curve_chart(data, stats):
                 name='Cumulative P&L',
                 line=dict(color='#00d4ff', width=3)
             ))
-            
+
             fig.update_layout(
                 title='Equity Curve',
                 xaxis_title='Trade Number',
@@ -1031,7 +1032,7 @@ def render_equity_curve_chart(data, stats):
                 template='plotly_dark',
                 height=400
             )
-            
+
             st.plotly_chart(fig, use_container_width=True)
         except Exception as e:
             st.error(f"Error rendering equity curve: {e}")
@@ -1043,21 +1044,21 @@ def render_pnl_distribution_chart(data):
     if 'pnl' in data.columns:
         try:
             pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-            
+
             fig = px.histogram(
                 x=pnl_data,
                 nbins=30,
                 title='P&L Distribution',
                 color_discrete_sequence=['#00d4ff']
             )
-            
+
             fig.update_layout(
                 xaxis_title='P&L ($)',
                 yaxis_title='Frequency',
                 template='plotly_dark',
                 height=400
             )
-            
+
             st.plotly_chart(fig, use_container_width=True)
         except Exception as e:
             st.error(f"Error rendering P&L distribution: {e}")
@@ -1070,7 +1071,7 @@ def render_symbol_performance_chart(data):
         try:
             symbol_performance = data.groupby('symbol')['pnl'].sum().reset_index()
             symbol_performance = symbol_performance.sort_values('pnl', ascending=True)
-            
+
             fig = px.bar(
                 symbol_performance,
                 x='pnl',
@@ -1080,16 +1081,288 @@ def render_symbol_performance_chart(data):
                 color='pnl',
                 color_continuous_scale='RdYlGn'
             )
-            
+
             fig.update_layout(
                 xaxis_title='Total P&L ($)',
                 yaxis_title='Symbol',
                 template='plotly_dark',
                 height=400
             )
-            
+
             st.plotly_chart(fig, use_container_width=True)
         except Exception as e:
             st.error(f"Error rendering symbol performance: {e}")
     else:
         st.info("Symbol and P&L data required for this chart")
+
+    
+
+class TradingDashboard:
+    """
+    Trading Dashboard class for rendering comprehensive analytics.
+    """
+    def __init__(self, trade_data: pd.DataFrame):
+        """Initialise with trade data."""
+        self.trade_data = trade_data
+        self.logger = logging.getLogger(__name__)
+
+    def render_complete_dashboard(self):
+        """Render complete trading analytics dashboard."""
+        st.header("📊 Trading Analytics Dashboard")
+
+        # Check if trade data is available
+        if self.trade_data is None or self.trade_data.empty:
+            st.info("📈 No trade data available. Please upload your trades to generate insights.")
+            return
+
+        try:
+            # Enhanced analytics rendering
+            self.render_enhanced_analytics(self.trade_data)
+
+            # Charts and Visualizations
+            st.subheader("📈 Charts and Visualizations")
+            self._render_charts(self.trade_data)
+
+        except Exception as e:
+            self.logger.error(f"Dashboard rendering error: {e}")
+            st.error(f"Error rendering dashboard: {e}")
+
+    def render_enhanced_analytics(self, trade_data: pd.DataFrame):
+        """Render enhanced analytics dashboard."""
+        if trade_data is None or trade_data.empty:
+            st.warning("📊 No trade data available for analytics")
+            return
+
+        # Enhanced Analytics Overview
+        st.markdown("### 🎯 Enhanced Performance Analytics")
+
+        # Create columns for comprehensive metrics
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            total_trades = len(trade_data)
+            st.metric("Total Trades", f"{total_trades:,}")
+
+        with col2:
+            if 'pnl' in trade_data.columns:
+                total_pnl = trade_data['pnl'].sum()
+                st.metric("Total P&L", f"${total_pnl:,.2f}")
+
+        with col3:
+            if 'pnl' in trade_data.columns:
+                winning_trades = len(trade_data[trade_data['pnl'] > 0])
+                win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
+                st.metric("Win Rate", f"{win_rate:.1f}%")
+
+        with col4:
+            if 'pnl' in trade_data.columns:
+                avg_trade = trade_data['pnl'].mean()
+                st.metric("Avg Trade", f"${avg_trade:,.2f}")
+
+        # Additional enhanced metrics
+        st.markdown("---")
+        self._render_advanced_metrics(trade_data)
+
+        # Trade Duration Analysis
+        st.markdown("---")
+        self._render_duration_analysis(trade_data)
+
+        # Long vs Short Analysis
+        st.markdown("---")
+        self._render_long_short_analysis(trade_data)
+
+        # Best/Worst Trade Analysis
+        st.markdown("---")
+        self._render_best_worst_analysis(trade_data)
+
+        # Consistency Scoring
+        st.markdown("---")
+        self._render_consistency_scoring(trade_data)
+
+    def _render_advanced_metrics(self, trade_data: pd.DataFrame):
+        """Render advanced trading metrics."""
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.subheader("📈 Profit Factor")
+            if 'pnl' in trade_data.columns:
+                gross_profit = trade_data[trade_data['pnl'] > 0]['pnl'].sum()
+                gross_loss = abs(trade_data[trade_data['pnl'] < 0]['pnl'].sum())
+                profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+                st.metric("Profit Factor", f"{profit_factor:.2f}")
+
+        with col2:
+            st.subheader("📊 Sharpe Ratio")
+            if 'pnl' in trade_data.columns:
+                returns = trade_data['pnl']
+                sharpe = returns.mean() / returns.std() if returns.std() > 0 else 0
+                st.metric("Sharpe Ratio", f"{sharpe:.2f}")
+
+        with col3:
+            st.subheader("📉 Max Drawdown")
+            if 'pnl' in trade_data.columns:
+                cumulative_pnl = trade_data['pnl'].cumsum()
+                running_max = cumulative_pnl.expanding().max()
+                drawdown = (cumulative_pnl - running_max)
+                max_drawdown = drawdown.min()
+                st.metric("Max Drawdown", f"${max_drawdown:,.2f}")
+
+    def _render_duration_analysis(self, trade_data: pd.DataFrame):
+        """Render trade duration analysis."""
+        st.subheader("⏱️ Trade Duration Analysis")
+
+        # Calculate holding times if date columns exist
+        if 'entry_time' in trade_data.columns and 'exit_time' in trade_data.columns:
+            try:
+                trade_data['entry_time'] = pd.to_datetime(trade_data['entry_time'])
+                trade_data['exit_time'] = pd.to_datetime(trade_data['exit_time'])
+                trade_data['holding_time'] = (trade_data['exit_time'] - trade_data['entry_time']).dt.total_seconds() / 3600  # hours
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    avg_holding = trade_data['holding_time'].mean()
+                    st.metric("Avg Holding Time", f"{avg_holding:.1f} hours")
+
+                with col2:
+                    median_holding = trade_data['holding_time'].median()
+                    st.metric("Median Holding Time", f"{median_holding:.1f} hours")
+
+                with col3:
+                    max_holding = trade_data['holding_time'].max()
+                    st.metric("Max Holding Time", f"{max_holding:.1f} hours")
+
+                # Holding time distribution chart
+                fig = px.histogram(trade_data, x='holding_time', bins=20, 
+                                 title="Trade Duration Distribution")
+                st.plotly_chart(fig, use_container_width=True)
+
+            except Exception as e:
+                st.info("💡 Trade duration analysis requires entry_time and exit_time columns")
+        else:
+            st.info("💡 Upload data with entry_time and exit_time columns for duration analysis")
+
+    def _render_long_short_analysis(self, trade_data: pd.DataFrame):
+        """Render long vs short position analysis."""
+        st.subheader("📊 Long vs Short Analysis")
+
+        if 'direction' in trade_data.columns:
+            direction_stats = trade_data.groupby('direction').agg({
+                'pnl': ['count', 'sum', 'mean']
+            }).round(2)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                long_trades = len(trade_data[trade_data['direction'].str.lower() == 'long'])
+                short_trades = len(trade_data[trade_data['direction'].str.lower() == 'short'])
+                total = long_trades + short_trades
+
+                long_pct = (long_trades / total * 100) if total > 0 else 0
+                short_pct = (short_trades / total * 100) if total > 0 else 0
+
+                st.metric("Long Trades", f"{long_trades} ({long_pct:.1f}%)")
+                st.metric("Short Trades", f"{short_trades} ({short_pct:.1f}%)")
+
+            with col2:
+                if 'pnl' in trade_data.columns:
+                    long_pnl = trade_data[trade_data['direction'].str.lower() == 'long']['pnl'].sum()
+                    short_pnl = trade_data[trade_data['direction'].str.lower() == 'short']['pnl'].sum()
+
+                    st.metric("Long P&L", f"${long_pnl:,.2f}")
+                    st.metric("Short P&L", f"${short_pnl:,.2f}")
+        else:
+            st.info("💡 Upload data with 'direction' column for long/short analysis")
+
+    def _render_best_worst_analysis(self, trade_data: pd.DataFrame):
+        """Render best and worst trade analysis."""
+        st.subheader("🏆 Best & Worst Trades")
+
+        if 'pnl' in trade_data.columns:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("#### 🥇 Best Trades")
+                best_trades = trade_data.nlargest(5, 'pnl')[['symbol', 'pnl', 'date'] if 'symbol' in trade_data.columns and 'date' in trade_data.columns else ['pnl']]
+                st.dataframe(best_trades, hide_index=True)
+
+            with col2:
+                st.markdown("#### 🔴 Worst Trades")
+                worst_trades = trade_data.nsmallest(5, 'pnl')[['symbol', 'pnl', 'date'] if 'symbol' in trade_data.columns and 'date' in trade_data.columns else ['pnl']]
+                st.dataframe(worst_trades, hide_index=True)
+
+    def _render_consistency_scoring(self, trade_data: pd.DataFrame):
+        """Render consistency scoring analysis."""
+        st.subheader("🎯 Consistency Scoring")
+
+        if 'pnl' in trade_data.columns and len(trade_data) > 0:
+            # Calculate consistency metrics
+            returns = trade_data['pnl']
+            winning_trades = len(returns[returns > 0])
+            total_trades = len(returns)
+            win_rate = winning_trades / total_trades if total_trades > 0 else 0
+
+            # Calculate rolling performance (if enough data)
+            if len(trade_data) >= 10:
+                rolling_returns = returns.rolling(window=10).sum()
+                positive_periods = len(rolling_returns[rolling_returns > 0])
+                total_periods = len(rolling_returns.dropna())
+                consistency_score = (positive_periods / total_periods * 100) if total_periods > 0 else 0
+            else:
+                consistency_score = win_rate * 100
+
+            # Return consistency
+            return_std = returns.std()
+            return_mean = returns.mean()
+            coefficient_of_variation = abs(return_std / return_mean) if return_mean != 0 else float('inf')
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric("Consistency Score", f"{consistency_score:.1f}%")
+                if consistency_score >= 70:
+                    st.success("🟢 Highly Consistent")
+                elif consistency_score >= 50:
+                    st.warning("🟡 Moderately Consistent")
+                else:
+                    st.error("🔴 Needs Improvement")
+
+            with col2:
+                st.metric("Return Volatility", f"{return_std:.2f}")
+                if coefficient_of_variation < 1:
+                    st.success("🟢 Low Volatility")
+                elif coefficient_of_variation < 2:
+                    st.warning("🟡 Medium Volatility")
+                else:
+                    st.error("🔴 High Volatility")
+
+            with col3:
+                monthly_consistency = self._calculate_monthly_consistency(trade_data)
+                st.metric("Monthly Win Rate", f"{monthly_consistency:.1f}%")
+
+    def _calculate_monthly_consistency(self, trade_data: pd.DataFrame):
+        """Calculate monthly consistency rate."""
+        try:
+            if 'date' in trade_data.columns and 'pnl' in trade_data.columns:
+                trade_data['date'] = pd.to_datetime(trade_data['date'])
+                monthly_pnl = trade_data.groupby(trade_data['date'].dt.to_period('M'))['pnl'].sum()
+                winning_months = len(monthly_pnl[monthly_pnl > 0])
+                total_months = len(monthly_pnl)
+                return (winning_months / total_months * 100) if total_months > 0 else 0
+            else:
+                return 0
+        except:
+            return 0
+
+    def _render_charts(self, trade_data: pd.DataFrame):
+        """Render charts and visualizations for trading data."""
+        # Example charts (you can expand this section)
+        if 'pnl' in trade_data.columns:
+            st.subheader("P&L Distribution")
+            fig = px.histogram(trade_data, x='pnl', title='P&L Distribution')
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Equity Curve
+            cumulative_pnl = trade_data['pnl'].cumsum()
+            fig = px.line(x=trade_data.index, y=cumulative_pnl, title='Equity Curve')
+            st.plotly_chart(fig, use_container_width=True)

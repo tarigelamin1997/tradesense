@@ -539,4 +539,3 @@ def render_auth_sidebar():
                                 st.success(result["message"])
                             else:
                                 st.error(result["message"])
-`

@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 # Import core components with error handling
 try:
-    from core.app_factory import create_app
     from core.dashboard_manager import DashboardManager
     from auth import AuthManager
     from analytics import TradingAnalytics

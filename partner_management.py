@@ -492,3 +492,122 @@ def main():
 
 if __name__ == "__main__":
     main()
+import streamlit as st
+import pandas as pd
+from typing import Dict, List, Optional
+from auth import AuthManager, require_auth, check_partner_access
+from credential_manager import render_credential_management_ui
+
+class PartnerManager:
+    """Manages partner integrations and user access."""
+    
+    def __init__(self):
+        self.auth_manager = AuthManager()
+    
+    def render_partner_dashboard(self, current_user: Dict):
+        """Render partner-specific dashboard."""
+        partner_id = current_user.get('partner_id')
+        
+        if not partner_id:
+            self.render_individual_dashboard(current_user)
+        else:
+            partner = self.auth_manager.db.get_partner(partner_id)
+            if partner:
+                self.render_partner_specific_dashboard(current_user, partner)
+            else:
+                st.error("Partner not found")
+    
+    def render_individual_dashboard(self, current_user: Dict):
+        """Render dashboard for individual users."""
+        st.subheader(f"Welcome, {current_user['first_name']}!")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Account Type", "Individual")
+        with col2:
+            st.metric("Subscription", current_user['subscription_tier'].title())
+        with col3:
+            if current_user['subscription_tier'] == 'free':
+                if st.button("🚀 Upgrade to Pro", type="primary"):
+                    self.show_upgrade_modal()
+    
+    def render_partner_specific_dashboard(self, current_user: Dict, partner: Dict):
+        """Render dashboard for partner users."""
+        st.subheader(f"Welcome to {partner['name']}")
+        st.caption(f"Partner: {partner['type'].title()} • Role: {current_user['partner_role'].title()}")
+        
+        # Partner-specific branding
+        partner_settings = partner.get('settings', {})
+        
+        if partner_settings.get('custom_logo'):
+            st.image(partner_settings['custom_logo'], width=200)
+        
+        # Partner-specific features based on type
+        if partner['type'] == 'broker':
+            self.render_broker_features(current_user, partner)
+        elif partner['type'] == 'prop_firm':
+            self.render_prop_firm_features(current_user, partner)
+        elif partner['type'] == 'trading_group':
+            self.render_trading_group_features(current_user, partner)
+    
+    def render_broker_features(self, current_user: Dict, partner: Dict):
+        """Render broker-specific features."""
+        st.subheader("🏦 Broker Dashboard")
+        
+        settings = partner.get('settings', {})
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Commission Rate", f"${settings.get('commission_rate', 3.5)}")
+        with col2:
+            st.metric("Platform", settings.get('platform', 'Custom'))
+        with col3:
+            st.metric("Account Status", "Active")
+    
+    def render_prop_firm_features(self, current_user: Dict, partner: Dict):
+        """Render prop firm-specific features."""
+        st.subheader("🏢 Prop Firm Dashboard")
+        
+        settings = partner.get('settings', {})
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            daily_limit = settings.get('daily_loss_limit', 1000)
+            st.metric("Daily Loss Limit", f"${daily_limit:,.2f}")
+        with col2:
+            max_drawdown = settings.get('max_drawdown', 5000)
+            st.metric("Max Drawdown", f"${max_drawdown:,.2f}")
+        with col3:
+            profit_target = settings.get('profit_target', 10000)
+            st.metric("Profit Target", f"${profit_target:,.2f}")
+    
+    def render_trading_group_features(self, current_user: Dict, partner: Dict):
+        """Render trading group-specific features."""
+        st.subheader("👥 Trading Group Dashboard")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Group Members", partner['settings'].get('member_count', 1))
+        with col2:
+            st.metric("Group Performance", "+12.5%")
+    
+    def show_upgrade_modal(self):
+        """Show subscription upgrade modal."""
+        with st.modal("🚀 Upgrade to TradeSense Pro"):
+            st.write("**Unlock Premium Features:**")
+            st.write("• Unlimited trade imports")
+            st.write("• Advanced analytics")
+            st.write("• Partner integrations")
+            st.write("• Priority support")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💳 Monthly - $29/mo", type="primary"):
+                    st.success("Redirecting to payment...")
+            with col2:
+                if st.button("💎 Annual - $290/yr", type="secondary"):
+                    st.success("Redirecting to payment...")
+
+# Global instance
+partner_manager = PartnerManager()

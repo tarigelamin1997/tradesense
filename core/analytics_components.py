@@ -1,5 +1,66 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+def render_analytics():
+    """Render the main analytics page."""
+    st.header("📊 Analytics Dashboard")
+
+    if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
+        st.info("📥 Upload trade data to view analytics")
+        return
+
+    data = st.session_state.trade_data
+
+    # Basic metrics
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        total_trades = len(data)
+        st.metric("Total Trades", total_trades)
+
+    with col2:
+        if 'pnl' in data.columns:
+            total_pnl = data['pnl'].sum()
+            st.metric("Total P&L", f"${total_pnl:,.2f}")
+
+    with col3:
+        if 'pnl' in data.columns:
+            avg_pnl = data['pnl'].mean()
+            st.metric("Avg P&L per Trade", f"${avg_pnl:,.2f}")
+
+    with col4:
+        if 'pnl' in data.columns:
+            win_rate = (data['pnl'] > 0).mean() * 100
+            st.metric("Win Rate", f"{win_rate:.1f}%")
+
+    # Charts
+    if 'pnl' in data.columns:
+        st.subheader("📈 Performance Over Time")
+
+        # Cumulative P&L chart
+        if 'date' in data.columns:
+            data_sorted = data.sort_values('date')
+            data_sorted['cumulative_pnl'] = data_sorted['pnl'].cumsum()
+
+            fig = px.line(data_sorted, x='date', y='cumulative_pnl', 
+                         title='Cumulative P&L Over Time')
+            st.plotly_chart(fig, use_container_width=True)
+
+        # P&L distribution
+        st.subheader("📊 P&L Distribution")
+        fig = px.histogram(data, x='pnl', title='P&L Distribution', nbins=30)
+        st.plotly_chart(fig, use_container_width=True)
+
+import streamlit as st
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots

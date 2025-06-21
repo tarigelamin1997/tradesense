@@ -14,13 +14,15 @@ logger = logging.getLogger(__name__)
 def render_data_upload_section():
     """Render data upload interface."""
     st.subheader("📁 Upload Trade Data")
-    st.write("Choose a CSV or Excel file")
+    st.write("Choose a CSV or Excel file containing your trading data")
 
-    # File uploader
+    # File uploader with clear label
     uploaded_file = st.file_uploader(
-        "Drag and drop file here",
+        "Choose your trade data file",
         type=['csv', 'xlsx', 'xls'],
-        help="Limit 200MB per file • CSV, XLSX, XLS"
+        help="Supported formats: CSV, XLSX, XLS (Max 200MB)",
+        accept_multiple_files=False,
+        key="trade_data_uploader"
     )
 
     if uploaded_file is not None:

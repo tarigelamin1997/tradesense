@@ -1,5 +1,11 @@
 # TradeSense
 
+> 🚨 This project follows strict contributor and architecture rules.  
+> Breaking structure or deleting core files without approval is not allowed.  
+> → See [`project-rules.md`](./project-rules.md)
+
+
+
 **Smarter Decisions. Safer Trades.**
 
 TradeSense is a modular trading analytics and risk management app built with Streamlit. Upload your trading history, analyze performance, and manage risk with actionable insights.

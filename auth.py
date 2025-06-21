@@ -151,17 +151,35 @@ class AuthManager:
             conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
 
+            # First, check what columns exist in the users table
+            cursor.execute("PRAGMA table_info(users)")
+            columns_info = cursor.fetchall()
+            column_names = [col[1] for col in columns_info]
+            
             # Check if user already exists
-            cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
+            if 'username' in column_names:
+                cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+            
             if cursor.fetchone():
-                return {"success": False, "message": "Username or email already exists"}
+                return {"success": False, "message": "User with this email already exists"}
 
             # Hash password and create user
             password_hash = self.hash_password(password)
-            cursor.execute('''
-                INSERT INTO users (username, email, password_hash, partner_id)
-                VALUES (?, ?, ?, ?)
-            ''', (username, email, password_hash, partner_id))
+            
+            # Build insert query based on available columns
+            if 'username' in column_names:
+                cursor.execute('''
+                    INSERT INTO users (username, email, password_hash, partner_id)
+                    VALUES (?, ?, ?, ?)
+                ''', (username, email, password_hash, partner_id))
+            else:
+                # Fallback to email-only registration if username column doesn't exist
+                cursor.execute('''
+                    INSERT INTO users (email, password_hash, partner_id)
+                    VALUES (?, ?, ?)
+                ''', (email, password_hash, partner_id))
 
             user_id = cursor.lastrowid
             conn.commit()
@@ -189,12 +207,24 @@ class AuthManager:
             conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
 
-            # Get user
-            cursor.execute('''
-                SELECT id, username, email, password_hash, partner_id, role, is_active, 
-                       failed_login_attempts, locked_until
-                FROM users WHERE username = ? OR email = ?
-            ''', (username, username))
+            # Check what columns exist in the users table
+            cursor.execute("PRAGMA table_info(users)")
+            columns_info = cursor.fetchall()
+            column_names = [col[1] for col in columns_info]
+            
+            # Get user - handle both username and email-only schemas
+            if 'username' in column_names:
+                cursor.execute('''
+                    SELECT id, username, email, password_hash, partner_id, role, is_active, 
+                           failed_login_attempts, locked_until
+                    FROM users WHERE username = ? OR email = ?
+                ''', (username, username))
+            else:
+                cursor.execute('''
+                    SELECT id, email, email, password_hash, partner_id, role, is_active, 
+                           failed_login_attempts, locked_until
+                    FROM users WHERE email = ?
+                ''', (username,))
 
             user = cursor.fetchone()
             if not user:
@@ -249,7 +279,7 @@ class AuthManager:
 
             user_data = {
                 "id": user_id,
-                "username": db_username,
+                "username": db_username if 'username' in column_names else email.split('@')[0],
                 "email": email,
                 "partner_id": partner_id,
                 "role": role,
@@ -380,17 +410,27 @@ class AuthManager:
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables = cursor.fetchall()
             
+            # Check if users table exists and has proper schema
+            cursor.execute("PRAGMA table_info(users)")
+            columns_info = cursor.fetchall()
+            column_names = [col[1] for col in columns_info]
+            
+            # Repair database if needed
+            self._repair_database_schema(cursor, column_names)
+            
             # Test users table specifically
             cursor.execute("SELECT COUNT(*) FROM users")
             user_count = cursor.fetchone()[0]
             
+            conn.commit()
             conn.close()
             
             return {
                 "success": True,
                 "message": "Database connection successful",
                 "tables_found": len(tables),
-                "user_count": user_count
+                "user_count": user_count,
+                "columns": column_names
             }
             
         except Exception as e:
@@ -399,6 +439,32 @@ class AuthManager:
                 "success": False,
                 "message": f"Database connection failed: {str(e)}"
             }
+
+    def _repair_database_schema(self, cursor, existing_columns):
+        """Repair database schema by adding missing columns."""
+        required_columns = {
+            'username': 'TEXT UNIQUE',
+            'email': 'TEXT UNIQUE NOT NULL',
+            'password_hash': 'TEXT NOT NULL',
+            'partner_id': 'INTEGER',
+            'role': 'TEXT DEFAULT "user"',
+            'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+            'last_login': 'TIMESTAMP',
+            'is_active': 'BOOLEAN DEFAULT 1',
+            'two_factor_enabled': 'BOOLEAN DEFAULT 0',
+            'failed_login_attempts': 'INTEGER DEFAULT 0',
+            'locked_until': 'TIMESTAMP NULL'
+        }
+        
+        for column, definition in required_columns.items():
+            if column not in existing_columns:
+                try:
+                    alter_sql = f"ALTER TABLE users ADD COLUMN {column} {definition}"
+                    cursor.execute(alter_sql)
+                    logger.info(f"Added missing column: {column}")
+                except Exception as e:
+                    logger.warning(f"Could not add column {column}: {e}")
+                    # Continue with other columns
 
 def require_auth(func):
     """Decorator to require authentication for functions."""

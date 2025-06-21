@@ -523,3 +523,295 @@ def start_health_monitoring():
 def get_system_health_status():
     """Get current system health status."""
     return health_monitor.run_health_checks()
+import streamlit as st
+import sqlite3
+import json
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from dataclasses import dataclass
+from enum import Enum
+import threading
+import time
+from logging_manager import log_critical, log_warning, LogCategory
+from notification_system import create_system_alert, NotificationType, NotificationPriority
+
+class HealthStatus(Enum):
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    UNKNOWN = "unknown"
+
+@dataclass
+class HealthCheck:
+    name: str
+    status: HealthStatus
+    message: str
+    value: Optional[float] = None
+    threshold: Optional[float] = None
+    timestamp: datetime = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+
+class SystemHealthMonitor:
+    """Monitor system health and trigger alerts."""
+    
+    def __init__(self, db_path: str = "tradesense.db"):
+        self.db_path = db_path
+        self.health_checks: Dict[str, HealthCheck] = {}
+        self.monitoring_active = False
+        self.alert_thresholds = {
+            'sync_success_rate': 90.0,  # %
+            'error_rate': 1.0,  # %
+            'memory_usage': 80.0,  # %
+            'disk_usage': 85.0,  # %
+            'avg_response_time': 5.0,  # seconds
+            'active_users_drop': 50.0  # % drop
+        }
+    
+    def start_monitoring(self):
+        """Start background health monitoring."""
+        if not self.monitoring_active:
+            self.monitoring_active = True
+            monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
+            monitoring_thread.start()
+    
+    def stop_monitoring(self):
+        """Stop background health monitoring."""
+        self.monitoring_active = False
+    
+    def _monitoring_loop(self):
+        """Main monitoring loop."""
+        while self.monitoring_active:
+            try:
+                self.run_health_checks()
+                time.sleep(300)  # Check every 5 minutes
+            except Exception as e:
+                try:
+                    log_critical(f"Health monitoring loop failed: {str(e)}", 
+                               category=LogCategory.SYSTEM_ERROR)
+                except:
+                    pass  # Fail silently if logging not available
+    
+    def run_health_checks(self) -> Dict[str, HealthCheck]:
+        """Run all health checks and return results."""
+        checks = {}
+        
+        try:
+            # System resource checks
+            checks['memory_usage'] = self.check_memory_usage()
+            checks['disk_usage'] = self.check_disk_usage()
+            
+            # Database health
+            checks['database_health'] = self.check_database_health()
+            
+        except Exception as e:
+            try:
+                log_critical(f"Health check execution failed: {str(e)}",
+                            category=LogCategory.SYSTEM_ERROR)
+            except:
+                pass
+        
+        self.health_checks.update(checks)
+        
+        # Process alerts
+        self.process_health_alerts(checks)
+        
+        return checks
+    
+    def check_memory_usage(self) -> HealthCheck:
+        """Check system memory usage."""
+        try:
+            import psutil
+            memory = psutil.virtual_memory()
+            usage_percent = memory.percent
+            threshold = self.alert_thresholds['memory_usage']
+            
+            if usage_percent <= threshold:
+                status = HealthStatus.HEALTHY
+                message = f"Memory usage is normal: {usage_percent:.1f}%"
+            elif usage_percent <= threshold + 10:
+                status = HealthStatus.WARNING
+                message = f"Memory usage is high: {usage_percent:.1f}%"
+            else:
+                status = HealthStatus.CRITICAL
+                message = f"Memory usage is critically high: {usage_percent:.1f}%"
+            
+            return HealthCheck(
+                name="Memory Usage",
+                status=status,
+                message=message,
+                value=usage_percent,
+                threshold=threshold
+            )
+            
+        except Exception as e:
+            return HealthCheck(
+                name="Memory Usage",
+                status=HealthStatus.UNKNOWN,
+                message=f"Failed to check memory usage: {str(e)}"
+            )
+    
+    def check_disk_usage(self) -> HealthCheck:
+        """Check disk usage."""
+        try:
+            import psutil
+            disk = psutil.disk_usage('.')
+            usage_percent = (disk.used / disk.total) * 100
+            threshold = self.alert_thresholds['disk_usage']
+            
+            if usage_percent <= threshold:
+                status = HealthStatus.HEALTHY
+                message = f"Disk usage is normal: {usage_percent:.1f}%"
+            elif usage_percent <= threshold + 5:
+                status = HealthStatus.WARNING
+                message = f"Disk usage is high: {usage_percent:.1f}%"
+            else:
+                status = HealthStatus.CRITICAL
+                message = f"Disk usage is critically high: {usage_percent:.1f}%"
+            
+            return HealthCheck(
+                name="Disk Usage",
+                status=status,
+                message=message,
+                value=usage_percent,
+                threshold=threshold
+            )
+            
+        except Exception as e:
+            return HealthCheck(
+                name="Disk Usage",
+                status=HealthStatus.UNKNOWN,
+                message=f"Failed to check disk usage: {str(e)}"
+            )
+    
+    def check_database_health(self) -> HealthCheck:
+        """Check database connectivity and performance."""
+        try:
+            start_time = time.time()
+            
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Simple query to check connectivity
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+            
+            # Check for locked database
+            cursor.execute('PRAGMA quick_check')
+            result = cursor.fetchone()
+            
+            conn.close()
+            
+            response_time = time.time() - start_time
+            
+            if result[0] == 'ok' and response_time < 1.0:
+                status = HealthStatus.HEALTHY
+                message = f"Database is healthy (response: {response_time:.3f}s)"
+            elif result[0] == 'ok' and response_time < 5.0:
+                status = HealthStatus.WARNING
+                message = f"Database is slow (response: {response_time:.3f}s)"
+            else:
+                status = HealthStatus.CRITICAL
+                message = f"Database issues detected (response: {response_time:.3f}s)"
+            
+            return HealthCheck(
+                name="Database Health",
+                status=status,
+                message=message,
+                value=response_time
+            )
+            
+        except Exception as e:
+            return HealthCheck(
+                name="Database Health",
+                status=HealthStatus.CRITICAL,
+                message=f"Database connectivity failed: {str(e)}"
+            )
+    
+    def process_health_alerts(self, checks: Dict[str, HealthCheck]):
+        """Process health check results and send alerts if needed."""
+        for check_name, check in checks.items():
+            if check.status == HealthStatus.CRITICAL:
+                # Create critical alert
+                try:
+                    create_system_alert(
+                        title=f"🚨 Critical: {check.name}",
+                        message=check.message,
+                        notification_type=NotificationType.ERROR,
+                        priority=NotificationPriority.CRITICAL
+                    )
+                    
+                    # Log critical issue
+                    log_critical(f"Health check failed: {check.name} - {check.message}",
+                               details={'check_name': check_name, 'value': check.value},
+                               category=LogCategory.SYSTEM_ERROR)
+                except:
+                    pass  # Fail silently if notification system not available
+            
+            elif check.status == HealthStatus.WARNING:
+                # Create warning alert
+                try:
+                    create_system_alert(
+                        title=f"⚠️ Warning: {check.name}",
+                        message=check.message,
+                        notification_type=NotificationType.WARNING,
+                        priority=NotificationPriority.HIGH
+                    )
+                    
+                    # Log warning
+                    log_warning(f"Health check warning: {check.name} - {check.message}",
+                              details={'check_name': check_name, 'value': check.value},
+                              category=LogCategory.SYSTEM_ERROR)
+                except:
+                    pass
+    
+    def get_overall_health_status(self) -> HealthStatus:
+        """Get overall system health status."""
+        if not self.health_checks:
+            return HealthStatus.UNKNOWN
+        
+        statuses = [check.status for check in self.health_checks.values()]
+        
+        if HealthStatus.CRITICAL in statuses:
+            return HealthStatus.CRITICAL
+        elif HealthStatus.WARNING in statuses:
+            return HealthStatus.WARNING
+        elif HealthStatus.HEALTHY in statuses:
+            return HealthStatus.HEALTHY
+        else:
+            return HealthStatus.UNKNOWN
+    
+    def render_status_widget(self):
+        """Render a compact health status widget."""
+        overall_status = self.get_overall_health_status()
+        
+        status_config = {
+            HealthStatus.HEALTHY: {"icon": "✅", "color": "success", "text": "All Systems Healthy"},
+            HealthStatus.WARNING: {"icon": "⚠️", "color": "warning", "text": "Some Issues Detected"},
+            HealthStatus.CRITICAL: {"icon": "🚨", "color": "error", "text": "Critical Issues"},
+            HealthStatus.UNKNOWN: {"icon": "❓", "color": "info", "text": "Status Unknown"}
+        }
+        
+        config = status_config[overall_status]
+        
+        if overall_status == HealthStatus.HEALTHY:
+            st.success(f"{config['icon']} {config['text']}")
+        elif overall_status == HealthStatus.WARNING:
+            st.warning(f"{config['icon']} {config['text']}")
+        elif overall_status == HealthStatus.CRITICAL:
+            st.error(f"{config['icon']} {config['text']}")
+        else:
+            st.info(f"{config['icon']} {config['text']}")
+
+# Global health monitor
+system_monitor = SystemHealthMonitor()
+
+def start_health_monitoring():
+    """Start the health monitoring system."""
+    system_monitor.start_monitoring()
+
+def get_system_health_status():
+    """Get current system health status."""
+    return system_monitor.run_health_checks()

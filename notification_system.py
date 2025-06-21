@@ -535,3 +535,173 @@ def setup_sync_notifications():
 
 # Initialize sync notifications
 setup_sync_notifications()
+import streamlit as st
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional
+from enum import Enum
+from dataclasses import dataclass
+import threading
+import queue
+
+class NotificationType(Enum):
+    SUCCESS = "success"
+    WARNING = "warning"
+    ERROR = "error"
+    INFO = "info"
+    SYNC_STATUS = "sync_status"
+
+class NotificationPriority(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    CRITICAL = 4
+
+@dataclass
+class UserNotification:
+    """Represents a user notification with all necessary details."""
+    id: str
+    type: NotificationType
+    priority: NotificationPriority
+    title: str
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    action_steps: Optional[List[str]] = None
+    timestamp: datetime = None
+    dismissible: bool = True
+    auto_dismiss_seconds: Optional[int] = None
+    category: str = "general"
+    user_id: Optional[int] = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+
+class NotificationManager:
+    """Manages user notifications and real-time status updates."""
+    
+    def __init__(self):
+        self.notifications: Dict[str, UserNotification] = {}
+        self.notification_queue = queue.Queue()
+        
+    def add_notification(self, notification: UserNotification):
+        """Add a new notification."""
+        self.notifications[notification.id] = notification
+        self.notification_queue.put(notification)
+    
+    def dismiss_notification(self, notification_id: str):
+        """Dismiss a notification."""
+        if notification_id in self.notifications:
+            del self.notifications[notification_id]
+    
+    def get_active_notifications(self, user_id: Optional[int] = None) -> List[UserNotification]:
+        """Get active notifications for a user."""
+        notifications = []
+        current_time = datetime.now()
+        
+        for notification in list(self.notifications.values()):
+            # Filter by user if specified
+            if user_id and notification.user_id and notification.user_id != user_id:
+                continue
+            
+            # Auto-dismiss expired notifications
+            if (notification.auto_dismiss_seconds and 
+                current_time > notification.timestamp + timedelta(seconds=notification.auto_dismiss_seconds)):
+                self.dismiss_notification(notification.id)
+                continue
+                
+            notifications.append(notification)
+        
+        # Sort by priority and timestamp
+        return sorted(notifications, 
+                     key=lambda x: (x.priority.value, x.timestamp), 
+                     reverse=True)
+    
+    def create_system_notification(self, title: str, message: str, 
+                                 notification_type: NotificationType = NotificationType.INFO,
+                                 priority: NotificationPriority = NotificationPriority.MEDIUM,
+                                 action_steps: List[str] = None) -> UserNotification:
+        """Create a system-wide notification."""
+        return UserNotification(
+            id=f"system_{int(time.time())}",
+            type=notification_type,
+            priority=priority,
+            title=title,
+            message=message,
+            action_steps=action_steps,
+            category="system"
+        )
+
+# Global notification manager
+notification_manager = NotificationManager()
+
+def render_notification_center(user_id: Optional[int] = None):
+    """Render the main notification center in the sidebar."""
+    with st.sidebar:
+        st.subheader("🔔 Notifications")
+        
+        notifications = notification_manager.get_active_notifications(user_id)
+        
+        if not notifications:
+            st.success("✅ All caught up!")
+            return
+        
+        # Show notification count by priority
+        critical_count = len([n for n in notifications if n.priority == NotificationPriority.CRITICAL])
+        high_count = len([n for n in notifications if n.priority == NotificationPriority.HIGH])
+        
+        if critical_count > 0:
+            st.error(f"🚨 {critical_count} critical issue(s)")
+        elif high_count > 0:
+            st.warning(f"⚠️ {high_count} important issue(s)")
+        
+        # Display notifications
+        for notification in notifications[:5]:  # Show top 5
+            render_notification_item(notification)
+        
+        if len(notifications) > 5:
+            st.caption(f"... and {len(notifications) - 5} more")
+
+def render_notification_item(notification: UserNotification):
+    """Render a single notification item."""
+    # Choose icon and color based on type
+    type_config = {
+        NotificationType.SUCCESS: {"icon": "✅", "color": "success"},
+        NotificationType.WARNING: {"icon": "⚠️", "color": "warning"},
+        NotificationType.ERROR: {"icon": "❌", "color": "error"},
+        NotificationType.INFO: {"icon": "ℹ️", "color": "info"},
+        NotificationType.SYNC_STATUS: {"icon": "🔄", "color": "info"}
+    }
+    
+    config = type_config.get(notification.type, {"icon": "📢", "color": "info"})
+    
+    with st.container():
+        col1, col2 = st.columns([4, 1])
+        
+        with col1:
+            if notification.type == NotificationType.SUCCESS:
+                st.success(f"{config['icon']} {notification.title}")
+            elif notification.type == NotificationType.WARNING:
+                st.warning(f"{config['icon']} {notification.title}")
+            elif notification.type == NotificationType.ERROR:
+                st.error(f"{config['icon']} {notification.title}")
+            else:
+                st.info(f"{config['icon']} {notification.title}")
+            
+            st.caption(notification.message)
+        
+        with col2:
+            if notification.dismissible:
+                if st.button("✕", key=f"dismiss_{notification.id}", help="Dismiss"):
+                    notification_manager.dismiss_notification(notification.id)
+                    st.rerun()
+
+def create_system_alert(title: str, message: str, 
+                       notification_type: NotificationType = NotificationType.INFO,
+                       priority: NotificationPriority = NotificationPriority.MEDIUM,
+                       action_steps: List[str] = None):
+    """Create and add a system alert."""
+    notification = notification_manager.create_system_notification(
+        title, message, notification_type, priority, action_steps
+    )
+    notification_manager.add_notification(notification)

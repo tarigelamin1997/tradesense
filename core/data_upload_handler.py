@@ -117,3 +117,86 @@ def _fallback_processing(df, error):
         # Store raw data
         st.session_state.trade_data = df
         st.success("✅ File uploaded successfully! Limited analytics available.")
+
+def handle_file_upload():
+    """Handle file upload with enhanced preview and validation."""
+    st.markdown("### 📁 **Upload Your Trade Data**")
+
+    uploaded_file = st.file_uploader(
+        "Choose your trading history file",
+        type=['csv', 'xlsx', 'xls'],
+        help="Supported formats: CSV, Excel (.xlsx, .xls). Max file size: 200MB",
+        key="main_file_uploader"
+    )
+
+    if uploaded_file is not None:
+        try:
+            # Show file information with enhanced styling
+            file_size = len(uploaded_file.getvalue()) / 1024  # KB
+
+            with st.container():
+                st.markdown("### 📄 **File Information**")
+
+                info_col1, info_col2, info_col3 = st.columns(3)
+
+                with info_col1:
+                    st.metric("📁 File Name", uploaded_file.name)
+
+                with info_col2:
+                    st.metric("📏 File Size", f"{file_size:.1f} KB")
+
+                with info_col3:
+                    file_type = uploaded_file.name.split('.')[-1].upper()
+                    st.metric("📋 Format", file_type)
+
+            # Read the file based on its type
+            with st.spinner("🔄 Processing your trading data..."):
+                if uploaded_file.name.endswith('.csv'):
+                    df = pd.read_csv(uploaded_file)
+                else:
+                    df = pd.read_excel(uploaded_file)
+
+            # Enhanced success message with data preview
+            st.success(f"✅ Successfully processed **{len(df):,} trades** from `{uploaded_file.name}`")
+
+            # Quick data preview
+            st.markdown("### 👀 **Data Preview**")
+
+            preview_col1, preview_col2 = st.columns(2)
+
+            with preview_col1:
+                st.markdown("**📊 Dataset Dimensions**")
+                st.info(f"**Rows:** {len(df):,} | **Columns:** {len(df.columns)}")
+
+                st.markdown("**📋 Column Names**")
+                columns_display = ", ".join([f"`{col}`" for col in df.columns[:5]])
+                if len(df.columns) > 5:
+                    columns_display += f" ... and {len(df.columns) - 5} more"
+                st.info(columns_display)
+
+            with preview_col2:
+                st.markdown("**🔍 Sample Data**")
+                st.dataframe(
+                    df.head(3),
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+            # Data validation alerts
+            if df.empty:
+                st.error("⚠️ The uploaded file appears to be empty.")
+                return None
+
+            missing_data_pct = (df.isnull().sum().sum() / (len(df) * len(df.columns))) * 100
+            if missing_data_pct > 20:
+                st.warning(f"⚠️ High missing data detected ({missing_data_pct:.1f}%). Consider data cleanup.")
+
+            return df
+
+        except Exception as e:
+            st.error(f"❌ **Error processing file:** {str(e)}")
+            st.info("💡 **Troubleshooting tips:**\n- Ensure your file is not corrupted\n- Check that column headers are in the first row\n- Verify the file format is supported")
+            return None
+
+    return None
+```

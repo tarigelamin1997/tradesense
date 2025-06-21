@@ -9,53 +9,34 @@ from typing import Dict, List, Optional, Any
 from auth import AuthManager, require_auth
 import plotly.graph_objects as go
 import plotly.express as px
-import logging
-
-logger = logging.getLogger(__name__)
 
 class AffiliateTrackingSystem:
-    """Comprehensive affiliate tracking and referral system."""
+    """Comprehensive affiliate tracking and management system."""
 
     def __init__(self, db_path: str = "tradesense.db"):
         self.db_path = db_path
         self.auth_manager = AuthManager()
-        self.init_affiliate_tables()
+        self.init_database()
 
-    def init_affiliate_tables(self):
+    def init_database(self):
         """Initialize affiliate tracking database tables."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-
-        # Affiliate programs table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS affiliate_programs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                description TEXT,
-                commission_rate REAL,
-                commission_type TEXT DEFAULT 'percentage',
-                tier_structure TEXT,
-                terms_conditions TEXT,
-                is_active BOOLEAN DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
 
         # Affiliates table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS affiliates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
-                program_id INTEGER,
-                referral_code TEXT UNIQUE,
-                status TEXT DEFAULT 'active',
+                affiliate_code TEXT UNIQUE NOT NULL,
+                tier TEXT DEFAULT 'bronze',
+                commission_rate REAL DEFAULT 0.10,
+                total_earnings REAL DEFAULT 0.0,
                 total_referrals INTEGER DEFAULT 0,
-                total_commission REAL DEFAULT 0.0,
-                current_tier INTEGER DEFAULT 1,
-                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                payment_info TEXT,
-                FOREIGN KEY (user_id) REFERENCES users (id),
-                FOREIGN KEY (program_id) REFERENCES affiliate_programs (id)
+                status TEXT DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_payout TIMESTAMP NULL,
+                FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
 
@@ -65,587 +46,431 @@ class AffiliateTrackingSystem:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 affiliate_id INTEGER,
                 referred_user_id INTEGER,
-                referral_code TEXT,
-                conversion_type TEXT,
-                commission_amount REAL,
+                commission_amount REAL DEFAULT 0.0,
                 commission_paid BOOLEAN DEFAULT 0,
-                referral_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                conversion_date TIMESTAMP,
-                metadata TEXT,
+                conversion_date TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (affiliate_id) REFERENCES affiliates (id),
                 FOREIGN KEY (referred_user_id) REFERENCES users (id)
             )
         ''')
 
-        # Commission payments table
+        # Commission tiers table
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS commission_payments (
+            CREATE TABLE IF NOT EXISTS commission_tiers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tier_name TEXT UNIQUE NOT NULL,
+                min_referrals INTEGER DEFAULT 0,
+                commission_rate REAL NOT NULL,
+                bonus_amount REAL DEFAULT 0.0,
+                requirements TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Affiliate payouts table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS affiliate_payouts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 affiliate_id INTEGER,
-                amount REAL,
-                payment_method TEXT,
-                payment_reference TEXT,
+                amount REAL NOT NULL,
+                payout_method TEXT,
+                transaction_id TEXT,
                 status TEXT DEFAULT 'pending',
-                payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                period_start DATE,
-                period_end DATE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                processed_at TIMESTAMP NULL,
                 FOREIGN KEY (affiliate_id) REFERENCES affiliates (id)
             )
         ''')
 
-        # Affiliate clicks/visits tracking
+        # Marketing materials table
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS affiliate_clicks (
+            CREATE TABLE IF NOT EXISTS marketing_materials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                affiliate_id INTEGER,
-                referral_code TEXT,
-                ip_address TEXT,
-                user_agent TEXT,
-                referrer_url TEXT,
-                landing_page TEXT,
-                converted BOOLEAN DEFAULT 0,
-                click_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (affiliate_id) REFERENCES affiliates (id)
+                title TEXT NOT NULL,
+                description TEXT,
+                material_type TEXT NOT NULL,
+                file_url TEXT,
+                download_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Initialize default commission tiers
+        cursor.execute('SELECT COUNT(*) FROM commission_tiers')
+        if cursor.fetchone()[0] == 0:
+            default_tiers = [
+                ('Bronze', 0, 0.10, 0.0, 'Basic affiliate tier'),
+                ('Silver', 10, 0.15, 50.0, '10+ referrals required'),
+                ('Gold', 25, 0.20, 100.0, '25+ referrals required'),
+                ('Platinum', 50, 0.25, 250.0, '50+ referrals required'),
+                ('Diamond', 100, 0.30, 500.0, '100+ referrals required')
+            ]
+
+            cursor.executemany('''
+                INSERT INTO commission_tiers (tier_name, min_referrals, commission_rate, bonus_amount, requirements)
+                VALUES (?, ?, ?, ?, ?)
+            ''', default_tiers)
 
         conn.commit()
         conn.close()
 
+    @require_auth
     def render_affiliate_dashboard(self):
-        """Render the main affiliate dashboard."""
+        """Render affiliate dashboard."""
         current_user = self.auth_manager.get_current_user()
-
         if not current_user:
-            st.warning("🔐 Please login to access the affiliate program")
+            st.error("🚫 Authentication required")
             return
 
-        st.title("💰 TradeSense Affiliate Program")
-        st.markdown("---")
+        st.title("💰 Affiliate Program Dashboard")
 
-        # Check if user is already an affiliate
-        affiliate = self.get_affiliate_by_user_id(current_user['id'])
+        # Check if user is an affiliate
+        affiliate_data = self.get_affiliate_by_user_id(current_user['id'])
 
-        if not affiliate:
+        if not affiliate_data:
             self._render_affiliate_signup()
-        else:
-            self._render_affiliate_portal(affiliate)
+            return
 
-    def _render_affiliate_signup(self):
-        """Render affiliate program signup."""
-        st.subheader("🚀 Join Our Affiliate Program")
-
-        # Program benefits
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("""
-            ### 💰 Earn Commission
-            - **Up to 40%** recurring commission
-            - **Tiered rewards** based on performance
-            - **Monthly payouts** via PayPal/Bank transfer
-            - **Real-time tracking** of your earnings
-            """)
-
-        with col2:
-            st.markdown("""
-            ### 🎯 Marketing Support
-            - **Custom referral links** and codes
-            - **Marketing materials** and banners
-            - **Performance analytics** dashboard
-            - **Dedicated affiliate support**
-            """)
-
-        # Commission structure
-        st.subheader("📊 Commission Structure")
-
-        tier_data = [
-            {"Tier": "Bronze", "Referrals": "1-10", "Commission": "20%", "Bonus": "-"},
-            {"Tier": "Silver", "Referrals": "11-25", "Commission": "25%", "Bonus": "$100"},
-            {"Tier": "Gold", "Referrals": "26-50", "Commission": "30%", "Bonus": "$250"},
-            {"Tier": "Platinum", "Referrals": "51+", "Commission": "40%", "Bonus": "$500"}
-        ]
-
-        df_tiers = pd.DataFrame(tier_data)
-        st.table(df_tiers)
-
-        # Signup form
-        st.subheader("📝 Application Form")
-
-        with st.form("affiliate_signup"):
-            # Get available programs
-            programs = self.get_affiliate_programs()
-
-            if programs:
-                program_names = [p['name'] for p in programs]
-                selected_program = st.selectbox("Select Affiliate Program", program_names)
-                program_id = next(p['id'] for p in programs if p['name'] == selected_program)
-            else:
-                st.error("No affiliate programs available")
-                return
-
-            # Application details
-            marketing_experience = st.text_area(
-                "Tell us about your marketing experience",
-                placeholder="Describe your audience, marketing channels, etc."
-            )
-
-            website_url = st.text_input("Website/Social Media URL (optional)")
-
-            promotional_methods = st.multiselect(
-                "How do you plan to promote TradeSense?",
-                ["Social Media", "Blog/Website", "Email Marketing", "YouTube", "Paid Ads", "Other"]
-            )
-
-            expected_referrals = st.selectbox(
-                "Expected monthly referrals",
-                ["1-5", "6-15", "16-30", "31+"]
-            )
-
-            agree_terms = st.checkbox("I agree to the affiliate program terms and conditions")
-
-            submitted = st.form_submit_button("🚀 Apply Now")
-
-            if submitted and agree_terms:
-                # Create affiliate account
-                result = self.create_affiliate(
-                    user_id=st.session_state.current_user['id'],
-                    program_id=program_id,
-                    application_data={
-                        'marketing_experience': marketing_experience,
-                        'website_url': website_url,
-                        'promotional_methods': promotional_methods,
-                        'expected_referrals': expected_referrals
-                    }
-                )
-
-                if result['success']:
-                    st.success("🎉 Welcome to the TradeSense Affiliate Program!")
-                    st.info(f"Your referral code: **{result['referral_code']}**")
-                    st.rerun()
-                else:
-                    st.error("Application failed. Please try again.")
-
-    def _render_affiliate_portal(self, affiliate: Dict):
-        """Render the affiliate portal for existing affiliates."""
-        # Affiliate header
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric("Referral Code", affiliate['referral_code'])
-
-        with col2:
-            tier_name = self.get_tier_name(affiliate['current_tier'])
-            st.metric("Current Tier", tier_name)
-
-        with col3:
-            st.metric("Status", affiliate['status'].title())
-
-        # Dashboard tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "📊 Dashboard",
-            "🔗 Marketing Tools",
-            "👥 Referrals",
-            "💰 Earnings",
-            "⚙️ Settings"
+        # Main affiliate dashboard
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "📊 Overview", "👥 Referrals", "💳 Payouts", "📈 Marketing"
         ])
 
         with tab1:
-            self._render_affiliate_stats(affiliate)
-
+            self._render_affiliate_overview(affiliate_data)
         with tab2:
-            self._render_marketing_tools(affiliate)
-
+            self._render_referrals_section(affiliate_data)
         with tab3:
-            self._render_referral_management(affiliate)
-
+            self._render_payouts_section(affiliate_data)
         with tab4:
-            self._render_earnings_dashboard(affiliate)
+            self._render_marketing_materials()
 
-        with tab5:
-            self._render_affiliate_settings(affiliate)
+    def _render_affiliate_signup(self):
+        """Render affiliate signup form."""
+        st.header("🚀 Join Our Affiliate Program")
 
-    def _render_affiliate_stats(self, affiliate: Dict):
-        """Render affiliate statistics dashboard."""
-        st.subheader("📊 Performance Dashboard")
+        st.markdown("""
+        ### 💰 Earn Up to 30% Commission
 
-        # Get affiliate statistics
-        stats = self.get_affiliate_stats(affiliate['id'])
+        **Commission Tiers:**
+        - 🥉 **Bronze**: 10% (0+ referrals)
+        - 🥈 **Silver**: 15% + $50 bonus (10+ referrals)
+        - 🥇 **Gold**: 20% + $100 bonus (25+ referrals)
+        - 💎 **Platinum**: 25% + $250 bonus (50+ referrals)
+        - 💎 **Diamond**: 30% + $500 bonus (100+ referrals)
+
+        **Program Benefits:**
+        - Real-time tracking dashboard
+        - Monthly payouts
+        - Marketing materials provided
+        - Dedicated affiliate support
+        """)
+
+        if st.button("🎯 Become an Affiliate", type="primary"):
+            result = self.create_affiliate(st.session_state.current_user['id'])
+            if result['success']:
+                st.success(f"🎉 Welcome to our affiliate program! Your code: **{result['affiliate_code']}**")
+                st.rerun()
+            else:
+                st.error(result['message'])
+
+    def _render_affiliate_overview(self, affiliate_data: Dict):
+        """Render affiliate overview dashboard."""
+        st.header("📊 Your Performance Overview")
 
         # Key metrics
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            st.metric("Total Clicks", stats.get('total_clicks', 0))
+            st.metric(
+                "Total Earnings", 
+                f"${affiliate_data['total_earnings']:,.2f}",
+                help="Lifetime earnings from referrals"
+            )
 
         with col2:
-            st.metric("Total Referrals", stats.get('total_referrals', 0))
+            st.metric(
+                "Total Referrals", 
+                affiliate_data['total_referrals'],
+                help="Total users you've referred"
+            )
 
         with col3:
-            conversion_rate = stats.get('conversion_rate', 0)
-            st.metric("Conversion Rate", f"{conversion_rate:.1f}%")
+            st.metric(
+                "Commission Rate", 
+                f"{affiliate_data['commission_rate']*100:.0f}%",
+                help="Your current commission percentage"
+            )
 
         with col4:
-            st.metric("Total Earned", f"${stats.get('total_earned', 0):.2f}")
+            current_tier = affiliate_data['tier'].title()
+            st.metric(
+                "Current Tier", 
+                f"{current_tier}",
+                help="Your affiliate tier level"
+            )
+
+        # Affiliate code and links
+        st.subheader("🔗 Your Affiliate Tools")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.text_input(
+                "Affiliate Code", 
+                value=affiliate_data['affiliate_code'],
+                disabled=True,
+                help="Your unique affiliate identifier"
+            )
+
+        with col2:
+            affiliate_url = f"https://tradesense.app?ref={affiliate_data['affiliate_code']}"
+            st.text_input(
+                "Referral Link", 
+                value=affiliate_url,
+                disabled=True,
+                help="Share this link to earn commissions"
+            )
 
         # Performance charts
-        col1, col2 = st.columns(2)
+        self._render_performance_charts(affiliate_data['id'])
 
-        with col1:
-            # Clicks over time
-            clicks_data = self.get_clicks_over_time(affiliate['id'])
-            if not clicks_data.empty:
-                fig = px.line(clicks_data, x='date', y='clicks',
-                             title="Clicks Over Time")
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No click data available yet")
+        # Next tier progress
+        self._render_tier_progress(affiliate_data)
 
-        with col2:
-            # Referrals over time
-            referrals_data = self.get_referrals_over_time(affiliate['id'])
-            if not referrals_data.empty:
-                fig = px.bar(referrals_data, x='date', y='referrals',
-                           title="Referrals Over Time")
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No referral data available yet")
+    def _render_referrals_section(self, affiliate_data: Dict):
+        """Render referrals tracking section."""
+        st.header("👥 Your Referrals")
 
-        # Recent activity
-        st.subheader("📈 Recent Activity")
-        recent_activity = self.get_recent_affiliate_activity(affiliate['id'])
-
-        if recent_activity:
-            for activity in recent_activity:
-                st.write(f"**{activity['timestamp']}**: {activity['description']}")
-        else:
-            st.info("No recent activity")
-
-    def _render_marketing_tools(self, affiliate: Dict):
-        """Render marketing tools and materials."""
-        st.subheader("🔗 Marketing Tools")
-
-        # Referral links
-        st.subheader("🔗 Your Referral Links")
-
-        base_url = "https://tradesense.app"  # Replace with actual domain
-        referral_code = affiliate['referral_code']
-
-        referral_links = {
-            "Main Landing Page": f"{base_url}/?ref={referral_code}",
-            "Pricing Page": f"{base_url}/pricing?ref={referral_code}",
-            "Demo Page": f"{base_url}/demo?ref={referral_code}",
-            "Blog": f"{base_url}/blog?ref={referral_code}"
-        }
-
-        for name, link in referral_links.items():
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.text_input(name, value=link, key=f"link_{name}")
-            with col2:
-                if st.button("📋 Copy", key=f"copy_{name}"):
-                    st.success("Copied!")
-
-        # Custom link builder
-        st.subheader("🛠️ Custom Link Builder")
-
-        with st.form("custom_link_builder"):
-            page_url = st.text_input("Page URL", value=base_url)
-            campaign_name = st.text_input("Campaign Name (optional)")
-            medium = st.text_input("Medium (optional)", placeholder="email, social, blog")
-
-            if st.form_submit_button("Generate Link"):
-                custom_link = f"{page_url}?ref={referral_code}"
-                if campaign_name:
-                    custom_link += f"&campaign={campaign_name}"
-                if medium:
-                    custom_link += f"&medium={medium}"
-
-                st.success(f"Custom link: `{custom_link}`")
-
-        # Marketing materials
-        st.subheader("🎨 Marketing Materials")
-
-        # Banner ads
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("**Banner Ads (Coming Soon)**")
-            st.info("Various banner sizes and designs will be available for download")
-
-        with col2:
-            st.markdown("**Email Templates (Coming Soon)**")
-            st.info("Pre-written email templates for your campaigns")
-
-        # Social media content
-        st.subheader("📱 Social Media Content")
-
-        sample_posts = [
-            "🚀 Just discovered TradeSense - the most comprehensive trading analytics platform! Track your performance, manage risk, and improve your trading. Check it out: [Your Referral Link]",
-            "📊 Finally, a trading analytics tool that actually makes sense! TradeSense has helped me identify my profitable patterns and reduce risk. Highly recommended: [Your Referral Link]",
-            "💡 Pro tip: If you're serious about trading, you need proper analytics. TradeSense is the best tool I've found for tracking and improving performance: [Your Referral Link]"
-        ]
-
-        for i, post in enumerate(sample_posts, 1):
-            st.text_area(f"Sample Post {i}", post.replace("[Your Referral Link]", referral_links["Main Landing Page"]))
-
-    def _render_referral_management(self, affiliate: Dict):
-        """Render referral management interface."""
-        st.subheader("👥 Your Referrals")
-
-        # Referral statistics
-        referral_stats = self.get_referral_stats(affiliate['id'])
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric("Active Referrals", referral_stats.get('active', 0))
-
-        with col2:
-            st.metric("Pending Referrals", referral_stats.get('pending', 0))
-
-        with col3:
-            st.metric("Total Lifetime", referral_stats.get('total', 0))
-
-        # Referral list
-        st.subheader("📋 Referral Details")
-
-        referrals = self.get_affiliate_referrals(affiliate['id'])
-
-        if not referrals.empty:
-            # Format data for display
-            display_referrals = referrals.copy()
-            display_referrals['commission_amount'] = display_referrals['commission_amount'].apply(lambda x: f"${x:.2f}")
-            display_referrals['referral_date'] = pd.to_datetime(display_referrals['referral_date']).dt.strftime('%Y-%m-%d')
-
-            st.dataframe(display_referrals[['referral_date', 'conversion_type', 'commission_amount', 'commission_paid']], 
-                        use_container_width=True)
-        else:
-            st.info("No referrals yet. Start sharing your referral link!")
-
-        # Referral insights
-        st.subheader("📈 Referral Insights")
-
-        if not referrals.empty:
-            # Conversion sources
-            conversion_sources = referrals['conversion_type'].value_counts()
-            fig = px.pie(values=conversion_sources.values, names=conversion_sources.index,
-                        title="Referrals by Conversion Type")
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Insights will appear once you have referrals")
-
-    def _render_earnings_dashboard(self, affiliate: Dict):
-        """Render earnings and commission dashboard."""
-        st.subheader("💰 Earnings Dashboard")
-
-        # Earnings overview
-        earnings = self.get_affiliate_earnings(affiliate['id'])
+        # Referrals statistics
+        referrals_stats = self.get_referral_statistics(affiliate_data['id'])
 
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            st.metric("Total Earned", f"${earnings.get('total_earned', 0):.2f}")
+            st.metric("This Month", referrals_stats.get('this_month', 0))
+        with col2:
+            st.metric("Conversions", referrals_stats.get('conversions', 0))
+        with col3:
+            st.metric("Pending", referrals_stats.get('pending', 0))
+        with col4:
+            conversion_rate = referrals_stats.get('conversion_rate', 0)
+            st.metric("Conversion Rate", f"{conversion_rate:.1f}%")
+
+        # Referrals table
+        st.subheader("📋 Recent Referrals")
+        referrals_df = self.get_referrals_dataframe(affiliate_data['id'])
+
+        if not referrals_df.empty:
+            st.dataframe(referrals_df, use_container_width=True)
+        else:
+            st.info("No referrals yet. Start sharing your affiliate link!")
+
+    def _render_payouts_section(self, affiliate_data: Dict):
+        """Render payouts section."""
+        st.header("💳 Payouts & Earnings")
+
+        # Payout summary
+        payout_stats = self.get_payout_statistics(affiliate_data['id'])
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            pending_earnings = payout_stats.get('pending_earnings', 0)
+            st.metric("Pending Earnings", f"${pending_earnings:.2f}")
 
         with col2:
-            st.metric("Pending Commission", f"${earnings.get('pending', 0):.2f}")
+            total_paid = payout_stats.get('total_paid', 0)
+            st.metric("Total Paid", f"${total_paid:.2f}")
 
         with col3:
-            st.metric("Paid Commission", f"${earnings.get('paid', 0):.2f}")
+            next_payout = payout_stats.get('next_payout_date', 'TBD')
+            st.metric("Next Payout", next_payout)
 
-        with col4:
-            st.metric("This Month", f"${earnings.get('current_month', 0):.2f}")
+        # Payout methods
+        st.subheader("⚙️ Payout Settings")
 
-        # Earnings chart
-        earnings_history = self.get_earnings_history(affiliate['id'])
-
-        if not earnings_history.empty:
-            fig = px.bar(earnings_history, x='month', y='earnings',
-                        title="Monthly Earnings")
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Earnings history will appear here")
-
-        # Payment history
-        st.subheader("💳 Payment History")
-
-        payments = self.get_payment_history(affiliate['id'])
-
-        if not payments.empty:
-            st.dataframe(payments, use_container_width=True)
-        else:
-            st.info("No payments yet")
-
-        # Payment request
-        if earnings.get('pending', 0) >= 50:  # Minimum payout threshold
-            st.subheader("💸 Request Payment")
-
-            if st.button("Request Payout"):
-                # Process payment request
-                result = self.request_payout(affiliate['id'])
-                if result['success']:
-                    st.success("Payout requested! You'll receive payment within 5-7 business days.")
-                else:
-                    st.error("Payout request failed. Please contact support.")
-        else:
-            st.info(f"Minimum payout amount is $50. Current pending: ${earnings.get('pending', 0):.2f}")
-
-    def _render_affiliate_settings(self, affiliate: Dict):
-        """Render affiliate settings."""
-        st.subheader("⚙️ Affiliate Settings")
-
-        # Payment information
-        st.subheader("💳 Payment Information")
-
-        current_payment_info = json.loads(affiliate.get('payment_info', '{}'))
-
-        with st.form("payment_settings"):
-            payment_method = st.selectbox(
-                "Payment Method",
-                ["PayPal", "Bank Transfer", "Check"],
-                index=["PayPal", "Bank Transfer", "Check"].index(
-                    current_payment_info.get('method', 'PayPal')
-                )
+        with st.form("payout_settings"):
+            payout_method = st.selectbox(
+                "Payout Method", 
+                ["PayPal", "Bank Transfer", "Crypto", "Check"]
             )
+            payout_details = st.text_input("Account Details")
+            min_payout = st.number_input("Minimum Payout", value=50.0, min_value=10.0)
 
-            if payment_method == "PayPal":
-                paypal_email = st.text_input(
-                    "PayPal Email",
-                    value=current_payment_info.get('paypal_email', '')
+            if st.form_submit_button("Update Settings"):
+                st.success("Payout settings updated!")
+
+        # Payout history
+        st.subheader("📊 Payout History")
+        payouts_df = self.get_payouts_dataframe(affiliate_data['id'])
+
+        if not payouts_df.empty:
+            st.dataframe(payouts_df, use_container_width=True)
+        else:
+            st.info("No payouts yet")
+
+    def _render_marketing_materials(self):
+        """Render marketing materials section."""
+        st.header("📈 Marketing Materials")
+
+        st.markdown("""
+        ### 🎯 Promotion Ideas
+
+        **Social Media:**
+        - Share your success stories
+        - Post about TradeSense features
+        - Create trading tip content
+
+        **Email Marketing:**
+        - Include in newsletter signatures
+        - Send to your trading network
+        - Share in trading communities
+        """)
+
+        # Marketing materials
+        materials = self.get_marketing_materials()
+
+        if materials:
+            for material in materials:
+                with st.expander(f"📄 {material['title']}"):
+                    st.write(material['description'])
+                    if st.button(f"Download {material['title']}", key=f"download_{material['id']}"):
+                        self.track_material_download(material['id'])
+                        st.info(f"Download link: {material['file_url']}")
+        else:
+            st.info("Marketing materials coming soon!")
+
+    def _render_performance_charts(self, affiliate_id: int):
+        """Render performance charts."""
+        st.subheader("📈 Performance Trends")
+
+        # Get performance data
+        performance_data = self.get_performance_data(affiliate_id)
+
+        if performance_data:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                # Referrals over time
+                fig_referrals = px.line(
+                    performance_data['referrals_timeline'], 
+                    x='date', 
+                    y='count',
+                    title='Referrals Over Time'
                 )
+                st.plotly_chart(fig_referrals, use_container_width=True)
 
-            elif payment_method == "Bank Transfer":
-                bank_name = st.text_input(
-                    "Bank Name",
-                    value=current_payment_info.get('bank_name', '')
+            with col2:
+                # Earnings over time
+                fig_earnings = px.line(
+                    performance_data['earnings_timeline'], 
+                    x='date', 
+                    y='amount',
+                    title='Earnings Over Time'
                 )
-                account_number = st.text_input(
-                    "Account Number",
-                    value=current_payment_info.get('account_number', ''),
-                    type="password"
-                )
-                routing_number = st.text_input(
-                    "Routing Number",
-                    value=current_payment_info.get('routing_number', '')
-                )
+                st.plotly_chart(fig_earnings, use_container_width=True)
 
-            else:  # Check
-                mailing_address = st.text_area(
-                    "Mailing Address",
-                    value=current_payment_info.get('mailing_address', '')
-                )
+    def _render_tier_progress(self, affiliate_data: Dict):
+        """Render tier progress section."""
+        st.subheader("🎯 Tier Progress")
 
-            if st.form_submit_button("💾 Save Payment Info"):
-                payment_data = {'method': payment_method}
+        current_tier = affiliate_data['tier']
+        current_referrals = affiliate_data['total_referrals']
 
-                if payment_method == "PayPal":
-                    payment_data['paypal_email'] = paypal_email
-                elif payment_method == "Bank Transfer":
-                    payment_data.update({
-                        'bank_name': bank_name,
-                        'account_number': account_number,
-                        'routing_number': routing_number
-                    })
-                else:
-                    payment_data['mailing_address'] = mailing_address
+        # Get next tier requirements
+        next_tier_info = self.get_next_tier_info(current_tier, current_referrals)
 
-                if self.update_payment_info(affiliate['id'], payment_data):
-                    st.success("Payment information updated!")
-                else:
-                    st.error("Failed to update payment information")
+        if next_tier_info:
+            progress = min(current_referrals / next_tier_info['min_referrals'], 1.0)
+            remaining = max(next_tier_info['min_referrals'] - current_referrals, 0)
 
-        # Notification preferences
-        st.subheader("🔔 Notification Preferences")
+            st.progress(progress)
+            st.write(f"**Next Tier:** {next_tier_info['tier_name']}")
+            st.write(f"**Progress:** {current_referrals}/{next_tier_info['min_referrals']} referrals")
 
-        with st.form("notification_settings"):
-            email_notifications = st.checkbox("Email notifications for new referrals", value=True)
-            weekly_reports = st.checkbox("Weekly performance reports", value=True)
-            payment_notifications = st.checkbox("Payment notifications", value=True)
+            if remaining > 0:
+                st.write(f"**Remaining:** {remaining} referrals")
+                st.write(f"**Reward:** {next_tier_info['commission_rate']*100:.0f}% commission + ${next_tier_info['bonus_amount']} bonus")
+            else:
+                st.success("🎉 You've reached the maximum tier!")
+        else:
+            st.success("🎉 You've reached the maximum tier!")
 
-            if st.form_submit_button("💾 Save Notifications"):
-                st.success("Notification preferences updated!")
-
-    # Helper methods
-    def create_affiliate(self, user_id: int, program_id: int, application_data: Dict) -> Dict[str, Any]:
-        """Create a new affiliate."""
+    def create_affiliate(self, user_id: int) -> Dict[str, Any]:
+        """Create new affiliate account."""
         try:
-            # Generate unique referral code
-            referral_code = self._generate_referral_code()
+            # Generate unique affiliate code
+            affiliate_code = self._generate_affiliate_code()
 
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            cursor.execute('''
-                INSERT INTO affiliates (user_id, program_id, referral_code)
-                VALUES (?, ?, ?)
-            ''', (user_id, program_id, referral_code))
+            # Check if user is already an affiliate
+            cursor.execute("SELECT id FROM affiliates WHERE user_id = ?", (user_id,))
+            if cursor.fetchone():
+                conn.close()
+                return {"success": False, "message": "User is already an affiliate"}
 
-            affiliate_id = cursor.lastrowid
+            # Create affiliate record
+            cursor.execute('''
+                INSERT INTO affiliates (user_id, affiliate_code, tier, commission_rate)
+                VALUES (?, ?, 'bronze', 0.10)
+            ''', (user_id, affiliate_code))
+
             conn.commit()
             conn.close()
 
-            logger.info(f"Affiliate created: {user_id} with code {referral_code}")
-
             return {
-                "success": True,
-                "affiliate_id": affiliate_id,
-                "referral_code": referral_code
+                "success": True, 
+                "affiliate_code": affiliate_code,
+                "message": "Affiliate account created successfully"
             }
 
         except Exception as e:
-            logger.error(f"Error creating affiliate: {e}")
-            return {"success": False, "message": "Failed to create affiliate"}
+            return {"success": False, "message": f"Failed to create affiliate: {str(e)}"}
 
     def get_affiliate_by_user_id(self, user_id: int) -> Optional[Dict]:
-        """Get affiliate by user ID."""
+        """Get affiliate data by user ID."""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, user_id, affiliate_code, tier, commission_rate, 
+                       total_earnings, total_referrals, status, created_at
+                FROM affiliates WHERE user_id = ?
+            ''', (user_id,))
 
-            cursor.execute("SELECT * FROM affiliates WHERE user_id = ?", (user_id,))
-            affiliate = cursor.fetchone()
-
-            if affiliate:
-                columns = [desc[0] for desc in cursor.description]
-                return dict(zip(columns, affiliate))
-
+            row = cursor.fetchone()
             conn.close()
+
+            if row:
+                return {
+                    'id': row[0],
+                    'user_id': row[1],
+                    'affiliate_code': row[2],
+                    'tier': row[3],
+                    'commission_rate': row[4],
+                    'total_earnings': row[5],
+                    'total_referrals': row[6],
+                    'status': row[7],
+                    'created_at': row[8]
+                }
             return None
 
-        except Exception as e:
-            logger.error(f"Error getting affiliate: {e}")
+        except Exception:
             return None
 
-    def get_affiliate_programs(self) -> List[Dict]:
-        """Get all active affiliate programs."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
-            cursor.execute("SELECT * FROM affiliate_programs WHERE is_active = 1")
-            programs = cursor.fetchall()
-
-            result = []
-            if programs:
-                columns = [desc[0] for desc in cursor.description]
-                result = [dict(zip(columns, program)) for program in programs]
-
-            conn.close()
-            return result
-
-        except Exception as e:
-            logger.error(f"Error getting affiliate programs: {e}")
-            return []
-
-    def _generate_referral_code(self) -> str:
-        """Generate unique referral code."""
+    def _generate_affiliate_code(self) -> str:
+        """Generate unique affiliate code."""
         while True:
-            code = secrets.token_urlsafe(8).upper()
+            code = f"TS{secrets.token_hex(4).upper()}"
 
             # Check if code already exists
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM affiliates WHERE referral_code = ?", (code,))
+            cursor.execute("SELECT id FROM affiliates WHERE affiliate_code = ?", (code,))
 
             if not cursor.fetchone():
                 conn.close()
@@ -653,305 +478,235 @@ class AffiliateTrackingSystem:
 
             conn.close()
 
-    def get_tier_name(self, tier_number: int) -> str:
-        """Get tier name by number."""
-        tier_names = {1: "Bronze", 2: "Silver", 3: "Gold", 4: "Platinum"}
-        return tier_names.get(tier_number, "Bronze")
-
-    def get_affiliate_stats(self, affiliate_id: int) -> Dict:
-        """Get comprehensive affiliate statistics."""
+    def get_referral_statistics(self, affiliate_id: int) -> Dict:
+        """Get referral statistics for affiliate."""
         try:
             conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
 
-            # Total clicks
-            total_clicks = pd.read_sql_query(
-                "SELECT COUNT(*) as count FROM affiliate_clicks WHERE affiliate_id = ?",
-                conn, params=[affiliate_id]
-            ).iloc[0]['count']
+            # This month referrals
+            cursor.execute('''
+                SELECT COUNT(*) FROM referrals 
+                WHERE affiliate_id = ? AND created_at > datetime('now', 'start of month')
+            ''', (affiliate_id,))
+            this_month = cursor.fetchone()[0]
 
-            # Total referrals
-            total_referrals = pd.read_sql_query(
-                "SELECT COUNT(*) as count FROM referrals WHERE affiliate_id = ?",
-                conn, params=[affiliate_id]
-            ).iloc[0]['count']
+            # Total conversions
+            cursor.execute('''
+                SELECT COUNT(*) FROM referrals 
+                WHERE affiliate_id = ? AND conversion_date IS NOT NULL
+            ''', (affiliate_id,))
+            conversions = cursor.fetchone()[0]
+
+            # Pending conversions
+            cursor.execute('''
+                SELECT COUNT(*) FROM referrals 
+                WHERE affiliate_id = ? AND conversion_date IS NULL
+            ''', (affiliate_id,))
+            pending = cursor.fetchone()[0]
 
             # Conversion rate
-            conversion_rate = (total_referrals / total_clicks * 100) if total_clicks > 0 else 0
-
-            # Total earned
-            total_earned = pd.read_sql_query(
-                "SELECT COALESCE(SUM(commission_amount), 0) as total FROM referrals WHERE affiliate_id = ?",
-                conn, params=[affiliate_id]
-            ).iloc[0]['total']
+            total_referrals = conversions + pending
+            conversion_rate = (conversions / total_referrals * 100) if total_referrals > 0 else 0
 
             conn.close()
 
             return {
-                'total_clicks': total_clicks,
-                'total_referrals': total_referrals,
-                'conversion_rate': conversion_rate,
-                'total_earned': total_earned
+                'this_month': this_month,
+                'conversions': conversions,
+                'pending': pending,
+                'conversion_rate': conversion_rate
             }
 
-        except Exception as e:
-            logger.error(f"Error getting affiliate stats: {e}")
+        except Exception:
             return {}
 
-    def get_clicks_over_time(self, affiliate_id: int) -> pd.DataFrame:
-        """Get clicks over time data."""
+    def get_referrals_dataframe(self, affiliate_id: int) -> pd.DataFrame:
+        """Get referrals dataframe for affiliate."""
         try:
             conn = sqlite3.connect(self.db_path)
             query = '''
                 SELECT 
-                    DATE(click_timestamp) as date,
-                    COUNT(*) as clicks
-                FROM affiliate_clicks 
-                WHERE affiliate_id = ?
-                GROUP BY DATE(click_timestamp)
-                ORDER BY date DESC
-                LIMIT 30
+                    r.created_at as "Referral Date",
+                    u.username as "Referred User",
+                    r.commission_amount as "Commission",
+                    CASE 
+                        WHEN r.conversion_date IS NOT NULL THEN 'Converted'
+                        ELSE 'Pending'
+                    END as "Status",
+                    r.conversion_date as "Conversion Date"
+                FROM referrals r
+                JOIN users u ON r.referred_user_id = u.id
+                WHERE r.affiliate_id = ?
+                ORDER BY r.created_at DESC
+                LIMIT 50
             '''
-
             df = pd.read_sql_query(query, conn, params=[affiliate_id])
             conn.close()
-
-            if not df.empty:
-                df['date'] = pd.to_datetime(df['date'])
-
             return df
-
-        except Exception as e:
-            logger.error(f"Error getting clicks over time: {e}")
+        except Exception:
             return pd.DataFrame()
 
-    def get_referrals_over_time(self, affiliate_id: int) -> pd.DataFrame:
-        """Get referrals over time data."""
+    def get_payout_statistics(self, affiliate_id: int) -> Dict:
+        """Get payout statistics for affiliate."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Pending earnings (unpaid commissions)
+            cursor.execute('''
+                SELECT COALESCE(SUM(commission_amount), 0) FROM referrals 
+                WHERE affiliate_id = ? AND commission_paid = 0 AND conversion_date IS NOT NULL
+            ''', (affiliate_id,))
+            pending_earnings = cursor.fetchone()[0]
+
+            # Total paid
+            cursor.execute('''
+                SELECT COALESCE(SUM(amount), 0) FROM affiliate_payouts 
+                WHERE affiliate_id = ? AND status = 'completed'
+            ''', (affiliate_id,))
+            total_paid = cursor.fetchone()[0]
+
+            conn.close()
+
+            # Next payout date (first Monday of next month)
+            next_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=32)
+            next_month = next_month.replace(day=1)
+
+            # Find first Monday
+            while next_month.weekday() != 0:  # 0 = Monday
+                next_month += timedelta(days=1)
+
+            return {
+                'pending_earnings': pending_earnings,
+                'total_paid': total_paid,
+                'next_payout_date': next_month.strftime('%Y-%m-%d')
+            }
+
+        except Exception:
+            return {}
+
+    def get_payouts_dataframe(self, affiliate_id: int) -> pd.DataFrame:
+        """Get payouts dataframe for affiliate."""
         try:
             conn = sqlite3.connect(self.db_path)
             query = '''
                 SELECT 
-                    DATE(referral_date) as date,
-                    COUNT(*) as referrals
-                FROM referrals 
+                    created_at as "Date",
+                    amount as "Amount",
+                    payout_method as "Method",
+                    status as "Status",
+                    processed_at as "Processed"
+                FROM affiliate_payouts 
                 WHERE affiliate_id = ?
-                GROUP BY DATE(referral_date)
-                ORDER BY date DESC
-                LIMIT 30
+                ORDER BY created_at DESC
             '''
-
             df = pd.read_sql_query(query, conn, params=[affiliate_id])
             conn.close()
-
-            if not df.empty:
-                df['date'] = pd.to_datetime(df['date'])
-
             return df
-
-        except Exception as e:
-            logger.error(f"Error getting referrals over time: {e}")
+        except Exception:
             return pd.DataFrame()
 
-    def get_recent_affiliate_activity(self, affiliate_id: int) -> List[Dict]:
-        """Get recent affiliate activity."""
+    def get_marketing_materials(self) -> List[Dict]:
+        """Get available marketing materials."""
         try:
             conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM marketing_materials ORDER BY created_at DESC')
 
-            # Get recent referrals
-            recent_referrals = pd.read_sql_query('''
-                SELECT referral_date, commission_amount 
-                FROM referrals 
-                WHERE affiliate_id = ?
-                ORDER BY referral_date DESC 
-                LIMIT 5
-            ''', conn, params=[affiliate_id])
-
-            conn.close()
-
-            activities = []
-            for _, referral in recent_referrals.iterrows():
-                activities.append({
-                    'timestamp': referral['referral_date'][:19],
-                    'description': f"New referral earned ${referral['commission_amount']:.2f}"
+            materials = []
+            for row in cursor.fetchall():
+                materials.append({
+                    'id': row[0],
+                    'title': row[1],
+                    'description': row[2],
+                    'material_type': row[3],
+                    'file_url': row[4],
+                    'download_count': row[5]
                 })
 
-            return activities
-
-        except Exception as e:
-            logger.error(f"Error getting recent activity: {e}")
+            conn.close()
+            return materials
+        except Exception:
             return []
 
-    def get_referral_stats(self, affiliate_id: int) -> Dict:
-        """Get referral statistics."""
+    def track_material_download(self, material_id: int):
+        """Track marketing material download."""
         try:
             conn = sqlite3.connect(self.db_path)
-
-            total = pd.read_sql_query(
-                "SELECT COUNT(*) as count FROM referrals WHERE affiliate_id = ?",
-                conn, params=[affiliate_id]
-            ).iloc[0]['count']
-
-            # For this example, we'll assume all referrals are active
-            # In a real system, you'd track user status
-            active = total
-            pending = 0
-
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE marketing_materials 
+                SET download_count = download_count + 1 
+                WHERE id = ?
+            ''', (material_id,))
+            conn.commit()
             conn.close()
+        except Exception:
+            pass
 
-            return {'total': total, 'active': active, 'pending': pending}
-
-        except Exception as e:
-            logger.error(f"Error getting referral stats: {e}")
-            return {}
-
-    def get_affiliate_referrals(self, affiliate_id: int) -> pd.DataFrame:
-        """Get all referrals for an affiliate."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            df = pd.read_sql_query(
-                "SELECT * FROM referrals WHERE affiliate_id = ? ORDER BY referral_date DESC",
-                conn, params=[affiliate_id]
-            )
-            conn.close()
-            return df
-        except Exception as e:
-            logger.error(f"Error getting affiliate referrals: {e}")
-            return pd.DataFrame()
-
-    def get_affiliate_earnings(self, affiliate_id: int) -> Dict:
-        """Get affiliate earnings summary."""
+    def get_performance_data(self, affiliate_id: int) -> Dict:
+        """Get performance data for charts."""
         try:
             conn = sqlite3.connect(self.db_path)
 
-            # Total earned
-            total_earned = pd.read_sql_query(
-                "SELECT COALESCE(SUM(commission_amount), 0) as total FROM referrals WHERE affiliate_id = ?",
-                conn, params=[affiliate_id]
-            ).iloc[0]['total']
-
-            # Paid vs pending (simplified - in real system, track payment status)
-            paid = total_earned * 0.8  # Assume 80% has been paid
-            pending = total_earned * 0.2
-
-            # Current month
-            current_month = pd.read_sql_query('''
-                SELECT COALESCE(SUM(commission_amount), 0) as total 
+            # Referrals timeline
+            referrals_query = '''
+                SELECT DATE(created_at) as date, COUNT(*) as count
                 FROM referrals 
-                WHERE affiliate_id = ? AND strftime('%Y-%m', referral_date) = strftime('%Y-%m', 'now')
-            ''', conn, params=[affiliate_id]).iloc[0]['total']
+                WHERE affiliate_id = ? AND created_at > datetime('now', '-30 days')
+                GROUP BY DATE(created_at)
+                ORDER BY date
+            '''
+            referrals_df = pd.read_sql_query(referrals_query, conn, params=[affiliate_id])
+
+            # Earnings timeline
+            earnings_query = '''
+                SELECT DATE(conversion_date) as date, SUM(commission_amount) as amount
+                FROM referrals 
+                WHERE affiliate_id = ? AND conversion_date IS NOT NULL 
+                      AND conversion_date > datetime('now', '-30 days')
+                GROUP BY DATE(conversion_date)
+                ORDER BY date
+            '''
+            earnings_df = pd.read_sql_query(earnings_query, conn, params=[affiliate_id])
 
             conn.close()
 
             return {
-                'total_earned': total_earned,
-                'paid': paid,
-                'pending': pending,
-                'current_month': current_month
+                'referrals_timeline': referrals_df,
+                'earnings_timeline': earnings_df
             }
 
-        except Exception as e:
-            logger.error(f"Error getting affiliate earnings: {e}")
+        except Exception:
             return {}
 
-    def get_earnings_history(self, affiliate_id: int) -> pd.DataFrame:
-        """Get earnings history by month."""
+    def get_next_tier_info(self, current_tier: str, current_referrals: int) -> Optional[Dict]:
+        """Get next tier information."""
         try:
-            conn = sqlite3.connect(self.db_path)
-            query = '''
-                SELECT 
-                    strftime('%Y-%m', referral_date) as month,
-                    SUM(commission_amount) as earnings
-                FROM referrals 
-                WHERE affiliate_id = ?
-                GROUP BY strftime('%Y-%m', referral_date)
-                ORDER BY month DESC
-                LIMIT 12
-            '''
-
-            df = pd.read_sql_query(query, conn, params=[affiliate_id])
-            conn.close()
-            return df
-
-        except Exception as e:
-            logger.error(f"Error getting earnings history: {e}")
-            return pd.DataFrame()
-
-    def get_payment_history(self, affiliate_id: int) -> pd.DataFrame:
-        """Get payment history for affiliate."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            df = pd.read_sql_query(
-                "SELECT * FROM commission_payments WHERE affiliate_id = ? ORDER BY payment_date DESC",
-                conn, params=[affiliate_id]
-            )
-            conn.close()
-            return df
-        except Exception as e:
-            logger.error(f"Error getting payment history: {e}")
-            return pd.DataFrame()
-
-    def request_payout(self, affiliate_id: int) -> Dict[str, Any]:
-        """Request commission payout."""
-        try:
-            # In a real system, this would integrate with payment processors
-            # For now, we'll just create a pending payment record
-
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-
-            # Get pending commission amount
             cursor.execute('''
-                SELECT COALESCE(SUM(commission_amount), 0) 
-                FROM referrals 
-                WHERE affiliate_id = ? AND commission_paid = 0
-            ''', (affiliate_id,))
+                SELECT tier_name, min_referrals, commission_rate, bonus_amount
+                FROM commission_tiers 
+                WHERE min_referrals > ?
+                ORDER BY min_referrals ASC
+                LIMIT 1
+            ''', (current_referrals,))
 
-            pending_amount = cursor.fetchone()[0]
-
-            if pending_amount >= 50:  # Minimum payout threshold
-                # Create payment record
-                cursor.execute('''
-                    INSERT INTO commission_payments (affiliate_id, amount, status)
-                    VALUES (?, ?, 'pending')
-                ''', (affiliate_id, pending_amount))
-
-                conn.commit()
-                conn.close()
-
-                logger.info(f"Payout requested for affiliate {affiliate_id}: ${pending_amount}")
-                return {"success": True, "amount": pending_amount}
-            else:
-                conn.close()
-                return {"success": False, "message": "Minimum payout amount not met"}
-
-        except Exception as e:
-            logger.error(f"Error requesting payout: {e}")
-            return {"success": False, "message": "Payout request failed"}
-
-    def update_payment_info(self, affiliate_id: int, payment_data: Dict) -> bool:
-        """Update affiliate payment information."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
-            cursor.execute(
-                "UPDATE affiliates SET payment_info = ? WHERE id = ?",
-                (json.dumps(payment_data), affiliate_id)
-            )
-
-            conn.commit()
+            row = cursor.fetchone()
             conn.close()
 
-            logger.info(f"Payment info updated for affiliate {affiliate_id}")
-            return True
+            if row:
+                return {
+                    'tier_name': row[0],
+                    'min_referrals': row[1],
+                    'commission_rate': row[2],
+                    'bonus_amount': row[3]
+                }
+            return None
 
-        except Exception as e:
-            logger.error(f"Error updating payment info: {e}")
-            return False
+        except Exception:
+            return None
 
-def main():
-    """Main affiliate system entry point."""
-    affiliate_system = AffiliateTrackingSystem()
-    affiliate_system.render_affiliate_dashboard()
-
-if __name__ == "__main__":
-    main()
+`

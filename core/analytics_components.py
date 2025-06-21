@@ -10,15 +10,35 @@ import logging
 logger = logging.getLogger(__name__)
 
 def render_analytics():
-    """Render the main analytics page."""
-    st.header("📊 Analytics Dashboard")
+    """Render the main analytics page with comprehensive dashboard."""
+    st.header("📊 Professional Trading Analytics")
 
     if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
-        st.info("📥 Upload trade data to view analytics")
+        st.info("📥 Upload trade data to view comprehensive analytics")
         return
 
     data = st.session_state.trade_data
 
+    try:
+        # Import the new dashboard system
+        from visuals.dashboard_builder import TradingDashboard
+        
+        # Create and render comprehensive dashboard
+        dashboard = TradingDashboard(data)
+        dashboard.render_complete_dashboard()
+        
+    except ImportError:
+        # Fallback to basic analytics if new system not available
+        _render_basic_analytics(data)
+    except Exception as e:
+        st.error(f"Error rendering comprehensive analytics: {str(e)}")
+        _render_basic_analytics(data)
+
+
+def _render_basic_analytics(data):
+    """Fallback basic analytics rendering."""
+    st.warning("Using basic analytics mode")
+    
     # Basic metrics
     col1, col2, col3, col4 = st.columns(4)
 

@@ -258,6 +258,12 @@ class TradeSenseApp:
         """Initialize the TradeSense application."""
         self.auth_manager = AuthManager()
 
+        # Repair database if needed
+        try:
+            self.auth_manager.repair_database()
+        except Exception as e:
+            logger.warning(f"Database repair failed: {e}")
+
         # Initialize health monitor with fallback
         if HEALTH_MONITORING_AVAILABLE:
             self.health_monitor = SystemHealthMonitor()

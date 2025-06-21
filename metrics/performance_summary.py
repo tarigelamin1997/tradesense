@@ -46,17 +46,17 @@ class PerformanceMetrics:
     current_streak: int
     current_streak_type: str
     
-    # Advanced metrics
-    sharpe_ratio: Optional[float] = None
-    sortino_ratio: Optional[float] = None
-    calmar_ratio: Optional[float] = None
-    
     # Duration metrics
     avg_trade_duration: float
     median_trade_duration: float
     
     # Return metrics
     total_return_percent: float
+    
+    # Advanced metrics (with defaults)
+    sharpe_ratio: Optional[float] = None
+    sortino_ratio: Optional[float] = None
+    calmar_ratio: Optional[float] = None
     annualized_return: Optional[float] = None
 
 

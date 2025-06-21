@@ -156,31 +156,137 @@ def handle_file_upload():
                 else:
                     df = pd.read_excel(uploaded_file)
 
-            # Enhanced success message with data preview
-            st.success(f"✅ Successfully processed **{len(df):,} trades** from `{uploaded_file.name}`")
+            # Enhanced success message with modern styling
+            st.markdown("""
+            <div style="
+                background: linear-gradient(90deg, #00ff88 0%, #00d4ff 100%);
+                padding: 1rem;
+                border-radius: 10px;
+                margin: 1rem 0;
+                text-align: center;
+                color: white;
+                font-weight: bold;
+                box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+            ">
+                ✅ Successfully processed {rows:,} trades from {filename}
+            </div>
+            """.format(rows=len(df), filename=uploaded_file.name), unsafe_allow_html=True)
 
-            # Quick data preview
-            st.markdown("### 👀 **Data Preview**")
+            # Advanced data preview with analytics insights
+            st.markdown("### 📊 **Data Intelligence Dashboard**")
 
-            preview_col1, preview_col2 = st.columns(2)
+            # Create metric cards
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 1rem;
+                    border-radius: 10px;
+                    text-align: center;
+                    color: white;
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 1.5rem;">{}</h3>
+                    <p style="margin: 0;">Total Trades</p>
+                </div>
+                """.format(len(df)), unsafe_allow_html=True)
 
+            with col2:
+                total_pnl = df['pnl'].sum() if 'pnl' in df.columns else 0
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                    padding: 1rem;
+                    border-radius: 10px;
+                    text-align: center;
+                    color: white;
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 1.5rem;">${:.2f}</h3>
+                    <p style="margin: 0;">Total P&L</p>
+                </div>
+                """.format(total_pnl), unsafe_allow_html=True)
+
+            with col3:
+                unique_symbols = df['symbol'].nunique() if 'symbol' in df.columns else 0
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                    padding: 1rem;
+                    border-radius: 10px;
+                    text-align: center;
+                    color: white;
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 1.5rem;">{}</h3>
+                    <p style="margin: 0;">Symbols Traded</p>
+                </div>
+                """.format(unique_symbols), unsafe_allow_html=True)
+
+            with col4:
+                data_quality = (1 - df.isnull().sum().sum() / (len(df) * len(df.columns))) * 100
+                quality_color = "#00ff88" if data_quality > 95 else "#ffaa00" if data_quality > 85 else "#ff4444"
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, {color} 0%, {color}80 100%);
+                    padding: 1rem;
+                    border-radius: 10px;
+                    text-align: center;
+                    color: white;
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 1.5rem;">{:.1f}%</h3>
+                    <p style="margin: 0;">Data Quality</p>
+                </div>
+                """.format(data_quality, color=quality_color), unsafe_allow_html=True)
+
+            # Interactive data preview with styling
+            st.markdown("### 🔍 **Interactive Data Preview**")
+            
+            preview_col1, preview_col2 = st.columns([2, 1])
+            
             with preview_col1:
-                st.markdown("**📊 Dataset Dimensions**")
-                st.info(f"**Rows:** {len(df):,} | **Columns:** {len(df.columns)}")
-
-                st.markdown("**📋 Column Names**")
-                columns_display = ", ".join([f"`{col}`" for col in df.columns[:5]])
-                if len(df.columns) > 5:
-                    columns_display += f" ... and {len(df.columns) - 5} more"
-                st.info(columns_display)
-
-            with preview_col2:
-                st.markdown("**🔍 Sample Data**")
+                st.markdown("**📋 Sample Records**")
+                # Style the dataframe
+                styled_df = df.head(5).style.format({
+                    'pnl': '${:.2f}' if 'pnl' in df.columns else lambda x: x,
+                    'entry_price': '${:.2f}' if 'entry_price' in df.columns else lambda x: x,
+                    'exit_price': '${:.2f}' if 'exit_price' in df.columns else lambda x: x
+                }).background_gradient(subset=['pnl'] if 'pnl' in df.columns else [])
+                
                 st.dataframe(
-                    df.head(3),
+                    styled_df,
                     use_container_width=True,
                     hide_index=True
                 )
+
+            with preview_col2:
+                st.markdown("**📈 Quick Analytics**")
+                
+                if 'pnl' in df.columns:
+                    win_rate = (df[df['pnl'] > 0].shape[0] / len(df)) * 100
+                    st.metric("Win Rate", f"{win_rate:.1f}%")
+                    
+                    avg_win = df[df['pnl'] > 0]['pnl'].mean()
+                    avg_loss = df[df['pnl'] < 0]['pnl'].mean()
+                    st.metric("Avg Win", f"${avg_win:.2f}")
+                    st.metric("Avg Loss", f"${avg_loss:.2f}")
+                
+                st.info(f"**Columns:** {len(df.columns)}")
+                
+                # Column health check
+                missing_cols = []
+                expected_cols = ['symbol', 'entry_time', 'exit_time', 'pnl', 'direction']
+                for col in expected_cols:
+                    if col not in df.columns:
+                        missing_cols.append(col)
+                
+                if missing_cols:
+                    st.warning(f"⚠️ Missing: {', '.join(missing_cols)}")
+                else:
+                    st.success("✅ All key columns present")
 
             # Data validation alerts
             if df.empty:

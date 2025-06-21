@@ -100,6 +100,9 @@ class AuthManager:
             if 'username' not in user_columns:
                 try:
                     cursor.execute('ALTER TABLE users ADD COLUMN username TEXT')
+                    # Update existing users with username = email if they don't have usernames
+                    cursor.execute('UPDATE users SET username = email WHERE username IS NULL OR username = ""')
+                    logger.info("Added username column and updated existing users")
                 except sqlite3.Error as e:
                     logger.warning(f"Could not add username column: {e}")
 
@@ -443,7 +446,7 @@ class AuthManager:
     def test_database_connection(self) -> Dict[str, Any]:
         """Test database connection and return status."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
 
             # Test basic query
@@ -480,10 +483,32 @@ class AuthManager:
                 "message": f"Database connection failed: {str(e)}"
             }
 
+    def repair_database(self):
+        """Manually repair database schema issues."""
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            cursor = conn.cursor()
+
+            # Get current schema
+            cursor.execute("PRAGMA table_info(users)")
+            columns_info = cursor.fetchall()
+            column_names = [col[1] for col in columns_info]
+
+            # Repair schema
+            self._repair_database_schema(cursor, column_names)
+            
+            conn.commit()
+            conn.close()
+            logger.info("Database repair completed successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Database repair failed: {e}")
+            return False
+
     def _repair_database_schema(self, cursor, existing_columns):
         """Repair database schema by adding missing columns."""
         required_columns = {
-            'username': 'TEXT UNIQUE',
+            'username': 'TEXT',
             'email': 'TEXT UNIQUE NOT NULL',
             'password_hash': 'TEXT NOT NULL',
             'partner_id': 'INTEGER',
@@ -502,6 +527,13 @@ class AuthManager:
                     alter_sql = f"ALTER TABLE users ADD COLUMN {column} {definition}"
                     cursor.execute(alter_sql)
                     logger.info(f"Added missing column: {column}")
+                    
+                    # Special handling for username column
+                    if column == 'username':
+                        # Update existing users with username = email if they don't have usernames
+                        cursor.execute('UPDATE users SET username = email WHERE username IS NULL OR username = ""')
+                        logger.info("Updated existing users with usernames")
+                        
                 except Exception as e:
                     logger.warning(f"Could not add column {column}: {e}")
                     # Continue with other columns

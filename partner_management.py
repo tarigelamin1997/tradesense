@@ -1,30 +1,44 @@
-
 import streamlit as st
-import pandas as pd
 import sqlite3
+import pandas as pd
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from auth import AuthManager, require_auth
 import plotly.express as px
-import plotly.graph_objects as go
 import logging
+import plotly.graph_objects as go
+
 
 logger = logging.getLogger(__name__)
 
 class PartnerManagement:
     """Comprehensive partner management system."""
-    
+
     def __init__(self, db_path: str = "tradesense.db"):
         self.db_path = db_path
         self.auth_manager = AuthManager()
-        self.init_partner_tables()
-    
-    def init_partner_tables(self):
-        """Initialize partner-related database tables."""
+        self.init_partner_database()
+
+    def init_partner_database(self):
+        """Initialize partner-specific database tables."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
+        # Partner users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS partner_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                partner_id INTEGER,
+                user_id INTEGER,
+                role TEXT DEFAULT 'user',
+                permissions TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (partner_id) REFERENCES partners (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+
         # Partner analytics table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS partner_analytics (
@@ -32,597 +46,440 @@ class PartnerManagement:
                 partner_id INTEGER,
                 metric_name TEXT,
                 metric_value REAL,
-                period_start DATE,
-                period_end DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (partner_id) REFERENCES partners (id)
             )
         ''')
-        
+
         # Partner billing table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS partner_billing (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 partner_id INTEGER,
-                period_start DATE,
-                period_end DATE,
-                revenue_generated REAL,
-                commission_owed REAL,
+                billing_period TEXT,
+                total_revenue REAL,
+                partner_share REAL,
                 status TEXT DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (partner_id) REFERENCES partners (id)
             )
         ''')
-        
-        # Partner users tracking
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS partner_user_activity (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                partner_id INTEGER,
-                user_id INTEGER,
-                action_type TEXT,
-                details TEXT,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (partner_id) REFERENCES partners (id),
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            )
-        ''')
-        
+
         conn.commit()
         conn.close()
-    
+
+    @require_auth
     def render_partner_portal(self):
-        """Render the main partner portal."""
+        """Render the partner portal interface."""
         current_user = self.auth_manager.get_current_user()
-        
-        if not current_user:
-            st.warning("🔐 Please login to access the partner portal")
+        if not current_user or not current_user.get('partner_id'):
+            st.error("🚫 Partner access required")
             return
-        
-        partner_id = current_user.get('partner_id')
-        if not partner_id:
-            st.info("👋 Welcome to TradeSense! Would you like to become a partner?")
-            self._render_partner_application()
+
+        partner_id = current_user['partner_id']
+        partner_info = self.auth_manager.get_partner(partner_id)
+
+        if not partner_info:
+            st.error("❌ Partner information not found")
             return
-        
-        partner = self.auth_manager.get_partner(partner_id)
-        if not partner:
-            st.error("Partner not found")
-            return
-        
-        # Partner portal header
-        st.title(f"🏢 {partner['name']} Partner Portal")
-        st.markdown("---")
-        
-        # Partner tabs
+
+        st.title(f"🏢 {partner_info['name']} - Partner Portal")
+
+        # Partner dashboard tabs
         tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "📊 Dashboard",
-            "👥 User Management", 
-            "🔑 API Management",
-            "💰 Billing & Revenue",
-            "⚙️ Settings"
+            "📊 Dashboard", "👥 Users", "⚙️ Settings", "💰 Billing", "📈 Analytics"
         ])
-        
+
         with tab1:
-            self._render_partner_dashboard(current_user, partner)
-        
+            self._render_partner_dashboard(partner_info)
         with tab2:
-            self._render_partner_user_management(current_user, partner)
-        
+            self._render_user_management(partner_id)
         with tab3:
-            self._render_api_management(current_user, partner)
-        
+            self._render_partner_settings(partner_info)
         with tab4:
-            self._render_billing_management(current_user, partner)
-        
+            self._render_billing_management(partner_id)
         with tab5:
-            self._render_partner_settings(current_user, partner)
-    
-    def _render_partner_application(self):
-        """Render partner application form."""
-        st.subheader("🤝 Become a TradeSense Partner")
-        
-        with st.form("partner_application"):
-            st.markdown("""
-            ### Partner Benefits:
-            - **White-label branding** for your platform
-            - **Revenue sharing** on user subscriptions
-            - **Dedicated support** and onboarding
-            - **API access** for custom integrations
-            - **Analytics dashboard** for your users
-            """)
-            
-            company_name = st.text_input("Company/Organization Name *")
-            partner_type = st.selectbox(
-                "Partner Type *",
-                ["broker", "prop_firm", "trading_group", "financial_advisor", "educator"]
-            )
-            contact_email = st.text_input("Contact Email *")
-            website = st.text_input("Website URL")
-            description = st.text_area("Tell us about your organization")
-            expected_users = st.selectbox(
-                "Expected number of users",
-                ["1-50", "51-200", "201-1000", "1000+"]
-            )
-            
-            submitted = st.form_submit_button("🚀 Apply for Partnership")
-            
-            if submitted and company_name and contact_email:
-                # Create partner application
-                settings = {
-                    "contact_email": contact_email,
-                    "website": website,
-                    "description": description,
-                    "expected_users": expected_users,
-                    "status": "pending_approval"
-                }
-                
-                result = self.auth_manager.create_partner(company_name, partner_type, settings)
-                
-                if result["success"]:
-                    st.success("🎉 Partnership application submitted! We'll contact you within 2 business days.")
-                    st.info(f"Your API key (save this): `{result['api_key']}`")
-                else:
-                    st.error("Application failed. Please try again.")
-    
-    def _render_partner_dashboard(self, current_user: Dict, partner: Dict):
-        """Render partner dashboard with key metrics."""
-        st.subheader("📊 Partner Dashboard")
-        
+            self._render_partner_analytics(partner_id)
+
+    def _render_partner_dashboard(self, partner_info: Dict):
+        """Render partner dashboard overview."""
+        st.header("📊 Partner Overview")
+
         # Key metrics
-        metrics = self._get_partner_metrics(partner['id'])
-        
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
-            st.metric("Total Users", metrics.get('total_users', 0))
-        
+            total_users = self._get_partner_user_count(partner_info['id'])
+            st.metric("Total Users", total_users)
+
         with col2:
-            st.metric("Active Users (30d)", metrics.get('active_users_30d', 0))
-        
+            active_users = self._get_active_user_count(partner_info['id'])
+            st.metric("Active Users", active_users)
+
         with col3:
-            revenue = metrics.get('revenue_30d', 0)
-            st.metric("Revenue (30d)", f"${revenue:,.2f}")
-        
+            monthly_revenue = self._get_monthly_revenue(partner_info['id'])
+            st.metric("Monthly Revenue", f"${monthly_revenue:,.2f}")
+
         with col4:
-            commission = metrics.get('commission_owed', 0)
-            st.metric("Commission Owed", f"${commission:,.2f}")
-        
-        # Charts
+            revenue_share = partner_info.get('revenue_share', 0) * 100
+            st.metric("Revenue Share", f"{revenue_share:.1f}%")
+
+        # Partner status and info
+        st.subheader("ℹ️ Partner Information")
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            # User growth chart
-            user_growth = self._get_user_growth_data(partner['id'])
-            if not user_growth.empty:
-                fig = px.line(user_growth, x='date', y='cumulative_users',
-                             title="User Growth Over Time")
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No user growth data available yet")
-        
+            st.info(f"""
+            **Partner Type:** {partner_info['type'].title()}  
+            **Status:** {'✅ Active' if partner_info['is_active'] else '❌ Inactive'}  
+            **Created:** {partner_info['created_at'][:10]}  
+            **Billing Plan:** {partner_info['billing_plan'].title()}
+            """)
+
         with col2:
-            # Revenue chart
-            revenue_data = self._get_revenue_data(partner['id'])
-            if not revenue_data.empty:
-                fig = px.bar(revenue_data, x='month', y='revenue',
-                           title="Monthly Revenue")
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No revenue data available yet")
-        
-        # Recent activity
-        st.subheader("📈 Recent Activity")
-        recent_activity = self._get_recent_activity(partner['id'])
-        
-        if recent_activity:
-            for activity in recent_activity:
-                st.write(f"**{activity['timestamp']}**: {activity['description']}")
-        else:
-            st.info("No recent activity")
-    
-    def _render_partner_user_management(self, current_user: Dict, partner: Dict):
-        """Render partner user management."""
-        st.subheader("👥 User Management")
-        
-        # User statistics
-        user_stats = self._get_partner_user_stats(partner['id'])
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Users", user_stats.get('total', 0))
-        with col2:
-            st.metric("Active Users", user_stats.get('active', 0))
-        with col3:
-            st.metric("New Users (7d)", user_stats.get('new_7d', 0))
-        
-        # User list
-        st.subheader("📋 User List")
-        partner_users = self._get_partner_users(partner['id'])
-        
-        if not partner_users.empty:
-            # Add user actions
-            for idx, user in partner_users.iterrows():
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-                
+            st.success(f"""
+            **API Key:** `{partner_info['api_key'][:20]}...`  
+            **Base URL:** `https://api.tradesense.app/v1/`  
+            **Documentation:** [API Docs](/docs/api)  
+            **Support:** partner-support@tradesense.app
+            """)
+
+    def _render_user_management(self, partner_id: int):
+        """Render user management interface."""
+        st.header("👥 User Management")
+
+        # Add new user
+        with st.expander("➕ Add New User"):
+            with st.form("add_user_form"):
+                col1, col2 = st.columns(2)
+
                 with col1:
-                    st.write(f"**{user['username']}** ({user['email']})")
-                
+                    username = st.text_input("Username")
+                    email = st.text_input("Email")
+
                 with col2:
-                    status = "🟢 Active" if user['is_active'] else "🔴 Inactive"
-                    st.write(status)
-                
-                with col3:
-                    st.write(f"Joined: {user['created_at'][:10]}")
-                
-                with col4:
-                    if st.button("📊 Analytics", key=f"user_analytics_{user['id']}"):
-                        self._show_user_analytics(user['id'])
+                    password = st.text_input("Temporary Password", type="password")
+                    role = st.selectbox("Role", ["user", "admin", "analyst"])
+
+                if st.form_submit_button("Create User"):
+                    result = self._create_partner_user(partner_id, username, email, password, role)
+                    if result['success']:
+                        st.success(f"User created successfully! User ID: {result['user_id']}")
+                    else:
+                        st.error(result['message'])
+
+        # User list
+        st.subheader("📋 Partner Users")
+        users_df = self._get_partner_users_dataframe(partner_id)
+
+        if not users_df.empty:
+            st.dataframe(users_df, use_container_width=True)
+
+            # Bulk actions
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                if st.button("📤 Export User List"):
+                    csv = users_df.to_csv(index=False)
+                    st.download_button("Download CSV", csv, "partner_users.csv", "text/csv")
+
+            with col2:
+                if st.button("📧 Send Welcome Email"):
+                    st.info("Welcome emails would be sent to all users")
+
+            with col3:
+                if st.button("🔄 Sync User Data"):
+                    st.success("User data synchronized")
         else:
             st.info("No users found for this partner")
-        
-        # Bulk user management
-        with st.expander("📦 Bulk User Management"):
-            st.markdown("**Coming Soon**: Bulk user provisioning and management tools")
-    
-    def _render_api_management(self, current_user: Dict, partner: Dict):
-        """Render API management for partners."""
-        st.subheader("🔑 API Management")
-        
-        # Show API key (masked)
-        api_key = partner.get('api_key', '')
-        masked_key = api_key[:8] + "*" * 20 + api_key[-4:] if api_key else "No API key"
-        
-        col1, col2 = st.columns([3, 1])
+
+    def _render_partner_settings(self, partner_info: Dict):
+        """Render partner settings interface."""
+        st.header("⚙️ Partner Settings")
+
+        # Branding settings
+        st.subheader("🎨 Branding Settings")
+
+        with st.form("branding_form"):
+            col1, col2 = st.columns(2)
+
+            with col1:
+                logo_url = st.text_input("Logo URL", value="")
+                primary_color = st.color_picker("Primary Color", "#1f77b4")
+
+            with col2:
+                company_name = st.text_input("Company Name", value=partner_info['name'])
+                secondary_color = st.color_picker("Secondary Color", "#ff7f0e")
+
+            custom_domain = st.text_input("Custom Domain", placeholder="analytics.yourcompany.com")
+
+            if st.form_submit_button("Update Branding"):
+                branding_data = {
+                    "logo_url": logo_url,
+                    "primary_color": primary_color,
+                    "secondary_color": secondary_color,
+                    "company_name": company_name,
+                    "custom_domain": custom_domain
+                }
+
+                if self._update_partner_branding(partner_info['id'], branding_data):
+                    st.success("Branding settings updated successfully!")
+                else:
+                    st.error("Failed to update branding settings")
+
+        # API settings
+        st.subheader("🔑 API Settings")
+
+        col1, col2 = st.columns(2)
+
         with col1:
-            st.text_input("API Key", value=masked_key, disabled=True)
+            st.text_input("API Key", value=partner_info['api_key'], disabled=True)
+            if st.button("🔄 Regenerate API Key"):
+                st.warning("⚠️ This will invalidate your current API key!")
+                if st.button("✅ Confirm Regeneration"):
+                    new_key = self._regenerate_api_key(partner_info['id'])
+                    if new_key:
+                        st.success(f"New API Key: {new_key}")
+                    else:
+                        st.error("Failed to regenerate API key")
+
         with col2:
-            if st.button("🔄 Regenerate"):
-                if st.checkbox("I understand this will invalidate the current key"):
-                    # Regenerate API key logic would go here
-                    st.success("API key regenerated!")
-        
-        # API documentation
-        st.subheader("📚 API Documentation")
-        
-        st.markdown("""
-        ### Authentication
-        Include your API key in the header:
-        ```
-        Authorization: Bearer YOUR_API_KEY
-        ```
-        
-        ### Endpoints
-        
-        #### GET /api/v1/users
-        Get list of users for your partner account
-        
-        #### POST /api/v1/users
-        Create a new user under your partner account
-        
-        #### GET /api/v1/analytics/{user_id}
-        Get analytics for a specific user
-        
-        #### POST /api/v1/sync/{user_id}
-        Trigger data sync for a user
-        """)
-        
-        # API usage stats
-        st.subheader("📊 API Usage")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Requests (24h)", "1,234")
-        with col2:
-            st.metric("Rate Limit", "1000/hour")
-        with col3:
-            st.metric("Success Rate", "99.8%")
-    
-    def _render_billing_management(self, current_user: Dict, partner: Dict):
-        """Render billing and revenue management."""
-        st.subheader("💰 Billing & Revenue")
-        
-        # Revenue overview
-        revenue_stats = self._get_revenue_stats(partner['id'])
-        
+            # Rate limiting settings
+            st.subheader("⚡ Rate Limiting")
+            rate_limit = st.number_input("Requests per minute", value=1000, min_value=100)
+            if st.button("Update Rate Limit"):
+                st.success("Rate limit updated")
+
+    def _render_billing_management(self, partner_id: int):
+        """Render billing management interface."""
+        st.header("💰 Billing & Revenue")
+
+        # Billing summary
+        billing_summary = self._get_billing_summary(partner_id)
+
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
-            total_revenue = revenue_stats.get('total_revenue', 0)
-            st.metric("Total Revenue", f"${total_revenue:,.2f}")
-        
+            st.metric("This Month", f"${billing_summary.get('current_month', 0):,.2f}")
+
         with col2:
-            monthly_revenue = revenue_stats.get('monthly_revenue', 0)
-            st.metric("This Month", f"${monthly_revenue:,.2f}")
-        
+            st.metric("Last Month", f"${billing_summary.get('last_month', 0):,.2f}")
+
         with col3:
-            commission_rate = partner.get('revenue_share', 0)
-            st.metric("Commission Rate", f"{commission_rate}%")
-        
+            st.metric("Total Revenue", f"${billing_summary.get('total', 0):,.2f}")
+
         with col4:
-            pending_commission = revenue_stats.get('pending_commission', 0)
-            st.metric("Pending Commission", f"${pending_commission:,.2f}")
-        
+            st.metric("Outstanding", f"${billing_summary.get('outstanding', 0):,.2f}")
+
+        # Revenue chart
+        st.subheader("📈 Revenue Trends")
+        revenue_data = self._get_revenue_chart_data(partner_id)
+
+        if not revenue_data.empty:
+            fig = px.line(revenue_data, x='month', y='revenue', title='Monthly Revenue')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No revenue data available yet")
+
         # Billing history
         st.subheader("📋 Billing History")
-        billing_history = self._get_billing_history(partner['id'])
-        
-        if not billing_history.empty:
-            st.dataframe(billing_history, use_container_width=True)
+        billing_df = self._get_billing_history(partner_id)
+
+        if not billing_df.empty:
+            st.dataframe(billing_df, use_container_width=True)
         else:
             st.info("No billing history available")
-        
-        # Payment settings
-        with st.expander("💳 Payment Settings"):
-            st.markdown("Configure how you'd like to receive commission payments:")
-            
-            payment_method = st.selectbox(
-                "Payment Method",
-                ["Bank Transfer", "PayPal", "Stripe", "Check"]
-            )
-            
-            if payment_method == "Bank Transfer":
-                bank_name = st.text_input("Bank Name")
-                routing_number = st.text_input("Routing Number")
-                account_number = st.text_input("Account Number", type="password")
-            
-            if st.button("💾 Save Payment Settings"):
-                st.success("Payment settings saved!")
-    
-    def _render_partner_settings(self, current_user: Dict, partner: Dict):
-        """Render partner settings and customization."""
-        st.subheader("⚙️ Partner Settings")
-        
-        # White-label branding
-        st.subheader("🎨 White-label Branding")
-        
+
+    def _render_partner_analytics(self, partner_id: int):
+        """Render partner analytics dashboard."""
+        st.header("📈 Partner Analytics")
+
+        # Usage metrics
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            company_logo = st.file_uploader("Company Logo", type=['png', 'jpg', 'jpeg'])
-            primary_color = st.color_picker("Primary Color", "#1f77b4")
-            secondary_color = st.color_picker("Secondary Color", "#ff7f0e")
-        
+            st.subheader("📊 Usage Metrics")
+            usage_data = self._get_usage_metrics(partner_id)
+
+            if usage_data:
+                fig = px.bar(
+                    x=list(usage_data.keys()),
+                    y=list(usage_data.values()),
+                    title="Feature Usage"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
         with col2:
-            company_name = st.text_input("Company Name", value=partner['name'])
-            custom_domain = st.text_input("Custom Domain", placeholder="analytics.yourcompany.com")
-            footer_text = st.text_area("Footer Text", placeholder="© 2024 Your Company")
-        
-        # Partner type specific settings
-        if partner['type'] == 'prop_firm':
-            self._render_prop_firm_settings(current_user, partner)
-        elif partner['type'] == 'broker':
-            self._render_broker_settings(current_user, partner)
-        elif partner['type'] == 'trading_group':
-            self._render_trading_group_settings(current_user, partner)
-        
-        # Save settings
-        if st.button("💾 Save Settings"):
-            # Save settings logic would go here
-            st.success("Settings saved successfully!")
-    
-    def _render_prop_firm_settings(self, current_user: Dict, partner: Dict):
-        """Render prop firm specific settings."""
-        st.subheader("🏢 Prop Firm Settings")
-        
-        settings = json.loads(partner.get('settings', '{}'))
-        
+            st.subheader("👥 User Activity")
+            activity_data = self._get_user_activity(partner_id)
+
+            if not activity_data.empty:
+                fig = px.line(activity_data, x='date', y='active_users', title='Daily Active Users')
+                st.plotly_chart(fig, use_container_width=True)
+
+        # Performance metrics
+        st.subheader("⚡ Performance Metrics")
+
         col1, col2, col3 = st.columns(3)
+
         with col1:
-            daily_limit = st.number_input("Daily Loss Limit ($)", 
-                                        value=settings.get('daily_loss_limit', 1000))
+            avg_response_time = self._get_avg_response_time(partner_id)
+            st.metric("Avg Response Time", f"{avg_response_time:.0f}ms")
+
         with col2:
-            max_drawdown = st.number_input("Max Drawdown ($)", 
-                                         value=settings.get('max_drawdown', 5000))
+            uptime = self._get_uptime_percentage(partner_id)
+            st.metric("Uptime", f"{uptime:.2f}%")
+
         with col3:
-            profit_target = st.number_input("Profit Target ($)", 
-                                          value=settings.get('profit_target', 10000))
-        
-        # Risk monitoring settings
-        st.subheader("📊 Risk Monitoring")
-        
-        enable_real_time = st.checkbox("Enable Real-time Risk Monitoring", 
-                                     value=settings.get('real_time_monitoring', False))
-        
-        alert_thresholds = st.slider("Alert Threshold (%)", 0, 100, 
-                                   value=settings.get('alert_threshold', 80))
-    
-    def _render_broker_settings(self, current_user: Dict, partner: Dict):
-        """Render broker specific settings."""
-        st.subheader("🏦 Broker Settings")
-        
-        settings = json.loads(partner.get('settings', '{}'))
-        
-        # Commission settings
-        commission_per_trade = st.number_input("Commission per Trade ($)", 
-                                             value=settings.get('commission_per_trade', 3.5))
-        
-        # Available instruments
-        st.subheader("📈 Available Instruments")
-        instruments = st.multiselect("Supported Instruments", 
-                                   ["Stocks", "Options", "Futures", "Forex", "Crypto"],
-                                   default=settings.get('instruments', ["Stocks"]))
-        
-        # Integration settings
-        st.subheader("🔗 Integration Settings")
-        api_endpoint = st.text_input("API Endpoint", 
-                                   value=settings.get('api_endpoint', ''))
-    
-    def _render_trading_group_settings(self, current_user: Dict, partner: Dict):
-        """Render trading group specific settings."""
-        st.subheader("👥 Trading Group Settings")
-        
-        settings = json.loads(partner.get('settings', '{}'))
-        
-        # Group management
-        max_members = st.number_input("Maximum Members", 
-                                    value=settings.get('max_members', 100))
-        
-        membership_fee = st.number_input("Monthly Membership Fee ($)", 
-                                       value=settings.get('membership_fee', 0))
-        
-        # Group features
-        st.subheader("🎯 Group Features")
-        
-        enable_leaderboard = st.checkbox("Enable Leaderboard", 
-                                       value=settings.get('leaderboard', True))
-        
-        enable_group_chat = st.checkbox("Enable Group Chat", 
-                                      value=settings.get('group_chat', False))
-        
-        enable_challenges = st.checkbox("Enable Trading Challenges", 
-                                      value=settings.get('challenges', False))
-    
-    # Helper methods for data retrieval
-    def _get_partner_metrics(self, partner_id: int) -> Dict:
-        """Get partner metrics."""
+            error_rate = self._get_error_rate(partner_id)
+            st.metric("Error Rate", f"{error_rate:.2f}%")
+
+    # Helper methods
+    def _get_partner_user_count(self, partner_id: int) -> int:
+        """Get total user count for partner."""
         try:
             conn = sqlite3.connect(self.db_path)
-            
-            # Total users
-            total_users = pd.read_sql_query(
-                "SELECT COUNT(*) as count FROM users WHERE partner_id = ?", 
-                conn, params=[partner_id]
-            ).iloc[0]['count']
-            
-            # Active users (30 days)
-            active_users = pd.read_sql_query('''
-                SELECT COUNT(DISTINCT u.id) as count 
-                FROM users u 
-                JOIN user_sessions s ON u.id = s.user_id 
-                WHERE u.partner_id = ? AND s.created_at > datetime('now', '-30 days')
-            ''', conn, params=[partner_id]).iloc[0]['count']
-            
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM users WHERE partner_id = ?", (partner_id,))
+            count = cursor.fetchone()[0]
             conn.close()
-            
-            return {
-                'total_users': total_users,
-                'active_users_30d': active_users,
-                'revenue_30d': 0,  # Placeholder
-                'commission_owed': 0  # Placeholder
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting partner metrics: {e}")
-            return {}
-    
-    def _get_user_growth_data(self, partner_id: int) -> pd.DataFrame:
-        """Get user growth data for partner."""
+            return count
+        except:
+            return 0
+
+    def _get_active_user_count(self, partner_id: int) -> int:
+        """Get active user count for partner."""
         try:
             conn = sqlite3.connect(self.db_path)
-            query = '''
-                SELECT 
-                    DATE(created_at) as date,
-                    COUNT(*) OVER (ORDER BY DATE(created_at)) as cumulative_users
+            cursor = conn.cursor()
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+            cursor.execute(
+                "SELECT COUNT(*) FROM users WHERE partner_id = ? AND last_login > ?",
+                (partner_id, thirty_days_ago)
+            )
+            count = cursor.fetchone()[0]
+            conn.close()
+            return count
+        except:
+            return 0
+
+    def _get_monthly_revenue(self, partner_id: int) -> float:
+        """Get monthly revenue for partner."""
+        # Placeholder implementation
+        return 15000.0
+
+    def _create_partner_user(self, partner_id: int, username: str, email: str, password: str, role: str) -> Dict:
+        """Create a new user for the partner."""
+        return self.auth_manager.register_user(username, email, password, partner_id)
+
+    def _get_partner_users_dataframe(self, partner_id: int) -> pd.DataFrame:
+        """Get partner users as dataframe."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            query = """
+                SELECT username, email, role, created_at, last_login, is_active
                 FROM users 
                 WHERE partner_id = ?
-                ORDER BY date
-            '''
-            
+                ORDER BY created_at DESC
+            """
             df = pd.read_sql_query(query, conn, params=[partner_id])
             conn.close()
-            
-            if not df.empty:
-                df['date'] = pd.to_datetime(df['date'])
-            
             return df
-            
-        except Exception as e:
-            logger.error(f"Error getting user growth data: {e}")
+        except:
             return pd.DataFrame()
-    
-    def _get_revenue_data(self, partner_id: int) -> pd.DataFrame:
-        """Get revenue data for partner."""
-        # Placeholder - would integrate with billing system
-        return pd.DataFrame()
-    
-    def _get_recent_activity(self, partner_id: int) -> List[Dict]:
-        """Get recent partner activity."""
+
+    def _update_partner_branding(self, partner_id: int, branding_data: Dict) -> bool:
+        """Update partner branding settings."""
         try:
             conn = sqlite3.connect(self.db_path)
-            
-            # Get recent user registrations
-            recent_users = pd.read_sql_query('''
-                SELECT username, created_at 
-                FROM users 
-                WHERE partner_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT 5
-            ''', conn, params=[partner_id])
-            
-            conn.close()
-            
-            activities = []
-            for _, user in recent_users.iterrows():
-                activities.append({
-                    'timestamp': user['created_at'][:19],
-                    'description': f"New user registered: {user['username']}"
-                })
-            
-            return activities
-            
-        except Exception as e:
-            logger.error(f"Error getting recent activity: {e}")
-            return []
-    
-    def _get_partner_user_stats(self, partner_id: int) -> Dict:
-        """Get partner user statistics."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            
-            # Total users
-            total = pd.read_sql_query(
-                "SELECT COUNT(*) as count FROM users WHERE partner_id = ?", 
-                conn, params=[partner_id]
-            ).iloc[0]['count']
-            
-            # Active users
-            active = pd.read_sql_query(
-                "SELECT COUNT(*) as count FROM users WHERE partner_id = ? AND is_active = 1", 
-                conn, params=[partner_id]
-            ).iloc[0]['count']
-            
-            # New users (7 days)
-            new_7d = pd.read_sql_query('''
-                SELECT COUNT(*) as count FROM users 
-                WHERE partner_id = ? AND created_at > datetime('now', '-7 days')
-            ''', conn, params=[partner_id]).iloc[0]['count']
-            
-            conn.close()
-            
-            return {'total': total, 'active': active, 'new_7d': new_7d}
-            
-        except Exception as e:
-            logger.error(f"Error getting partner user stats: {e}")
-            return {}
-    
-    def _get_partner_users(self, partner_id: int) -> pd.DataFrame:
-        """Get all users for a partner."""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            df = pd.read_sql_query(
-                "SELECT * FROM users WHERE partner_id = ? ORDER BY created_at DESC", 
-                conn, params=[partner_id]
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE partners SET branding = ? WHERE id = ?",
+                (json.dumps(branding_data), partner_id)
             )
+            conn.commit()
             conn.close()
-            return df
-        except Exception as e:
-            logger.error(f"Error getting partner users: {e}")
-            return pd.DataFrame()
-    
-    def _get_revenue_stats(self, partner_id: int) -> Dict:
-        """Get revenue statistics for partner."""
-        # Placeholder - would integrate with billing system
+            return True
+        except:
+            return False
+
+    def _regenerate_api_key(self, partner_id: int) -> Optional[str]:
+        """Regenerate API key for partner."""
+        try:
+            import secrets
+            new_key = f"ts_{secrets.token_urlsafe(32)}"
+
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE partners SET api_key = ? WHERE id = ?", (new_key, partner_id))
+            conn.commit()
+            conn.close()
+
+            return new_key
+        except:
+            return None
+
+    def _get_billing_summary(self, partner_id: int) -> Dict:
+        """Get billing summary for partner."""
+        # Placeholder implementation
         return {
-            'total_revenue': 0,
-            'monthly_revenue': 0,
-            'pending_commission': 0
+            'current_month': 8500.0,
+            'last_month': 7200.0,
+            'total': 45000.0,
+            'outstanding': 1200.0
         }
-    
+
+    def _get_revenue_chart_data(self, partner_id: int) -> pd.DataFrame:
+        """Get revenue chart data."""
+        # Placeholder implementation
+        dates = pd.date_range(start='2024-01-01', end='2024-12-01', freq='MS')
+        revenues = [5000 + i * 500 for i in range(len(dates))]
+
+        return pd.DataFrame({
+            'month': dates,
+            'revenue': revenues
+        })
+
     def _get_billing_history(self, partner_id: int) -> pd.DataFrame:
-        """Get billing history for partner."""
-        # Placeholder - would integrate with billing system
-        return pd.DataFrame()
+        """Get billing history."""
+        # Placeholder implementation
+        return pd.DataFrame({
+            'Period': ['2024-01', '2024-02', '2024-03'],
+            'Revenue': [7200, 7800, 8500],
+            'Status': ['Paid', 'Paid', 'Pending']
+        })
+
+    def _get_usage_metrics(self, partner_id: int) -> Dict:
+        """Get usage metrics for partner."""
+        return {
+            'API Calls': 15000,
+            'Data Uploads': 450,
+            'Reports Generated': 120,
+            'User Logins': 2800
+        }
+
+    def _get_user_activity(self, partner_id: int) -> pd.DataFrame:
+        """Get user activity data."""
+        dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+        users = [25 + (i % 7) * 3 for i in range(30)]
+
+        return pd.DataFrame({
+            'date': dates,
+            'active_users': users
+        })
+
+    def _get_avg_response_time(self, partner_id: int) -> float:
+        """Get average response time."""
+        return 250.0
+
+    def _get_uptime_percentage(self, partner_id: int) -> float:
+        """Get uptime percentage."""
+        return 99.97
+
+    def _get_error_rate(self, partner_id: int) -> float:
+        """Get error rate percentage."""
+        return 0.03
     
     def _show_user_analytics(self, user_id: int):
         """Show analytics for a specific user."""

@@ -97,10 +97,13 @@ def main():
             auth_manager = AuthManager()
             current_user = auth_manager.get_current_user()
             
+            # Enterprise Features Navigation
+            st.sidebar.markdown("---")
+            st.sidebar.subheader("🏢 Enterprise Features")
+            
             # Check for admin access
             if current_user and current_user.get('role') == 'admin':
-                # Add admin dashboard option
-                if st.sidebar.button("🛠️ Admin Dashboard"):
+                if st.sidebar.button("🛠️ Admin Dashboard", use_container_width=True):
                     from admin_dashboard import AdminDashboard
                     admin_dash = AdminDashboard()
                     admin_dash.render_dashboard()
@@ -108,18 +111,23 @@ def main():
             
             # Check for partner access
             if current_user and current_user.get('partner_id'):
-                # Add partner portal option
-                if st.sidebar.button("🏢 Partner Portal"):
+                if st.sidebar.button("🏢 Partner Portal", use_container_width=True):
                     from partner_management import PartnerManagement
                     partner_mgmt = PartnerManagement()
                     partner_mgmt.render_partner_portal()
                     return
             
-            # Add affiliate program option
-            if st.sidebar.button("💰 Affiliate Program"):
+            # Affiliate program (available to all users)
+            if st.sidebar.button("💰 Affiliate Program", use_container_width=True):
                 from affiliate_system import AffiliateTrackingSystem
                 affiliate_system = AffiliateTrackingSystem()
                 affiliate_system.render_affiliate_dashboard()
+                return
+            
+            # Support center
+            if st.sidebar.button("🆘 Support Center", use_container_width=True):
+                from error_notification_ui import render_error_notification_interface
+                render_error_notification_interface()
                 return
             
             # Main application

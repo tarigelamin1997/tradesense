@@ -32,13 +32,16 @@ logger = logging.getLogger(__name__)
 
 # Import core components with error handling
 try:
-    from core.dashboard_manager import DashboardManager
     from auth import AuthManager
     from analytics import TradingAnalytics
     from data_validation import DataValidator
     from error_handler import ErrorHandler
     from health_monitoring import HealthMonitor
     from notification_system import NotificationSystem
+    
+    # Import dashboard manager functions directly
+    from core.dashboard_manager import render_dashboard_tabs
+    
 except ImportError as e:
     logger.error(f"Import error: {e}")
     st.error(f"Critical import error: {e}")
@@ -89,7 +92,6 @@ class TradeSenseApp:
     def __init__(self):
         """Initialize the TradeSense application."""
         self.auth_manager = AuthManager()
-        self.dashboard_manager = DashboardManager()
         self.health_monitor = HealthMonitor()
         self.notification_system = NotificationSystem()
         self.error_handler = ErrorHandler()
@@ -184,6 +186,46 @@ class TradeSenseApp:
         except Exception as e:
             self.error_handler.handle_error(e, "Failed to load sample data")
     
+    def _render_login_page(self):
+        """Render the login page."""
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            st.markdown("### 🔐 Login to TradeSense")
+            
+            with st.form("login_form"):
+                username = st.text_input("Username/Email")
+                password = st.text_input("Password", type="password")
+                login_btn = st.form_submit_button("Login", type="primary")
+                
+                if login_btn and username and password:
+                    result = self.auth_manager.login_user(username, password)
+                    if result["success"]:
+                        st.success("Login successful!")
+                        st.rerun()
+                    else:
+                        st.error(result["message"])
+            
+            st.markdown("---")
+            
+            with st.expander("Create New Account"):
+                with st.form("register_form"):
+                    new_username = st.text_input("Username", key="reg_username")
+                    new_email = st.text_input("Email", key="reg_email")
+                    new_password = st.text_input("Password", type="password", key="reg_password")
+                    confirm_password = st.text_input("Confirm Password", type="password", key="reg_confirm")
+                    register_btn = st.form_submit_button("Register")
+                    
+                    if register_btn and new_username and new_email and new_password:
+                        if new_password != confirm_password:
+                            st.error("Passwords don't match")
+                        else:
+                            result = self.auth_manager.register_user(new_username, new_email, new_password)
+                            if result["success"]:
+                                st.success("Registration successful! You can now login.")
+                            else:
+                                st.error(result["message"])
+    
     def run(self):
         """Run the main application."""
         try:
@@ -192,8 +234,7 @@ class TradeSenseApp:
             
             # Authentication check
             if not st.session_state.authenticated:
-                if self.auth_manager.render_login():
-                    st.rerun()
+                self._render_login_page()
                 return
             
             # Render sidebar
@@ -201,19 +242,20 @@ class TradeSenseApp:
             
             # Render main content based on selected page
             if st.session_state.current_page == "Dashboard":
-                self.dashboard_manager.render_dashboard()
+                render_dashboard_tabs()
             elif st.session_state.current_page == "Analytics":
-                self.dashboard_manager.render_analytics()
+                render_dashboard_tabs()
             elif st.session_state.current_page == "Trade Data":
-                self.dashboard_manager.render_trade_data()
+                render_dashboard_tabs()
             elif st.session_state.current_page == "Integrations":
-                self.dashboard_manager.render_integrations()
+                render_dashboard_tabs()
             elif st.session_state.current_page == "Settings":
-                self.dashboard_manager.render_settings()
+                render_dashboard_tabs()
             elif st.session_state.current_page == "Admin Panel" and st.session_state.user_role == 'admin':
-                self.dashboard_manager.render_admin_panel()
+                st.info("Admin panel functionality coming soon")
             elif st.session_state.current_page == "System Monitor" and st.session_state.user_role == 'admin':
-                self.dashboard_manager.render_system_monitor()
+                health_status = self.health_monitor.get_system_status()
+                st.json(health_status)
             
         except Exception as e:
             self.error_handler.handle_error(e, f"Error in page: {st.session_state.current_page}")

@@ -341,6 +341,36 @@ class AuthManager:
             logger.error(f"Error getting partner: {e}")
             return None
 
+    def test_database_connection(self) -> Dict[str, Any]:
+        """Test database connection and return status."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Test basic query
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+            
+            # Test users table specifically
+            cursor.execute("SELECT COUNT(*) FROM users")
+            user_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            return {
+                "success": True,
+                "message": "Database connection successful",
+                "tables_found": len(tables),
+                "user_count": user_count
+            }
+            
+        except Exception as e:
+            logger.error(f"Database connection test failed: {e}")
+            return {
+                "success": False,
+                "message": f"Database connection failed: {str(e)}"
+            }
+
 def require_auth(func):
     """Decorator to require authentication for functions."""
     @wraps(func)

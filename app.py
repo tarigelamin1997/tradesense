@@ -306,15 +306,16 @@ class TradeSenseApp:
             st.markdown('<div class="sidebar-tagline">Professional Trading Analytics</div>', unsafe_allow_html=True)
             st.markdown("---")
 
-            # Theme toggle
+            # Enhanced Theme toggle with System theme as default
             st.subheader("🎨 Appearance")
             if 'theme_mode' not in st.session_state:
-                st.session_state.theme_mode = 'dark'
+                st.session_state.theme_mode = 'system'  # Default to system theme
 
             theme_mode = st.radio(
                 "Theme",
-                options=['dark', 'light'],
-                index=0 if st.session_state.theme_mode == 'dark' else 1,
+                options=['system', 'dark', 'light'],
+                index=['system', 'dark', 'light'].index(st.session_state.theme_mode),
+                format_func=lambda x: {'system': '🖥️ System', 'dark': '🌙 Dark', 'light': '☀️ Light'}[x],
                 horizontal=True
             )
 
@@ -344,25 +345,7 @@ class TradeSenseApp:
             </div>
             """, unsafe_allow_html=True)
 
-            # Navigation menu
-            pages = [
-                "Dashboard",
-                "Analytics",
-                "Trade Data",
-                "Integrations",
-                "Settings"
-            ]
-
-            if st.session_state.user_role == 'admin':
-                pages.extend(["Admin Panel", "System Monitor"])
-
-            st.session_state.current_page = st.selectbox(
-                "Select Page",
-                pages,
-                index=pages.index(st.session_state.current_page) if st.session_state.current_page in pages else 0
-            )
-
-            # Quick actions
+            # Quick actions (removed redundant dropdown navigation)
             st.markdown("### Quick Actions")
             if st.button("🔄 Refresh Data"):
                 st.rerun()
@@ -461,287 +444,317 @@ class TradeSenseApp:
                 self._render_login_page()
                 return
 
-            # Render sidebar
-            self.render_sidebar()
+            # Create main layout with sidebar and content
+            col_sidebar, col_main = st.columns([1, 4])
+            
+            with col_sidebar:
+                self.render_sidebar()
 
-            # Modern status card
-            if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
-                st.markdown("""
-                <div class="info-banner">
-                    <h3 style="margin: 0 0 0.5rem 0;">📊 Welcome to TradeSense</h3>
-                    <p style="margin: 0;">Upload your trade data to unlock powerful analytics and insights</p>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                total_trades = len(st.session_state.trade_data)
-                st.markdown(f"""
-                <div style="background: linear-gradient(90deg, #10b981 0%, #059669 100%); color: white; padding: 1rem; border-radius: 8px; text-align: center; margin: 1rem 0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-                    <h3 style="margin: 0 0 0.5rem 0;">✅ Analytics Active</h3>
-                    <p style="margin: 0;">Analyzing {total_trades:,} trades • Professional Mode Enabled</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            # Render main content based on selected page
-            if st.session_state.current_page == "Dashboard":
-                render_dashboard_tabs()
-            elif st.session_state.current_page == "Analytics":
-                render_dashboard_tabs()
-            elif st.session_state.current_page == "Trade Data":
-                render_dashboard_tabs()
-            elif st.session_state.current_page == "Integrations":
-                render_dashboard_tabs()
-            elif st.session_state.current_page == "Settings":
-                render_dashboard_tabs()
-            elif st.session_state.current_page == "Admin Panel" and st.session_state.user_role == 'admin':
-                st.info("Admin panel functionality coming soon")
-            elif st.session_state.current_page == "System Monitor" and st.session_state.user_role == 'admin':
-                if self.health_monitor:
-                    try:
-                        health_checks = self.health_monitor.run_health_checks()
-                        st.json({k: {
-                            'status': str(v.status),
-                            'message': v.message,
-                            'value': v.value
-                        } for k, v in health_checks.items()})
-                    except Exception as e:
-                        st.error(f"Health monitoring error: {e}")
+            with col_main:
+                # Modern status card
+                if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
+                    st.markdown("""
+                    <div class="info-banner">
+                        <h3 style="margin: 0 0 0.5rem 0;">📊 Welcome to TradeSense</h3>
+                        <p style="margin: 0;">Upload your trade data to unlock powerful analytics and insights</p>
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
-                    st.info("Health monitoring not available")
+                    total_trades = len(st.session_state.trade_data) if st.session_state.trade_data is not None else 0
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(90deg, #10b981 0%, #059669 100%); color: white; padding: 1rem; border-radius: 8px; text-align: center; margin: 1rem 0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                        <h3 style="margin: 0 0 0.5rem 0;">✅ Analytics Active</h3>
+                        <p style="margin: 0;">Analyzing {total_trades:,} trades • Professional Mode Enabled</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # Render main content using tab navigation
+                render_dashboard_tabs()
 
         except Exception as e:
-            logger.error(f"Error in page {st.session_state.current_page}: {e}")
-            st.error("An error occurred. Please refresh the page.")
+            logger.error(f"Application error: {e}")
+            if self.error_handler:
+                try:
+                    self.error_handler.handle_error(e, "Application runtime error")
+                except:
+                    # Fallback error handling
+                    st.error("An error occurred. Please refresh the page.")
+            else:
+                st.error("An error occurred. Please refresh the page.")
 
 def apply_modern_theme():
-    """Apply modern theme and styling with light/dark mode support."""
-    theme_mode = st.session_state.get('theme_mode', 'dark')
+    """Apply modern theme and styling with system/light/dark mode support."""
+    theme_mode = st.session_state.get('theme_mode', 'system')
+    
+    # Enhanced theme detection and application
+    if theme_mode == 'system':
+        # Default to dark theme for system (can be enhanced with JS detection)
+        actual_theme = 'dark'
+    else:
+        actual_theme = theme_mode
 
-    if theme_mode == 'light':
+    if actual_theme == 'light':
         theme_css = """
         <style>
-        /* Light Theme */
+        /* Modern Light Theme */
         .stApp {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            color: #1a202c;
+            background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
+            color: #1e293b;
         }
 
         .main-header {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
             color: white;
-            padding: 1rem;
-            border-radius: 12px;
+            padding: 1.5rem;
+            border-radius: 16px;
             margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
         }
 
         .metric-card {
             background: white;
             padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid #e2e8f0;
             margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
         }
 
         .info-banner {
-            background: linear-gradient(90deg, #4299e1 0%, #3182ce 100%);
+            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
-            padding: 1rem;
-            border-radius: 8px;
+            padding: 1.5rem;
+            border-radius: 12px;
             margin: 1rem 0;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
         }
 
         .sidebar-logo {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
-            color: #4a5568;
+            color: #3b82f6;
             text-align: center;
             margin-bottom: 0.5rem;
         }
 
         .sidebar-tagline {
-            font-size: 12px;
-            color: #718096;
+            font-size: 13px;
+            color: #64748b;
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        /* Buttons */
+        /* Enhanced Buttons */
         .stButton > button {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
         }
 
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
         }
 
-        /* File uploader styling */
-        .uploadedFile {
+        /* Enhanced File uploader */
+        .stFileUploader > div {
             background: white;
             border: 2px dashed #cbd5e0;
-            border-radius: 12px;
-            padding: 2rem;
+            border-radius: 16px;
+            padding: 3rem;
             text-align: center;
             transition: all 0.3s ease;
         }
 
-        .uploadedFile:hover {
-            border-color: #667eea;
-            background: #f7fafc;
+        .stFileUploader > div:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+            transform: scale(1.02);
         }
 
-        /* Tables */
-        .dataframe {
+        /* Enhanced Tables */
+        .stDataFrame {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
-        /* Tabs */
+        /* Enhanced Tabs */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
+            gap: 12px;
+            margin-bottom: 2rem;
         }
 
         .stTabs [data-baseweb="tab"] {
-            height: 50px;
+            height: 60px;
             background: white;
-            border-radius: 8px;
-            padding: 0 24px;
+            border-radius: 12px;
+            padding: 0 32px;
             border: 1px solid #e2e8f0;
-            color: #4a5568;
-            font-weight: 500;
+            color: #64748b;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .stTabs [aria-selected="true"] {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             color: white;
             border: none;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
         }
         </style>
         """
     else:
         theme_css = """
         <style>
-        /* Dark Theme */
+        /* Enhanced Dark Theme */
         .stApp {
-            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
-            color: #ffffff;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
         }
 
         .main-header {
-            background: linear-gradient(90deg, #00d4ff 0%, #5b21b6 100%);
+            background: linear-gradient(90deg, #06b6d4 0%, #8b5cf6 100%);
             color: white;
-            padding: 1rem;
-            border-radius: 12px;
+            padding: 1.5rem;
+            border-radius: 16px;
             margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+            box-shadow: 0 10px 40px rgba(6, 182, 212, 0.4);
         }
 
         .metric-card {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             padding: 1.5rem;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
         }
 
         .info-banner {
-            background: linear-gradient(90deg, #00d4ff 0%, #0ea5e9 100%);
+            background: linear-gradient(90deg, #06b6d4 0%, #0891b2 100%);
             color: white;
-            padding: 1rem;
-            border-radius: 8px;
+            padding: 1.5rem;
+            border-radius: 12px;
             margin: 1rem 0;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
         }
 
         .sidebar-logo {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
-            color: #00d4ff;
+            color: #06b6d4;
             text-align: center;
             margin-bottom: 0.5rem;
         }
 
         .sidebar-tagline {
-            font-size: 12px;
+            font-size: 13px;
             color: #94a3b8;
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        /* Buttons */
+        /* Enhanced Buttons */
         .stButton > button {
-            background: linear-gradient(45deg, #00d4ff 0%, #5b21b6 100%);
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4);
         }
 
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.6);
+            box-shadow: 0 8px 30px rgba(6, 182, 212, 0.6);
         }
 
-        /* File uploader styling */
-        .uploadedFile {
+        /* Enhanced File uploader */
+        .stFileUploader > div {
             background: rgba(255, 255, 255, 0.05);
-            border: 2px dashed rgba(0, 212, 255, 0.5);
-            border-radius: 12px;
-            padding: 2rem;
+            border: 2px dashed rgba(6, 182, 212, 0.5);
+            border-radius: 16px;
+            padding: 3rem;
             text-align: center;
             transition: all 0.3s ease;
         }
 
-        .uploadedFile:hover {
-            border-color: #00d4ff;
-            background: rgba(0, 212, 255, 0.1);
+        .stFileUploader > div:hover {
+            border-color: #06b6d4;
+            background: rgba(6, 182, 212, 0.1);
+            transform: scale(1.02);
         }
 
-        /* Tables */
-        .dataframe {
+        /* Enhanced Tables */
+        .stDataFrame {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
-        /* Tabs */
+        /* Enhanced Tabs */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
+            gap: 12px;
+            margin-bottom: 2rem;
         }
 
         .stTabs [data-baseweb="tab"] {
-            height: 50px;
+            height: 60px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 0 24px;
+            border-radius: 12px;
+            padding: 0 32px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #94a3b8;
-            font-weight: 500;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .stTabs [aria-selected="true"] {
-            background: linear-gradient(45deg, #00d4ff 0%, #5b21b6 100%);
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
             color: white;
             border: none;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
         }
         </style>
         """

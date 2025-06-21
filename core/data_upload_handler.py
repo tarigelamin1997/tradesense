@@ -38,102 +38,159 @@ def render_data_upload_section(unique_key="default_upload"):
     st.markdown("""
     <style>
     .upload-container {
-        border: 3px dashed #00d4ff;
-        border-radius: 15px;
-        padding: 2rem;
-        text-align: center;
-        background: rgba(0, 212, 255, 0.05);
-        margin: 1rem 0;
-        transition: all 0.3s ease;
-        cursor: pointer;
+        position: relative;
+        margin: 20px 0;
     }
 
-    .upload-container:hover {
-        border-color: #0ea5e9;
-        background: rgba(0, 212, 255, 0.1);
+    .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-area:hover, .upload-area.drag-over {
+        border-color: #764ba2;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
         transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .upload-area.drag-over::before {
+        content: "Drop files here! 🎯";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        font-weight: bold;
+        color: #667eea;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        animation: bounce 0.5s ease-in-out;
+    }
+
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translate(-50%, -50%) translateY(0); }
+        40% { transform: translate(-50%, -50%) translateY(-10px); }
+        60% { transform: translate(-50%, -50%) translateY(-5px); }
+    }
+
+    .upload-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+
+    .upload-area:hover .upload-icon {
+        transform: scale(1.1);
+        opacity: 1;
     }
 
     .upload-text {
-        color: #00d4ff;
-        font-size: 1.1rem;
-        margin: 0.5rem 0;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
     }
 
     .upload-subtext {
-        color: #64748b;
-        font-size: 0.9rem;
+        font-size: 14px;
+        opacity: 0.7;
     }
 
-    /* Enhanced file uploader styling */
-    .stFileUploader > div > div {
-        border-radius: 12px;
-        border: 2px dashed #cbd5e1;
-        transition: all 0.3s ease;
-    }
-
-    .stFileUploader > div > div:hover {
-        border-color: #667eea;
-        background-color: #f8fafc;
-    }
-
-    /* Modern button styling */
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-
-    /* Enhanced dataframe styling */
-    .dataframe {
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .dataframe thead th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        font-weight: 600;
-        border: none;
-    }
-
-    .dataframe tbody tr:hover {
-        background-color: #f1f5f9;
-        transition: all 0.2s ease;
-    }
-
-    /* Modern metric cards */
-    [data-testid="metric-container"] {
-        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        transition: all 0.2s ease;
-    }
-
-    [data-testid="metric-container"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    /* Hide the default file uploader */
+    .stFileUploader > div {
+        display: none;
     }
     </style>
+
+    <script>
+    function setupDragAndDrop() {
+        const uploadArea = document.querySelector('.upload-area');
+        const fileUploader = document.querySelector('input[type="file"]');
+
+        if (uploadArea && fileUploader) {
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop area when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            // Handle dropped files
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            // Handle click
+            uploadArea.addEventListener('click', () => fileUploader.click());
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            uploadArea.classList.add('drag-over');
+        }
+
+        function unhighlight(e) {
+            uploadArea.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                // Trigger file uploader with dropped files
+                fileUploader.files = files;
+                fileUploader.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+    }
+
+    // Setup drag and drop after DOM loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+    } else {
+        setupDragAndDrop();
+    }
+
+    // Re-setup on Streamlit rerun
+    setTimeout(setupDragAndDrop, 100);
+    </script>
     """, unsafe_allow_html=True)
 
-    # Enhanced file uploader with better UX
+    # Enhanced upload area
+    st.markdown("""
+    <div class="upload-container">
+        <div class="upload-area">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drag & Drop Your Files Here</div>
+            <div class="upload-subtext">or click to browse (CSV, Excel files supported)</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # File uploader component (hidden but functional)
     uploaded_file = st.file_uploader(
-        "📂 Drop your file here or browse",
+        "Choose your trade data file",
         type=['csv', 'xlsx', 'xls'],
-        help="Supported formats: CSV, Excel (.xlsx, .xls) • Max size: 200MB",
         key=f"trade_data_uploader_{unique_key}",
         label_visibility="collapsed"
     )

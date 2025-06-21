@@ -22,23 +22,44 @@ def render_dashboard_tabs():
         ])
 
         with tab1:
-            render_dashboard_overview()
+            try:
+                render_dashboard_overview()
+            except Exception as e:
+                logger.error(f"Dashboard overview error: {e}")
+                st.error("Dashboard section unavailable. Please try refreshing.")
 
         with tab2:
-            render_analytics_tab()
+            try:
+                render_analytics_tab()
+            except Exception as e:
+                logger.error(f"Analytics tab error: {e}")
+                st.error("Analytics section unavailable. Please try refreshing.")
 
         with tab3:
-            render_trade_data_tab()
+            try:
+                render_trade_data_tab()
+            except Exception as e:
+                logger.error(f"Trade data tab error: {e}")
+                st.error("Trade data section unavailable. Please try refreshing.")
 
         with tab4:
-            render_integrations_tab()
+            try:
+                render_integrations_tab()
+            except Exception as e:
+                logger.error(f"Integrations tab error: {e}")
+                st.error("Integrations section unavailable. Please try refreshing.")
 
         with tab5:
-            render_settings_tab()
+            try:
+                render_settings_tab()
+            except Exception as e:
+                logger.error(f"Settings tab error: {e}")
+                st.error("Settings section unavailable. Please try refreshing.")
 
     except Exception as e:
-        logger.error(f"Error rendering dashboard tabs: {e}")
-        st.error("Dashboard error occurred. Please refresh the page.")
+        logger.error(f"Critical error rendering dashboard tabs: {e}")
+        st.error("⚠️ Dashboard temporarily unavailable")
+        st.info("🔄 Try refreshing the page or contact support if the issue persists")
 
 def render_dashboard_overview():
     """Render the main dashboard overview."""
@@ -51,11 +72,11 @@ def render_dashboard_overview():
         st.markdown("### Quick Upload")
         try:
             from core.data_upload_handler import render_data_upload_section
-            render_data_upload_section()
+            render_data_upload_section(unique_key="dashboard_upload")
         except ImportError:
             try:
                 from core.simple_upload import simple_file_upload
-                simple_file_upload()
+                simple_file_upload(unique_key="dashboard_simple_upload")
             except ImportError:
                 st.error("Upload functionality not available")
 
@@ -87,11 +108,11 @@ def render_trade_data_tab():
     # Add file upload section
     try:
         from core.data_upload_handler import render_data_upload_section
-        render_data_upload_section()
+        render_data_upload_section(unique_key="trade_data_upload")
     except ImportError:
         try:
             from core.simple_upload import simple_file_upload
-            simple_file_upload()
+            simple_file_upload(unique_key="trade_data_simple_upload")
         except ImportError:
             st.error("Upload functionality not available")
 

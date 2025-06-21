@@ -35,7 +35,7 @@ try:
     from auth import AuthManager
     from data_validation import DataValidator
     from error_handler import ErrorHandler
-    from notification_system import NotificationSystem
+    from notification_system import notification_manager
     
     # Import dashboard manager functions directly
     from core.dashboard_manager import render_dashboard_tabs
@@ -105,7 +105,7 @@ class TradeSenseApp:
         else:
             self.health_monitor = None
             
-        self.notification_system = NotificationSystem()
+        self.notification_manager = notification_manager
         self.error_handler = ErrorHandler()
         
         # Initialize session state

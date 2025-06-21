@@ -257,6 +257,3 @@ def main():
 # Run the application
 if __name__ == "__main__":
     main()
-```
-
-**Analysis:** The code initializes the Streamlit application, checks for missing modules, configures the page, sets up logging, and defines the main function. The main function initializes the session state, attempts to initialize the authentication system, and renders the authentication sidebar. It then tries to import the app factory and create the app. If that fails, it falls back to an enhanced app structure with authentication, displaying enterprise features, affiliate programs, and support center options. A basic file uploader is also included.

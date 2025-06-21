@@ -246,3 +246,183 @@ def render_pdf_export_ui(trade_data: pd.DataFrame, analytics_result: dict):
             except Exception as e:
                 logger.error(f"PDF export error: {e}")
                 st.error("Failed to generate PDF report. Please try again.")
+import streamlit as st
+from fpdf import FPDF
+import plotly.graph_objects as go
+import plotly.io as pio
+import base64
+from datetime import datetime
+import pandas as pd
+import tempfile
+import os
+
+class TradingReportPDF(FPDF):
+    """Enhanced PDF report generator for trading analytics."""
+    
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=15)
+        
+    def header(self):
+        """Header for each page."""
+        self.set_font('Arial', 'B', 15)
+        self.cell(0, 10, 'TradeSense Trading Analytics Report', 0, 1, 'C')
+        self.ln(5)
+        
+    def footer(self):
+        """Footer for each page."""
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+        
+    def add_title_page(self, user_name="Trader", date_range="All Time"):
+        """Add title page."""
+        self.add_page()
+        self.ln(60)
+        
+        # Main title
+        self.set_font('Arial', 'B', 24)
+        self.cell(0, 15, 'Trading Performance Report', 0, 1, 'C')
+        self.ln(10)
+        
+        # Subtitle
+        self.set_font('Arial', '', 16)
+        self.cell(0, 10, f'Generated for: {user_name}', 0, 1, 'C')
+        self.cell(0, 10, f'Period: {date_range}', 0, 1, 'C')
+        self.cell(0, 10, f'Report Date: {datetime.now().strftime("%B %d, %Y")}', 0, 1, 'C')
+        self.ln(20)
+        
+        # Logo placeholder
+        self.set_font('Arial', 'I', 12)
+        self.cell(0, 10, 'TradeSense Professional Analytics', 0, 1, 'C')
+        
+    def add_metrics_summary(self, metrics):
+        """Add key metrics summary."""
+        self.add_page()
+        self.set_font('Arial', 'B', 16)
+        self.cell(0, 10, 'Performance Summary', 0, 1, 'L')
+        self.ln(5)
+        
+        # Create metrics table
+        self.set_font('Arial', 'B', 12)
+        col_width = 95
+        
+        # Headers
+        self.cell(col_width, 10, 'Metric', 1, 0, 'C')
+        self.cell(col_width, 10, 'Value', 1, 1, 'C')
+        
+        # Data
+        self.set_font('Arial', '', 11)
+        for metric, value in metrics.items():
+            self.cell(col_width, 8, metric, 1, 0, 'L')
+            self.cell(col_width, 8, str(value), 1, 1, 'C')
+            
+    def add_trade_breakdown(self, trade_data):
+        """Add detailed trade breakdown."""
+        self.add_page()
+        self.set_font('Arial', 'B', 16)
+        self.cell(0, 10, 'Trade Analysis', 0, 1, 'L')
+        self.ln(5)
+        
+        if not trade_data.empty:
+            # Summary stats
+            winning_trades = len(trade_data[trade_data['pnl'] > 0])
+            losing_trades = len(trade_data[trade_data['pnl'] < 0])
+            total_trades = len(trade_data)
+            win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+            
+            self.set_font('Arial', '', 12)
+            self.cell(0, 8, f'Total Trades: {total_trades}', 0, 1, 'L')
+            self.cell(0, 8, f'Winning Trades: {winning_trades}', 0, 1, 'L')
+            self.cell(0, 8, f'Losing Trades: {losing_trades}', 0, 1, 'L')
+            self.cell(0, 8, f'Win Rate: {win_rate:.1f}%', 0, 1, 'L')
+            self.ln(10)
+            
+            # Top trades table
+            self.set_font('Arial', 'B', 12)
+            self.cell(0, 10, 'Top 10 Trades by P&L', 0, 1, 'L')
+            self.ln(2)
+            
+            top_trades = trade_data.nlargest(10, 'pnl')[['symbol', 'pnl', 'quantity']]
+            
+            # Table headers
+            self.set_font('Arial', 'B', 10)
+            self.cell(60, 8, 'Symbol', 1, 0, 'C')
+            self.cell(60, 8, 'P&L', 1, 0, 'C')
+            self.cell(60, 8, 'Quantity', 1, 1, 'C')
+            
+            # Table data
+            self.set_font('Arial', '', 9)
+            for _, trade in top_trades.iterrows():
+                self.cell(60, 6, str(trade['symbol']), 1, 0, 'C')
+                self.cell(60, 6, f"${trade['pnl']:.2f}", 1, 0, 'C')
+                self.cell(60, 6, str(trade['quantity']), 1, 1, 'C')
+
+def generate_trading_report_pdf(analytics_data, trade_data, user_name="Trader"):
+    """Generate comprehensive trading report PDF."""
+    try:
+        pdf = TradingReportPDF()
+        
+        # Title page
+        pdf.add_title_page(user_name)
+        
+        # Metrics summary
+        if analytics_data:
+            metrics = {
+                'Total P&L': f"${analytics_data.get('total_pnl', 0):,.2f}",
+                'Win Rate': f"{analytics_data.get('win_rate', 0):.1f}%",
+                'Total Trades': f"{analytics_data.get('total_trades', 0):,}",
+                'Profit Factor': f"{analytics_data.get('profit_factor', 0):.2f}",
+                'Max Drawdown': f"${analytics_data.get('max_drawdown', 0):,.2f}",
+                'Average Win': f"${analytics_data.get('avg_win', 0):,.2f}",
+                'Average Loss': f"${analytics_data.get('avg_loss', 0):,.2f}",
+                'Best Trade': f"${analytics_data.get('best_trade', 0):,.2f}",
+                'Worst Trade': f"${analytics_data.get('worst_trade', 0):,.2f}",
+                'Win Streak': f"{analytics_data.get('max_win_streak', 0)} trades",
+                'Loss Streak': f"{analytics_data.get('max_loss_streak', 0)} trades"
+            }
+            pdf.add_metrics_summary(metrics)
+        
+        # Trade breakdown
+        if trade_data is not None and not trade_data.empty:
+            pdf.add_trade_breakdown(trade_data)
+        
+        # Generate PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            pdf.output(tmp_file.name)
+            
+            # Read the PDF content
+            with open(tmp_file.name, 'rb') as f:
+                pdf_content = f.read()
+            
+            # Clean up temp file
+            os.unlink(tmp_file.name)
+            
+            return pdf_content
+            
+    except Exception as e:
+        st.error(f"Error generating PDF: {e}")
+        return None
+
+def render_pdf_export_button(analytics_data, trade_data, user_name="Trader"):
+    """Render PDF export button with download functionality."""
+    if st.button("📄 Export Full Report as PDF", type="primary"):
+        with st.spinner("Generating PDF report..."):
+            pdf_content = generate_trading_report_pdf(analytics_data, trade_data, user_name)
+            
+            if pdf_content:
+                # Create download button
+                b64_pdf = base64.b64encode(pdf_content).decode()
+                filename = f"TradeSense_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                st.download_button(
+                    label="⬇️ Download PDF Report",
+                    data=pdf_content,
+                    file_name=filename,
+                    mime="application/pdf",
+                    type="primary"
+                )
+                
+                st.success("✅ PDF report generated successfully!")
+            else:
+                st.error("❌ Failed to generate PDF report")

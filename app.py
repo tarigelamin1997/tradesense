@@ -6,7 +6,7 @@ Main Streamlit application entry point
 
 import streamlit as st
 
-# Page configuration - MUST BE FIRST STREAMLIT COMMAND
+# Set up the page configuration FIRST - before any other Streamlit commands
 st.set_page_config(
     page_title="TradeSense - Trading Analytics Platform",
     page_icon="📊",
@@ -279,7 +279,28 @@ class TradeSenseApp:
     def render_sidebar(self):
         """Render the application sidebar navigation."""
         with st.sidebar:
-            st.markdown("### Navigation")
+            # App branding
+            st.markdown('<div class="sidebar-logo">📊 TradeSense</div>', unsafe_allow_html=True)
+            st.markdown('<div class="sidebar-tagline">Professional Trading Analytics</div>', unsafe_allow_html=True)
+            st.markdown("---")
+
+            # Theme toggle
+            st.subheader("🎨 Appearance")
+            if 'theme_mode' not in st.session_state:
+                st.session_state.theme_mode = 'dark'
+
+            theme_mode = st.radio(
+                "Theme",
+                options=['dark', 'light'],
+                index=0 if st.session_state.theme_mode == 'dark' else 1,
+                horizontal=True
+            )
+
+            if theme_mode != st.session_state.theme_mode:
+                st.session_state.theme_mode = theme_mode
+                st.rerun()
+
+            st.markdown("---")
 
             # Health status indicator
             if self.health_monitor:
@@ -394,6 +415,9 @@ class TradeSenseApp:
     def run(self):
         """Run the main application."""
         try:
+            # Apply theme
+            apply_modern_theme()
+
             # Render header
             self.render_header()
 
@@ -404,6 +428,23 @@ class TradeSenseApp:
 
             # Render sidebar
             self.render_sidebar()
+
+            # Modern status card
+            if 'trade_data' not in st.session_state:
+                st.markdown("""
+                <div class="info-banner">
+                    <h3 style="margin: 0 0 0.5rem 0;">📊 Welcome to TradeSense</h3>
+                    <p style="margin: 0;">Upload your trade data to unlock powerful analytics and insights</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                total_trades = len(st.session_state.trade_data)
+                st.markdown(f"""
+                <div style="background: linear-gradient(90deg, #10b981 0%, #059669 100%); color: white; padding: 1rem; border-radius: 8px; text-align: center; margin: 1rem 0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                    <h3 style="margin: 0 0 0.5rem 0;">✅ Analytics Active</h3>
+                    <p style="margin: 0;">Analyzing {total_trades:,} trades • Professional Mode Enabled</p>
+                </div>
+                """, unsafe_allow_html=True)
 
             # Render main content based on selected page
             if st.session_state.current_page == "Dashboard":
@@ -435,6 +476,294 @@ class TradeSenseApp:
         except Exception as e:
             self.error_handler.handle_error(e, f"Error in page: {st.session_state.current_page}")
             st.error("An error occurred. Please check the error logs or contact support.")
+
+def apply_modern_theme():
+    """Apply modern theme and styling with light/dark mode support."""
+    theme_mode = st.session_state.get('theme_mode', 'dark')
+
+    if theme_mode == 'light':
+        theme_css = """
+        <style>
+        /* Light Theme */
+        .stApp {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1a202c;
+        }
+
+        .main-header {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+        }
+
+        .info-banner {
+            background: linear-gradient(90deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .sidebar-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-tagline {
+            font-size: 12px;
+            color: #718096;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons */
+        .stButton > button {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        /* File uploader styling */
+        .uploadedFile {
+            background: white;
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .uploadedFile:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        /* Tables */
+        .dataframe {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            padding: 0 24px;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        </style>
+        """
+    else:
+        theme_css = """
+        <style>
+        /* Dark Theme */
+        .stApp {
+            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+            color: #ffffff;
+        }
+
+        .main-header {
+            background: linear-gradient(90deg, #00d4ff 0%, #5b21b6 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .info-banner {
+            background: linear-gradient(90deg, #00d4ff 0%, #0ea5e9 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+
+        .sidebar-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00d4ff;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-tagline {
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons */
+        .stButton > button {
+            background: linear-gradient(45deg, #00d4ff 0%, #5b21b6 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.6);
+        }
+
+        /* File uploader styling */
+        .uploadedFile {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(0, 212, 255, 0.5);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .uploadedFile:hover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Tables */
+        .dataframe {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(45deg, #00d4ff 0%, #5b21b6 100%);
+            color: white;
+            border: none;
+        }
+        </style>
+        """
+
+    # Animated loading spinner and responsive design (common to both themes)
+    common_css = """
+    <style>
+    /* Animated loading spinner */
+    .loading-spinner {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top: 3px solid #00d4ff;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Counter animations */
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .metric-card {
+        animation: countUp 0.6s ease-out;
+    }
+
+    /* Hover effects for tables */
+    .dataframe tbody tr:hover {
+        background-color: rgba(0, 212, 255, 0.1);
+        transition: background-color 0.2s ease;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .main-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .metric-card {
+            padding: 1rem;
+        }
+
+        .sidebar-logo {
+            font-size: 20px;
+        }
+    }
+    </style>
+    """
+
+    st.markdown(theme_css + common_css, unsafe_allow_html=True)
 
 def main():
     """Main application entry point."""

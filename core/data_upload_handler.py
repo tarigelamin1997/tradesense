@@ -479,3 +479,227 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+```
+
+```python
+#!/usr/bin/env python3
+"""
+Data Upload Handler - Modern UI Implementation
+Handles file upload with enhanced visuals and interactive features
+"""
+
+import streamlit as st
+import pandas as pd
+import logging
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+def render_data_upload_section(unique_key="default_upload"):
+    """Render the modern data upload section with enhanced UI."""
+
+    # Modern header with gradient background
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+        color: white;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    ">
+        <h1 style="margin: 0; font-size: 2.5rem; font-weight: 700;">📁 Upload Trade Data</h1>
+        <p style="margin: 0.5rem 0 0 0; font-size: 1.1rem; opacity: 0.9;">
+            Transform your trading history into actionable insights
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Upload area with modern styling
+    st.markdown("""
+    <div style="
+        background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 2rem;
+        margin: 1rem 0;
+        text-align: center;
+        transition: all 0.3s ease;
+    " id="upload-zone">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+        <h3 style="color: #475569; margin-bottom: 0.5rem;">Drag & Drop or Click to Upload</h3>
+        <p style="color: #64748b; margin: 0;">Supported formats: CSV, XLSX, XLS (Max 200MB)</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Custom drag & drop styling
+    st.markdown("""
+    <style>
+    .upload-container {
+        border: 3px dashed #00d4ff;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(0, 212, 255, 0.05);
+        margin: 1rem 0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .upload-container:hover {
+        border-color: #0ea5e9;
+        background: rgba(0, 212, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .upload-text {
+        color: #00d4ff;
+        font-size: 1.1rem;
+        margin: 0.5rem 0;
+    }
+
+    .upload-subtext {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Enhanced file uploader with better UX
+    uploaded_file = st.file_uploader(
+        "📂 Drop your file here or browse",
+        type=['csv', 'xlsx', 'xls'],
+        help="Supported formats: CSV, Excel (.xlsx, .xls) • Max size: 200MB",
+        key=f"trade_data_uploader_{unique_key}",
+        label_visibility="collapsed"
+    )
+
+    # Custom upload area styling
+    if not uploaded_file:
+        st.markdown("""
+        <div class="upload-container">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <div class="upload-text">Drag & drop your trade data here</div>
+            <div class="upload-subtext">or click to browse files</div>
+            <div class="upload-subtext" style="margin-top: 1rem;">
+                <strong>Supported:</strong> CSV, Excel • <strong>Max:</strong> 200MB
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    if uploaded_file is not None:
+        try:
+            # Read and process the file
+            df = _read_uploaded_file(uploaded_file)
+
+            if df is not None:
+                # Modern success animation
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                    padding: 1.5rem 2rem;
+                    border-radius: 12px;
+                    margin: 1.5rem 0;
+                    color: white;
+                    font-weight: 600;
+                    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    animation: slideIn 0.5s ease-out;
+                ">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                        <span style="font-size: 1.1rem;">✅ File processed successfully!</span>
+                    </div>
+                </div>
+                <style>
+                @keyframes slideIn {
+                    from { opacity: 0; transform: translateY(-20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
+                # Enhanced file information cards
+                _render_file_info_cards(uploaded_file, df)
+
+                # Interactive data preview
+                _render_interactive_data_preview(df)
+
+                # Process and store data
+                _process_uploaded_data(df, uploaded_file.name)
+
+        except Exception as e:
+            st.markdown("""
+            <div style="
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                padding: 1.5rem;
+                border-radius: 12px;
+                color: white;
+                margin: 1rem 0;
+            ">
+                <h4 style="margin: 0 0 0.5rem 0;">❌ Error Processing File</h4>
+                <p style="margin: 0; opacity: 0.9;">""" + str(e) + """</p>
+            </div>
+            """, unsafe_allow_html=True)
+            logger.error(f"File upload error: {str(e)}")
+
+def _read_uploaded_file(uploaded_file):
+    """Read uploaded file with enhanced error handling."""
+    try:
+        if uploaded_file.name.endswith('.csv'):
+            try:
+                df = pd.read_csv(uploaded_file, encoding='utf-8')
+            except UnicodeDecodeError:
+                uploaded_file.seek(0)
+                df = pd.read_csv(uploaded_file, encoding='latin-1')
+        else:
+            df = pd.read_excel(uploaded_file)
+        return df
+    except Exception as e:
+        st.error(f"Error reading file: {str(e)}")
+        return None
+
+def _render_file_info_cards(uploaded_file, df):
+    """Render modern file information cards."""
+    file_size = len(uploaded_file.getvalue()) / 1024
+
+    st.markdown("### 📊 **File Intelligence Dashboard**")
+
+    # Create metric cards with modern styling
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            transition: transform 0.2s ease;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+            <h3 style="margin: 0; font-size: 1.2rem; font-weight: 600;">{uploaded_file.name}</h3>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.8; font-size: 0.9rem;">File Name</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: transform 0.2s ease;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📏</div>
+            <h3 style="margin: 0; font-size: 1.2rem; font-weight: 600;">{file_size:.1f} KB</h3>
+            <p style="margin: 0.5rem 0 0

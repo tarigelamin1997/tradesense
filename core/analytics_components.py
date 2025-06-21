@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
+import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
 import logging
+from toast_system import success_toast, info_toast, error_toast
+from pdf_export import render_pdf_export_button
+from email_scheduler import render_email_scheduling_ui
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +25,11 @@ def render_analytics():
     try:
         # Import the new dashboard system
         from visuals.dashboard_builder import TradingDashboard
-        
+
         # Create and render comprehensive dashboard
         dashboard = TradingDashboard(data)
         dashboard.render_complete_dashboard()
-        
+
     except ImportError:
         # Fallback to basic analytics if new system not available
         _render_basic_analytics(data)
@@ -38,7 +41,7 @@ def render_analytics():
 def _render_basic_analytics(data):
     """Fallback basic analytics rendering."""
     st.warning("Using basic analytics mode")
-    
+
     # Basic metrics
     col1, col2, col3, col4 = st.columns(4)
 
@@ -81,8 +84,8 @@ def _render_basic_analytics(data):
 
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 from analytics import compute_basic_stats, performance_over_time
 from datetime import datetime, timedelta
@@ -90,6 +93,9 @@ import numpy as np
 import logging
 from interactive_table import render_interactive_table
 from notification_system import create_system_alert, NotificationType, NotificationPriority
+from toast_system import success_toast, info_toast, error_toast
+from pdf_export import render_pdf_export_button
+from email_scheduler import render_email_scheduling_ui
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

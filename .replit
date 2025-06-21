@@ -22,6 +22,7 @@ LC_ALL = "C"
 LANG = "C"
 
 [workflows]
+runButton = "Quick Start"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"

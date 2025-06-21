@@ -345,7 +345,7 @@ class TradeSenseApp:
             </div>
             """, unsafe_allow_html=True)
 
-            # Quick actions (removed redundant dropdown navigation)
+            # Quick actions
             st.markdown("### Quick Actions")
             if st.button("🔄 Refresh Data"):
                 st.rerun()
@@ -496,50 +496,67 @@ def apply_modern_theme():
     if actual_theme == 'light':
         theme_css = """
         <style>
-        /* Modern Light Theme */
+        /* Modern Light Theme - Enhanced */
         .stApp {
-            background: linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%);
-            color: #1e293b;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            color: #334155;
         }
 
         .main-header {
-            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            padding: 1.5rem;
-            border-radius: 16px;
+            padding: 2rem;
+            border-radius: 20px;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.25);
         }
 
         .metric-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e1e5e9;
+            margin-bottom: 1.5rem;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
         }
 
         .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+            border-color: #c7d2fe;
         }
 
         .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-top: 0.5rem;
+            font-size: 2.25rem;
+            font-weight: 800;
+            margin-top: 0.75rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .info-banner {
-            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+            background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin: 1rem 0;
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem 0;
             text-align: center;
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
         }
 
         .sidebar-logo {
@@ -559,35 +576,41 @@ def apply_modern_theme():
 
         /* Enhanced Buttons */
         .stButton > button {
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
             border: none;
-            border-radius: 12px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
+            border-radius: 16px;
+            padding: 1rem 2rem;
+            font-weight: 700;
+            font-size: 1rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 16px 48px rgba(99, 102, 241, 0.5);
+            background: linear-gradient(135deg, #5855eb 0%, #7c3aed 100%);
         }
 
         /* Enhanced File uploader */
         .stFileUploader > div {
-            background: white;
-            border: 2px dashed #cbd5e0;
-            border-radius: 16px;
-            padding: 3rem;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 3px dashed #c7d2fe;
+            border-radius: 24px;
+            padding: 4rem 2rem;
             text-align: center;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .stFileUploader > div:hover {
-            border-color: #3b82f6;
-            background: #f8fafc;
-            transform: scale(1.02);
+            border-color: #6366f1;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
         }
 
         /* Enhanced Tables */

@@ -525,3 +525,39 @@ def _process_uploaded_data(df, filename):
     except Exception as e:
         st.error(f"Error processing data: {str(e)}")
         logger.error(f"Data processing error: {str(e)}")
+
+def render_drag_drop_upload(self):
+        """Render modern drag and drop upload interface."""
+        st.markdown("""
+        <style>
+        .upload-container {
+            border: 3px dashed #007acc;
+            padding: 3rem;
+            text-align: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(0, 122, 204, 0.1) 0%, rgba(0, 122, 204, 0.05) 100%);
+            transition: all 0.3s ease;
+            margin: 2rem 0;
+        }
+        .upload-container:hover {
+            border-color: #005a9e;
+            background: linear-gradient(135deg, rgba(0, 122, 204, 0.15) 0%, rgba(0, 122, 204, 0.08) 100%);
+            transform: translateY(-2px);
+        }
+        .upload-text {
+            font-size: 1.2rem;
+            color: #007acc;
+            margin: 1rem 0;
+        }
+        .upload-hint {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        </style>
+        <div class="upload-container">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+            <div class="upload-text">Drag & Drop Your Trade Files Here</div>
+            <div class="upload-hint">Supports CSV, Excel (.xlsx, .xls) files</div>
+            <div class="upload-hint">Or use the file browser below</div>
+        </div>
+        """, unsafe_allow_html=True)

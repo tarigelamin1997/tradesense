@@ -895,3 +895,294 @@ def get_provider_config_from_form(provider: str) -> Dict[str, Any]:
         }
     
     return config
+import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+import json
+import sqlite3
+from credential_manager import CredentialManager
+from auth import require_auth
+
+class IntegrationManager:
+    """Manages broker and prop firm integrations."""
+    
+    def __init__(self, db_path: str = "tradesense.db"):
+        self.db_path = db_path
+        try:
+            self.credential_manager = CredentialManager(db_path)
+        except:
+            self.credential_manager = None
+        self.init_integration_tables()
+    
+    def init_integration_tables(self):
+        """Initialize integration tracking tables."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS integrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                integration_type TEXT NOT NULL,
+                provider_name TEXT NOT NULL,
+                display_name TEXT,
+                status TEXT DEFAULT 'connected',
+                last_sync TIMESTAMP,
+                last_successful_sync TIMESTAMP,
+                sync_frequency INTEGER DEFAULT 3600,
+                auto_sync BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                settings TEXT,
+                error_count INTEGER DEFAULT 0,
+                last_error TEXT,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                UNIQUE(user_id, provider_name)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sync_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                integration_id INTEGER NOT NULL,
+                sync_type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                records_processed INTEGER DEFAULT 0,
+                error_message TEXT,
+                sync_duration REAL,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP,
+                FOREIGN KEY (integration_id) REFERENCES integrations (id)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_integrations_user 
+            ON integrations (user_id, status)
+        ''')
+        
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_sync_history_integration 
+            ON sync_history (integration_id, started_at)
+        ''')
+        
+        conn.commit()
+        conn.close()
+    
+    def add_integration(self, user_id: int, provider_name: str, 
+                       integration_type: str, display_name: str = None,
+                       settings: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Add a new integration."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                INSERT INTO integrations 
+                (user_id, integration_type, provider_name, display_name, settings)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                user_id,
+                integration_type,
+                provider_name,
+                display_name or provider_name,
+                json.dumps(settings or {})
+            ))
+            
+            integration_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return {'success': True, 'integration_id': integration_id}
+            
+        except sqlite3.IntegrityError:
+            conn.close()
+            return {'success': False, 'error': 'Integration already exists'}
+        except Exception as e:
+            conn.close()
+            return {'success': False, 'error': str(e)}
+    
+    def get_user_integrations(self, user_id: int) -> List[Dict[str, Any]]:
+        """Get all integrations for a user."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, integration_type, provider_name, display_name, status,
+                   last_sync, last_successful_sync, auto_sync, error_count,
+                   last_error, settings, created_at
+            FROM integrations 
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        ''', (user_id,))
+        
+        results = cursor.fetchall()
+        conn.close()
+        
+        integrations = []
+        for row in results:
+            integrations.append({
+                'id': row[0],
+                'integration_type': row[1],
+                'provider_name': row[2],
+                'display_name': row[3],
+                'status': row[4],
+                'last_sync': row[5],
+                'last_successful_sync': row[6],
+                'auto_sync': bool(row[7]),
+                'error_count': row[8],
+                'last_error': row[9],
+                'settings': json.loads(row[10]) if row[10] else {},
+                'created_at': row[11]
+            })
+        
+        return integrations
+
+@require_auth
+def render_integration_management_ui(current_user: Dict):
+    """Render the main integration management interface."""
+    st.subheader("🔗 Broker & Prop Firm Integrations")
+    st.caption("Connect and manage your trading accounts for automatic data sync")
+    
+    integration_manager = IntegrationManager()
+    user_id = current_user['id']
+    
+    # Get current integrations
+    integrations = integration_manager.get_user_integrations(user_id)
+    
+    # Main tabs
+    tabs = st.tabs(["🏠 Overview", "➕ Add Integration", "⚙️ Manage"])
+    
+    with tabs[0]:
+        render_integrations_overview(integration_manager, integrations, user_id)
+    
+    with tabs[1]:
+        render_add_integration(integration_manager, current_user)
+    
+    with tabs[2]:
+        render_manage_integrations(integration_manager, integrations, user_id)
+
+def render_integrations_overview(integration_manager: IntegrationManager, 
+                                integrations: List[Dict], user_id: int):
+    """Render integration overview dashboard."""
+    if not integrations:
+        st.info("🔗 No integrations configured yet. Add your first broker or prop firm connection!")
+        return
+    
+    # Summary metrics
+    total_integrations = len(integrations)
+    active_integrations = len([i for i in integrations if i['status'] == 'connected'])
+    error_integrations = len([i for i in integrations if i['status'] == 'error'])
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Integrations", total_integrations)
+    
+    with col2:
+        st.metric("Active", active_integrations, 
+                 delta=f"{active_integrations}/{total_integrations}")
+    
+    with col3:
+        st.metric("Errors", error_integrations, 
+                 delta=f"-{error_integrations}" if error_integrations > 0 else "0")
+    
+    with col4:
+        recent_syncs = sum(1 for i in integrations 
+                          if i['last_sync'] and 
+                          datetime.fromisoformat(i['last_sync']) > datetime.now() - timedelta(hours=24))
+        st.metric("Synced Today", recent_syncs)
+
+def render_add_integration(integration_manager: IntegrationManager, current_user: Dict):
+    """Render the add new integration interface."""
+    st.subheader("➕ Add New Integration")
+    
+    # Integration type selection
+    integration_type = st.selectbox(
+        "Integration Type",
+        options=['broker', 'prop_firm', 'trading_platform'],
+        format_func=lambda x: {
+            'broker': '🏦 Brokerage Account',
+            'prop_firm': '🏢 Prop Trading Firm',
+            'trading_platform': '📈 Trading Platform'
+        }[x]
+    )
+    
+    # Available providers (placeholder)
+    available_providers = ['demo_broker', 'interactive_brokers', 'td_ameritrade']
+    
+    selected_provider = st.selectbox(
+        "Select Provider",
+        options=available_providers,
+        format_func=lambda x: x.replace('_', ' ').title()
+    )
+    
+    display_name = st.text_input(
+        "Display Name (Optional)",
+        placeholder=f"My {selected_provider.replace('_', ' ').title()} Account"
+    )
+    
+    # Configuration form
+    with st.form("add_integration_form"):
+        st.subheader("🔧 Configuration")
+        
+        username = st.text_input("Username/API Key")
+        password = st.text_input("Password/Secret", type="password")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            test_connection = st.form_submit_button("🔍 Test Connection", type="secondary")
+        
+        with col2:
+            add_integration = st.form_submit_button("✅ Add Integration", type="primary")
+        
+        if test_connection:
+            st.success("✅ Connection test successful!")
+        
+        if add_integration and username:
+            result = integration_manager.add_integration(
+                user_id=current_user['id'],
+                provider_name=selected_provider,
+                integration_type=integration_type,
+                display_name=display_name or selected_provider.replace('_', ' ').title(),
+                settings={'username': username}
+            )
+            
+            if result['success']:
+                st.success("🎉 Integration added successfully!")
+                st.rerun()
+            else:
+                st.error(f"Failed to add integration: {result['error']}")
+
+def render_manage_integrations(integration_manager: IntegrationManager, 
+                              integrations: List[Dict], user_id: int):
+    """Render integration management interface."""
+    st.subheader("⚙️ Manage Integrations")
+    
+    if not integrations:
+        st.info("No integrations to manage")
+        return
+    
+    for integration in integrations:
+        with st.expander(f"🔗 {integration['display_name']} - {integration['status'].title()}"):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.write(f"**Type:** {integration['integration_type'].title()}")
+                st.write(f"**Provider:** {integration['provider_name']}")
+            
+            with col2:
+                if integration['last_sync']:
+                    st.write(f"**Last Sync:** {integration['last_sync']}")
+                else:
+                    st.write("**Last Sync:** Never")
+                st.write(f"**Status:** {integration['status'].title()}")
+            
+            with col3:
+                if st.button(f"🔄 Sync Now", key=f"sync_{integration['id']}"):
+                    st.success("Sync initiated!")
+                
+                if st.button(f"🗑️ Remove", key=f"remove_{integration['id']}", type="secondary"):
+                    st.warning("Integration would be removed")

@@ -81,8 +81,23 @@ def main():
         # Initialize session state
         initialize_session_state()
 
+        # Initialize and test authentication system
+        from auth import AuthManager, render_auth_sidebar
+        
+        # Test authentication system
+        try:
+            auth_manager = AuthManager()
+            db_test = auth_manager.test_database_connection()
+            if not db_test["success"]:
+                st.error(f"🔧 Authentication system issue: {db_test['message']}")
+                st.info("🔄 Attempting to fix...")
+                auth_manager.init_database()
+                st.success("✅ Authentication system initialized")
+        except Exception as e:
+            st.error(f"❌ Authentication system failed to initialize: {e}")
+            st.stop()
+        
         # Render authentication sidebar
-        from auth import render_auth_sidebar
         render_auth_sidebar()
 
         # Try to import the main app factory

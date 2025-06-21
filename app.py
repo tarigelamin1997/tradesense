@@ -33,14 +33,20 @@ logger = logging.getLogger(__name__)
 # Import core components with error handling
 try:
     from auth import AuthManager
-    from analytics import TradingAnalytics
     from data_validation import DataValidator
     from error_handler import ErrorHandler
-    from health_monitoring import HealthMonitor
     from notification_system import NotificationSystem
     
     # Import dashboard manager functions directly
     from core.dashboard_manager import render_dashboard_tabs
+    
+    # Import health monitoring with fallback
+    try:
+        from health_monitoring import SystemHealthMonitor
+        HEALTH_MONITORING_AVAILABLE = True
+    except ImportError:
+        HEALTH_MONITORING_AVAILABLE = False
+        logger.warning("Health monitoring not available")
     
 except ImportError as e:
     logger.error(f"Import error: {e}")
@@ -92,7 +98,13 @@ class TradeSenseApp:
     def __init__(self):
         """Initialize the TradeSense application."""
         self.auth_manager = AuthManager()
-        self.health_monitor = HealthMonitor()
+        
+        # Initialize health monitor with fallback
+        if HEALTH_MONITORING_AVAILABLE:
+            self.health_monitor = SystemHealthMonitor()
+        else:
+            self.health_monitor = None
+            
         self.notification_system = NotificationSystem()
         self.error_handler = ErrorHandler()
         
@@ -127,12 +139,22 @@ class TradeSenseApp:
             st.markdown("### Navigation")
             
             # Health status indicator
-            health_status = self.health_monitor.get_system_status()
-            status_class = "status-online" if health_status['status'] == 'healthy' else "status-warning"
+            if self.health_monitor:
+                try:
+                    health_status = self.health_monitor.get_overall_health_status()
+                    status_class = "status-online" if str(health_status) == 'HealthStatus.HEALTHY' else "status-warning"
+                    status_text = str(health_status).split('.')[-1].title()
+                except:
+                    status_class = "status-online"
+                    status_text = "Online"
+            else:
+                status_class = "status-online"
+                status_text = "Online"
+                
             st.markdown(f"""
             <div style="margin-bottom: 1rem;">
                 <span class="status-indicator {status_class}"></span>
-                System Status: {health_status['status'].title()}
+                System Status: {status_text}
             </div>
             """, unsafe_allow_html=True)
             
@@ -254,8 +276,18 @@ class TradeSenseApp:
             elif st.session_state.current_page == "Admin Panel" and st.session_state.user_role == 'admin':
                 st.info("Admin panel functionality coming soon")
             elif st.session_state.current_page == "System Monitor" and st.session_state.user_role == 'admin':
-                health_status = self.health_monitor.get_system_status()
-                st.json(health_status)
+                if self.health_monitor:
+                    try:
+                        health_checks = self.health_monitor.run_health_checks()
+                        st.json({k: {
+                            'status': str(v.status),
+                            'message': v.message,
+                            'value': v.value
+                        } for k, v in health_checks.items()})
+                    except Exception as e:
+                        st.error(f"Health monitoring error: {e}")
+                else:
+                    st.info("Health monitoring not available")
             
         except Exception as e:
             self.error_handler.handle_error(e, f"Error in page: {st.session_state.current_page}")

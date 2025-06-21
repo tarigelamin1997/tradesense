@@ -481,6 +481,18 @@ def require_auth(func):
 
     return wrapper
 
+def check_partner_access(partner_id: str, user: Dict) -> bool:
+    """Check if user has access to partner resources."""
+    if not user:
+        return False
+    
+    # Admin users have access to all partners
+    if user.get('role') == 'admin':
+        return True
+    
+    # Users can only access their own partner
+    return user.get('partner_id') == partner_id
+
 def render_auth_sidebar():
     """Render authentication sidebar."""
     auth_manager = AuthManager()

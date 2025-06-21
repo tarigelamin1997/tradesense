@@ -93,13 +93,82 @@ def render_dashboard_overview():
             st.warning("Analytics components not available")
 
 def render_analytics_tab():
-    """Render the analytics tab."""
+    """Render the analytics tab with enhanced visualizations."""
     try:
         from core.analytics_components import render_analytics
-        render_analytics()
+        analytics_result = render_analytics()  # Assuming render_analytics returns the analytics data
+        if not analytics_result:
+            st.markdown("""
+            <div class="info-banner">
+                📊 No analytics data available. Please upload trade data first.
+            </div>
+            """, unsafe_allow_html=True)
+            return
+
+        # Modern analytics header
+        st.markdown('<div class="main-header"><h2>📈 Trading Analytics</h2><p>Comprehensive performance analysis</p></div>', unsafe_allow_html=True)
+
+        # Key metrics with animated counters
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.metric(
+                "Total P&L", 
+                f"${analytics_result.get('total_pnl', 0):,.2f}",
+                delta=f"{analytics_result.get('pnl_change', 0):+.1%}" if analytics_result.get('pnl_change') else None
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col2:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.metric(
+                "Win Rate", 
+                f"{analytics_result.get('win_rate', 0):.1f}%",
+                delta=f"{analytics_result.get('win_rate_change', 0):+.1f}%" if analytics_result.get('win_rate_change') else None
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col3:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.metric(
+                "Total Trades", 
+                f"{analytics_result.get('total_trades', 0):,}",
+                delta=f"{analytics_result.get('trade_count_change', 0):+d}" if analytics_result.get('trade_count_change') else None
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col4:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.metric(
+                "Profit Factor", 
+                f"{analytics_result.get('profit_factor', 0):.2f}",
+                delta=f"{analytics_result.get('profit_factor_change', 0):+.2f}" if analytics_result.get('profit_factor_change') else None
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Charts section with loading states
+        st.markdown("### 📊 Performance Charts")
+
+        charts = analytics_result.get('charts', [])
+        if charts:
+            # Display charts with unique keys
+            for i, chart in enumerate(charts):
+                st.plotly_chart(chart, use_container_width=True, key=f"analytics_chart_{i}")
+        else:
+            st.markdown("""
+            <div style="text-align: center; padding: 3rem;">
+                <div class="loading-spinner"></div>
+                <p>Loading charts...</p>
+            </div>
+            """, unsafe_allow_html=True)
+
     except ImportError as e:
         logger.error(f"Analytics import error: {e}")
         st.error("Analytics functionality not available")
+    except Exception as e:
+        logger.error(f"Analytics rendering error: {e}")
+        st.error("Error rendering analytics. Please check your data and try again.")
 
 def render_trade_data_tab():
     """Render the trade data management tab."""

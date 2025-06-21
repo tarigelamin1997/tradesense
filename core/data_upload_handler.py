@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Data Upload Handler - Modern UI Implementation
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def render_data_upload_section(unique_key="default_upload"):
     """Render the modern data upload section with enhanced UI."""
-    
+
     # Modern header with gradient background
     st.markdown("""
     <div style="
@@ -65,7 +64,7 @@ def render_data_upload_section(unique_key="default_upload"):
         try:
             # Read and process the file
             df = _read_uploaded_file(uploaded_file)
-            
+
             if df is not None:
                 # Modern success animation
                 st.markdown("""
@@ -91,13 +90,13 @@ def render_data_upload_section(unique_key="default_upload"):
                 }
                 </style>
                 """, unsafe_allow_html=True)
-                
+
                 # Enhanced file information cards
                 _render_file_info_cards(uploaded_file, df)
-                
+
                 # Interactive data preview
                 _render_interactive_data_preview(df)
-                
+
                 # Process and store data
                 _process_uploaded_data(df, uploaded_file.name)
 
@@ -135,12 +134,12 @@ def _read_uploaded_file(uploaded_file):
 def _render_file_info_cards(uploaded_file, df):
     """Render modern file information cards."""
     file_size = len(uploaded_file.getvalue()) / 1024
-    
+
     st.markdown("### 📊 **File Intelligence Dashboard**")
-    
+
     # Create metric cards with modern styling
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.markdown(f"""
         <div style="
@@ -158,7 +157,7 @@ def _render_file_info_cards(uploaded_file, df):
             <p style="margin: 0.5rem 0 0 0; opacity: 0.8; font-size: 0.9rem;">File Name</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col2:
         st.markdown(f"""
         <div style="
@@ -176,7 +175,7 @@ def _render_file_info_cards(uploaded_file, df):
             <p style="margin: 0.5rem 0 0 0; opacity: 0.8; font-size: 0.9rem;">File Size</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col3:
         st.markdown(f"""
         <div style="
@@ -194,7 +193,7 @@ def _render_file_info_cards(uploaded_file, df):
             <p style="margin: 0.5rem 0 0 0; opacity: 0.8; font-size: 0.9rem;">Total Trades</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col4:
         data_quality = (1 - df.isnull().sum().sum() / (len(df) * len(df.columns))) * 100
         quality_color = "#10b981" if data_quality > 95 else "#f59e0b" if data_quality > 85 else "#ef4444"
@@ -218,17 +217,17 @@ def _render_file_info_cards(uploaded_file, df):
 def _render_interactive_data_preview(df):
     """Render interactive data preview with modern styling."""
     st.markdown("### 🔍 **Interactive Data Preview**")
-    
+
     # Tabs for different views
     tab1, tab2, tab3 = st.tabs(["📋 Table View", "📈 Quick Stats", "🔍 Column Analysis"])
-    
+
     with tab1:
         # Enhanced table with search and filter capabilities
         st.markdown("**Enhanced Data Table**")
-        
+
         # Search functionality
         search_term = st.text_input("🔍 Search data", placeholder="Search across all columns...")
-        
+
         if search_term:
             # Filter dataframe based on search term
             mask = df.astype(str).apply(lambda x: x.str.contains(search_term, case=False, na=False)).any(axis=1)
@@ -236,7 +235,7 @@ def _render_interactive_data_preview(df):
             st.write(f"Found {len(filtered_df)} rows matching '{search_term}'")
         else:
             filtered_df = df
-        
+
         # Interactive table with styling
         st.markdown("""
         <style>
@@ -257,10 +256,10 @@ def _render_interactive_data_preview(df):
         }
         </style>
         """, unsafe_allow_html=True)
-        
+
         # Show preview with pagination
         rows_per_page = st.selectbox("Rows per page", [5, 10, 25, 50], index=1)
-        
+
         if len(filtered_df) > rows_per_page:
             page = st.number_input("Page", min_value=1, max_value=(len(filtered_df) // rows_per_page) + 1, value=1)
             start_idx = (page - 1) * rows_per_page
@@ -268,35 +267,35 @@ def _render_interactive_data_preview(df):
             display_df = filtered_df.iloc[start_idx:end_idx]
         else:
             display_df = filtered_df.head(rows_per_page)
-        
+
         st.dataframe(display_df, use_container_width=True)
-    
+
     with tab2:
         # Quick statistics with visualizations
         col1, col2 = st.columns([1, 1])
-        
+
         with col1:
             if 'pnl' in df.columns:
                 # P&L metrics
                 total_pnl = df['pnl'].sum()
                 avg_pnl = df['pnl'].mean()
                 win_rate = (len(df[df['pnl'] > 0]) / len(df) * 100) if len(df) > 0 else 0
-                
+
                 st.markdown("**Performance Metrics**")
                 st.metric("Total P&L", f"${total_pnl:,.2f}")
                 st.metric("Average P&L", f"${avg_pnl:.2f}")
                 st.metric("Win Rate", f"{win_rate:.1f}%")
-                
+
                 # Simple P&L distribution chart
                 fig = px.histogram(df, x='pnl', nbins=30, title="P&L Distribution")
                 fig.update_layout(height=300)
                 st.plotly_chart(fig, use_container_width=True, key=f"pnl_hist_{id(df)}")
-        
+
         with col2:
             st.markdown("**Data Overview**")
             st.metric("Total Rows", f"{len(df):,}")
             st.metric("Total Columns", len(df.columns))
-            
+
             # Missing data visualization
             missing_data = df.isnull().sum()
             if missing_data.sum() > 0:
@@ -305,26 +304,26 @@ def _render_interactive_data_preview(df):
                 st.plotly_chart(fig, use_container_width=True, key=f"missing_data_{id(df)}")
             else:
                 st.success("✅ No missing data detected")
-    
+
     with tab3:
         # Column analysis
         st.markdown("**Column Analysis**")
-        
+
         for i, col in enumerate(df.columns):
             with st.expander(f"📊 {col} - {df[col].dtype}"):
                 col_data = df[col]
-                
+
                 col_info1, col_info2 = st.columns(2)
                 with col_info1:
                     st.write(f"**Unique values:** {col_data.nunique()}")
                     st.write(f"**Missing values:** {col_data.isnull().sum()}")
-                
+
                 with col_info2:
                     if pd.api.types.is_numeric_dtype(col_data):
                         st.write(f"**Min:** {col_data.min()}")
                         st.write(f"**Max:** {col_data.max()}")
                         st.write(f"**Mean:** {col_data.mean():.2f}")
-                
+
                 # Sample values
                 sample_values = col_data.dropna().head(5).tolist()
                 st.write(f"**Sample values:** {sample_values}")
@@ -335,16 +334,16 @@ def _process_uploaded_data(df, filename):
         # Store data in session state
         st.session_state.trade_data = df
         st.session_state.data_source = filename
-        
+
         # Enhanced success metrics
         total_pnl = df['pnl'].sum() if 'pnl' in df.columns else 0
         win_rate = (len(df[df['pnl'] > 0]) / len(df) * 100) if 'pnl' in df.columns and len(df) > 0 else 0
-        
+
         # Success summary with beautiful metrics
         st.markdown("### 🎉 **Processing Complete!**")
-        
+
         metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
-        
+
         with metrics_col1:
             st.metric("📊 Total Trades", f"{len(df):,}")
         with metrics_col2:
@@ -356,22 +355,22 @@ def _process_uploaded_data(df, filename):
         with metrics_col4:
             unique_symbols = df['symbol'].nunique() if 'symbol' in df.columns else 0
             st.metric("🏷️ Symbols", unique_symbols)
-        
+
         # Data validation with visual indicators
         st.markdown("### ✅ **Data Validation Results**")
-        
+
         required_cols = ['symbol', 'entry_time', 'exit_time', 'entry_price', 'exit_price', 'pnl', 'direction']
         missing_cols = [col for col in required_cols if col not in df.columns]
         present_cols = [col for col in required_cols if col in df.columns]
-        
+
         validation_col1, validation_col2 = st.columns(2)
-        
+
         with validation_col1:
             if present_cols:
                 st.markdown("**✅ Present Columns:**")
                 for col in present_cols:
                     st.markdown(f"• ✅ {col}")
-        
+
         with validation_col2:
             if missing_cols:
                 st.markdown("**⚠️ Missing Columns:**")
@@ -379,7 +378,7 @@ def _process_uploaded_data(df, filename):
                     st.markdown(f"• ⚠️ {col}")
             else:
                 st.success("🎉 All recommended columns found!")
-        
+
         # Navigation call-to-action
         st.markdown("""
         <div style="

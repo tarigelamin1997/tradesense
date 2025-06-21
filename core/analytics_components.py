@@ -823,3 +823,88 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             """
             st.code(summary_text)
             st.success("Summary ready to copy!")
+
+#!/usr/bin/env python3
+"""
+Analytics Components
+Core analytics rendering and calculation functions
+"""
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
+
+def render_analytics():
+    """Main analytics rendering function."""
+    st.header("📈 Trading Analytics")
+
+    # Check if trade data is available
+    if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
+        st.info("📊 No trade data available. Please upload your trade data first.")
+        return None
+
+    data = st.session_state.trade_data
+
+    # Basic analytics calculations
+    try:
+        total_trades = len(data)
+
+        # Calculate P&L if available
+        if 'pnl' in data.columns:
+            total_pnl = data['pnl'].sum()
+            winning_trades = len(data[data['pnl'] > 0])
+            losing_trades = len(data[data['pnl'] < 0])
+            win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+
+            # Calculate profit factor
+            gross_profit = data[data['pnl'] > 0]['pnl'].sum() if winning_trades > 0 else 0
+            gross_loss = abs(data[data['pnl'] < 0]['pnl'].sum()) if losing_trades > 0 else 0
+            profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        else:
+            total_pnl = 0
+            win_rate```python
+ = 0
+            profit_factor = 0
+
+        # Create basic P&L chart
+        charts = []
+        if 'pnl' in data.columns and 'date' in data.columns:
+            # Sort by date and calculate cumulative P&L
+            data_sorted = data.sort_values('date')
+            data_sorted['cumulative_pnl'] = data_sorted['pnl'].cumsum()
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=data_sorted['date'],
+                y=data_sorted['cumulative_pnl'],
+                mode='lines',
+                name='Cumulative P&L',
+                line=dict(color='#00d4ff', width=2)
+            ))
+            fig.update_layout(
+                title='Cumulative P&L Over Time',
+                xaxis_title='Date',
+                yaxis_title='Cumulative P&L ($)',
+                template='plotly_dark'
+            )
+            charts.append(fig)
+
+        # Return analytics result
+        return {
+            'total_trades': total_trades,
+            'total_pnl': total_pnl,
+            'win_rate': win_rate,
+            'profit_factor': profit_factor,
+            'charts': charts
+        }
+
+    except Exception as e:
+        logger.error(f"Analytics calculation error: {e}")
+        st.error(f"Error calculating analytics: {e}")
+        return None

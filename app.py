@@ -41,14 +41,29 @@ logger = logging.getLogger(__name__)
 # Import core components with error handling
 try:
     from auth import AuthManager
-    from data_validation import DataValidator
-    from error_handler import ErrorHandler
-    from notification_system import notification_manager
-
+    
     # Import dashboard manager functions directly
     from core.dashboard_manager import render_dashboard_tabs
 
-    # Import health monitoring with fallback
+    # Import optional components with fallbacks
+    try:
+        from data_validation import DataValidator
+    except ImportError:
+        logger.warning("Data validation not available")
+        DataValidator = None
+
+    try:
+        from error_handler import ErrorHandler
+    except ImportError:
+        logger.warning("Error handler not available")
+        ErrorHandler = None
+
+    try:
+        from notification_system import notification_manager
+    except ImportError:
+        logger.warning("Notification system not available")
+        notification_manager = None
+
     try:
         from health_monitoring import SystemHealthMonitor
         HEALTH_MONITORING_AVAILABLE = True
@@ -57,8 +72,9 @@ try:
         logger.warning("Health monitoring not available")
 
 except ImportError as e:
-    logger.error(f"Import error: {e}")
+    logger.error(f"Critical import error: {e}")
     st.error(f"Critical import error: {e}")
+    st.info("Please check that all required dependencies are installed.")
     st.stop()
 
 # Custom CSS for professional styling
@@ -249,7 +265,7 @@ class TradeSenseApp:
             self.health_monitor = None
 
         self.notification_manager = notification_manager
-        self.error_handler = ErrorHandler()
+        self.error_handler = ErrorHandler() if ErrorHandler else None
 
         # Initialize session state
         self._initialize_session_state()
@@ -370,7 +386,11 @@ class TradeSenseApp:
                 st.session_state.trade_data = sample_data
                 st.success("Synthetic sample data generated!")
         except Exception as e:
-            self.error_handler.handle_error(e, "Failed to load sample data")
+            if self.error_handler:
+                self.error_handler.handle_error(e, "Failed to load sample data")
+            else:
+                logger.error(f"Failed to load sample data: {e}")
+                st.error(f"Failed to load sample data: {e}")
 
     def _render_login_page(self):
         """Render the login page."""
@@ -474,7 +494,10 @@ class TradeSenseApp:
                     st.info("Health monitoring not available")
 
         except Exception as e:
-            self.error_handler.handle_error(e, f"Error in page: {st.session_state.current_page}")
+            if self.error_handler:
+                self.error_handler.handle_error(e, f"Error in page: {st.session_state.current_page}")
+            else:
+                logger.error(f"Error in page {st.session_state.current_page}: {e}")
             st.error("An error occurred. Please check the error logs or contact support.")
 
 def apply_modern_theme():

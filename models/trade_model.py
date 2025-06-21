@@ -39,6 +39,14 @@ class TradeRecord:
     take_profit: Optional[float] = None
     tags: Optional[List[str]] = field(default_factory=list)
     
+    # Enhanced analytics fields
+    strategy_tag: Optional[str] = None
+    setup_tag: Optional[str] = None
+    execution_type: str = "manual"  # manual/auto
+    confidence_score: Optional[int] = None  # 1-10 scale
+    gross_pnl: Optional[float] = None
+    net_pnl: Optional[float] = None
+    
     # Metadata fields
     data_source: str = "manual"
     import_timestamp: datetime = field(default_factory=datetime.now)
@@ -91,6 +99,19 @@ class TradeRecord:
         if self.take_profit is not None and (not isinstance(self.take_profit, (int, float)) or self.take_profit <= 0):
             errors.append("Take profit must be a positive number")
         
+        # Enhanced field validation
+        if self.confidence_score is not None and (not isinstance(self.confidence_score, int) or not 1 <= self.confidence_score <= 10):
+            errors.append("Confidence score must be an integer between 1 and 10")
+        
+        if self.gross_pnl is not None and not isinstance(self.gross_pnl, (int, float)):
+            errors.append("Gross P&L must be a number")
+        
+        if self.net_pnl is not None and not isinstance(self.net_pnl, (int, float)):
+            errors.append("Net P&L must be a number")
+        
+        if self.execution_type not in ['manual', 'auto']:
+            errors.append("Execution type must be 'manual' or 'auto'")
+        
         if errors:
             raise ValueError(f"Trade validation failed: {'; '.join(errors)}")
     
@@ -140,6 +161,12 @@ class TradeRecord:
             'stop_loss': self.stop_loss,
             'take_profit': self.take_profit,
             'tags': ','.join(self.tags) if self.tags else '',
+            'strategy_tag': self.strategy_tag,
+            'setup_tag': self.setup_tag,
+            'execution_type': self.execution_type,
+            'confidence_score': self.confidence_score,
+            'gross_pnl': self.gross_pnl,
+            'net_pnl': self.net_pnl,
             'data_source': self.data_source,
             'import_timestamp': self.import_timestamp,
             'trade_id': self.trade_id

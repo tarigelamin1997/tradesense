@@ -87,7 +87,7 @@ class AuthManager:
             cursor.execute("PRAGMA table_info(user_sessions)")
             session_columns = [col[1] for col in cursor.fetchall()]
             if 'session_token' not in session_columns:
-                cursor.execute('ALTER TABLE user_sessions ADD COLUMN session_token TEXT UNIQUE')
+                cursor.execute('ALTER TABLE user_sessions ADD COLUMN session_token TEXT')
 
             # Login attempts table
             cursor.execute('''

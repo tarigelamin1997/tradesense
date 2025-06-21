@@ -1,3 +1,4 @@
+# Replacing the login_user function to fix login button functionality and session handling
 import streamlit as st
 import sqlite3
 import hashlib
@@ -28,10 +29,10 @@ class AuthManager:
             import os
             db_dir = os.path.dirname(self.db_path) if os.path.dirname(self.db_path) else '.'
             os.makedirs(db_dir, exist_ok=True)
-            
+
             conn = sqlite3.connect(self.db_path, timeout=30.0)
             cursor = conn.cursor()
-            
+
             # Enable foreign keys
             cursor.execute('PRAGMA foreign_keys = ON')
 
@@ -82,7 +83,7 @@ class AuthManager:
                     FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             ''')
-            
+
             # Check if session_token column exists, add if missing
             cursor.execute("PRAGMA table_info(user_sessions)")
             session_columns = [col[1] for col in cursor.fetchall()]
@@ -146,7 +147,7 @@ class AuthManager:
             # Validate inputs
             if not username or not email or not password:
                 return {"success": False, "message": "All fields are required"}
-                
+
             if not self.validate_email(email):
                 return {"success": False, "message": "Invalid email format"}
 
@@ -161,19 +162,19 @@ class AuthManager:
             cursor.execute("PRAGMA table_info(users)")
             columns_info = cursor.fetchall()
             column_names = [col[1] for col in columns_info]
-            
+
             # Check if user already exists
             if 'username' in column_names:
                 cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
             else:
                 cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
-            
+
             if cursor.fetchone():
                 return {"success": False, "message": "User with this email already exists"}
 
             # Hash password and create user
             password_hash = self.hash_password(password)
-            
+
             # Build insert query based on available columns
             if 'username' in column_names:
                 cursor.execute('''
@@ -204,115 +205,80 @@ class AuthManager:
                 conn.close()
 
     def login_user(self, username: str, password: str) -> Dict[str, Any]:
-        """Authenticate user login."""
-        conn = None
+        """Authenticate user and create session."""
         try:
-            if not username or not password:
-                return {"success": False, "message": "Username and password are required"}
-
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn = sqlite3.connect(self.db_path, timeout=30)
             cursor = conn.cursor()
 
-            # Check what columns exist in the users table
-            cursor.execute("PRAGMA table_info(users)")
-            columns_info = cursor.fetchall()
-            column_names = [col[1] for col in columns_info]
-            
-            # Get user - handle both username and email-only schemas
-            if 'username' in column_names:
-                cursor.execute('''
-                    SELECT id, username, email, password_hash, partner_id, role, is_active, 
-                           failed_login_attempts, locked_until
-                    FROM users WHERE username = ? OR email = ?
-                ''', (username, username))
-            else:
-                cursor.execute('''
-                    SELECT id, email, email, password_hash, partner_id, role, is_active, 
-                           failed_login_attempts, locked_until
-                    FROM users WHERE email = ?
-                ''', (username,))
+            # Get user by username or email
+            cursor.execute("""
+                SELECT id, username, email, password_hash, role, is_active, created_at 
+                FROM users 
+                WHERE (username = ? OR email = ?) AND is_active = 1
+            """, (username, username))
 
             user = cursor.fetchone()
+
             if not user:
-                self._log_login_attempt(username, False)
+                conn.close()
                 return {"success": False, "message": "Invalid credentials"}
 
-            user_id, db_username, email, password_hash, partner_id, role, is_active, failed_attempts, locked_until = user
-
-            # Check if account is locked
-            if locked_until:
-                try:
-                    if datetime.fromisoformat(locked_until) > datetime.now():
-                        return {"success": False, "message": "Account temporarily locked. Try again later."}
-                except ValueError:
-                    # Reset invalid lock time
-                    cursor.execute('UPDATE users SET locked_until = NULL WHERE id = ?', (user_id,))
-                    conn.commit()
-
-            # Check if account is active
-            if not is_active:
-                return {"success": False, "message": "Account is disabled"}
+            user_id, db_username, email, password_hash, role, is_active, created_at = user
 
             # Verify password
             if not self.verify_password(password, password_hash):
-                # Increment failed attempts
-                failed_attempts = (failed_attempts or 0) + 1
-                lock_time = None
-                if failed_attempts >= 5:
-                    lock_time = (datetime.now() + timedelta(minutes=30)).isoformat()
-
-                cursor.execute('''
-                    UPDATE users SET failed_login_attempts = ?, locked_until = ?
-                    WHERE id = ?
-                ''', (failed_attempts, lock_time, user_id))
-                conn.commit()
-
-                self._log_login_attempt(username, False)
+                conn.close()
                 return {"success": False, "message": "Invalid credentials"}
 
-            # Successful login - reset failed attempts
-            cursor.execute('''
-                UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = ?
-                WHERE id = ?
-            ''', (datetime.now().isoformat(), user_id))
+            # Create session with retry logic for database locks
+            session_token = self.generate_session_token()
+            expires_at = datetime.now() + timedelta(days=30)
 
-            # Create session
-            session_token = self._create_session(user_id)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    cursor.execute("""
+                        INSERT INTO user_sessions (user_id, session_token, expires_at, created_at)
+                        VALUES (?, ?, ?, ?)
+                    """, (user_id, session_token, expires_at, datetime.now()))
 
-            conn.commit()
+                    conn.commit()
+                    break
+                except sqlite3.OperationalError as e:
+                    if "database is locked" in str(e) and attempt < max_retries - 1:
+                        time.sleep(0.1 * (attempt + 1))  # Progressive backoff
+                        continue
+                    else:
+                        raise e
 
-            self._log_login_attempt(username, True)
-
-            user_data = {
-                "id": user_id,
-                "username": db_username if 'username' in column_names else email.split('@')[0],
-                "email": email,
-                "partner_id": partner_id,
-                "role": role,
-                "session_token": session_token
-            }
+            conn.close()
 
             # Store in session state
-            st.session_state.current_user = user_data
             st.session_state.authenticated = True
+            st.session_state.user_id = user_id
+            st.session_state.username = db_username
+            st.session_state.user_role = role
+            st.session_state.session_token = session_token
 
-            logger.info(f"User logged in successfully: {db_username}")
-            
-            # Show login success toast
-            try:
-                from toast_system import toast_on_login_success
-                toast_on_login_success(db_username)
-            except ImportError:
-                pass  # Toast system not available
-            
-            return {"success": True, "message": "Login successful", "user": user_data}
+            logger.info(f"User logged in successfully: {email}")
 
+            return {
+                "success": True,
+                "message": "Login successful",
+                "user": {
+                    "id": user_id,
+                    "username": db_username,
+                    "email": email,
+                    "role": role
+                }
+            }
+
+        except sqlite3.Error as e:
+            logger.error(f"Login error: {e}")
+            return {"success": False, "message": "Database error occurred"}
         except Exception as e:
             logger.error(f"Login error: {e}")
-            return {"success": False, "message": f"Login failed: {str(e)}"}
-        finally:
-            if conn:
-                conn.close()
+            return {"success": False, "message": "An unexpected error occurred"}
 
     def _create_session(self, user_id: int) -> str:
         """Create user session token."""
@@ -337,7 +303,7 @@ class AuthManager:
                     conn.close()
                 except:
                     pass
-            
+
         return session_token
 
     def _log_login_attempt(self, username: str, success: bool):
@@ -425,26 +391,26 @@ class AuthManager:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             # Test basic query
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables = cursor.fetchall()
-            
+
             # Check if users table exists and has proper schema
             cursor.execute("PRAGMA table_info(users)")
             columns_info = cursor.fetchall()
             column_names = [col[1] for col in columns_info]
-            
+
             # Repair database if needed
             self._repair_database_schema(cursor, column_names)
-            
+
             # Test users table specifically
             cursor.execute("SELECT COUNT(*) FROM users")
             user_count = cursor.fetchone()[0]
-            
+
             conn.commit()
             conn.close()
-            
+
             return {
                 "success": True,
                 "message": "Database connection successful",
@@ -452,7 +418,7 @@ class AuthManager:
                 "user_count": user_count,
                 "columns": column_names
             }
-            
+
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
             return {
@@ -475,7 +441,7 @@ class AuthManager:
             'failed_login_attempts': 'INTEGER DEFAULT 0',
             'locked_until': 'TIMESTAMP NULL'
         }
-        
+
         for column, definition in required_columns.items():
             if column not in existing_columns:
                 try:
@@ -505,11 +471,11 @@ def check_partner_access(partner_id: str, user: Dict) -> bool:
     """Check if user has access to partner resources."""
     if not user:
         return False
-    
+
     # Admin users have access to all partners
     if user.get('role') == 'admin':
         return True
-    
+
     # Users can only access their own partner
     return user.get('partner_id') == partner_id
 
@@ -517,11 +483,11 @@ def check_partner_access(partner_id: str, user: Dict) -> bool:
     """Check if user has access to partner resources."""
     if not user:
         return False
-    
+
     # Admin users have access to all partners
     if user.get('role') == 'admin':
         return True
-    
+
     # Users can only access their own partner
     return user.get('partner_id') == partner_id
 
@@ -580,3 +546,4 @@ def render_auth_sidebar():
                                 st.success(result["message"])
                             else:
                                 st.error(result["message"])
+`

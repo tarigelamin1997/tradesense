@@ -728,31 +728,6 @@ def render_optimization_suggestions(df):
                         "action": "Consider more consistent position sizing and risk management"
                     })
 
-        # Symbol analysis for optimization
-        if 'symbol' in df.columns and 'pnl' in df.columns:
-            symbol_performance = df.groupby('symbol')['pnl'].agg(['sum', 'count']).reset_index()
-            symbol_performance['avg_pnl'] = symbol_performance['sum'] / symbol_performance['count']
-
-            # Find best and worst performing symbols
-            best_symbols = symbol_performance.nlargest(3, 'avg_pnl')['symbol'].tolist()
-            worst_symbols = symbol_performance.nsmallest(3, 'avg_pnl')['symbol'].tolist()
-
-            if len(best_symbols) > 0:
-                suggestions.append({
-                    "category": "Symbol Selection",
-                    "priority": "Medium",
-                    "suggestion": f"Best performing symbols: {', '.join(best_symbols)}",
-                    "action": "Consider increasing allocation to these symbols"
-                })
-
-            if len(worst_symbols) > 0:
-                suggestions.append({
-                    "category": "Symbol Selection",
-                    "priority": "Medium",
-                    "suggestion": f"Worst performing symbols: {', '.join(worst_symbols)}",
-                    "action": "Review strategy for these symbols or consider avoiding them"
-                })
-
         # Display suggestions
         if suggestions:
             for i, suggestion in enumerate(suggestions):
@@ -768,18 +743,6 @@ def render_optimization_suggestions(df):
         else:
             st.success("✅ No major optimization opportunities identified. Your trading appears well-optimized!")
 
-        # General recommendations
-        st.subheader("General Recommendations")
-
-        st.write("""
-        **Continuous Improvement Tips:**
-        • Maintain a trading journal to track decision-making process
-        • Regularly review and update your trading plan
-        • Consider backtesting new strategies before implementation
-        • Monitor market conditions and adapt accordingly
-        • Keep learning through education and market analysis
-        """)
-
     except Exception as e:
         logger.error(f"Error in optimization suggestions: {e}")
         st.error("Unable to generate optimization suggestions")
@@ -791,21 +754,9 @@ def render_export_options(df, stats):
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("📊 Export Analytics Report", type="primary"):
-            # Generate analytics report
-            report_data = {
-                "generated_at": datetime.now().isoformat(),
-                "summary_stats": stats,
-                "trade_count": len(df),
-                "data_columns": df.columns.tolist()
-            }
-
-            st.download_button(
-                label="💾 Download Analytics JSON",
-                data=pd.Series(report_data).to_json(),
-                file_name=f"trading_analytics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json"
-            )
+        # PDF Export button
+        from pdf_export import render_pdf_export_button
+        render_pdf_export_button(df, stats)
 
     with col2:
         if st.button("📈 Export Charts", type="secondary"):
@@ -824,86 +775,321 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             st.code(summary_text)
             st.success("Summary ready to copy!")
 
-#!/usr/bin/env python3
-"""
-Analytics Components
-Core analytics rendering and calculation functions
-"""
-
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime, timedelta
-import logging
-
-logger = logging.getLogger(__name__)
-
 def render_analytics():
-    """Main analytics rendering function."""
+    """Main analytics rendering function with comprehensive dashboard."""
     st.header("📈 Trading Analytics")
 
     # Check if trade data is available
     if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
-        st.info("📊 No trade data available. Please upload your trade data first.")
+        st.info("📊 No analytics available. Please upload your trades to generate insights.")
         return None
 
     data = st.session_state.trade_data
 
-    # Basic analytics calculations
     try:
+        # Comprehensive analytics calculations
         total_trades = len(data)
+        
+        if total_trades == 0:
+            st.warning("No trade data found. Please upload valid trade data.")
+            return None
 
-        # Calculate P&L if available
-        if 'pnl' in data.columns:
-            total_pnl = data['pnl'].sum()
-            winning_trades = len(data[data['pnl'] > 0])
-            losing_trades = len(data[data['pnl'] < 0])
-            win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        # Enhanced analytics with all requested metrics
+        stats = calculate_comprehensive_analytics(data)
+        
+        if not stats:
+            st.error("Unable to calculate analytics from the provided data")
+            return None
 
-            # Calculate profit factor
-            gross_profit = data[data['pnl'] > 0]['pnl'].sum() if winning_trades > 0 else 0
-            gross_loss = abs(data[data['pnl'] < 0]['pnl'].sum()) if losing_trades > 0 else 0
-            profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
-        else:
-            total_pnl = 0
-            win_rate = 0
-            profit_factor = 0
-
-        # Create basic P&L chart
-        charts = []
-        if 'pnl' in data.columns and 'date' in data.columns:
-            # Sort by date and calculate cumulative P&L
-            data_sorted = data.sort_values('date')
-            data_sorted['cumulative_pnl'] = data_sorted['pnl'].cumsum()
-
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=data_sorted['date'],
-                y=data_sorted['cumulative_pnl'],
-                mode='lines',
-                name='Cumulative P&L',
-                line=dict(color='#00d4ff', width=2)
-            ))
-            fig.update_layout(
-                title='Cumulative P&L Over Time',
-                xaxis_title='Date',
-                yaxis_title='Cumulative P&L ($)',
-                template='plotly_dark'
-            )
-            charts.append(fig)
-
-        # Return analytics result
-        return {
-            'total_trades': total_trades,
-            'total_pnl': total_pnl,
-            'win_rate': win_rate,
-            'profit_factor': profit_factor,
-            'charts': charts
-        }
+        # Render enhanced dashboard
+        render_comprehensive_dashboard(data, stats)
+        
+        return stats
 
     except Exception as e:
         logger.error(f"Analytics calculation error: {e}")
         st.error(f"Error calculating analytics: {e}")
         return None
+
+def calculate_comprehensive_analytics(data):
+    """Calculate comprehensive trading analytics."""
+    try:
+        stats = {}
+        
+        # Basic metrics
+        stats['total_trades'] = len(data)
+        
+        if 'pnl' in data.columns:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            
+            if not pnl_data.empty:
+                stats['total_pnl'] = pnl_data.sum()
+                stats['avg_pnl'] = pnl_data.mean()
+                
+                winning_trades = pnl_data[pnl_data > 0]
+                losing_trades = pnl_data[pnl_data < 0]
+                
+                stats['win_rate'] = (len(winning_trades) / len(pnl_data) * 100) if len(pnl_data) > 0 else 0
+                stats['winning_trades'] = len(winning_trades)
+                stats['losing_trades'] = len(losing_trades)
+                
+                # Profit factor
+                gross_profit = winning_trades.sum() if len(winning_trades) > 0 else 0
+                gross_loss = abs(losing_trades.sum()) if len(losing_trades) > 0 else 0
+                stats['profit_factor'] = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+                
+                # Best/Worst trades
+                stats['best_trade'] = pnl_data.max()
+                stats['worst_trade'] = pnl_data.min()
+                
+                # Expectancy
+                stats['expectancy'] = pnl_data.mean()
+        
+        # Duration analysis
+        if 'entry_time' in data.columns and 'exit_time' in data.columns:
+            try:
+                data['entry_time'] = pd.to_datetime(data['entry_time'], errors='coerce')
+                data['exit_time'] = pd.to_datetime(data['exit_time'], errors='coerce')
+                
+                valid_duration = data.dropna(subset=['entry_time', 'exit_time'])
+                if not valid_duration.empty:
+                    durations = (valid_duration['exit_time'] - valid_duration['entry_time']).dt.total_seconds() / 3600
+                    stats['avg_holding_time'] = durations.mean()
+                    stats['avg_trade_duration'] = durations.mean()
+            except:
+                stats['avg_holding_time'] = 0
+                stats['avg_trade_duration'] = 0
+        
+        # Direction analysis
+        if 'direction' in data.columns:
+            direction_counts = data['direction'].value_counts()
+            total = direction_counts.sum()
+            if total > 0:
+                stats['long_percentage'] = (direction_counts.get('Long', 0) / total * 100)
+                stats['short_percentage'] = (direction_counts.get('Short', 0) / total * 100)
+        
+        # Consistency score (streak analysis)
+        if 'pnl' in data.columns:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            if not pnl_data.empty:
+                # Calculate win/loss streaks
+                wins = (pnl_data > 0).astype(int)
+                streaks = []
+                current_streak = 1
+                
+                for i in range(1, len(wins)):
+                    if wins.iloc[i] == wins.iloc[i-1]:
+                        current_streak += 1
+                    else:
+                        streaks.append(current_streak)
+                        current_streak = 1
+                streaks.append(current_streak)
+                
+                # Consistency score based on average streak length vs volatility
+                avg_streak = np.mean(streaks) if streaks else 0
+                volatility = pnl_data.std()
+                consistency_score = min(100, max(0, (avg_streak * 20) - (volatility / 100)))
+                stats['consistency_score'] = consistency_score
+        
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Error calculating comprehensive analytics: {e}")
+        return {}
+
+def render_comprehensive_dashboard(data, stats):
+    """Render the comprehensive analytics dashboard."""
+    
+    # Key Metrics Cards with animations
+    st.subheader("🎯 Key Performance Metrics")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>📊 Total Trades</h3>
+            <div class="metric-value">{:,}</div>
+        </div>
+        """.format(stats.get('total_trades', 0)), unsafe_allow_html=True)
+    
+    with col2:
+        win_rate = stats.get('win_rate', 0)
+        color = "#10b981" if win_rate > 50 else "#ef4444"
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>🎯 Win Rate</h3>
+            <div class="metric-value" style="color: {color}">{win_rate:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        total_pnl = stats.get('total_pnl', 0)
+        color = "#10b981" if total_pnl > 0 else "#ef4444"
+        sign = "+" if total_pnl > 0 else ""
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>💰 Net P&L</h3>
+            <div class="metric-value" style="color: {color}">{sign}${total_pnl:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        profit_factor = stats.get('profit_factor', 0)
+        if profit_factor == float('inf'):
+            pf_display = "∞"
+            color = "#10b981"
+        else:
+            pf_display = f"{profit_factor:.2f}"
+            color = "#10b981" if profit_factor > 1.5 else "#ef4444"
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>⚡ Profit Factor</h3>
+            <div class="metric-value" style="color: {color}">{pf_display}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Second row of metrics
+    st.markdown("---")
+    col5, col6, col7, col8 = st.columns(4)
+    
+    with col5:
+        avg_duration = stats.get('avg_trade_duration', 0)
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>⏱️ Avg Duration</h3>
+            <div class="metric-value">{avg_duration:.1f}h</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col6:
+        long_pct = stats.get('long_percentage', 50)
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>📈 Long vs Short</h3>
+            <div class="metric-value">{long_pct:.0f}% / {100-long_pct:.0f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col7:
+        best_trade = stats.get('best_trade', 0)
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>🏆 Best Trade</h3>
+            <div class="metric-value" style="color: #10b981">${best_trade:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col8:
+        consistency = stats.get('consistency_score', 0)
+        color = "#10b981" if consistency > 70 else "#f59e0b" if consistency > 40 else "#ef4444"
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>🎯 Consistency</h3>
+            <div class="metric-value" style="color: {color}">{consistency:.0f}/100</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Charts section
+    st.markdown("---")
+    st.subheader("📈 Performance Charts")
+    
+    chart_tabs = st.tabs(["Equity Curve", "P&L Distribution", "Performance by Symbol"])
+    
+    with chart_tabs[0]:
+        render_equity_curve_chart(data, stats)
+    
+    with chart_tabs[1]:
+        render_pnl_distribution_chart(data)
+    
+    with chart_tabs[2]:
+        render_symbol_performance_chart(data)
+    
+    # Export options
+    st.markdown("---")
+    render_export_options(data, stats)
+
+def render_equity_curve_chart(data, stats):
+    """Render equity curve chart."""
+    if 'pnl' in data.columns:
+        try:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            cumulative_pnl = pnl_data.cumsum()
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                y=cumulative_pnl,
+                mode='lines',
+                name='Cumulative P&L',
+                line=dict(color='#00d4ff', width=3)
+            ))
+            
+            fig.update_layout(
+                title='Equity Curve',
+                xaxis_title='Trade Number',
+                yaxis_title='Cumulative P&L ($)',
+                template='plotly_dark',
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"Error rendering equity curve: {e}")
+    else:
+        st.info("P&L data required for equity curve")
+
+def render_pnl_distribution_chart(data):
+    """Render P&L distribution histogram."""
+    if 'pnl' in data.columns:
+        try:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            
+            fig = px.histogram(
+                x=pnl_data,
+                nbins=30,
+                title='P&L Distribution',
+                color_discrete_sequence=['#00d4ff']
+            )
+            
+            fig.update_layout(
+                xaxis_title='P&L ($)',
+                yaxis_title='Frequency',
+                template='plotly_dark',
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"Error rendering P&L distribution: {e}")
+    else:
+        st.info("P&L data required for distribution chart")
+
+def render_symbol_performance_chart(data):
+    """Render performance by symbol chart."""
+    if 'symbol' in data.columns and 'pnl' in data.columns:
+        try:
+            symbol_performance = data.groupby('symbol')['pnl'].sum().reset_index()
+            symbol_performance = symbol_performance.sort_values('pnl', ascending=True)
+            
+            fig = px.bar(
+                symbol_performance,
+                x='pnl',
+                y='symbol',
+                orientation='h',
+                title='P&L by Symbol',
+                color='pnl',
+                color_continuous_scale='RdYlGn'
+            )
+            
+            fig.update_layout(
+                xaxis_title='Total P&L ($)',
+                yaxis_title='Symbol',
+                template='plotly_dark',
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"Error rendering symbol performance: {e}")
+    else:
+        st.info("Symbol and P&L data required for this chart")

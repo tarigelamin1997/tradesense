@@ -320,8 +320,9 @@ class AuthManager:
         expires_at = (datetime.now() + timedelta(days=7)).isoformat()
 
         try:
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn = sqlite3.connect(self.db_path, timeout=10.0)
             cursor = conn.cursor()
+            cursor.execute('BEGIN IMMEDIATE')
             cursor.execute('''
                 INSERT INTO user_sessions (user_id, session_token, expires_at)
                 VALUES (?, ?, ?)
@@ -331,6 +332,11 @@ class AuthManager:
         except Exception as e:
             logger.error(f"Session creation error: {e}")
             # Return token anyway, session storage is not critical for basic auth
+            if 'conn' in locals():
+                try:
+                    conn.close()
+                except:
+                    pass
             
         return session_token
 

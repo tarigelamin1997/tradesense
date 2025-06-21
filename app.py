@@ -282,6 +282,12 @@ class TradeSenseApp:
             st.session_state.trade_data = None
         if 'analytics_result' not in st.session_state:
             st.session_state.analytics_result = None
+        
+        # Check if user is already authenticated from auth manager
+        current_user = self.auth_manager.get_current_user()
+        if current_user and not st.session_state.authenticated:
+            st.session_state.authenticated = True
+            st.session_state.user_role = current_user.get('role', 'user')
 
     def render_header(self):
         """Render the main application header."""
@@ -404,13 +410,19 @@ class TradeSenseApp:
                 password = st.text_input("Password", type="password")
                 login_btn = st.form_submit_button("Login", type="primary")
 
-                if login_btn and username and password:
-                    result = self.auth_manager.login_user(username, password)
-                    if result["success"]:
-                        st.success("Login successful!")
-                        st.rerun()
+                if login_btn:
+                    if not username or not password:
+                        st.error("Please enter both username and password")
                     else:
-                        st.error(result["message"])
+                        with st.spinner("Logging in..."):
+                            result = self.auth_manager.login_user(username, password)
+                            if result["success"]:
+                                st.success("Login successful!")
+                                # Force a rerun to refresh the app state
+                                st.session_state.just_logged_in = True
+                                st.rerun()
+                            else:
+                                st.error(result["message"])
 
             st.markdown("---")
 
@@ -422,15 +434,18 @@ class TradeSenseApp:
                     confirm_password = st.text_input("Confirm Password", type="password", key="reg_confirm")
                     register_btn = st.form_submit_button("Register")
 
-                    if register_btn and new_username and new_email and new_password:
-                        if new_password != confirm_password:
+                    if register_btn:
+                        if not all([new_username, new_email, new_password, confirm_password]):
+                            st.error("All fields are required")
+                        elif new_password != confirm_password:
                             st.error("Passwords don't match")
                         else:
-                            result = self.auth_manager.register_user(new_username, new_email, new_password)
-                            if result["success"]:
-                                st.success("Registration successful! You can now login.")
-                            else:
-                                st.error(result["message"])
+                            with st.spinner("Creating account..."):
+                                result = self.auth_manager.register_user(new_username, new_email, new_password)
+                                if result["success"]:
+                                    st.success("Registration successful! You can now login.")
+                                else:
+                                    st.error(result["message"])
 
     def run(self):
         """Run the main application."""
@@ -450,7 +465,7 @@ class TradeSenseApp:
             self.render_sidebar()
 
             # Modern status card
-            if 'trade_data' not in st.session_state:
+            if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
                 st.markdown("""
                 <div class="info-banner">
                     <h3 style="margin: 0 0 0.5rem 0;">📊 Welcome to TradeSense</h3>
@@ -494,11 +509,8 @@ class TradeSenseApp:
                     st.info("Health monitoring not available")
 
         except Exception as e:
-            if self.error_handler:
-                self.error_handler.handle_error(e, f"Error in page: {st.session_state.current_page}")
-            else:
-                logger.error(f"Error in page {st.session_state.current_page}: {e}")
-            st.error("An error occurred. Please check the error logs or contact support.")
+            logger.error(f"Error in page {st.session_state.current_page}: {e}")
+            st.error("An error occurred. Please refresh the page.")
 
 def apply_modern_theme():
     """Apply modern theme and styling with light/dark mode support."""
@@ -795,8 +807,7 @@ def main():
         app.run()
     except Exception as e:
         logger.error(f"Critical application error: {e}")
-        logger.error(traceback.format_exc())
-        st.error("Critical application error. Please restart the application.")
+        st.error("Critical application error. Please refresh the page.")
 
 if __name__ == "__main__":
     main()

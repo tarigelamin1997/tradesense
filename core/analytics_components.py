@@ -868,8 +868,7 @@ def render_analytics():
             profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
         else:
             total_pnl = 0
-            win_rate```python
- = 0
+            win_rate = 0
             profit_factor = 0
 
         # Create basic P&L chart

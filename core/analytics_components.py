@@ -865,7 +865,6 @@ def calculate_comprehensive_analytics(data):
             direction_counts = data['direction'].value_counts()
             total = direction_counts.sum()
             if total > 0:
-```python
                 stats['long_percentage'] = (direction_counts.get('Long', 0) / total * 100)
                 stats['short_percentage'] = (direction_counts.get('Short', 0) / total * 100)
 

@@ -260,7 +260,11 @@ class TradeSenseApp:
 
         # Repair database if needed
         try:
-            self.auth_manager.repair_database()
+            if hasattr(self.auth_manager, 'repair_database'):
+                self.auth_manager.repair_database()
+            else:
+                # Force database schema repair
+                self.auth_manager.test_database_connection()
         except Exception as e:
             logger.warning(f"Database repair failed: {e}")
 

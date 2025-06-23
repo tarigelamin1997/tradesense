@@ -828,7 +828,7 @@ def generate_trading_insights(stats):
             'icon': '⚡',
             'title': 'Strong Risk Management',
             'message': f'Profit factor of {profit_factor:.2f} shows excellent risk control.',
-            'level: 'success'
+            'level': 'success'
         })
     elif profit_factor < 1:
         insights.append({

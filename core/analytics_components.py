@@ -876,8 +876,7 @@ def calculate_comprehensive_analytics(data):
         # Duration analysis
         if 'entry_time' in data.columns and 'exit_time' in data.columns:
             try:
-                data['entry_time'] =```python
- pd.to_datetime(data['entry_time'], errors='coerce')
+                data['entry_time'] = pd.to_datetime(data['entry_time'], errors='coerce')
                 data['exit_time'] = pd.to_datetime(data['exit_time'], errors='coerce')
 
                 valid_duration = data.dropna(subset=['entry_time', 'exit_time'])

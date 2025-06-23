@@ -779,29 +779,30 @@ def render_export_options(df, stats):
     """Render data export and sharing options."""
     st.subheader("📤 Export & Share")
 
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        # PDF Export button
+    # PDF Export button
+    try:
         from pdf_export import render_pdf_export_button
         render_pdf_export_button(df, stats)
+    except ImportError:
+        if st.button("📄 Export Professional Report", type="primary"):
+            st.info("PDF export functionality is being set up")
 
-    with col2:
-        if st.button("📈 Export Charts", type="secondary"):
-            st.info("Chart export functionality would be implemented here")
+    # Charts Export
+    if st.button("📈 Export Charts", type="secondary"):
+        st.info("Chart export functionality would be implemented here")
 
-    with col3:
-        if st.button("📋 Copy Summary", type="secondary"):
-            summary_text = f"""
+    # Summary Export
+    if st.button("📋 Copy Summary", type="secondary"):
+        summary_text = f"""
 Trading Analytics Summary:
 Total Trades: {stats.get('total_trades', 0)}
 Win Rate: {stats.get('win_rate', 0):.1f}%
 Profit Factor: {stats.get('profit_factor', 0):.2f}
 Expectancy: ${stats.get('expectancy', 0):.2f}
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-            """
-            st.code(summary_text)
-            st.success("Summary ready to copy!")
+        """
+        st.code(summary_text)
+        st.success("Summary ready to copy!")
 
 def render_analytics():
     """Main analytics rendering function with comprehensive dashboard."""
@@ -931,92 +932,50 @@ def render_comprehensive_dashboard(data, stats):
     # Key Metrics Cards with animations
     st.subheader("🎯 Key Performance Metrics")
 
+    # First row of metrics
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.markdown("""
-        <div class="metric-card">
-            <h3>📊 Total Trades</h3>
-            <div class="metric-value">{:,}</div>
-        </div>
-        """.format(stats.get('total_trades', 0)), unsafe_allow_html=True)
+        total_trades = stats.get('total_trades', 0)
+        st.metric("📊 Total Trades", f"{total_trades:,}")
 
     with col2:
         win_rate = stats.get('win_rate', 0)
-        color = "#10b981" if win_rate > 50 else "#ef4444"
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>🎯 Win Rate</h3>
-            <div class="metric-value" style="color: {color}">{win_rate:.1f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
+        delta_color = "normal" if win_rate > 50 else "inverse"
+        st.metric("🎯 Win Rate", f"{win_rate:.1f}%", delta_color=delta_color)
 
     with col3:
         total_pnl = stats.get('total_pnl', 0)
-        color = "#10b981" if total_pnl > 0 else "#ef4444"
-        sign = "+" if total_pnl > 0 else ""
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>💰 Net P&L</h3>
-            <div class="metric-value" style="color: {color}">{sign}${total_pnl:,.2f}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        delta_color = "normal" if total_pnl > 0 else "inverse"
+        st.metric("💰 Net P&L", f"${total_pnl:,.2f}", delta_color=delta_color)
 
     with col4:
         profit_factor = stats.get('profit_factor', 0)
-        if profit_factor == float('inf'):
-            pf_display = "∞"
-            color = "#10b981"
-        else:
-            pf_display = f"{profit_factor:.2f}"
-            color = "#10b981" if profit_factor > 1.5 else "#ef4444"
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>⚡ Profit Factor</h3>
-            <div class="metric-value" style="color: {color}">{pf_display}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        pf_display = "∞" if profit_factor == float('inf') else f"{profit_factor:.2f}"
+        delta_color = "normal" if profit_factor > 1.5 else "inverse"
+        st.metric("⚡ Profit Factor", pf_display, delta_color=delta_color)
 
     # Second row of metrics
     st.markdown("---")
+    
     col5, col6, col7, col8 = st.columns(4)
 
     with col5:
         avg_duration = stats.get('avg_trade_duration', 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>⏱️ Avg Duration</h3>
-            <div class="metric-value">{avg_duration:.1f}h</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("⏱️ Avg Duration", f"{avg_duration:.1f}h")
 
     with col6:
         long_pct = stats.get('long_percentage', 50)
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>📈 Long vs Short</h3>
-            <div class="metric-value">{long_pct:.0f}% / {100-long_pct:.0f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
+        short_pct = 100 - long_pct
+        st.metric("📈 Long/Short", f"{long_pct:.0f}%/{short_pct:.0f}%")
 
     with col7:
         best_trade = stats.get('best_trade', 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>🏆 Best Trade</h3>
-            <div class="metric-value" style="color: #10b981">${best_trade:,.2f}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("🏆 Best Trade", f"${best_trade:,.2f}")
 
     with col8:
         consistency = stats.get('consistency_score', 0)
-        color = "#10b981" if consistency > 70 else "#f59e0b" if consistency > 40 else "#ef4444"
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>🎯 Consistency</h3>
-            <div class="metric-value" style="color: {color}">{consistency:.0f}/100</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("🎯 Consistency", f"{consistency:.0f}/100")
 
     # Charts section
     st.markdown("---")

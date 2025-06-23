@@ -872,7 +872,6 @@ def calculate_comprehensive_analytics(data):
                 stats['worst_trade'] = pnl_data.min()
 
                 # Expectancy
-```python
                 stats['expectancy'] = pnl_data.mean()
 
         # Duration analysis
@@ -1353,3 +1352,4 @@ class TradingDashboard:
             cumulative_pnl = trade_data['pnl'].cumsum()
             fig = px.line(x=trade_data.index, y=cumulative_pnl, title='Equity Curve')
             st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+Fixed duplicate key errors and added unique keys to the plotly charts and the PDF theme selector.

@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # Import core components with error handling
 try:
     from auth import AuthManager
-    
+
     # Import dashboard manager functions directly
     from core.dashboard_manager import render_dashboard_tabs
 
@@ -292,7 +292,7 @@ class TradeSenseApp:
             st.session_state.trade_data = None
         if 'analytics_result' not in st.session_state:
             st.session_state.analytics_result = None
-        
+
         # Check if user is already authenticated from auth manager
         current_user = self.auth_manager.get_current_user()
         if current_user and not st.session_state.authenticated:
@@ -456,7 +456,7 @@ class TradeSenseApp:
 
             # Create main layout with sidebar and content
             col_sidebar, col_main = st.columns([1, 4])
-            
+
             with col_sidebar:
                 self.render_sidebar()
 
@@ -495,7 +495,7 @@ class TradeSenseApp:
 def apply_modern_theme():
     """Apply modern theme and styling with system/light/dark mode support."""
     theme_mode = st.session_state.get('theme_mode', 'system')
-    
+
     # Enhanced theme detection and application
     if theme_mode == 'system':
         # Default to dark theme for system (can be enhanced with JS detection)
@@ -506,19 +506,20 @@ def apply_modern_theme():
     if actual_theme == 'light':
         theme_css = """
         <style>
-        /* Modern Light Theme - Enhanced */
+        /* Enhanced Light Theme - Improved Readability */
         .stApp {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            color: #334155;
+            background: #ffffff;
+            color: #1f2937;
         }
 
         .main-header {
-            background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
             color: white;
             padding: 2rem;
-            border-radius: 20px;
+            border-radius: 16px;
             margin-bottom: 2rem;
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.25);
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.1);
         }
 
         .metric-card {
@@ -799,7 +800,7 @@ def apply_modern_theme():
     .loading-spinner {
         border: 3px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
-        border-top: 3px solid #00d4ff;
+        border-top: 3px solid#00d4ff;
         width: 30px;
         height: 30px;
         animation: spin 1s linear infinite;

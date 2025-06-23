@@ -549,7 +549,7 @@ def render_modern_performance_metrics(data, stats):
         ))
 
         fig_gauge.update_layout(height=300, font={'color': "#1f2937", 'family': "Arial"})
-        st.plotly_chart(fig_gauge, use_container_width=True, key="win_rate_gauge")
+        st.plotly_chart(fig_gauge, use_container_width=True, key="win_rate_gauge_modern")
 
     with col2:
         # Profit Factor Gauge
@@ -577,7 +577,7 @@ def render_modern_performance_metrics(data, stats):
         ))
 
         fig_pf.update_layout(height=300, font={'color': "#1f2937", 'family': "Arial"})
-        st.plotly_chart(fig_pf, use_container_width=True, key="profit_factor_gauge")
+        st.plotly_chart(fig_pf, use_container_width=True, key="profit_factor_gauge_modern")
 
     st.markdown('</div>', unsafe_allow_html=True)
 

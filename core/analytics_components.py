@@ -6,10 +6,10 @@ from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
 import logging
+
 try:
     from toast_system import success_toast, error_toast, info_toast
 except ImportError:
-    # Fallback toast functions
     def success_toast(message, duration=3000):
         import streamlit as st
         st.success(message)
@@ -21,107 +21,922 @@ except ImportError:
     def info_toast(message, duration=3000):
         import streamlit as st
         st.info(message)
-from pdf_export import render_pdf_export_button
-from email_scheduler import render_email_scheduling_ui
 
 logger = logging.getLogger(__name__)
 
-def render_analytics():
-    """Render the main analytics page with comprehensive dashboard."""
-    st.header("📊 Professional Trading Analytics")
+# Modern Dashboard Styling
+MODERN_CSS = """
+<style>
+/* Modern Dashboard Styling */
+.main-dashboard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
 
+.dashboard-header {
+    text-align: center;
+    color: white;
+    margin-bottom: 2rem;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.dashboard-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* Metric Cards */
+.metric-card {
+    background: rgba(255,255,255,0.95);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+.metric-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.metric-change {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.positive { color: #10b981; }
+.negative { color: #ef4444; }
+.neutral { color: #6b7280; }
+
+/* Chart Containers */
+.chart-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+
+.chart-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+/* Data Table Styling */
+.modern-table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* Performance Indicators */
+.performance-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.indicator-excellent { background: #dcfce7; color: #166534; }
+.indicator-good { background: #dbeafe; color: #1d4ed8; }
+.indicator-warning { background: #fef3c7; color: #92400e; }
+.indicator-poor { background: #fee2e2; color: #991b1b; }
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    margin: 2rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.section-icon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Interactive Elements */
+.filter-container {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+}
+
+/* Loading States */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-title { font-size: 2rem; }
+    .metric-card { padding: 1rem; }
+    .metric-value { font-size: 1.8rem; }
+}
+</style>
+"""
+
+def render_analytics():
+    """Render modern, elegant analytics dashboard."""
+    # Inject modern CSS
+    st.markdown(MODERN_CSS, unsafe_allow_html=True)
+
+    # Check for data
     if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
-        st.info("📥 Upload trade data to view comprehensive analytics")
-        return
+        render_empty_state()
+        return None
 
     data = st.session_state.trade_data
 
     try:
-        # Import the new dashboard system
-        from visuals.dashboard_builder import TradingDashboard
+        # Calculate comprehensive analytics
+        stats = calculate_comprehensive_analytics(data)
 
-        # Create and render comprehensive dashboard
-        dashboard = TradingDashboard(data)
-        dashboard.render_complete_dashboard()
+        if not stats:
+            st.error("Unable to calculate analytics from the provided data")
+            return None
 
-    except ImportError:
-        # Fallback to basic analytics if new system not available
-        _render_basic_analytics(data)
+        # Render modern dashboard
+        render_modern_dashboard_header()
+        render_executive_metrics(stats)
+        render_performance_overview(data, stats)
+        render_detailed_analytics(data, stats)
+        render_export_section(data, stats)
+
+        return stats
+
     except Exception as e:
-        st.error(f"Error rendering comprehensive analytics: {str(e)}")
-        _render_basic_analytics(data)
+        logger.error(f"Analytics calculation error: {e}")
+        st.error(f"Error calculating analytics: {e}")
+        return None
 
+def render_empty_state():
+    """Render elegant empty state."""
+    st.markdown("""
+    <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+        <h2 style="margin-bottom: 1rem;">Welcome to TradeSense Analytics</h2>
+        <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem;">Upload your trading data to unlock powerful insights and professional analytics</p>
+        <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+            <p style="margin: 0; font-size: 0.9rem;">📈 Performance Analysis • 🎯 Risk Assessment • 📊 Interactive Charts</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-def _render_basic_analytics(data):
-    """Fallback basic analytics rendering."""
-    st.warning("Using basic analytics mode")
+def render_modern_dashboard_header():
+    """Render modern dashboard header."""
+    st.markdown("""
+    <div class="main-dashboard">
+        <div class="dashboard-header">
+            <div class="dashboard-title">Trading Performance Analytics</div>
+            <div class="dashboard-subtitle">Professional insights for smarter trading decisions</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Basic metrics
+def render_executive_metrics(stats):
+    """Render executive-level metrics with modern cards."""
+    st.markdown('<div class="section-header"><span class="section-icon">🎯</span><span class="section-title">Executive Summary</span></div>', unsafe_allow_html=True)
+
+    # First row - Core Performance
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        total_trades = len(data)
-        st.metric("Total Trades", total_trades)
+        total_pnl = stats.get('total_pnl', 0)
+        pnl_class = "positive" if total_pnl > 0 else "negative" if total_pnl < 0 else "neutral"
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value {pnl_class}">${total_pnl:,.2f}</div>
+            <div class="metric-label">Net P&L</div>
+            <div class="metric-change {pnl_class}">
+                {'📈' if total_pnl > 0 else '📉' if total_pnl < 0 else '➡️'} 
+                {get_performance_indicator(total_pnl, 'pnl')}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col2:
-        if 'pnl' in data.columns:
-            total_pnl = data['pnl'].sum()
-            st.metric("Total P&L", f"${total_pnl:,.2f}")
+        win_rate = stats.get('win_rate', 0)
+        wr_class = "positive" if win_rate > 60 else "neutral" if win_rate > 40 else "negative"
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value {wr_class}">{win_rate:.1f}%</div>
+            <div class="metric-label">Win Rate</div>
+            <div class="metric-change">
+                🎯 {get_performance_indicator(win_rate, 'win_rate')}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col3:
-        if 'pnl' in data.columns:
-            avg_pnl = data['pnl'].mean()
-            st.metric("Avg P&L per Trade", f"${avg_pnl:,.2f}")
+        profit_factor = stats.get('profit_factor', 0)
+        pf_display = "∞" if profit_factor == float('inf') else f"{profit_factor:.2f}"
+        pf_class = "positive" if profit_factor > 1.5 else "neutral" if profit_factor > 1.0 else "negative"
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value {pf_class}">{pf_display}</div>
+            <div class="metric-label">Profit Factor</div>
+            <div class="metric-change">
+                ⚡ {get_performance_indicator(profit_factor, 'profit_factor')}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col4:
-        if 'pnl' in data.columns:
-            win_rate = (data['pnl'] > 0).mean() * 100
-            st.metric("Win Rate", f"{win_rate:.1f}%")
+        total_trades = stats.get('total_trades', 0)
 
-    # Charts
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value neutral">{total_trades:,}</div>
+            <div class="metric-label">Total Trades</div>
+            <div class="metric-change neutral">
+                📊 {get_volume_indicator(total_trades)}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Second row - Advanced Metrics
+    st.markdown('<div style="margin-top: 1rem;"></div>', unsafe_allow_html=True)
+
+    col5, col6, col7, col8 = st.columns(4)
+
+    with col5:
+        expectancy = stats.get('expectancy', 0)
+        exp_class = "positive" if expectancy > 0 else "negative"
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value {exp_class}">${expectancy:.2f}</div>
+            <div class="metric-label">Expectancy</div>
+            <div class="metric-change {exp_class}">
+                💡 Per Trade Expected
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col6:
+        best_trade = stats.get('best_trade', 0)
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value positive">${best_trade:,.2f}</div>
+            <div class="metric-label">Best Trade</div>
+            <div class="metric-change positive">
+                🏆 Peak Performance
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col7:
+        avg_duration = stats.get('avg_trade_duration', 0)
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value neutral">{avg_duration:.1f}h</div>
+            <div class="metric-label">Avg Duration</div>
+            <div class="metric-change neutral">
+                ⏱️ Holding Time
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col8:
+        consistency = stats.get('consistency_score', 0)
+        cons_class = "positive" if consistency > 70 else "neutral" if consistency > 50 else "negative"
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value {cons_class}">{consistency:.0f}/100</div>
+            <div class="metric-label">Consistency</div>
+            <div class="metric-change {cons_class}">
+                🎯 {get_performance_indicator(consistency, 'consistency')}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+def render_performance_overview(data, stats):
+    """Render performance overview with modern charts."""
+    st.markdown('<div class="section-header"><span class="section-icon">📈</span><span class="section-title">Performance Overview</span></div>', unsafe_allow_html=True)
+
+    # Chart tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Equity Curve", "🎯 Distribution", "📈 Performance", "🔄 Breakdown"])
+
+    with tab1:
+        render_modern_equity_curve(data, stats)
+
+    with tab2:
+        render_modern_distribution_chart(data)
+
+    with tab3:
+        render_modern_performance_metrics(data, stats)
+
+    with tab4:
+        render_modern_breakdown_analysis(data)
+
+def render_modern_equity_curve(data, stats):
+    """Render modern equity curve."""
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+
     if 'pnl' in data.columns:
-        st.subheader("📈 Performance Over Time")
+        try:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            cumulative_pnl = pnl_data.cumsum()
 
-        # Cumulative P&L chart
-        if 'date' in data.columns:
-            data_sorted = data.sort_values('date')
-            data_sorted['cumulative_pnl'] = data_sorted['pnl'].cumsum()
+            # Create sophisticated equity curve
+            fig = go.Figure()
 
-            fig = px.line(data_sorted, x='date', y='cumulative_pnl', 
-                         title='Cumulative P&L Over Time')
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+            # Main equity line
+            fig.add_trace(go.Scatter(
+                y=cumulative_pnl,
+                mode='lines',
+                name='Equity Curve',
+                line=dict(color='#3b82f6', width=3),
+                fill='tonexty',
+                fillcolor='rgba(59, 130, 246, 0.1)'
+            ))
 
-        # P&L distribution
-        st.subheader("📊 P&L Distribution")
-        fig = px.histogram(data, x='pnl', title='P&L Distribution', nbins=30)
-        st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+            # Add peak markers
+            running_max = cumulative_pnl.expanding().max()
+            peak_indices = cumulative_pnl[cumulative_pnl == running_max].index
 
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-from analytics import compute_basic_stats, performance_over_time
-from datetime import datetime, timedelta
-import numpy as np
-import logging
-from interactive_table import render_interactive_table
-from notification_system import create_system_alert, NotificationType, NotificationPriority
-try:
-    from toast_system import success_toast, error_toast, info_toast
-except ImportError:
-    # Fallback toast functions
-    def success_toast(message, duration=3000):
-        import streamlit as st
-        st.success(message)
+            fig.add_trace(go.Scatter(
+                x=peak_indices,
+                y=cumulative_pnl[peak_indices],
+                mode='markers',
+                name='New Peaks',
+                marker=dict(color='#10b981', size=8, symbol='star'),
+                hovertemplate='<b>New Peak</b><br>Trade #%{x}<br>P&L: $%{y:,.2f}<extra></extra>'
+            ))
 
-    def error_toast(message, duration=5000):
-        import streamlit as st
-        st.error(message)
+            fig.update_layout(
+                title=dict(
+                    text='<b>Cumulative Performance</b>',
+                    font=dict(size=20, color='#1f2937')
+                ),
+                xaxis_title='Trade Number',
+                yaxis_title='Cumulative P&L ($)',
+                template='plotly_white',
+                height=450,
+                hovermode='x unified',
+                showlegend=True,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
 
-    def info_toast(message, duration=3000):
-        import streamlit as st
-        st.info(message)
+            st.plotly_chart(fig, use_container_width=True, key="modern_equity_curve")
+
+        except Exception as e:
+            st.error(f"Error rendering equity curve: {e}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def render_modern_distribution_chart(data):
+    """Render modern P&L distribution."""
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+
+    if 'pnl' in data.columns:
+        try:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+
+            # Create distribution with overlaid statistics
+            fig = go.Figure()
+
+            # Histogram
+            fig.add_trace(go.Histogram(
+                x=pnl_data,
+                nbinsx=30,
+                name='Trade Distribution',
+                marker_color='rgba(59, 130, 246, 0.7)',
+                hovertemplate='P&L Range: %{x}<br>Frequency: %{y}<extra></extra>'
+            ))
+
+            # Add mean line
+            mean_pnl = pnl_data.mean()
+            fig.add_vline(
+                x=mean_pnl,
+                line_dash="dash",
+                line_color="#10b981",
+                annotation_text=f"Mean: ${mean_pnl:.2f}",
+                annotation_position="top"
+            )
+
+            # Add median line
+            median_pnl = pnl_data.median()
+            fig.add_vline(
+                x=median_pnl,
+                line_dash="dot",
+                line_color="#f59e0b",
+                annotation_text=f"Median: ${median_pnl:.2f}",
+                annotation_position="bottom"
+            )
+
+            fig.update_layout(
+                title=dict(
+                    text='<b>Trade P&L Distribution</b>',
+                    font=dict(size=20, color='#1f2937')
+                ),
+                xaxis_title='P&L ($)',
+                yaxis_title='Frequency',
+                template='plotly_white',
+                height=400,
+                showlegend=False
+            )
+
+            st.plotly_chart(fig, use_container_width=True, key="modern_distribution")
+
+        except Exception as e:
+            st.error(f"Error rendering distribution: {e}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def render_modern_performance_metrics(data, stats):
+    """Render modern performance metrics visualization."""
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+
+    # Performance gauge charts
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Win Rate Gauge
+        win_rate = stats.get('win_rate', 0)
+        fig_gauge = go.Figure(go.Indicator(
+            mode = "gauge+number+delta",
+            value = win_rate,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Win Rate (%)"},
+            delta = {'reference': 50},
+            gauge = {
+                'axis': {'range': [None, 100]},
+                'bar': {'color': "#3b82f6"},
+                'steps': [
+                    {'range': [0, 40], 'color': "#fee2e2"},
+                    {'range': [40, 60], 'color': "#fef3c7"},
+                    {'range': [60, 100], 'color': "#dcfce7"}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 90
+                }
+            }
+        ))
+
+        fig_gauge.update_layout(height=300, font={'color': "#1f2937", 'family': "Arial"})
+        st.plotly_chart(fig_gauge, use_container_width=True, key="win_rate_gauge")
+
+    with col2:
+        # Profit Factor Gauge
+        profit_factor = min(stats.get('profit_factor', 0), 5)  # Cap at 5 for display
+        fig_pf = go.Figure(go.Indicator(
+            mode = "gauge+number+delta",
+            value = profit_factor,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Profit Factor"},
+            delta = {'reference': 1.5},
+            gauge = {
+                'axis': {'range': [None, 5]},
+                'bar': {'color': "#10b981"},
+                'steps': [
+                    {'range': [0, 1], 'color': "#fee2e2"},
+                    {'range': [1, 1.5], 'color': "#fef3c7"},
+                    {'range': [1.5, 5], 'color': "#dcfce7"}
+                ],
+                'threshold': {
+                    'line': {'color': "green", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 2
+                }
+            }
+        ))
+
+        fig_pf.update_layout(height=300, font={'color': "#1f2937", 'family': "Arial"})
+        st.plotly_chart(fig_pf, use_container_width=True, key="profit_factor_gauge")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def render_modern_breakdown_analysis(data):
+    """Render modern breakdown analysis."""
+    if 'symbol' in data.columns and 'pnl' in data.columns:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+
+        try:
+            # Symbol performance breakdown
+            symbol_performance = data.groupby('symbol').agg({
+                'pnl': ['sum', 'count', 'mean']
+            }).round(2)
+
+            symbol_performance.columns = ['Total P&L', 'Trade Count', 'Avg P&L']
+            symbol_performance = symbol_performance.reset_index()
+            symbol_performance = symbol_performance.sort_values('Total P&L', ascending=True)
+
+            # Create horizontal bar chart
+            fig = go.Figure()
+
+            colors = ['#ef4444' if x < 0 else '#10b981' for x in symbol_performance['Total P&L']]
+
+            fig.add_trace(go.Bar(
+                y=symbol_performance['symbol'],
+                x=symbol_performance['Total P&L'],
+                orientation='h',
+                marker_color=colors,
+                hovertemplate='<b>%{y}</b><br>' +
+                              'Total P&L: $%{x:,.2f}<br>' +
+                              'Trade Count: %{customdata[0]}<br>' +
+                              'Avg P&L: $%{customdata[1]:,.2f}<br>' +
+                              '<extra></extra>',
+                customdata=symbol_performance[['Trade Count', 'Avg P&L']].values
+            ))
+
+            fig.update_layout(
+                title=dict(
+                    text='<b>Performance by Symbol</b>',
+                    font=dict(size=20, color='#1f2937')
+                ),
+                xaxis_title='Total P&L ($)',
+                yaxis_title='Symbol',
+                template='plotly_white',
+                height=max(400, len(symbol_performance) * 30),
+                showlegend=False
+            )
+
+            st.plotly_chart(fig, use_container_width=True, key="symbol_breakdown")
+
+        except Exception as e:
+            st.error(f"Error rendering breakdown: {e}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+def render_detailed_analytics(data, stats):
+    """Render detailed analytics section."""
+    st.markdown('<div class="section-header"><span class="section-icon">🔍</span><span class="section-title">Detailed Analytics</span></div>', unsafe_allow_html=True)
+
+    # Interactive data table with modern styling
+    render_modern_data_table(data)
+
+    # Advanced insights
+    render_trading_insights(data, stats)
+
+def render_modern_data_table(data):
+    """Render modern, interactive data table."""
+    st.markdown('<div class="modern-table">', unsafe_allow_html=True)
+
+    st.subheader("📋 Trade Details")
+
+    # Add filters
+    with st.expander("🔍 Advanced Filters", expanded=False):
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            if 'symbol' in data.columns:
+                symbols = st.multiselect(
+                    "Filter by Symbol",
+                    options=sorted(data['symbol'].unique()),
+                    default=[]
+                )
+            else:
+                symbols = []
+
+        with col2:
+            if 'pnl' in data.columns:
+                pnl_filter = st.selectbox(
+                    "P&L Filter",
+                    options=['All Trades', 'Winners Only', 'Losers Only', 'Breakeven']
+                )
+            else:
+                pnl_filter = 'All Trades'
+
+        with col3:
+            show_columns = st.multiselect(
+                "Display Columns",
+                options=data.columns.tolist(),
+                default=data.columns.tolist()[:6]
+            )
+
+    # Apply filters
+    filtered_data = data.copy()
+
+    if symbols and 'symbol' in data.columns:
+        filtered_data = filtered_data[filtered_data['symbol'].isin(symbols)]
+
+    if pnl_filter != 'All Trades' and 'pnl' in data.columns:
+        pnl_numeric = pd.to_numeric(filtered_data['pnl'], errors='coerce')
+        if pnl_filter == 'Winners Only':
+            filtered_data = filtered_data[pnl_numeric > 0]
+        elif pnl_filter == 'Losers Only':
+            filtered_data = filtered_data[pnl_numeric < 0]
+        elif pnl_filter == 'Breakeven':
+            filtered_data = filtered_data[pnl_numeric == 0]
+
+    if show_columns:
+        filtered_data = filtered_data[show_columns]
+
+    # Display styled dataframe
+    st.dataframe(
+        filtered_data,
+        use_container_width=True,
+        height=400
+    )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def render_trading_insights(data, stats):
+    """Render trading insights and recommendations."""
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+
+    st.subheader("💡 Trading Insights & Recommendations")
+
+    insights = generate_trading_insights(stats)
+
+    for insight in insights:
+        icon = insight['icon']
+        title = insight['title']
+        message = insight['message']
+        level = insight['level']
+
+        if level == 'success':
+            st.success(f"{icon} **{title}**: {message}")
+        elif level == 'warning':
+            st.warning(f"{icon} **{title}**: {message}")
+        elif level == 'error':
+            st.error(f"{icon} **{title}**: {message}")
+        else:
+            st.info(f"{icon} **{title}**: {message}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def render_export_section(data, stats):
+    """Render modern export section."""
+    st.markdown('<div class="section-header"><span class="section-icon">📤</span><span class="section-title">Export & Share</span></div>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("📄 Export Professional Report", type="primary", use_container_width=True):
+            try:
+                from pdf_export import render_pdf_export_button
+                render_pdf_export_button(data, stats)
+            except ImportError:
+                st.info("PDF export functionality is being set up")
+
+    with col2:
+        if st.button("📊 Export Analytics Data", type="secondary", use_container_width=True):
+            csv = data.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"tradesense_analytics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+    with col3:
+        if st.button("📋 Copy Summary", type="secondary", use_container_width=True):
+            summary = generate_summary_text(stats)
+            st.code(summary, language="text")
+            st.success("Summary ready to copy!")
+
+# Helper Functions
+def get_performance_indicator(value, metric_type):
+    """Get performance indicator based on value and type."""
+    if metric_type == 'pnl':
+        if value > 1000: return '<span class="performance-indicator indicator-excellent">Excellent</span>'
+        elif value > 0: return '<span class="performance-indicator indicator-good">Profitable</span>'
+        elif value > -500: return '<span class="performance-indicator indicator-warning">Needs Work</span>'
+        else: return '<span class="performance-indicator indicator-poor">Critical</span>'
+
+    elif metric_type == 'win_rate':
+        if value > 60: return '<span class="performance-indicator indicator-excellent">Excellent</span>'
+        elif value > 50: return '<span class="performance-indicator indicator-good">Good</span>'
+        elif value > 40: return '<span class="performance-indicator indicator-warning">Fair</span>'
+        else: return '<span class="performance-indicator indicator-poor">Poor</span>'
+
+    elif metric_type == 'profit_factor':
+        if value > 2: return '<span class="performance-indicator indicator-excellent">Excellent</span>'
+        elif value > 1.5: return '<span class="performance-indicator indicator-good">Good</span>'
+        elif value > 1: return '<span class="performance-indicator indicator-warning">Fair</span>'
+        else: return '<span class="performance-indicator indicator-poor">Poor</span>'
+
+    elif metric_type == 'consistency':
+        if value > 80: return '<span class="performance-indicator indicator-excellent">Very Consistent</span>'
+        elif value > 60: return '<span class="performance-indicator indicator-good">Consistent</span>'
+        elif value > 40: return '<span class="performance-indicator indicator-warning">Inconsistent</span>'
+        else: return '<span class="performance-indicator indicator-poor">Very Inconsistent</span>'
+
+    return '<span class="performance-indicator indicator-good">Good</span>'
+
+def get_volume_indicator(trades):
+    """Get volume indicator for trade count."""
+    if trades > 100: return "High Volume"
+    elif trades > 50: return "Medium Volume"
+    elif trades > 20: return "Low Volume"
+    else: return "Very Low Volume"
+
+def generate_trading_insights(stats):
+    """Generate trading insights based on statistics."""
+    insights = []
+
+    win_rate = stats.get('win_rate', 0)
+    profit_factor = stats.get('profit_factor', 0)
+    total_pnl = stats.get('total_pnl', 0)
+
+    # Win rate insights
+    if win_rate > 70:
+        insights.append({
+            'icon': '🎯',
+            'title': 'Excellent Trade Selection',
+            'message': f'Your {win_rate:.1f}% win rate indicates strong market analysis skills.',
+            'level': 'success'
+        })
+    elif win_rate < 40:
+        insights.append({
+            'icon': '⚠️',
+            'title': 'Review Entry Strategy',
+            'message': f'Win rate of {win_rate:.1f}% suggests need for better entry criteria.',
+            'level': 'warning'
+        })
+
+    # Profit factor insights
+    if profit_factor > 2:
+        insights.append({
+            'icon': '⚡',
+            'title': 'Strong Risk Management',
+            'message': f'Profit factor of {profit_factor:.2f} shows excellent risk control.',
+            'level': 'success'
+        })
+    elif profit_factor < 1:
+        insights.append({
+            'icon': '🚨',
+            'title': 'Risk Management Critical',
+            'message': f'Profit factor of {profit_factor:.2f} indicates losses exceed profits.',
+            'level': 'error'
+        })
+
+    # Overall performance
+    if total_pnl > 0:
+        insights.append({
+            'icon': '📈',
+            'title': 'Profitable Trading',
+            'message': f'Total profit of ${total_pnl:,.2f} demonstrates positive edge.',
+            'level': 'success'
+        })
+
+    return insights
+
+def generate_summary_text(stats):
+    """Generate summary text for copying."""
+    return f"""
+Trading Performance Summary
+==========================
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Key Metrics:
+• Total P&L: ${stats.get('total_pnl', 0):,.2f}
+• Win Rate: {stats.get('win_rate', 0):.1f}%
+• Profit Factor: {stats.get('profit_factor', 0):.2f}
+• Total Trades: {stats.get('total_trades', 0):,}
+• Expectancy: ${stats.get('expectancy', 0):.2f}
+• Best Trade: ${stats.get('best_trade', 0):,.2f}
+• Consistency Score: {stats.get('consistency_score', 0):.0f}/100
+
+Powered by TradeSense Analytics
+    """
+
+def calculate_comprehensive_analytics(data):
+    """Calculate comprehensive analytics with all metrics."""
+    try:
+        stats = {}
+
+        # Basic metrics
+        stats['total_trades'] = len(data)
+
+        if 'pnl' in data.columns:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+
+            if not pnl_data.empty:
+                stats['total_pnl'] = pnl_data.sum()
+                stats['avg_pnl'] = pnl_data.mean()
+
+                winning_trades = pnl_data[pnl_data > 0]
+                losing_trades = pnl_data[pnl_data < 0]
+
+                stats['win_rate'] = (len(winning_trades) / len(pnl_data) * 100) if len(pnl_data) > 0 else 0
+                stats['winning_trades'] = len(winning_trades)
+                stats['losing_trades'] = len(losing_trades)
+
+                # Profit factor
+                gross_profit = winning_trades.sum() if len(winning_trades) > 0 else 0
+                gross_loss = abs(losing_trades.sum()) if len(losing_trades) > 0 else 0
+                stats['profit_factor'] = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+
+                # Best/Worst trades
+                stats['best_trade'] = pnl_data.max()
+                stats['worst_trade'] = pnl_data.min()
+
+                # Expectancy
+                stats['expectancy'] = pnl_data.mean()
+
+        # Duration analysis
+        if 'entry_time' in data.columns and 'exit_time' in data.columns:
+            try:
+                data['entry_time'] = pd.to_datetime(data['entry_time'], errors='coerce')
+                data['exit_time'] = pd.to_datetime(data['exit_time'], errors='coerce')
+
+                valid_duration = data.dropna(subset=['entry_time', 'exit_time'])
+                if not valid_duration.empty:
+                    durations = (valid_duration['exit_time'] - valid_duration['entry_time']).dt.total_seconds() / 3600
+                    stats['avg_holding_time'] = durations.mean()
+                    stats['avg_trade_duration'] = durations.mean()
+            except:
+                stats['avg_holding_time'] = 0
+                stats['avg_trade_duration'] = 0
+
+        # Consistency score calculation
+        if 'pnl' in data.columns:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            if not pnl_data.empty:
+                # Calculate consistency based on standard deviation relative to mean
+                mean_pnl = pnl_data.mean()
+                std_pnl = pnl_data.std()
+
+                if abs(mean_pnl) > 0:
+                    consistency_score = max(0, min(100, (1 - (std_pnl / abs(mean_pnl))) * 100))
+                else:
+                    consistency_score = 0
+
+                stats['consistency_score'] = consistency_score
+
+        return stats
+
+    except Exception as e:
+        logger.error(f"Error calculating comprehensive analytics: {e}")
+        return {}
 from pdf_export import render_pdf_export_button
 from email_scheduler import render_email_scheduling_ui
 
@@ -804,285 +1619,6 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         st.code(summary_text)
         st.success("Summary ready to copy!")
 
-def render_analytics():
-    """Main analytics rendering function with comprehensive dashboard."""
-    st.header("📈 Trading Analytics")
-
-    # Check if trade data is available
-    if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
-        st.info("📊 No analytics available. Please upload your trades to generate insights.")
-        return None
-
-    data = st.session_state.trade_data
-
-    try:
-        # Comprehensive analytics calculations
-        total_trades = len(data)
-
-        if total_trades == 0:
-            st.warning("No trade data found. Please upload valid trade data.")
-            return None
-
-        # Enhanced analytics with all requested metrics
-        stats = calculate_comprehensive_analytics(data)
-
-        if not stats:
-            st.error("Unable to calculate analytics from the provided data")
-            return None
-
-        # Render enhanced dashboard
-        render_comprehensive_dashboard(data, stats)
-
-        return stats
-
-    except Exception as e:
-        logger.error(f"Analytics calculation error: {e}")
-        st.error(f"Error calculating analytics: {e}")
-        return None
-
-def calculate_comprehensive_analytics(data):
-    """Calculate comprehensive trading analytics."""
-    try:
-        stats = {}
-
-        # Basic metrics
-        stats['total_trades'] = len(data)
-
-        if 'pnl' in data.columns:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-
-            if not pnl_data.empty:
-                stats['total_pnl'] = pnl_data.sum()
-                stats['avg_pnl'] = pnl_data.mean()
-
-                winning_trades = pnl_data[pnl_data > 0]
-                losing_trades = pnl_data[pnl_data < 0]
-
-                stats['win_rate'] = (len(winning_trades) / len(pnl_data) * 100) if len(pnl_data) > 0 else 0
-                stats['winning_trades'] = len(winning_trades)
-                stats['losing_trades'] = len(losing_trades)
-
-                # Profit factor
-                gross_profit = winning_trades.sum() if len(winning_trades) > 0 else 0
-                gross_loss = abs(losing_trades.sum()) if len(losing_trades) > 0 else 0
-                stats['profit_factor'] = gross_profit / gross_loss if gross_loss > 0 else float('inf')
-
-                # Best/Worst trades
-                stats['best_trade'] = pnl_data.max()
-                stats['worst_trade'] = pnl_data.min()
-
-                # Expectancy
-                stats['expectancy'] = pnl_data.mean()
-
-        # Duration analysis
-        if 'entry_time' in data.columns and 'exit_time' in data.columns:
-            try:
-                data['entry_time'] = pd.to_datetime(data['entry_time'], errors='coerce')
-                data['exit_time'] = pd.to_datetime(data['exit_time'], errors='coerce')
-
-                valid_duration = data.dropna(subset=['entry_time', 'exit_time'])
-                if not valid_duration.empty:
-                    durations = (valid_duration['exit_time'] - valid_duration['entry_time']).dt.total_seconds() / 3600
-                    stats['avg_holding_time'] = durations.mean()
-                    stats['avg_trade_duration'] = durations.mean()
-            except:
-                stats['avg_holding_time'] = 0
-                stats['avg_trade_duration'] = 0
-
-        # Direction analysis
-        if 'direction' in data.columns:
-            direction_counts = data['direction'].value_counts()
-            total = direction_counts.sum()
-            if total > 0:
-                stats['long_percentage'] = (direction_counts.get('Long', 0) / total * 100)
-                stats['short_percentage'] = (direction_counts.get('Short', 0) / total * 100)
-
-        # Consistency score (streak analysis)
-        if 'pnl' in data.columns:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-            if not pnl_data.empty:
-                # Calculate win/loss streaks
-                wins = (pnl_data > 0).astype(int)
-                streaks = []
-                current_streak = 1
-
-                for i in range(1, len(wins)):
-                    if wins.iloc[i] == wins.iloc[i-1]:
-                        current_streak += 1
-                    else:
-                        streaks.append(current_streak)
-                        current_streak = 1
-                streaks.append(current_streak)
-
-                # Consistency score based on average streak length vs volatility
-                avg_streak = np.mean(streaks) if streaks else 0
-                volatility = pnl_data.std()
-                consistency_score = min(100, max(0, (avg_streak * 20) - (volatility / 100)))
-                stats['consistency_score'] = consistency_score
-
-        return stats
-
-    except Exception as e:
-        logger.error(f"Error calculating comprehensive analytics: {e}")
-        return {}
-
-def render_comprehensive_dashboard(data, stats):
-    """Render the comprehensive analytics dashboard."""
-
-    # Key Metrics Cards with animations
-    st.subheader("🎯 Key Performance Metrics")
-
-    # First row of metrics
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        total_trades = stats.get('total_trades', 0)
-        st.metric("📊 Total Trades", f"{total_trades:,}")
-
-    with col2:
-        win_rate = stats.get('win_rate', 0)
-        delta_color = "normal" if win_rate > 50 else "inverse"
-        st.metric("🎯 Win Rate", f"{win_rate:.1f}%", delta_color=delta_color)
-
-    with col3:
-        total_pnl = stats.get('total_pnl', 0)
-        delta_color = "normal" if total_pnl > 0 else "inverse"
-        st.metric("💰 Net P&L", f"${total_pnl:,.2f}", delta_color=delta_color)
-
-    with col4:
-        profit_factor = stats.get('profit_factor', 0)
-        pf_display = "∞" if profit_factor == float('inf') else f"{profit_factor:.2f}"
-        delta_color = "normal" if profit_factor > 1.5 else "inverse"
-        st.metric("⚡ Profit Factor", pf_display, delta_color=delta_color)
-
-    # Second row of metrics
-    st.markdown("---")
-
-    col5, col6, col7, col8 = st.columns(4)
-
-    with col5:
-        avg_duration = stats.get('avg_trade_duration', 0)
-        st.metric("⏱️ Avg Duration", f"{avg_duration:.1f}h")
-
-    with col6:
-        long_pct = stats.get('long_percentage', 50)
-        short_pct = 100 - long_pct
-        st.metric("📈 Long/Short", f"{long_pct:.0f}%/{short_pct:.0f}%")
-
-    with col7:
-        best_trade = stats.get('best_trade', 0)
-        st.metric("🏆 Best Trade", f"${best_trade:,.2f}")
-
-    with col8:
-        consistency = stats.get('consistency_score', 0)
-        st.metric("🎯 Consistency", f"{consistency:.0f}/100")
-
-    # Charts section
-    st.markdown("---")
-    st.subheader("📈 Performance Charts")
-
-    chart_tabs = st.tabs(["Equity Curve", "P&L Distribution", "Performance by Symbol"])
-
-    with chart_tabs[0]:
-        render_equity_curve_chart(data, stats)
-
-    with chart_tabs[1]:
-        render_pnl_distribution_chart(data)
-
-    with chart_tabs[2]:
-        render_symbol_performance_chart(data)
-
-    # Export options
-    st.markdown("---")
-    render_export_options(data, stats)
-
-def render_equity_curve_chart(data, stats):
-    """Render equity curve chart."""
-    if 'pnl' in data.columns:
-        try:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-            cumulative_pnl = pnl_data.cumsum()
-
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                y=cumulative_pnl,
-                mode='lines',
-                name='Cumulative P&L',
-                line=dict(color='#00d4ff', width=3)
-            ))
-
-            fig.update_layout(
-                title='Equity Curve',
-                xaxis_title='Trade Number',
-                yaxis_title='Cumulative P&L ($)',
-                template='plotly_dark',
-                height=400
-            )
-
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
-        except Exception as e:
-            st.error(f"Error rendering equity curve: {e}")
-    else:
-        st.info("P&L data required for equity curve")
-
-def render_pnl_distribution_chart(data):
-    """Render P&L distribution histogram."""
-    if 'pnl' in data.columns:
-        try:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-
-            fig = px.histogram(
-                x=pnl_data,
-                nbins=30,
-                title='P&L Distribution',
-                color_discrete_sequence=['#00d4ff']
-            )
-
-            fig.update_layout(
-                xaxis_title='P&L ($)',
-                yaxis_title='Frequency',
-                template='plotly_dark',
-                height=400
-            )
-
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
-        except Exception as e:
-            st.error(f"Error rendering P&L distribution: {e}")
-    else:
-        st.info("P&L data required for distribution chart")
-
-def render_symbol_performance_chart(data):
-    """Render performance by symbol chart."""
-    if 'symbol' in data.columns and 'pnl' in data.columns:
-        try:
-            symbol_performance = data.groupby('symbol')['pnl'].sum().reset_index()
-            symbol_performance = symbol_performance.sort_values('pnl', ascending=True)
-
-            fig = px.bar(
-                symbol_performance,
-                x='pnl',
-                y='symbol',
-                orientation='h',
-                title='P&L by Symbol',
-                color='pnl',
-                color_continuous_scale='RdYlGn'
-            )
-
-            fig.update_layout(
-                xaxis_title='Total P&L ($)',
-                yaxis_title='Symbol',
-                template='plotly_dark',
-                height=400
-            )
-
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
-        except Exception as e:
-            st.error(f"Error rendering symbol performance: {e}")
-    else:
-        st.info("Symbol and P&L data required for this chart")
-
-
-
 class TradingDashboard:
     """
     Trading Dashboard class for rendering comprehensive analytics.
@@ -1352,3 +1888,5 @@ class TradingDashboard:
             cumulative_pnl = trade_data['pnl'].cumsum()
             fig = px.line(x=trade_data.index, y=cumulative_pnl, title='Equity Curve')
             st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+from interactive_table import render_interactive_table
+from notification_system import create_system_alert, NotificationType, NotificationPriority

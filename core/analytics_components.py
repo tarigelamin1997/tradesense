@@ -6,7 +6,21 @@ from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
 import logging
-from toast_system import success_toast, info_toast, error_toast
+try:
+    from toast_system import success_toast, error_toast, info_toast
+except ImportError:
+    # Fallback toast functions
+    def success_toast(message, duration=3000):
+        import streamlit as st
+        st.success(message)
+
+    def error_toast(message, duration=5000):
+        import streamlit as st
+        st.error(message)
+
+    def info_toast(message, duration=3000):
+        import streamlit as st
+        st.info(message)
 from pdf_export import render_pdf_export_button
 from email_scheduler import render_email_scheduling_ui
 
@@ -93,7 +107,21 @@ import numpy as np
 import logging
 from interactive_table import render_interactive_table
 from notification_system import create_system_alert, NotificationType, NotificationPriority
-from toast_system import success_toast, info_toast, error_toast
+try:
+    from toast_system import success_toast, error_toast, info_toast
+except ImportError:
+    # Fallback toast functions
+    def success_toast(message, duration=3000):
+        import streamlit as st
+        st.success(message)
+
+    def error_toast(message, duration=5000):
+        import streamlit as st
+        st.error(message)
+
+    def info_toast(message, duration=3000):
+        import streamlit as st
+        st.info(message)
 from pdf_export import render_pdf_export_button
 from email_scheduler import render_email_scheduling_ui
 
@@ -848,7 +876,8 @@ def calculate_comprehensive_analytics(data):
         # Duration analysis
         if 'entry_time' in data.columns and 'exit_time' in data.columns:
             try:
-                data['entry_time'] = pd.to_datetime(data['entry_time'], errors='coerce')
+                data['entry_time'] =```python
+ pd.to_datetime(data['entry_time'], errors='coerce')
                 data['exit_time'] = pd.to_datetime(data['exit_time'], errors='coerce')
 
                 valid_duration = data.dropna(subset=['entry_time', 'exit_time'])

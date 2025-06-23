@@ -89,12 +89,12 @@ def _render_basic_analytics(data):
 
             fig = px.line(data_sorted, x='date', y='cumulative_pnl', 
                          title='Cumulative P&L Over Time')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
 
         # P&L distribution
         st.subheader("📊 P&L Distribution")
         fig = px.histogram(data, x='pnl', title='P&L Distribution', nbins=30)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
 
 import streamlit as st
 import pandas as pd
@@ -402,7 +402,7 @@ def render_equity_curve(df, stats):
                 height=600
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
         else:
             st.info("Equity curve data not available")
     except Exception as e:
@@ -441,7 +441,7 @@ def render_correlation_analysis(df):
             color_continuous_scale='RdBu_r'
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="correlation_heatmap_chart")
 
         # Interpretation
         st.subheader("Correlation Insights")
@@ -665,7 +665,7 @@ def render_behavioral_insights(df):
                         title='Trade Duration Distribution',
                         labels={'duration_minutes': 'Duration (minutes)'}
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
 
                 with col2:
                     # Hour of day analysis
@@ -872,6 +872,7 @@ def calculate_comprehensive_analytics(data):
                 stats['worst_trade'] = pnl_data.min()
 
                 # Expectancy
+```python
                 stats['expectancy'] = pnl_data.mean()
 
         # Duration analysis
@@ -957,7 +958,7 @@ def render_comprehensive_dashboard(data, stats):
 
     # Second row of metrics
     st.markdown("---")
-    
+
     col5, col6, col7, col8 = st.columns(4)
 
     with col5:
@@ -1019,7 +1020,7 @@ def render_equity_curve_chart(data, stats):
                 height=400
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
         except Exception as e:
             st.error(f"Error rendering equity curve: {e}")
     else:
@@ -1045,7 +1046,7 @@ def render_pnl_distribution_chart(data):
                 height=400
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
         except Exception as e:
             st.error(f"Error rendering P&L distribution: {e}")
     else:
@@ -1075,7 +1076,7 @@ def render_symbol_performance_chart(data):
                 height=400
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
         except Exception as e:
             st.error(f"Error rendering symbol performance: {e}")
     else:
@@ -1221,7 +1222,7 @@ class TradingDashboard:
                 # Holding time distribution chart
                 fig = px.histogram(trade_data, x='holding_time', bins=20, 
                                  title="Trade Duration Distribution")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="trade_duration_distribution_chart")
 
             except Exception as e:
                 st.info("💡 Trade duration analysis requires entry_time and exit_time columns")
@@ -1346,9 +1347,9 @@ class TradingDashboard:
         if 'pnl' in trade_data.columns:
             st.subheader("P&L Distribution")
             fig = px.histogram(trade_data, x='pnl', title='P&L Distribution')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
 
             # Equity Curve
             cumulative_pnl = trade_data['pnl'].cumsum()
             fig = px.line(x=trade_data.index, y=cumulative_pnl, title='Equity Curve')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")

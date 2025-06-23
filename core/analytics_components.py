@@ -828,7 +828,7 @@ def generate_trading_insights(stats):
             'icon': '⚡',
             'title': 'Strong Risk Management',
             'message': f'Profit factor of {profit_factor:.2f} shows excellent risk control.',
-            'level': 'success'
+            'level: 'success'
         })
     elif profit_factor < 1:
         insights.append({
@@ -1217,7 +1217,7 @@ def render_equity_curve(df, stats):
                 height=600
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+            st.plotly_chart(fig, use_container_width=True, key="modern_equity_curve_detailed")
         else:
             st.info("Equity curve data not available")
     except Exception as e:
@@ -1882,7 +1882,7 @@ class TradingDashboard:
         if 'pnl' in trade_data.columns:
             st.subheader("P&L Distribution")
             fig = px.histogram(trade_data, x='pnl', title='P&L Distribution')
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+            st.plotly_chart(fig, use_container_width=True, key="pnl_distribution_chart")
 
             # Equity Curve
             cumulative_pnl = trade_data['pnl'].cumsum()

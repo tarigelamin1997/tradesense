@@ -93,4 +93,6 @@ class AppFactory:
                 import traceback
                 st.code(f"Traceback:\n{traceback.format_exc()}")
         # Check if data exists and is valid
-        if st.session_state.trade_data is not None and len(st.session_state.trade_data) > 0:
+        if st.session_state.get('trade_data') is not None and len(st.session_state.trade_data) > 0:
+            # Data validation passed - dashboard can render properly
+            pass

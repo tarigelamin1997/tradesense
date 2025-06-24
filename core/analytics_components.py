@@ -810,7 +810,7 @@ def render_beautiful_breakdown_analysis(data):
             # Create beautiful horizontal bar chart
             fig = go.Figure()
 
-            colors = ['#ef4444' if x 0 else '#10b981' for x in symbol_performance['Total P&L']]
+            colors = ['#ef4444' if x < 0 else '#10b981' for x in symbol_performance['Total P&L']]
 
             fig.add_trace(go.Bar(
                 y=symbol_performance['symbol'],

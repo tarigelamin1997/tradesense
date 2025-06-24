@@ -89,12 +89,16 @@ def render_dashboard_overview():
         st.markdown("2. View your analytics in the **Analytics** tab")
         st.markdown("3. Explore detailed data in the **Trade Data** tab")
     else:
-        # Show dashboard metrics if data is available
-        try:
-            from core.analytics_components import render_analytics
-            render_analytics()
-        except ImportError:
-            st.warning("Analytics components not available")
+        # Check if we have data
+        if st.session_state.trade_data is None or len(st.session_state.trade_data) == 0:
+            st.info("📥 Upload your trade data to get started with analytics")
+        else:
+            # Show dashboard metrics if data is available
+            try:
+                from core.analytics_components import render_analytics
+                render_analytics()
+            except ImportError:
+                st.warning("Analytics components not available")
 
 def render_analytics_tab():
     """Render the analytics tab with enhanced visualizations."""

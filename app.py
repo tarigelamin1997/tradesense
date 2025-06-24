@@ -305,10 +305,15 @@ class TradeSenseApp:
             st.session_state.analytics_result = None
 
         # Check if user is already authenticated from auth manager
-        current_user = self.auth_manager.get_current_user()
-        if current_user and not st.session_state.authenticated:
-            st.session_state.authenticated = True
-            st.session_state.user_role = current_user.get('role', 'user')
+        if self.auth_manager:
+            try:
+                current_user = self.auth_manager.get_current_user()
+                if current_user and not st.session_state.authenticated:
+                    st.session_state.authenticated = True
+                    st.session_state.user_role = current_user.get('role', 'user')
+            except Exception as e:
+                logger.warning(f"Auth check failed: {e}")
+                pass
 
     def render_header(self):
         """Render the main application header."""
@@ -377,6 +382,10 @@ class TradeSenseApp:
     def _load_sample_data(self):
         """Load sample trading data for demonstration."""
         try:
+            # Import pandas and numpy here to avoid import issues
+            pd = get_pandas()
+            np = get_numpy()
+            
             sample_data_path = "sample_data/futures_sample.csv"
             if os.path.exists(sample_data_path):
                 st.session_state.trade_data = pd.read_csv(sample_data_path)
@@ -396,11 +405,8 @@ class TradeSenseApp:
                 st.session_state.trade_data = sample_data
                 st.success("Synthetic sample data generated!")
         except Exception as e:
-            if self.error_handler:
-                self.error_handler.handle_error(e, "Failed to load sample data")
-            else:
-                logger.error(f"Failed to load sample data: {e}")
-                st.error(f"Failed to load sample data: {e}")
+            logger.error(f"Failed to load sample data: {e}")
+            st.error(f"Failed to load sample data: {e}")
 
     def _render_login_page(self):
         """Render the login page."""

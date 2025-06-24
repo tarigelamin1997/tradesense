@@ -90,14 +90,26 @@ def main():
         else:
             st.error(f"❌ Value Error: {str(e)}")
             show_debug_info()
-
+            
     except Exception as e:
-        st.error(f"❌ Application Error: {str(e)}")
-        logger.error(f"Unexpected error in main(): {str(e)}")
-        show_debug_info()
+        # Catch any DataFrame comparison errors specifically
+        if "truth value of a DataFrame is ambiguous" in str(e):
+            st.error("❌ DataFrame Error: The application encountered a data comparison issue")
+            logger.error(f"DataFrame error in startup: {str(e)}")
+            st.info("Try refreshing the page or clearing your data")
+            if st.button("🔄 Clear Session and Restart"):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.rerun()
+        else:
+            st.error(f"❌ Application Error: {str(e)}")
+            logger.error(f"Unexpected error in main(): {str(e)}")
+            show_debug_info()
 
         if st.button("🔄 Restart Application"):
             st.rerun()
+
+    
 
 if __name__ == "__main__":
     main()

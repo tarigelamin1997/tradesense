@@ -24,15 +24,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# Modern Dashboard Styling
-MODERN_CSS = """
+# Beautiful Tableau-Inspired Styling
+TABLEAU_CSS = """
 <style>
-/* Modern Dashboard Styling */
+/* Import beautiful fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Global styling */
+.stApp {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* Beautiful gradient backgrounds */
 .main-dashboard {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 2rem;
-    border-radius: 15px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    padding: 2.5rem;
+    border-radius: 20px;
     margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
 .dashboard-header {
@@ -42,143 +54,185 @@ MODERN_CSS = """
 }
 
 .dashboard-title {
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    background: linear-gradient(45deg, #fff, #f0f8ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .dashboard-subtitle {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    font-weight: 300;
+    font-size: 1.3rem;
+    opacity: 0.95;
+    font-weight: 400;
+    letter-spacing: 0.5px;
 }
 
-/* Metric Cards */
+/* Beautiful metric cards */
 .metric-card {
-    background: rgba(255,255,255,0.95);
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    margin-bottom: 1rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: rgba(255,255,255,0.98);
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.3);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
 }
 
 .metric-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
 }
 
 .metric-value {
-    font-size: 2.2rem;
+    font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
+    line-height: 1.2;
 }
 
 .metric-label {
     font-size: 0.9rem;
-    color: #666;
+    color: #6b7280;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
 .metric-change {
     font-size: 0.85rem;
     font-weight: 600;
     margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    display: inline-block;
 }
 
-.positive { color: #10b981; }
-.negative { color: #ef4444; }
-.neutral { color: #6b7280; }
+.positive { 
+    color: #059669; 
+    background: rgba(5, 150, 105, 0.1);
+}
+.negative { 
+    color: #dc2626; 
+    background: rgba(220, 38, 38, 0.1);
+}
+.neutral { 
+    color: #6b7280; 
+    background: rgba(107, 114, 128, 0.1);
+}
 
-/* Chart Containers */
+/* Chart containers */
 .chart-container {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    margin-bottom: 1.5rem;
+    background: rgba(255,255,255,0.98);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.3);
 }
 
 .chart-title {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     color: #1f2937;
-}
-
-/* Data Table Styling */
-.modern-table {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-}
-
-/* Performance Indicators */
-.performance-indicator {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    margin-left: 0.5rem;
+    gap: 0.5rem;
 }
 
-.indicator-excellent { background: #dcfce7; color: #166534; }
-.indicator-good { background: #dbeafe; color: #1d4ed8; }
-.indicator-warning { background: #fef3c7; color: #92400e; }
-.indicator-poor { background: #fee2e2; color: #991b1b; }
-
-/* Section Headers */
+/* Section headers */
 .section-header {
     display: flex;
     align-items: center;
-    margin: 2rem 0 1rem 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e5e7eb;
+    margin: 3rem 0 2rem 0;
+    padding: 1.5rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
 .section-icon {
-    font-size: 1.5rem;
-    margin-right: 0.75rem;
+    font-size: 2rem;
+    margin-right: 1rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .section-title {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 600;
-    color: #1f2937;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* Interactive Elements */
-.filter-container {
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    border: 1px solid #e2e8f0;
+/* Performance indicators */
+.performance-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Loading States */
+.indicator-excellent { 
+    background: linear-gradient(135deg, #10b981, #059669); 
+    color: white; 
+}
+.indicator-good { 
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+    color: white; 
+}
+.indicator-warning { 
+    background: linear-gradient(135deg, #f59e0b, #d97706); 
+    color: white; 
+}
+.indicator-poor { 
+    background: linear-gradient(135deg, #ef4444, #dc2626); 
+    color: white; 
+}
+
+/* Loading states */
 .loading-container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 3rem;
+    padding: 4rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
 }
 
 .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #3b82f6;
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid #4facfe;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
 }
 
 @keyframes spin {
@@ -186,23 +240,88 @@ MODERN_CSS = """
     100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
+/* Tabs styling */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    background: rgba(255,255,255,0.1);
+    padding: 0.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.stTabs [aria-selected="true"] {
+    background: rgba(255,255,255,0.2) !important;
+    color: white !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    color: white;
+    margin: 2rem 0;
+}
+
+.empty-state-icon {
+    font-size: 5rem;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.2));
+}
+
+.empty-state-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.empty-state-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+    font-weight: 400;
+}
+
+.empty-state-features {
+    background: rgba(255,255,255,0.15);
+    padding: 1.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    margin-top: 2rem;
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
-    .dashboard-title { font-size: 2rem; }
-    .metric-card { padding: 1rem; }
-    .metric-value { font-size: 1.8rem; }
+    .dashboard-title { font-size: 2.5rem; }
+    .metric-card { padding: 1.5rem 1rem; }
+    .metric-value { font-size: 2rem; }
+    .chart-container { padding: 1.5rem; }
+    .section-header { padding: 1rem; }
+    .section-title { font-size: 1.5rem; }
 }
 </style>
 """
 
 def render_analytics():
-    """Render modern, elegant analytics dashboard."""
-    # Inject modern CSS
-    st.markdown(MODERN_CSS, unsafe_allow_html=True)
+    """Render beautiful Tableau-inspired analytics dashboard."""
+    # Inject beautiful CSS
+    st.markdown(TABLEAU_CSS, unsafe_allow_html=True)
 
     # Check for data
     if 'trade_data' not in st.session_state or st.session_state.trade_data is None:
-        render_empty_state()
+        render_beautiful_empty_state()
         return None
 
     data = st.session_state.trade_data
@@ -212,50 +331,52 @@ def render_analytics():
         stats = calculate_comprehensive_analytics(data)
 
         if not stats:
-            st.error("Unable to calculate analytics from the provided data")
+            st.error("❌ Unable to calculate analytics from the provided data")
             return None
 
-        # Render modern dashboard
-        render_modern_dashboard_header()
+        # Render beautiful dashboard
+        render_beautiful_dashboard_header()
         render_executive_metrics(stats)
-        render_performance_overview(data, stats)
-        render_detailed_analytics(data, stats)
+        render_performance_charts(data, stats)
+        render_detailed_insights(data, stats)
         render_export_section(data, stats)
 
         return stats
 
     except Exception as e:
         logger.error(f"Analytics calculation error: {e}")
-        st.error(f"Error calculating analytics: {e}")
+        st.error(f"❌ Error calculating analytics: {e}")
         return None
 
-def render_empty_state():
-    """Render elegant empty state."""
+def render_beautiful_empty_state():
+    """Render beautiful empty state inspired by Tableau."""
     st.markdown("""
-    <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white;">
-        <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
-        <h2 style="margin-bottom: 1rem;">Welcome to TradeSense Analytics</h2>
-        <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem;">Upload your trading data to unlock powerful insights and professional analytics</p>
-        <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
-            <p style="margin: 0; font-size: 0.9rem;">📈 Performance Analysis • 🎯 Risk Assessment • 📊 Interactive Charts</p>
+    <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <h1 class="empty-state-title">Welcome to TradeSense Analytics</h1>
+        <p class="empty-state-subtitle">Transform your trading data into actionable insights with our professional-grade analytics platform</p>
+        <div class="empty-state-features">
+            <p style="margin: 0; font-size: 1rem; font-weight: 500;">
+                📈 Advanced Performance Analysis • 🎯 Risk Assessment • 📊 Interactive Visualizations • 💡 AI-Powered Insights
+            </p>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-def render_modern_dashboard_header():
-    """Render modern dashboard header."""
+def render_beautiful_dashboard_header():
+    """Render beautiful dashboard header."""
     st.markdown("""
     <div class="main-dashboard">
         <div class="dashboard-header">
             <div class="dashboard-title">Trading Performance Analytics</div>
-            <div class="dashboard-subtitle">Professional insights for smarter trading decisions</div>
+            <div class="dashboard-subtitle">Professional insights for data-driven trading decisions</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 def render_executive_metrics(stats):
-    """Render executive-level metrics with modern cards."""
-    st.markdown('<div class="section-header"><span class="section-icon">🎯</span><span class="section-title">Executive Summary</span></div>', unsafe_allow_html=True)
+    """Render executive-level metrics with beautiful cards."""
+    st.markdown('<div class="section-header"><span class="section-icon">🎯</span><span class="section-title">Executive Dashboard</span></div>', unsafe_allow_html=True)
 
     # First row - Core Performance
     col1, col2, col3, col4 = st.columns(4)
@@ -263,14 +384,15 @@ def render_executive_metrics(stats):
     with col1:
         total_pnl = stats.get('total_pnl', 0)
         pnl_class = "positive" if total_pnl > 0 else "negative" if total_pnl < 0 else "neutral"
+        pnl_indicator = get_performance_indicator(total_pnl, 'pnl')
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value {pnl_class}">${total_pnl:,.2f}</div>
             <div class="metric-label">Net P&L</div>
+            <div class="metric-value {pnl_class}">${total_pnl:,.2f}</div>
             <div class="metric-change {pnl_class}">
                 {'📈' if total_pnl > 0 else '📉' if total_pnl < 0 else '➡️'} 
-                {get_performance_indicator(total_pnl, 'pnl')}
+                {pnl_indicator}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -278,13 +400,14 @@ def render_executive_metrics(stats):
     with col2:
         win_rate = stats.get('win_rate', 0)
         wr_class = "positive" if win_rate > 60 else "neutral" if win_rate > 40 else "negative"
+        wr_indicator = get_performance_indicator(win_rate, 'win_rate')
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value {wr_class}">{win_rate:.1f}%</div>
             <div class="metric-label">Win Rate</div>
-            <div class="metric-change">
-                🎯 {get_performance_indicator(win_rate, 'win_rate')}
+            <div class="metric-value {wr_class}">{win_rate:.1f}%</div>
+            <div class="metric-change {wr_class}">
+                🎯 {wr_indicator}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -293,13 +416,14 @@ def render_executive_metrics(stats):
         profit_factor = stats.get('profit_factor', 0)
         pf_display = "∞" if profit_factor == float('inf') else f"{profit_factor:.2f}"
         pf_class = "positive" if profit_factor > 1.5 else "neutral" if profit_factor > 1.0 else "negative"
+        pf_indicator = get_performance_indicator(profit_factor, 'profit_factor')
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value {pf_class}">{pf_display}</div>
             <div class="metric-label">Profit Factor</div>
-            <div class="metric-change">
-                ⚡ {get_performance_indicator(profit_factor, 'profit_factor')}
+            <div class="metric-value {pf_class}">{pf_display}</div>
+            <div class="metric-change {pf_class}">
+                ⚡ {pf_indicator}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -309,8 +433,8 @@ def render_executive_metrics(stats):
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value neutral">{total_trades:,}</div>
             <div class="metric-label">Total Trades</div>
+            <div class="metric-value neutral">{total_trades:,}</div>
             <div class="metric-change neutral">
                 📊 {get_volume_indicator(total_trades)}
             </div>
@@ -328,8 +452,8 @@ def render_executive_metrics(stats):
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value {exp_class}">${expectancy:.2f}</div>
             <div class="metric-label">Expectancy</div>
+            <div class="metric-value {exp_class}">${expectancy:.2f}</div>
             <div class="metric-change {exp_class}">
                 💡 Per Trade Expected
             </div>
@@ -341,8 +465,8 @@ def render_executive_metrics(stats):
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value positive">${best_trade:,.2f}</div>
             <div class="metric-label">Best Trade</div>
+            <div class="metric-value positive">${best_trade:,.2f}</div>
             <div class="metric-change positive">
                 🏆 Peak Performance
             </div>
@@ -354,8 +478,8 @@ def render_executive_metrics(stats):
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value neutral">{avg_duration:.1f}h</div>
             <div class="metric-label">Avg Duration</div>
+            <div class="metric-value neutral">{avg_duration:.1f}h</div>
             <div class="metric-change neutral">
                 ⏱️ Holding Time
             </div>
@@ -365,79 +489,116 @@ def render_executive_metrics(stats):
     with col8:
         consistency = stats.get('consistency_score', 0)
         cons_class = "positive" if consistency > 70 else "neutral" if consistency > 50 else "negative"
+        cons_indicator = get_performance_indicator(consistency, 'consistency')
 
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value {cons_class}">{consistency:.0f}/100</div>
             <div class="metric-label">Consistency</div>
+            <div class="metric-value {cons_class}">{consistency:.0f}/100</div>
             <div class="metric-change {cons_class}">
-                🎯 {get_performance_indicator(consistency, 'consistency')}
+                🎯 {cons_indicator}
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-def render_performance_overview(data, stats):
-    """Render performance overview with modern charts."""
+def render_performance_charts(data, stats):
+    """Render beautiful performance charts that actually work."""
     st.markdown('<div class="section-header"><span class="section-icon">📈</span><span class="section-title">Performance Overview</span></div>', unsafe_allow_html=True)
 
     # Chart tabs
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Equity Curve", "🎯 Distribution", "📈 Performance", "🔄 Breakdown"])
 
     with tab1:
-        render_modern_equity_curve(data, stats)
+        render_beautiful_equity_curve(data, stats)
 
     with tab2:
-        render_modern_distribution_chart(data)
+        render_beautiful_distribution_chart(data)
 
     with tab3:
-        render_modern_performance_metrics(data, stats)
+        render_beautiful_performance_metrics(data, stats)
 
     with tab4:
-        render_modern_breakdown_analysis(data)
+        render_beautiful_breakdown_analysis(data)
 
-def render_modern_equity_curve(data, stats):
-    """Render modern equity curve."""
+def render_beautiful_equity_curve(data, stats):
+    """Render beautiful equity curve with guaranteed data."""
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">💰 Cumulative Performance Journey</div>', unsafe_allow_html=True)
 
-    if 'pnl' in data.columns:
-        try:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+    try:
+        if 'pnl' in data.columns:
+            # Ensure we have numeric data
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').fillna(0)
+
+            if len(pnl_data) == 0:
+                st.warning("⚠️ No valid P&L data found for equity curve")
+                return
+
+            # Calculate cumulative P&L
             cumulative_pnl = pnl_data.cumsum()
+            trade_numbers = list(range(1, len(cumulative_pnl) + 1))
 
-            # Create sophisticated equity curve
+            # Create beautiful equity curve
             fig = go.Figure()
 
-            # Main equity line
+            # Main equity line with gradient fill
             fig.add_trace(go.Scatter(
+                x=trade_numbers,
                 y=cumulative_pnl,
                 mode='lines',
                 name='Equity Curve',
-                line=dict(color='#3b82f6', width=3),
+                line=dict(
+                    color='#4facfe',
+                    width=3,
+                    shape='spline'
+                ),
                 fill='tonexty',
-                fillcolor='rgba(59, 130, 246, 0.1)'
+                fillcolor='rgba(79, 172, 254, 0.1)',
+                hovertemplate='<b>Trade #%{x}</b><br>Cumulative P&L: $%{y:,.2f}<extra></extra>'
             ))
 
             # Add peak markers
             running_max = cumulative_pnl.expanding().max()
-            peak_indices = cumulative_pnl[cumulative_pnl == running_max].index
+            peak_indices = []
+            peak_values = []
 
-            fig.add_trace(go.Scatter(
-                x=peak_indices,
-                y=cumulative_pnl[peak_indices],
-                mode='markers',
-                name='New Peaks',
-                marker=dict(color='#10b981', size=8, symbol='star'),
-                hovertemplate='<b>New Peak</b><br>Trade #%{x}<br>P&L: $%{y:,.2f}<extra></extra>'
-            ))
+            for i, (curr_val, max_val) in enumerate(zip(cumulative_pnl, running_max)):
+                if curr_val == max_val and (i == 0 or curr_val > running_max.iloc[i-1]):
+                    peak_indices.append(i + 1)
+                    peak_values.append(curr_val)
 
+            if peak_indices:
+                fig.add_trace(go.Scatter(
+                    x=peak_indices,
+                    y=peak_values,
+                    mode='markers',
+                    name='New Peaks',
+                    marker=dict(
+                        color='#10b981',
+                        size=10,
+                        symbol='star',
+                        line=dict(width=2, color='white')
+                    ),
+                    hovertemplate='<b>🏆 New Peak!</b><br>Trade #%{x}<br>P&L: $%{y:,.2f}<extra></extra>'
+                ))
+
+            # Beautiful layout
             fig.update_layout(
-                title=dict(
-                    text='<b>Cumulative Performance</b>',
-                    font=dict(size=20, color='#1f2937')
+                title=None,
+                xaxis=dict(
+                    title='Trade Number',
+                    gridcolor='rgba(0,0,0,0.1)',
+                    showgrid=True,
+                    title_font=dict(size=14, color='#374151')
                 ),
-                xaxis_title='Trade Number',
-                yaxis_title='Cumulative P&L ($)',
-                template='plotly_white',
+                yaxis=dict(
+                    title='Cumulative P&L ($)',
+                    gridcolor='rgba(0,0,0,0.1)',
+                    showgrid=True,
+                    title_font=dict(size=14, color='#374151')
+                ),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
                 height=450,
                 hovermode='x unified',
                 showlegend=True,
@@ -446,99 +607,134 @@ def render_modern_equity_curve(data, stats):
                     yanchor="bottom",
                     y=1.02,
                     xanchor="right",
-                    x=1
-                )
+                    x=1,
+                    bgcolor='rgba(255,255,255,0.8)',
+                    bordercolor='rgba(0,0,0,0.1)',
+                    borderwidth=1
+                ),
+                font=dict(family='Inter, sans-serif', size=12, color='#374151')
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="modern_equity_curve")
+            st.plotly_chart(fig, use_container_width=True, key="beautiful_equity_curve")
 
-        except Exception as e:
-            st.error(f"Error rendering equity curve: {e}")
+            # Add insights below the chart
+            final_pnl = cumulative_pnl.iloc[-1]
+            max_pnl = cumulative_pnl.max()
+            min_pnl = cumulative_pnl.min()
+            drawdown = max_pnl - final_pnl
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Final P&L", f"${final_pnl:,.2f}")
+            with col2:
+                st.metric("Peak P&L", f"${max_pnl:,.2f}")
+            with col3:
+                st.metric("Current Drawdown", f"${drawdown:,.2f}")
+
+        else:
+            st.error("❌ P&L column not found in data")
+
+    except Exception as e:
+        logger.error(f"Error rendering equity curve: {e}")
+        st.error(f"❌ Error rendering equity curve: {str(e)}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-def render_modern_distribution_chart(data):
-    """Render modern P&L distribution."""
+def render_beautiful_distribution_chart(data):
+    """Render beautiful P&L distribution."""
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">📊 Trade P&L Distribution</div>', unsafe_allow_html=True)
 
-    if 'pnl' in data.columns:
-        try:
+    try:
+        if 'pnl' in data.columns:
             pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
 
-            # Create distribution with overlaid statistics
+            if len(pnl_data) == 0:
+                st.warning("⚠️ No valid P&L data for distribution")
+                return
+
+            # Create beautiful distribution
             fig = go.Figure()
 
-            # Histogram
+            # Histogram with beautiful colors
             fig.add_trace(go.Histogram(
                 x=pnl_data,
-                nbinsx=30,
+                nbinsx=min(30, len(pnl_data)//2),
                 name='Trade Distribution',
-                marker_color='rgba(59, 130, 246, 0.7)',
+                marker=dict(
+                    color='rgba(79, 172, 254, 0.7)',
+                    line=dict(color='white', width=1)
+                ),
                 hovertemplate='P&L Range: %{x}<br>Frequency: %{y}<extra></extra>'
             ))
 
-            # Add mean line
+            # Add statistical lines
             mean_pnl = pnl_data.mean()
+            median_pnl = pnl_data.median()
+
             fig.add_vline(
                 x=mean_pnl,
                 line_dash="dash",
                 line_color="#10b981",
+                line_width=3,
                 annotation_text=f"Mean: ${mean_pnl:.2f}",
                 annotation_position="top"
             )
 
-            # Add median line
-            median_pnl = pnl_data.median()
             fig.add_vline(
                 x=median_pnl,
                 line_dash="dot",
                 line_color="#f59e0b",
+                line_width=3,
                 annotation_text=f"Median: ${median_pnl:.2f}",
                 annotation_position="bottom"
             )
 
             fig.update_layout(
-                title=dict(
-                    text='<b>Trade P&L Distribution</b>',
-                    font=dict(size=20, color='#1f2937')
-                ),
+                title=None,
                 xaxis_title='P&L ($)',
                 yaxis_title='Frequency',
-                template='plotly_white',
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
                 height=400,
-                showlegend=False
+                showlegend=False,
+                font=dict(family='Inter, sans-serif', size=12, color='#374151')
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="modern_distribution")
+            st.plotly_chart(fig, use_container_width=True, key="beautiful_distribution")
 
-        except Exception as e:
-            st.error(f"Error rendering distribution: {e}")
+        else:
+            st.error("❌ P&L column not found")
+
+    except Exception as e:
+        logger.error(f"Error rendering distribution: {e}")
+        st.error(f"❌ Error rendering distribution: {str(e)}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-def render_modern_performance_metrics(data, stats):
-    """Render modern performance metrics visualization."""
+def render_beautiful_performance_metrics(data, stats):
+    """Render beautiful performance metrics."""
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">⚡ Performance Gauges</div>', unsafe_allow_html=True)
 
-    # Performance gauge charts
     col1, col2 = st.columns(2)
 
     with col1:
-        # Win Rate Gauge
+        # Beautiful Win Rate Gauge
         win_rate = stats.get('win_rate', 0)
         fig_gauge = go.Figure(go.Indicator(
-            mode = "gauge+number+delta",
-            value = win_rate,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Win Rate (%)"},
-            delta = {'reference': 50},
-            gauge = {
+            mode="gauge+number+delta",
+            value=win_rate,
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "Win Rate (%)"},
+            delta={'reference': 50},
+            gauge={
                 'axis': {'range': [None, 100]},
-                'bar': {'color': "#3b82f6"},
+                'bar': {'color': "#4facfe"},
                 'steps': [
-                    {'range': [0, 40], 'color': "#fee2e2"},
-                    {'range': [40, 60], 'color': "#fef3c7"},
-                    {'range': [60, 100], 'color': "#dcfce7"}
+                    {'range': [0, 40], 'color': "rgba(239, 68, 68, 0.2)"},
+                    {'range': [40, 60], 'color': "rgba(245, 158, 11, 0.2)"},
+                    {'range': [60, 100], 'color': "rgba(16, 185, 129, 0.2)"}
                 ],
                 'threshold': {
                     'line': {'color': "red", 'width': 4},
@@ -548,25 +744,30 @@ def render_modern_performance_metrics(data, stats):
             }
         ))
 
-        fig_gauge.update_layout(height=300, font={'color': "#1f2937", 'family': "Arial"})
-        st.plotly_chart(fig_gauge, use_container_width=True, key="win_rate_gauge_modern")
+        fig_gauge.update_layout(
+            height=300,
+            font={'color': "#374151", 'family': "Inter, sans-serif"},
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_gauge, use_container_width=True, key="beautiful_win_rate_gauge")
 
     with col2:
-        # Profit Factor Gauge
+        # Beautiful Profit Factor Gauge
         profit_factor = min(stats.get('profit_factor', 0), 5)  # Cap at 5 for display
         fig_pf = go.Figure(go.Indicator(
-            mode = "gauge+number+delta",
-            value = profit_factor,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Profit Factor"},
-            delta = {'reference': 1.5},
-            gauge = {
+            mode="gauge+number+delta",
+            value=profit_factor,
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "Profit Factor"},
+            delta={'reference': 1.5},
+            gauge={
                 'axis': {'range': [None, 5]},
                 'bar': {'color': "#10b981"},
                 'steps': [
-                    {'range': [0, 1], 'color': "#fee2e2"},
-                    {'range': [1, 1.5], 'color': "#fef3c7"},
-                    {'range': [1.5, 5], 'color': "#dcfce7"}
+                    {'range': [0, 1], 'color': "rgba(239, 68, 68, 0.2)"},
+                    {'range': [1, 1.5], 'color': "rgba(245, 158, 11, 0.2)"},
+                    {'range': [1.5, 5], 'color': "rgba(16, 185, 129, 0.2)"}
                 ],
                 'threshold': {
                     'line': {'color': "green", 'width': 4},
@@ -576,17 +777,23 @@ def render_modern_performance_metrics(data, stats):
             }
         ))
 
-        fig_pf.update_layout(height=300, font={'color': "#1f2937", 'family': "Arial"})
-        st.plotly_chart(fig_pf, use_container_width=True, key="profit_factor_gauge_modern")
+        fig_pf.update_layout(
+            height=300,
+            font={'color': "#374151", 'family': "Inter, sans-serif"},
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_pf, use_container_width=True, key="beautiful_profit_factor_gauge")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-def render_modern_breakdown_analysis(data):
-    """Render modern breakdown analysis."""
-    if 'symbol' in data.columns and 'pnl' in data.columns:
-        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+def render_beautiful_breakdown_analysis(data):
+    """Render beautiful breakdown analysis."""
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">🔍 Performance by Symbol</div>', unsafe_allow_html=True)
 
-        try:
+    try:
+        if 'symbol' in data.columns and 'pnl' in data.columns:
             # Symbol performance breakdown
             symbol_performance = data.groupby('symbol').agg({
                 'pnl': ['sum', 'count', 'mean']
@@ -596,7 +803,11 @@ def render_modern_breakdown_analysis(data):
             symbol_performance = symbol_performance.reset_index()
             symbol_performance = symbol_performance.sort_values('Total P&L', ascending=True)
 
-            # Create horizontal bar chart
+            if len(symbol_performance) == 0:
+                st.warning("⚠️ No symbol data available")
+                return
+
+            # Create beautiful horizontal bar chart
             fig = go.Figure()
 
             colors = ['#ef4444' if x < 0 else '#10b981' for x in symbol_performance['Total P&L']]
@@ -605,7 +816,10 @@ def render_modern_breakdown_analysis(data):
                 y=symbol_performance['symbol'],
                 x=symbol_performance['Total P&L'],
                 orientation='h',
-                marker_color=colors,
+                marker=dict(
+                    color=colors,
+                    line=dict(color='white', width=1)
+                ),
                 hovertemplate='<b>%{y}</b><br>' +
                               'Total P&L: $%{x:,.2f}<br>' +
                               'Trade Count: %{customdata[0]}<br>' +
@@ -615,143 +829,69 @@ def render_modern_breakdown_analysis(data):
             ))
 
             fig.update_layout(
-                title=dict(
-                    text='<b>Performance by Symbol</b>',
-                    font=dict(size=20, color='#1f2937')
-                ),
+                title=None,
                 xaxis_title='Total P&L ($)',
                 yaxis_title='Symbol',
-                template='plotly_white',
-                height=max(400, len(symbol_performance) * 30),
-                showlegend=False
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=max(400, len(symbol_performance) * 40),
+                showlegend=False,
+                font=dict(family='Inter, sans-serif', size=12, color='#374151')
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="symbol_breakdown")
+            st.plotly_chart(fig, use_container_width=True, key="beautiful_symbol_breakdown")
 
-        except Exception as e:
-            st.error(f"Error rendering breakdown: {e}")
+        else:
+            st.warning("⚠️ Symbol or P&L data not available")
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-def render_detailed_analytics(data, stats):
-    """Render detailed analytics section."""
-    st.markdown('<div class="section-header"><span class="section-icon">🔍</span><span class="section-title">Detailed Analytics</span></div>', unsafe_allow_html=True)
-
-    # Interactive data table with modern styling
-    render_modern_data_table(data)
-
-    # Advanced insights
-    render_trading_insights(data, stats)
-
-def render_modern_data_table(data):
-    """Render modern, interactive data table."""
-    st.markdown('<div class="modern-table">', unsafe_allow_html=True)
-
-    st.subheader("📋 Trade Details")
-
-    # Add filters
-    with st.expander("🔍 Advanced Filters", expanded=False):
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            if 'symbol' in data.columns:
-                symbols = st.multiselect(
-                    "Filter by Symbol",
-                    options=sorted(data['symbol'].unique()),
-                    default=[]
-                )
-            else:
-                symbols = []
-
-        with col2:
-            if 'pnl' in data.columns:
-                pnl_filter = st.selectbox(
-                    "P&L Filter",
-                    options=['All Trades', 'Winners Only', 'Losers Only', 'Breakeven']
-                )
-            else:
-                pnl_filter = 'All Trades'
-
-        with col3:
-            show_columns = st.multiselect(
-                "Display Columns",
-                options=data.columns.tolist(),
-                default=data.columns.tolist()[:6]
-            )
-
-    # Apply filters
-    filtered_data = data.copy()
-
-    if symbols and 'symbol' in data.columns:
-        filtered_data = filtered_data[filtered_data['symbol'].isin(symbols)]
-
-    if pnl_filter != 'All Trades' and 'pnl' in data.columns:
-        pnl_numeric = pd.to_numeric(filtered_data['pnl'], errors='coerce')
-        if pnl_filter == 'Winners Only':
-            filtered_data = filtered_data[pnl_numeric > 0]
-        elif pnl_filter == 'Losers Only':
-            filtered_data = filtered_data[pnl_numeric < 0]
-        elif pnl_filter == 'Breakeven':
-            filtered_data = filtered_data[pnl_numeric == 0]
-
-    if show_columns:
-        filtered_data = filtered_data[show_columns]
-
-    # Display styled dataframe
-    st.dataframe(
-        filtered_data,
-        use_container_width=True,
-        height=400
-    )
+    except Exception as e:
+        logger.error(f"Error rendering breakdown: {e}")
+        st.error(f"❌ Error rendering breakdown: {str(e)}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-def render_trading_insights(data, stats):
-    """Render trading insights and recommendations."""
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+def render_detailed_insights(data, stats):
+    """Render detailed insights section."""
+    st.markdown('<div class="section-header"><span class="section-icon">💡</span><span class="section-title">Trading Insights</span></div>', unsafe_allow_html=True)
 
-    st.subheader("💡 Trading Insights & Recommendations")
-
+    # Generate insights
     insights = generate_trading_insights(stats)
 
-    for insight in insights:
-        icon = insight['icon']
-        title = insight['title']
-        message = insight['message']
-        level = insight['level']
+    if insights:
+        for insight in insights:
+            icon = insight['icon']
+            title = insight['title']
+            message = insight['message']
+            level = insight['level']
 
-        if level == 'success':
-            st.success(f"{icon} **{title}**: {message}")
-        elif level == 'warning':
-            st.warning(f"{icon} **{title}**: {message}")
-        elif level == 'error':
-            st.error(f"{icon} **{title}**: {message}")
-        else:
-            st.info(f"{icon} **{title}**: {message}")
-
-    st.markdown('</div>', unsafe_allow_html=True)
+            if level == 'success':
+                st.success(f"{icon} **{title}**: {message}")
+            elif level == 'warning':
+                st.warning(f"{icon} **{title}**: {message}")
+            elif level == 'error':
+                st.error(f"{icon} **{title}**: {message}")
+            else:
+                st.info(f"{icon} **{title}**: {message}")
+    else:
+        st.info("💡 No specific insights available. Keep trading to generate more data!")
 
 def render_export_section(data, stats):
-    """Render modern export section."""
+    """Render export section."""
     st.markdown('<div class="section-header"><span class="section-icon">📤</span><span class="section-title">Export & Share</span></div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("📄 Export Professional Report", type="primary", use_container_width=True):
-            try:
-                from pdf_export import render_pdf_export_button
-                render_pdf_export_button(data, stats)
-            except ImportError:
-                st.info("PDF export functionality is being set up")
+        if st.button("📄 Export Report", type="primary", use_container_width=True):
+            st.info("📊 Report export functionality coming soon!")
 
     with col2:
-        if st.button("📊 Export Analytics Data", type="secondary", use_container_width=True):
+        if st.button("📊 Download Data", type="secondary", use_container_width=True):
             csv = data.to_csv(index=False)
             st.download_button(
                 label="📥 Download CSV",
                 data=csv,
-                file_name=f"tradesense_analytics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"tradesense_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
@@ -760,7 +900,7 @@ def render_export_section(data, stats):
         if st.button("📋 Copy Summary", type="secondary", use_container_width=True):
             summary = generate_summary_text(stats)
             st.code(summary, language="text")
-            st.success("Summary ready to copy!")
+            st.success("✅ Summary ready to copy!")
 
 # Helper Functions
 def get_performance_indicator(value, metric_type):
@@ -877,7 +1017,7 @@ def calculate_comprehensive_analytics(data):
         stats['total_trades'] = len(data)
 
         if 'pnl' in data.columns:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').fillna(0)
 
             if not pnl_data.empty:
                 stats['total_pnl'] = pnl_data.sum()
@@ -911,16 +1051,14 @@ def calculate_comprehensive_analytics(data):
                 valid_duration = data.dropna(subset=['entry_time', 'exit_time'])
                 if not valid_duration.empty:
                     durations = (valid_duration['exit_time'] - valid_duration['entry_time']).dt.total_seconds() / 3600
-                    stats['avg_holding_time'] = durations.mean()
                     stats['avg_trade_duration'] = durations.mean()
             except:
-                stats['avg_holding_time'] = 0
                 stats['avg_trade_duration'] = 0
 
         # Consistency score calculation
         if 'pnl' in data.columns:
-            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').dropna()
-            if not pnl_data.empty:
+            pnl_data = pd.to_numeric(data['pnl'], errors='coerce').fillna(0)
+            if not pnl_data.empty and len(pnl_data) > 1:
                 # Calculate consistency based on standard deviation relative to mean
                 mean_pnl = pnl_data.mean()
                 std_pnl = pnl_data.std()
@@ -931,12 +1069,24 @@ def calculate_comprehensive_analytics(data):
                     consistency_score = 0
 
                 stats['consistency_score'] = consistency_score
+            else:
+                stats['consistency_score'] = 0
 
         return stats
 
     except Exception as e:
         logger.error(f"Error calculating comprehensive analytics: {e}")
-        return {}
+        return {
+            'total_trades': 0,
+            'total_pnl': 0,
+            'win_rate': 0,
+            'profit_factor': 0,
+            'expectancy': 0,
+            'best_trade': 0,
+            'avg_trade_duration': 0,
+            'consistency_score': 0
+        }
+
 from pdf_export import render_pdf_export_button
 from email_scheduler import render_email_scheduling_ui
 

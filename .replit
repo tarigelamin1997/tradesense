@@ -1,14 +1,14 @@
 modules = ["python-3.11"]
 
 [run]
-command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableWebsocketCompression=false"
 
 [nix]
 channel = "stable-24_05"
 packages = ["cargo", "glibcLocales", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
 
 [deployment]
-run = ["sh", "-c", "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"]
+run = ["sh", "-c", "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableWebsocketCompression=false"]
 
 [[ports]]
 localPort = 5000
@@ -20,6 +20,7 @@ PYTHONPATH = "/home/runner/${REPL_SLUG}"
 PIP_DISABLE_PIP_VERSION_CHECK = "1"
 LC_ALL = "C"
 LANG = "C"
+REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
 
 [workflows]
 runButton = "Quick Start"
@@ -381,4 +382,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false"
+args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableWebsocketCompression=false"

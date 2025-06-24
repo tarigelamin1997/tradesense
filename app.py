@@ -14,15 +14,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime, timedelta
 import sys
 import os
 import logging
-import traceback
+from datetime import datetime
+
+# Defer heavy imports until needed
+def get_pandas():
+    import pandas as pd
+    return pd
+
+def get_plotly():
+    import plotly.graph_objects as go
+    import plotly.express as px
+    return go, px
+
+def get_numpy():
+    import numpy as np
+    return np
 
 # Add project root to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -256,29 +265,31 @@ class TradeSenseApp:
 
     def __init__(self):
         """Initialize the TradeSense application."""
-        self.auth_manager = AuthManager()
-
-        # Repair database if needed
-        try:
-            if hasattr(self.auth_manager, 'repair_database'):
-                self.auth_manager.repair_database()
-            else:
-                # Force database schema repair
-                self.auth_manager.test_database_connection()
-        except Exception as e:
-            logger.warning(f"Database repair failed: {e}")
-
-        # Initialize health monitor with fallback
-        if HEALTH_MONITORING_AVAILABLE:
-            self.health_monitor = SystemHealthMonitor()
-        else:
-            self.health_monitor = None
-
-        self.notification_manager = notification_manager
-        self.error_handler = ErrorHandler() if ErrorHandler else None
-
-        # Initialize session state
+        # Lazy initialization for faster startup
+        self.auth_manager = None
+        self.health_monitor = None
+        self.notification_manager = None
+        self.error_handler = None
+        
+        # Initialize session state immediately
         self._initialize_session_state()
+        
+        # Initialize components only when needed
+        self._init_auth_manager()
+
+    def _init_auth_manager(self):
+        """Initialize auth manager lazily."""
+        if self.auth_manager is None:
+            try:
+                self.auth_manager = AuthManager()
+                # Skip database repair during startup for speed
+                current_user = self.auth_manager.get_current_user()
+                if current_user and not st.session_state.authenticated:
+                    st.session_state.authenticated = True
+                    st.session_state.user_role = current_user.get('role', 'user')
+            except Exception as e:
+                logger.warning(f"Auth initialization failed: {e}")
+                self.auth_manager = None
 
     def _initialize_session_state(self):
         """Initialize Streamlit session state variables."""

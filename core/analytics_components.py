@@ -1630,7 +1630,7 @@ def render_behavioral_insights(df):
                         title='Trade Duration Distribution',
                         labels={'duration_minutes': 'Duration (minutes)'}
                     )
-                    st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+                    st.plotly_chart(fig, use_container_width=True, key="duration_histogram_unique")
 
                 with col2:
                     # Hour of day analysis
@@ -1907,7 +1907,7 @@ class TradingDashboard:
                 # Holding time distribution chart
                 fig = px.histogram(trade_data, x='holding_time', bins=20, 
                                  title="Trade Duration Distribution")
-                st.plotly_chart(fig, use_container_width=True, key="trade_duration_distribution_chart")
+                st.plotly_chart(fig, use_container_width=True, key="duration_histogram_unique")
 
             except Exception as e:
                 st.info("💡 Trade duration analysis requires entry_time and exit_time columns")
@@ -2037,6 +2037,6 @@ class TradingDashboard:
             # Equity Curve
             cumulative_pnl = trade_data['pnl'].cumsum()
             fig = px.line(x=trade_data.index, y=cumulative_pnl, title='Equity Curve')
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_chart")
+            st.plotly_chart(fig, use_container_width=True, key="equity_line_chart_main")
 from interactive_table import render_interactive_table
 from notification_system import create_system_alert, NotificationType, NotificationPriority

@@ -810,7 +810,7 @@ def render_beautiful_breakdown_analysis(data):
             # Create beautiful horizontal bar chart
             fig = go.Figure()
 
-            colors = ['#ef4444' if x < 0 else '#10b981' for x in symbol_performance['Total P&L']]
+            colors = ['#ef4444' if x 0 else '#10b981' for x in symbol_performance['Total P&L']]
 
             fig.add_trace(go.Bar(
                 y=symbol_performance['symbol'],
@@ -2036,7 +2036,53 @@ class TradingDashboard:
 
             # Equity Curve
             cumulative_pnl = trade_data['pnl'].cumsum()
-            fig = px.line(x=trade_data.index, y=cumulative_pnl, title='Equity Curve')
-            st.plotly_chart(fig, use_container_width=True, key="equity_line_chart_main")
+            # Modern equity curve
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=trade_data.index,
+                y=cumulative_pnl,
+                mode='lines',
+                name='Equity Curve',
+                line=dict(color='#00d4ff', width=3)
+            ))
+
+            fig.update_layout(
+                title="📈 Equity Curve",
+                xaxis_title="Trade Number",
+                yaxis_title="Cumulative P&L ($)",
+                template="plotly_white",
+                height=400
+            )
+
+            st.plotly_chart(fig, use_container_width=True, key=f'equity_curve_{hash(str(cumulative_pnl))}')
+            # Win rate gauge
+            if len(trade_data) > 0:
+                winning_trades = len(trade_data[trade_data['pnl'] > 0])
+                win_rate = (winning_trades / len(trade_data) * 100) if len(trade_data) > 0 else 0
+            else:
+                win_rate = 0
+            win_rate_fig = go.Figure(go.Indicator(
+                mode="gauge+number+delta",
+                value=win_rate,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': "Win Rate %"},
+                gauge={
+                    'axis': {'range': [None, 100]},
+                    'bar': {'color': "#00d4ff"},
+                    'steps': [
+                        {'range': [0, 50], 'color': "#ff6b6b"},
+                        {'range': [50, 75], 'color': "#ffd93d"},
+                        {'range': [75, 100], 'color': "#6bcf7f"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 90
+                    }
+                }
+            ))
+
+            win_rate_fig.update_layout(height=300)
+            st.plotly_chart(win_rate_fig, use_container_width=True, key=f'win_rate_gauge_{hash(str(win_rate))}')
 from interactive_table import render_interactive_table
 from notification_system import create_system_alert, NotificationType, NotificationPriority

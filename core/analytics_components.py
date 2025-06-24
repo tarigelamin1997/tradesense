@@ -615,7 +615,7 @@ def render_beautiful_equity_curve(data, stats):
                 font=dict(family='Inter, sans-serif', size=12, color='#374151')
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="equity_curve_main")
+            st.plotly_chart(fig, use_container_width=True, key="equity_curve_analytics_dashboard")
 
             # Add insights below the chart
             final_pnl = cumulative_pnl.iloc[-1]
@@ -701,7 +701,7 @@ def render_beautiful_distribution_chart(data):
                 font=dict(family='Inter, sans-serif', size=12, color='#374151')
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="distribution_chart_main")
+            st.plotly_chart(fig, use_container_width=True, key="pnl_distribution_analytics")
 
         else:
             st.error("❌ P&L column not found")
@@ -750,7 +750,7 @@ def render_beautiful_performance_metrics(data, stats):
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
         )
-        st.plotly_chart(fig_gauge, use_container_width=True, key="win_rate_gauge_unique")
+        st.plotly_chart(fig_gauge, use_container_width=True, key="win_rate_gauge_main_dashboard")
 
     with col2:
         # Beautiful Profit Factor Gauge
@@ -783,7 +783,7 @@ def render_beautiful_performance_metrics(data, stats):
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
         )
-        st.plotly_chart(fig_pf, use_container_width=True, key="profit_factor_gauge_unique")
+        st.plotly_chart(fig_pf, use_container_width=True, key="profit_factor_gauge_main_dashboard")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -839,7 +839,7 @@ def render_beautiful_breakdown_analysis(data):
                 font=dict(family='Inter, sans-serif', size=12, color='#374151')
             )
 
-            st.plotly_chart(fig, use_container_width=True, key="symbol_breakdown_main")
+            st.plotly_chart(fig, use_container_width=True, key="symbol_performance_breakdown_chart")
 
         else:
             st.warning("⚠️ Symbol or P&L data not available")
@@ -1406,7 +1406,7 @@ def render_correlation_analysis(df):
             color_continuous_scale='RdBu_r'
         )
 
-        st.plotly_chart(fig, use_container_width=True, key="correlation_heatmap_chart")
+        st.plotly_chart(fig, use_container_width=True, key="correlation_matrix_heatmap")
 
         # Interpretation
         st.subheader("Correlation Insights")
@@ -2032,7 +2032,7 @@ class TradingDashboard:
         if 'pnl' in trade_data.columns:
             st.subheader("P&L Distribution")
             fig = px.histogram(trade_data, x='pnl', title='P&L Distribution')
-            st.plotly_chart(fig, use_container_width=True, key="pnl_distribution_chart")
+            st.plotly_chart(fig, use_container_width=True, key="pnl_histogram_distribution")
 
             # Equity Curve
             cumulative_pnl = trade_data['pnl'].cumsum()

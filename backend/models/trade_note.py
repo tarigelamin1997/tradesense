@@ -23,6 +23,11 @@ class TradeNote(Base):
     content = Column(Text, nullable=False)
     mood = Column(String(50), nullable=True)  # e.g., "confident", "anxious", "neutral"
     
+    # Emotion tracking fields
+    emotion = Column(String(50), nullable=True)  # Calm, Excited, Anxious, Fearful, Angry, etc.
+    confidence_score = Column(Integer, nullable=True)  # 1-10 scale
+    mental_triggers = Column(Text, nullable=True)  # JSON array of triggers like FOMO, Revenge, etc.
+    
     # Timestamps
     timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)

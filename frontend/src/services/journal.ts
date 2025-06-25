@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -111,4 +110,54 @@ class JournalService {
   }
 }
 
-export const journalService = new JournalService();
+export const journalService = {
+  // Create journal entry for a trade
+  async createEntry(tradeId: string, data: JournalEntryCreate): Promise<JournalEntry> {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/notes/trades/${tradeId}/journal`, data);
+    return response.data;
+  },
+
+  // Get all journal entries for a trade
+  async getTradeEntries(tradeId: string): Promise<JournalEntry[]> {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/notes/trades/${tradeId}/journal`);
+    return response.data;
+  },
+
+  // Update journal entry
+  async updateEntry(entryId: string, data: JournalEntryUpdate): Promise<JournalEntry> {
+    const response = await axios.put(`${API_BASE_URL}/api/v1/notes/journal/${entryId}`, data);
+    return response.data;
+  },
+
+  // Delete journal entry
+  async deleteEntry(entryId: string): Promise<void> {
+    await axios.delete(`${API_BASE_URL}/api/v1/notes/journal/${entryId}`);
+  },
+
+  // Get specific journal entry
+  async getEntry(entryId: string): Promise<JournalEntry> {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/notes/journal/${entryId}`);
+    return response.data;
+  },
+
+  // Get all user journal entries
+  async getAllEntries(limit: number = 100, offset: number = 0): Promise<JournalEntry[]> {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/notes/journal`, {
+      params: { limit, offset }
+    });
+    return response.data;
+  },
+
+  // Psychology analytics
+  async getEmotionAnalytics(startDate?: string, endDate?: string): Promise<any> { // Replace `any` with actual type
+    const response = await axios.get(`${API_BASE_URL}/api/v1/notes/analytics/emotions`, {
+      params: { start_date: startDate, end_date: endDate }
+    });
+    return response.data;
+  },
+
+  async getPsychologyInsights(): Promise<any> { // Replace `any` with actual type
+    const response = await axios.get(`${API_BASE_URL}/api/v1/notes/analytics/psychology`);
+    return response.data;
+  }
+};

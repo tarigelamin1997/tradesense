@@ -90,6 +90,16 @@ async def get_current_active_user(current_user: Dict[str, Any] = Depends(get_cur
     return current_user
 
 
+async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    """Dependency to ensure current user is an admin"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+
 def verify_token(token: str) -> Dict[str, Any]:
     """
     Legacy function for backward compatibility

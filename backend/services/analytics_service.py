@@ -11,12 +11,14 @@ from cachetools import TTLCache
 
 from backend.models.trade import Trade
 from backend.db.connection import get_db
+from backend.services.behavioral_analytics import BehavioralAnalyticsService
 
 logger = logging.getLogger(__name__)
 
 class AnalyticsService:
     def __init__(self):
         self.cache = TTLCache(maxsize=100, ttl=300)  # 5-minute cache
+        self.behavioral_service = BehavioralAnalyticsService()
         
     async def get_user_analytics(
         self, 
@@ -112,6 +114,10 @@ class AnalyticsService:
         # Advanced metrics
         advanced_metrics = self._calculate_advanced_metrics(df)
         
+        # Behavioral analytics
+        trades_data = df.to_dict('records')
+        behavioral_metrics = self.behavioral_service.analyze_behavioral_patterns(trades_data)
+        
         return {
             # Basic metrics
             'total_trades': total_trades,
@@ -145,7 +151,10 @@ class AnalyticsService:
             'time_analysis': time_analysis,
             
             # Advanced analytics
-            **advanced_metrics
+            **advanced_metrics,
+            
+            # Behavioral analytics (NEW)
+            'behavioral_metrics': behavioral_metrics
         }
     
     def _calculate_max_drawdown(self, pnl_series: pd.Series) -> float:

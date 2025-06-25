@@ -16,3 +16,15 @@ __all__ = ["Trade", "User", "TradeNote", "Strategy"]
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Database configuration and utilities
+from .session import get_db
+
+__all__ = ["get_db"]
+
+# Import behavioral analytics service for dependency injection
+try:
+    from backend.services.behavioral_analytics import BehavioralAnalyticsService
+    __all__.append("BehavioralAnalyticsService")
+except ImportError:
+    pass

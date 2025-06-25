@@ -212,5 +212,8 @@ class AnalyticsResponse(BaseModel):
     avg_trade_duration: Optional[float] = None
     trades_by_day_of_week: Dict[str, int] = {}
 
+    # Behavioral metrics (NEW)
+    behavioral_metrics: Dict[str, Any] = {}
+
     # Applied filters (for reference)
     filters_applied: Optional[AnalyticsFilters] = None

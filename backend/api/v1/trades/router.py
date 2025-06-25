@@ -184,28 +184,103 @@ async def calculate_analytics(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/analytics/dashboard",
-            response_model=APIResponse,
-            summary="Get Dashboard Analytics")
-async def get_dashboard_analytics(start_date: Optional[datetime] = Query(
-    None, description="Start date filter"),
-                                  end_date: Optional[datetime] = Query(
-                                      None, description="End date filter"),
-                                  current_user: Dict[str, Any] = Depends(
-                                      get_current_active_user)) -> APIResponse:
-    """
-    Get comprehensive dashboard analytics for user
-
-    Returns all analytics data needed for the dashboard
-    """
+@router.get("/analytics/behavioral")
+async def get_behavioral_analytics(
+    start_date: Optional[datetime] = Query(None, description="Start date filter"),
+    end_date: Optional[datetime] = Query(None, description="End date filter"),
+    current_user: Dict[str, Any] = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed behavioral analytics and trading patterns"""
     try:
-        result = await trades_service.get_user_analytics(
-            current_user["user_id"], start_date, end_date)
+        from backend.services.behavioral_analytics import BehavioralAnalyticsService
+
+        # Get user trades for behavioral analysis
+        query = db.query(Trade).filter(Trade.user_id == current_user["user_id"])
+
+        if start_date:
+            query = query.filter(Trade.entry_time >= start_date)
+        if end_date:
+            query = query.filter(Trade.entry_time <= end_date)
+
+        trades = query.all()
+
+        # Convert to dict format for analysis
+        trades_data = []
+        for trade in trades:
+            trade_dict = {
+                'id': trade.id,
+                'symbol': trade.symbol,
+                'direction': trade.direction,
+                'quantity': trade.quantity,
+                'entry_price': trade.entry_price,
+                'exit_price': trade.exit_price,
+                'entry_time': trade.entry_time,
+                'exit_time': trade.exit_time,
+                'pnl': trade.pnl or 0,
+                'tags': trade.tags or [],
+                'strategy_tag': trade.strategy_tag,
+                'confidence_score': trade.confidence_score
+            }
+            trades_data.append(trade_dict)
+
+        # Perform behavioral analysis
+        behavioral_service = BehavioralAnalyticsService()
+        behavioral_metrics = behavioral_service.analyze_behavioral_patterns(trades_data)
 
         return ResponseHandler.success(
-            data=result, message="Dashboard analytics retrieved successfully")
-    except TradeSenseException:
-        raise
+            data=behavioral_metrics,
+            message="Behavioral analytics retrieved successfully"
+        )
+
     except Exception as e:
-        logger.error(f"Dashboard analytics endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Behavioral analytics error: {str(e)}")
+        return ResponseHandler.error(
+            message=f"Failed to retrieve behavioral analytics: {str(e)}",
+            status_code=500
+        )
+
+@router.get("/analytics/dashboard")
+async def get_dashboard_analytics(
+    start_date: Optional[datetime] = Query(None, description="Start date filter"),
+    end_date: Optional[datetime] = Query(None, description="End date filter"),
+    strategy_tag: Optional[str] = Query(None, description="Filter by strategy"),
+    tags: Optional[List[str]] = Query(None, description="Filter by tags"),
+    confidence_score_min: Optional[int] = Query(None, ge=1, le=10, description="Min confidence score"),
+    confidence_score_max: Optional[int] = Query(None, ge=1, le=10, description="Max confidence score"),
+    current_user: Dict[str, Any] = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get dashboard analytics with optional filters including behavioral metrics"""
+    try:
+        analytics_service = AnalyticsService()
+
+        # Get comprehensive analytics including behavioral patterns
+        analytics = await analytics_service.get_user_analytics(
+            user_id=current_user["user_id"],
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        # Apply additional filters if needed
+        # TODO: Implement strategy_tag, tags, confidence_score filters in service
+
+        # Log behavioral insights for debugging
+        if isinstance(analytics, dict) and 'behavioral_metrics' in analytics:
+            logger.info(f"Behavioral analysis completed for user {current_user['user_id']}")
+            behavioral_data = analytics['behavioral_metrics']
+            logger.info(f"Consistency rating: {behavioral_data.get('consistency_rating', 'unknown')}")
+            logger.info(f"Max win streak: {behavioral_data.get('max_win_streak', 0)}")
+            logger.info(f"Max loss streak: {behavioral_data.get('max_loss_streak', 0)}")
+
+        return ResponseHandler.success(
+            data=analytics,
+            message="Dashboard analytics with behavioral insights retrieved successfully"
+        )
+
+    except Exception as e:
+        logger.error(f"Dashboard analytics error: {str(e)}")
+        return ResponseHandler.error(
+            message=f"Failed to retrieve analytics: {str(e)}",
+            status_code=500
+        )

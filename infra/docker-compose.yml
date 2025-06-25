@@ -1,0 +1,54 @@
+
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: .
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./tradesense.db
+      - JWT_SECRET=${JWT_SECRET:-dev_secret_key}
+    volumes:
+      - ./backend:/app/backend
+      - ./logs:/app/logs
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=tradesense
+      - POSTGRES_USER=tradesense
+      - POSTGRES_PASSWORD=tradesense_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:

@@ -1,125 +1,93 @@
-
-"""
-Enhanced trade data models with validation and relationships
-"""
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index
 from sqlalchemy.ext.declarative import declarative_base
-from pydantic import BaseModel, validator
+from sqlalchemy.sql import func
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
-import enum
+import uuid
 
 Base = declarative_base()
 
-class TradeDirection(enum.Enum):
-    LONG = "long"
-    SHORT = "short"
-
-class TradeStatus(enum.Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-    CANCELLED = "cancelled"
-
 class Trade(Base):
     __tablename__ = "trades"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    symbol = Column(String(20), nullable=False, index=True)
-    entry_time = Column(DateTime, nullable=False, index=True)
-    exit_time = Column(DateTime, nullable=True)
-    entry_price = Column(Float, nullable=False)
-    exit_price = Column(Float, nullable=True)
-    quantity = Column(Float, nullable=False)
-    direction = Column(Enum(TradeDirection), nullable=False)
-    pnl = Column(Float, nullable=True)
-    commission = Column(Float, default=0.0)
-    status = Column(Enum(TradeStatus), default=TradeStatus.OPEN)
-    
-    # Enhanced fields
-    strategy_tag = Column(String(100), nullable=True, index=True)
-    confidence_score = Column(Integer, nullable=True)  # 1-10
-    notes = Column(Text, nullable=True)
-    stop_loss = Column(Float, nullable=True)
-    take_profit = Column(Float, nullable=True)
-    
-    # Risk metrics
-    position_size_percent = Column(Float, nullable=True)
-    risk_reward_ratio = Column(Float, nullable=True)
-    
-    # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    data_source = Column(String(50), default="manual")
-    
-    # Relationships
-    user = relationship("User", back_populates="trades")
-    trade_analytics = relationship("TradeAnalytics", back_populates="trade", uselist=False)
 
-class TradeAnalytics(Base):
-    __tablename__ = "trade_analytics"
-    
-    id = Column(Integer, primary_key=True)
-    trade_id = Column(Integer, ForeignKey("trades.id"), unique=True)
-    
-    # Performance metrics
-    hold_time_minutes = Column(Integer)
-    max_adverse_excursion = Column(Float)  # MAE
-    max_favorable_excursion = Column(Float)  # MFE
-    efficiency_ratio = Column(Float)
-    
-    # Behavioral indicators
-    revenge_trade_flag = Column(Boolean, default=False)
-    overconfidence_flag = Column(Boolean, default=False)
-    
-    # Market context
-    market_volatility = Column(Float)
-    sector_performance = Column(Float)
-    
-    trade = relationship("Trade", back_populates="trade_analytics")
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False, index=True)
+
+    # Trade identification
+    symbol = Column(String, nullable=False, index=True)
+    strategy_tag = Column(String, index=True)
+    trade_id = Column(String, unique=True)
+
+    # Trade details
+    direction = Column(String, nullable=False)  # 'long' or 'short'
+    quantity = Column(Float, nullable=False)
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float)
+
+    # Timing
+    entry_time = Column(DateTime, nullable=False, index=True)
+    exit_time = Column(DateTime, index=True)
+
+    # Performance
+    pnl = Column(Float, index=True)
+    commission = Column(Float, default=0.0)
+    net_pnl = Column(Float)
+
+    # Risk metrics
+    max_adverse_excursion = Column(Float)
+    max_favorable_excursion = Column(Float)
+    confidence_score = Column(Integer)
+
+    # Metadata
+    notes = Column(Text)
+    tags = Column(String)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_user_symbol', 'user_id', 'symbol'),
+        Index('idx_user_date', 'user_id', 'entry_time'),
+        Index('idx_pnl_filter', 'user_id', 'pnl'),
+    )
 
 # Pydantic models for API
-class TradeCreate(BaseModel):
-    symbol: str
+class TradeBase(BaseModel):
+    symbol: str = Field(..., min_length=1, max_length=10)
+    direction: str = Field(..., regex="^(long|short)$")
+    quantity: float = Field(..., gt=0)
+    entry_price: float = Field(..., gt=0)
+    exit_price: Optional[float] = Field(None, gt=0)
     entry_time: datetime
     exit_time: Optional[datetime] = None
-    entry_price: float
-    exit_price: Optional[float] = None
-    quantity: float
-    direction: TradeDirection
-    strategy_tag: Optional[str] = None
-    confidence_score: Optional[int] = None
-    notes: Optional[str] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    
-    @validator('confidence_score')
-    def validate_confidence(cls, v):
-        if v is not None and (v < 1 or v > 10):
-            raise ValueError('Confidence score must be between 1 and 10')
-        return v
-    
-    @validator('quantity')
-    def validate_quantity(cls, v):
-        if v <= 0:
-            raise ValueError('Quantity must be positive')
+    strategy_tag: Optional[str] = Field(None, max_length=50)
+    confidence_score: Optional[int] = Field(None, ge=1, le=10)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+    @validator('exit_time')
+    def validate_exit_time(cls, v, values):
+        if v and 'entry_time' in values and v <= values['entry_time']:
+            raise ValueError('Exit time must be after entry time')
         return v
 
-class TradeResponse(BaseModel):
-    id: int
-    symbol: str
-    entry_time: datetime
-    exit_time: Optional[datetime]
-    entry_price: float
-    exit_price: Optional[float]
-    quantity: float
-    direction: TradeDirection
+class TradeCreate(TradeBase):
+    pass
+
+class TradeUpdate(BaseModel):
+    exit_price: Optional[float] = Field(None, gt=0)
+    exit_time: Optional[datetime] = None
+    notes: Optional[str] = Field(None, max_length=1000)
+    tags: Optional[str] = Field(None, max_length=200)
+
+class TradeResponse(TradeBase):
+    id: str
+    user_id: str
     pnl: Optional[float]
-    status: TradeStatus
-    strategy_tag: Optional[str]
-    confidence_score: Optional[int]
+    commission: Optional[float]
+    net_pnl: Optional[float]
     created_at: datetime
-    
+    updated_at: datetime
+
     class Config:
         from_attributes = True

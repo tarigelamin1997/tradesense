@@ -5,10 +5,17 @@ TradeSense Backend API Server
 FastAPI-based REST API for TradeSense trading analytics
 """
 
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from fastapi.exception_handlers import (
+    http_exception_handler,
+    request_validation_exception_handler,
+)
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 from typing import Optional, List, Dict, Any
 import pandas as pd
 import json
@@ -16,29 +23,70 @@ import logging
 import os
 import sys
 import jwt
+import time
+import uuid
 from datetime import datetime, timedelta
 import numpy as np
+from contextlib import asynccontextmanager
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('backend/logs/tradesense.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import your existing modules
+# Import modules
 try:
     from auth import AuthManager
     from analytics import compute_basic_stats, performance_over_time, calculate_kpis
     from data_validation import DataValidator
+    from backend.db.connection import DatabaseManager, init_database
+    from backend.services.analytics_service import AnalyticsService
+    from backend.models.trade import Trade, TradeCreate, TradeResponse
 except ImportError as e:
-    print(f"Warning: Could not import some modules: {e}")
+    logger.warning(f"Could not import some modules: {e}")
     AuthManager = None
     DataValidator = None
 
+# Lifespan context manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("🚀 TradeSense API starting up...")
+    
+    # Initialize database
+    if not init_database():
+        logger.error("Failed to initialize database")
+    
+    # Health check
+    if DatabaseManager.health_check():
+        logger.info("✅ Database connection healthy")
+    else:
+        logger.error("❌ Database connection failed")
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 TradeSense API shutting down...")
+
+# FastAPI app with lifespan
 app = FastAPI(
     title="TradeSense API",
     description="Advanced Trading Analytics Platform API",
-    version="1.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
-# CORS middleware for frontend
+# Middleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -55,6 +103,9 @@ app.add_middleware(
 
 # Security
 security = HTTPBearer()
+
+# Services
+analytics_service = AnalyticsService()
 
 # Pydantic models
 class LoginRequest(BaseModel):
@@ -76,8 +127,14 @@ class UserResponse(BaseModel):
     email: str
     role: str
 
+class ErrorResponse(BaseModel):
+    error: str
+    message: str
+    timestamp: datetime
+    request_id: str
+
 # JWT configuration
-JWT_SECRET = "tradesense_jwt_secret_key_2024"
+JWT_SECRET = os.getenv("JWT_SECRET", "tradesense_jwt_secret_key_2024")
 JWT_ALGORITHM = "HS256"
 
 def create_jwt_token(user_data: dict) -> str:
@@ -109,95 +166,210 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
-# Health check
+# Error handlers
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message=exc.detail,
+            timestamp=datetime.utcnow(),
+            request_id=str(uuid.uuid4())
+        ).dict()
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            error="ValidationError",
+            message=f"Invalid request data: {exc.errors()}",
+            timestamp=datetime.utcnow(),
+            request_id=str(uuid.uuid4())
+        ).dict()
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error=exc.__class__.__name__,
+            message="Internal server error",
+            timestamp=datetime.utcnow(),
+            request_id=str(uuid.uuid4())
+        ).dict()
+    )
+
+# Middleware for request logging
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    # Add request ID
+    request_id = str(uuid.uuid4())
+    
+    # Log request
+    logger.info(f"Request {request_id}: {request.method} {request.url}")
+    
+    response = await call_next(request)
+    
+    # Log response
+    process_time = time.time() - start_time
+    logger.info(f"Request {request_id} completed in {process_time:.3f}s with status {response.status_code}")
+    
+    return response
+
+# Health check endpoints
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "TradeSense API", "timestamp": datetime.utcnow()}
+    db_healthy = DatabaseManager.health_check()
+    return {
+        "status": "healthy" if db_healthy else "degraded",
+        "service": "TradeSense API",
+        "timestamp": datetime.utcnow(),
+        "database": "healthy" if db_healthy else "unhealthy",
+        "version": "2.0.0"
+    }
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    db_stats = DatabaseManager.get_stats()
+    return {
+        "status": "healthy",
+        "service": "TradeSense API",
+        "timestamp": datetime.utcnow(),
+        "database": db_stats,
+        "system": {
+            "python_version": sys.version,
+            "platform": sys.platform
+        }
+    }
 
 # Authentication endpoints
 @app.post("/api/auth/login")
 async def login(request: LoginRequest):
-    if AuthManager:
-        auth_manager = AuthManager()
-        result = auth_manager.login_user(request.username, request.password)
-        if result["success"]:
-            token = create_jwt_token(result["user"])
+    try:
+        if AuthManager:
+            auth_manager = AuthManager()
+            result = auth_manager.login_user(request.username, request.password)
+            if result["success"]:
+                token = create_jwt_token(result["user"])
+                return {
+                    "success": True,
+                    "token": token,
+                    "user": result["user"]
+                }
+            raise HTTPException(status_code=401, detail=result["message"])
+        else:
+            # Mock authentication for development
+            mock_user = {
+                "id": "1",
+                "username": request.username,
+                "email": f"{request.username}@example.com",
+                "role": "user"
+            }
+            token = create_jwt_token(mock_user)
             return {
                 "success": True,
                 "token": token,
-                "user": result["user"]
+                "user": mock_user
             }
-        raise HTTPException(status_code=401, detail=result["message"])
-    else:
-        # Mock authentication for development
-        mock_user = {
-            "id": "1",
-            "username": request.username,
-            "email": f"{request.username}@example.com",
-            "role": "user"
-        }
-        token = create_jwt_token(mock_user)
-        return {
-            "success": True,
-            "token": token,
-            "user": mock_user
-        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
 
 @app.post("/api/auth/register")
 async def register(request: RegisterRequest):
-    if AuthManager:
-        auth_manager = AuthManager()
-        result = auth_manager.register_user(request.username, request.email, request.password)
-        if result["success"]:
-            return {"success": True, "message": "Registration successful"}
-        raise HTTPException(status_code=400, detail=result["message"])
-    else:
-        return {"success": True, "message": "Registration successful (mock)"}
+    try:
+        if AuthManager:
+            auth_manager = AuthManager()
+            result = auth_manager.register_user(request.username, request.email, request.password)
+            if result["success"]:
+                return {"success": True, "message": "Registration successful"}
+            raise HTTPException(status_code=400, detail=result["message"])
+        else:
+            return {"success": True, "message": "Registration successful (mock)"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
 
 @app.get("/api/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(**current_user)
 
-# Data upload endpoint
+# Enhanced data upload endpoint
 @app.post("/api/data/upload")
 async def upload_trade_data(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
+    temp_path = None
     try:
+        # Validate file
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file provided")
+        
+        allowed_extensions = ['.csv', '.xlsx', '.xls']
+        file_ext = '.' + file.filename.split('.')[-1].lower()
+        
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unsupported file format. Allowed: {', '.join(allowed_extensions)}"
+            )
+        
+        # Check file size (10MB limit)
+        if file.size and file.size > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size: 10MB")
+        
         # Read uploaded file
         content = await file.read()
         
         # Save temporarily and process
-        temp_path = f"temp_{current_user['user_id']}_{file.filename}"
+        temp_path = f"temp_{current_user['user_id']}_{int(time.time())}_{file.filename}"
         with open(temp_path, "wb") as f:
             f.write(content)
         
         # Load and validate data
         try:
-            if file.filename.endswith('.csv'):
+            if file_ext == '.csv':
                 df = pd.read_csv(temp_path)
-            elif file.filename.endswith(('.xlsx', '.xls')):
-                df = pd.read_excel(temp_path)
             else:
-                raise HTTPException(status_code=400, detail="Unsupported file format")
+                df = pd.read_excel(temp_path)
         except Exception as e:
-            os.remove(temp_path)
             raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+        
+        # Validate data structure
+        if df.empty:
+            raise HTTPException(status_code=400, detail="File is empty")
+        
+        required_columns = ['symbol', 'pnl']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required columns: {missing_columns}"
+            )
         
         # Data validation
         if DataValidator:
             validator = DataValidator()
             validation_result = validator.validate_data(df)
             if not validation_result["valid"]:
-                os.remove(temp_path)
                 raise HTTPException(status_code=400, detail=validation_result["errors"])
         
         # Convert DataFrame to records for JSON response
         data_records = df.to_dict('records')
         
-        # Clean up
-        os.remove(temp_path)
+        logger.info(f"Successfully uploaded {len(df)} trades for user {current_user['user_id']}")
         
         return {
             "success": True,
@@ -210,22 +382,28 @@ async def upload_trade_data(
     except HTTPException:
         raise
     except Exception as e:
-        if 'temp_path' in locals() and os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Upload failed for user {current_user['user_id']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+    finally:
+        # Clean up temporary file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass
 
-# Analytics endpoints
+# Enhanced analytics endpoints
 @app.post("/api/analytics/analyze")
 async def analyze_data(
     request: AnalysisRequest,
     current_user: dict = Depends(get_current_user)
 ):
     try:
+        if not request.data:
+            raise HTTPException(status_code=400, detail="No data provided for analysis")
+        
         # Convert request data to DataFrame
         df = pd.DataFrame(request.data)
-        
-        if df.empty:
-            raise HTTPException(status_code=400, detail="No data provided for analysis")
         
         # Ensure required columns exist
         required_columns = ['pnl']
@@ -236,156 +414,59 @@ async def analyze_data(
                 detail=f"Missing required columns: {missing_columns}"
             )
         
-        # Run comprehensive analysis
-        results = {}
+        # Use the enhanced analytics service
+        results = await analytics_service._calculate_comprehensive_analytics(df)
         
-        # Basic statistics
-        if compute_basic_stats:
-            basic_stats = compute_basic_stats(df)
-            results.update(basic_stats)
-        
-        # Performance over time
-        if performance_over_time and 'exit_time' in df.columns:
-            try:
-                perf_data = performance_over_time(df)
-                results['performance_over_time'] = perf_data.to_dict('records') if not perf_data.empty else []
-            except Exception as e:
-                print(f"Performance over time analysis failed: {e}")
-                results['performance_over_time'] = []
-        
-        # KPIs
-        if calculate_kpis:
-            try:
-                kpis = calculate_kpis(df)
-                results.update(kpis)
-            except Exception as e:
-                print(f"KPI calculation failed: {e}")
-        
-        # Additional calculated metrics
-        if 'pnl' in df.columns:
-            pnl_data = pd.to_numeric(df['pnl'], errors='coerce').dropna()
-            
-            if not pnl_data.empty:
-                results.update({
-                    'total_pnl': float(pnl_data.sum()),
-                    'total_trades': len(pnl_data),
-                    'winning_trades': len(pnl_data[pnl_data > 0]),
-                    'losing_trades': len(pnl_data[pnl_data < 0]),
-                    'best_trade': float(pnl_data.max()),
-                    'worst_trade': float(pnl_data.min()),
-                    'avg_trade': float(pnl_data.mean()),
-                    'median_trade': float(pnl_data.median()),
-                    'std_dev': float(pnl_data.std()),
-                })
-                
-                # Win rate
-                win_rate = (len(pnl_data[pnl_data > 0]) / len(pnl_data) * 100) if len(pnl_data) > 0 else 0
-                results['win_rate'] = win_rate
-                
-                # Profit factor
-                gross_profit = pnl_data[pnl_data > 0].sum() if len(pnl_data[pnl_data > 0]) > 0 else 0
-                gross_loss = abs(pnl_data[pnl_data < 0].sum()) if len(pnl_data[pnl_data < 0]) > 0 else 0
-                profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
-                results['profit_factor'] = float(profit_factor) if profit_factor != float('inf') else 999
-                
-                # Expectancy
-                results['expectancy'] = float(pnl_data.mean())
-                
-                # Sharpe ratio (simplified)
-                if len(pnl_data) > 1:
-                    sharpe_ratio = pnl_data.mean() / pnl_data.std() if pnl_data.std() > 0 else 0
-                    results['sharpe_ratio'] = float(sharpe_ratio)
-                
-                # Max drawdown calculation
-                cumulative_pnl = pnl_data.cumsum()
-                running_max = cumulative_pnl.expanding().max()
-                drawdown = running_max - cumulative_pnl
-                results['max_drawdown'] = float(drawdown.max())
-                
-                # Equity curve
-                results['equity_curve'] = cumulative_pnl.tolist()
-                
-                # Risk-reward ratio
-                avg_win = pnl_data[pnl_data > 0].mean() if len(pnl_data[pnl_data > 0]) > 0 else 0
-                avg_loss = abs(pnl_data[pnl_data < 0].mean()) if len(pnl_data[pnl_data < 0]) > 0 else 0
-                results['reward_risk'] = float(avg_win / avg_loss) if avg_loss > 0 else 0
-        
-        # Ensure all numeric values are JSON serializable
-        for key, value in results.items():
-            if isinstance(value, (np.int64, np.int32)):
-                results[key] = int(value)
-            elif isinstance(value, (np.float64, np.float32)):
-                results[key] = float(value)
-            elif pd.isna(value):
-                results[key] = None
+        logger.info(f"Analytics completed for user {current_user['user_id']}: {len(df)} trades analyzed")
         
         return {
             "success": True,
-            "results": results
+            "results": results,
+            "metadata": {
+                "analyzed_trades": len(df),
+                "analysis_type": request.analysis_type,
+                "timestamp": datetime.utcnow()
+            }
         }
     
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Analysis error: {str(e)}")
+        logger.error(f"Analysis failed for user {current_user['user_id']}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @app.get("/api/analytics/dashboard/{user_id}")
 async def get_dashboard_data(
     user_id: str,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     current_user: dict = Depends(get_current_user)
 ):
     try:
-        # Mock dashboard data for now
-        # In production, this would fetch from database
-        dashboard_data = {
-            "total_trades": 1250,
-            "win_rate": 68.5,
-            "profit_factor": 1.85,
-            "total_pnl": 125430.50,
-            "best_day": 15420.30,
-            "worst_day": -8945.20,
-            "max_drawdown": -12500.00,
-            "sharpe_ratio": 1.42,
-            "avg_daily_pnl": 245.50,
-            "risk_reward_ratio": 1.75,
-            "equity_curve": [
-                {"date": "Trade 1", "cumulativePnL": 150},
-                {"date": "Trade 2", "cumulativePnL": 320},
-                {"date": "Trade 3", "cumulativePnL": 180},
-                {"date": "Trade 4", "cumulativePnL": 450},
-                {"date": "Trade 5", "cumulativePnL": 820}
-            ],
-            "pnl_distribution": [
-                {"range": "< -$1000", "count": 15},
-                {"range": "-$1000 to -$500", "count": 45},
-                {"range": "-$500 to -$100", "count": 120},
-                {"range": "-$100 to $0", "count": 280},
-                {"range": "$0 to $100", "count": 380},
-                {"range": "$100 to $500", "count": 250},
-                {"range": "$500 to $1000", "count": 85},
-                {"range": "> $1000", "count": 75}
-            ],
-            "symbol_breakdown": [
-                {"name": "ES", "trades": 450, "winRate": 72, "pnl": 85420},
-                {"name": "NQ", "trades": 320, "winRate": 65, "pnl": 42180},
-                {"name": "YM", "trades": 280, "winRate": 68, "pnl": -2170},
-                {"name": "RTY", "trades": 200, "winRate": 58, "pnl": 0}
-            ]
-        }
+        # Security: Users can only access their own data
+        if current_user["user_id"] != user_id and current_user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Access denied")
         
-        return dashboard_data
+        analytics = await analytics_service.get_user_analytics(user_id, start_date, end_date)
+        
+        if "error" in analytics:
+            raise HTTPException(status_code=404, detail=analytics["error"])
+        
+        return analytics
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Dashboard data retrieval failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve dashboard data: {str(e)}")
 
 # Additional utility endpoints
 @app.get("/api/analytics/symbols")
 async def get_symbols(current_user: dict = Depends(get_current_user)):
     """Get list of traded symbols for the user."""
-    # Mock data - replace with database query
+    # This would query the database for actual symbols
     return {
-        "symbols": ["ES", "NQ", "YM", "RTY", "CL", "GC"]
+        "symbols": ["ES", "NQ", "YM", "RTY", "CL", "GC", "AAPL", "TSLA", "SPY"]
     }
 
 @app.get("/api/analytics/metrics")
@@ -394,17 +475,30 @@ async def get_available_metrics(current_user: dict = Depends(get_current_user)):
     return {
         "metrics": [
             "total_pnl",
-            "win_rate",
+            "win_rate", 
             "profit_factor",
             "sharpe_ratio",
             "max_drawdown",
             "expectancy",
             "total_trades",
             "best_trade",
-            "worst_trade"
+            "worst_trade",
+            "max_consecutive_wins",
+            "max_consecutive_losses"
         ]
     }
 
+# Include the trades router
+from backend.api.v1.trades import router as trades_router
+app.include_router(trades_router, prefix="/api/v1", tags=["trades"])
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    logger.info("🚀 Starting TradeSense API server...")
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8000,
+        log_level="info",
+        access_log=True
+    )

@@ -1,191 +1,253 @@
 
-"""
-Advanced analytics service for trade performance analysis
-"""
 import asyncio
-from typing import Dict, List, Any, Optional
+import logging
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_
 import pandas as pd
 import numpy as np
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
-from backend.models.trade import Trade, TradeAnalytics
-from backend.db.connection import db_manager
-import logging
-from functools import lru_cache
-import redis
-import json
+from cachetools import TTLCache
+
+from backend.models.trade import Trade
+from backend.db.connection import get_db
 
 logger = logging.getLogger(__name__)
 
 class AnalyticsService:
     def __init__(self):
-        self.redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-        self.cache_ttl = 300  # 5 minutes
-    
-    async def get_user_analytics(self, user_id: int, start_date: Optional[datetime] = None, 
-                               end_date: Optional[datetime] = None) -> Dict[str, Any]:
+        self.cache = TTLCache(maxsize=100, ttl=300)  # 5-minute cache
+        
+    async def get_user_analytics(
+        self, 
+        user_id: str, 
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> Dict[str, Any]:
         """Get comprehensive analytics for a user"""
-        cache_key = f"analytics:{user_id}:{start_date}:{end_date}"
+        cache_key = f"analytics_{user_id}_{start_date}_{end_date}"
         
-        # Try cache first
-        cached_result = self.redis_client.get(cache_key)
-        if cached_result:
-            return json.loads(cached_result)
+        if cache_key in self.cache:
+            return self.cache[cache_key]
         
-        async with db_manager.get_connection() as conn:
-            # Build query filters
-            filters = [Trade.user_id == user_id, Trade.status == 'closed']
+        try:
+            db = next(get_db())
+            
+            # Base query
+            query = db.query(Trade).filter(Trade.user_id == user_id)
+            
             if start_date:
-                filters.append(Trade.entry_time >= start_date)
+                query = query.filter(Trade.entry_time >= start_date)
             if end_date:
-                filters.append(Trade.entry_time <= end_date)
+                query = query.filter(Trade.entry_time <= end_date)
             
-            # Get trades data
-            trades_query = """
-                SELECT * FROM trades 
-                WHERE user_id = $1 AND status = 'closed'
-                AND ($2::timestamp IS NULL OR entry_time >= $2)
-                AND ($3::timestamp IS NULL OR entry_time <= $3)
-                ORDER BY entry_time
-            """
-            
-            trades = await conn.fetch(trades_query, user_id, start_date, end_date)
+            trades = query.all()
             
             if not trades:
-                return {"error": "No trades found"}
+                return {"error": "No trades found for the specified period"}
             
             # Convert to DataFrame for analysis
-            df = pd.DataFrame([dict(trade) for trade in trades])
+            df = pd.DataFrame([{
+                'symbol': t.symbol,
+                'direction': t.direction,
+                'quantity': t.quantity,
+                'entry_price': t.entry_price,
+                'exit_price': t.exit_price,
+                'entry_time': t.entry_time,
+                'exit_time': t.exit_time,
+                'pnl': t.pnl or 0,
+                'commission': t.commission or 0,
+                'net_pnl': t.net_pnl or t.pnl or 0,
+                'strategy_tag': t.strategy_tag,
+                'confidence_score': t.confidence_score
+            } for t in trades])
             
-            # Calculate comprehensive analytics
-            analytics = {
-                "overview": self._calculate_overview(df),
-                "performance_metrics": self._calculate_performance_metrics(df),
-                "risk_metrics": self._calculate_risk_metrics(df),
-                "behavioral_analysis": await self._calculate_behavioral_metrics(df, user_id),
-                "time_analysis": self._calculate_time_analysis(df),
-                "strategy_performance": self._calculate_strategy_performance(df),
-                "monthly_performance": self._calculate_monthly_performance(df),
-                "drawdown_analysis": self._calculate_drawdown_analysis(df)
-            }
+            analytics = await self._calculate_comprehensive_analytics(df)
             
-            # Cache results
-            self.redis_client.setex(cache_key, self.cache_ttl, json.dumps(analytics, default=str))
+            # Cache the results
+            self.cache[cache_key] = analytics
             
             return analytics
+            
+        except Exception as e:
+            logger.error(f"Analytics calculation failed: {str(e)}")
+            return {"error": f"Analytics calculation failed: {str(e)}"}
+        finally:
+            db.close()
     
-    def _calculate_overview(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Calculate basic overview metrics"""
+    async def _calculate_comprehensive_analytics(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Calculate comprehensive trading analytics"""
+        
+        # Basic metrics
         total_trades = len(df)
         winning_trades = len(df[df['pnl'] > 0])
         losing_trades = len(df[df['pnl'] < 0])
+        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        
+        # P&L metrics
         total_pnl = df['pnl'].sum()
-        
-        return {
-            "total_trades": total_trades,
-            "winning_trades": winning_trades,
-            "losing_trades": losing_trades,
-            "win_rate": (winning_trades / total_trades * 100) if total_trades > 0 else 0,
-            "total_pnl": round(total_pnl, 2),
-            "average_pnl_per_trade": round(total_pnl / total_trades, 2) if total_trades > 0 else 0,
-            "best_trade": df['pnl'].max(),
-            "worst_trade": df['pnl'].min(),
-            "profit_factor": self._calculate_profit_factor(df)
-        }
-    
-    def _calculate_performance_metrics(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Calculate advanced performance metrics"""
-        returns = df['pnl'].values
-        
-        # Sharpe ratio (assuming risk-free rate of 2%)
-        if len(returns) > 1:
-            excess_returns = returns - (0.02 / 252)  # Daily risk-free rate
-            sharpe_ratio = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(252) if np.std(excess_returns) > 0 else 0
-        else:
-            sharpe_ratio = 0
-        
-        # Sortino ratio
-        negative_returns = returns[returns < 0]
-        downside_deviation = np.std(negative_returns) if len(negative_returns) > 0 else 0
-        sortino_ratio = np.mean(returns) / downside_deviation if downside_deviation > 0 else 0
-        
-        # Maximum consecutive wins/losses
-        max_consecutive_wins = self._max_consecutive(df['pnl'] > 0)
-        max_consecutive_losses = self._max_consecutive(df['pnl'] < 0)
-        
-        return {
-            "sharpe_ratio": round(sharpe_ratio, 3),
-            "sortino_ratio": round(sortino_ratio, 3),
-            "max_consecutive_wins": max_consecutive_wins,
-            "max_consecutive_losses": max_consecutive_losses,
-            "average_win": round(df[df['pnl'] > 0]['pnl'].mean(), 2) if len(df[df['pnl'] > 0]) > 0 else 0,
-            "average_loss": round(df[df['pnl'] < 0]['pnl'].mean(), 2) if len(df[df['pnl'] < 0]) > 0 else 0,
-            "largest_win": df['pnl'].max(),
-            "largest_loss": df['pnl'].min(),
-            "expectancy": self._calculate_expectancy(df)
-        }
-    
-    def _calculate_risk_metrics(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Calculate risk management metrics"""
-        # Value at Risk (VaR) at 95% confidence
-        var_95 = np.percentile(df['pnl'], 5)
-        
-        # Maximum drawdown
-        cumulative_pnl = df['pnl'].cumsum()
-        running_max = cumulative_pnl.expanding().max()
-        drawdown = cumulative_pnl - running_max
-        max_drawdown = drawdown.min()
-        
-        return {
-            "var_95": round(var_95, 2),
-            "max_drawdown": round(max_drawdown, 2),
-            "risk_of_ruin": self._calculate_risk_of_ruin(df),
-            "kelly_criterion": self._calculate_kelly_criterion(df),
-            "position_sizing_consistency": self._calculate_position_consistency(df)
-        }
-    
-    async def _calculate_behavioral_metrics(self, df: pd.DataFrame, user_id: int) -> Dict[str, Any]:
-        """Calculate behavioral trading patterns"""
-        # This would integrate with your behavioral engine
-        revenge_trades = 0
-        overconfident_trades = 0
-        
-        # Detect revenge trading (quick trades after losses)
-        for i in range(1, len(df)):
-            prev_trade = df.iloc[i-1]
-            current_trade = df.iloc[i]
-            
-            if prev_trade['pnl'] < 0:
-                time_diff = (current_trade['entry_time'] - prev_trade['exit_time']).total_seconds() / 60
-                if time_diff < 30:  # Within 30 minutes
-                    revenge_trades += 1
-        
-        return {
-            "revenge_trades": revenge_trades,
-            "overconfident_trades": overconfident_trades,
-            "emotional_control_score": max(0, 100 - (revenge_trades / len(df) * 100)),
-            "discipline_score": self._calculate_discipline_score(df)
-        }
-    
-    def _calculate_profit_factor(self, df: pd.DataFrame) -> float:
-        """Calculate profit factor"""
         gross_profit = df[df['pnl'] > 0]['pnl'].sum()
         gross_loss = abs(df[df['pnl'] < 0]['pnl'].sum())
-        return round(gross_profit / gross_loss, 2) if gross_loss > 0 else 0
-    
-    def _calculate_expectancy(self, df: pd.DataFrame) -> float:
-        """Calculate trade expectancy"""
-        win_rate = len(df[df['pnl'] > 0]) / len(df)
-        avg_win = df[df['pnl'] > 0]['pnl'].mean() if len(df[df['pnl'] > 0]) > 0 else 0
-        avg_loss = abs(df[df['pnl'] < 0]['pnl'].mean()) if len(df[df['pnl'] < 0]) > 0 else 0
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
         
-        expectancy = (win_rate * avg_win) - ((1 - win_rate) * avg_loss)
-        return round(expectancy, 2)
+        # Risk metrics
+        max_drawdown = self._calculate_max_drawdown(df['pnl'])
+        sharpe_ratio = self._calculate_sharpe_ratio(df['pnl'])
+        
+        # Performance over time
+        equity_curve = df['pnl'].cumsum().tolist()
+        
+        # Symbol breakdown
+        symbol_stats = self._calculate_symbol_breakdown(df)
+        
+        # Strategy performance
+        strategy_stats = self._calculate_strategy_breakdown(df)
+        
+        # Time-based analysis
+        time_analysis = self._calculate_time_analysis(df)
+        
+        # Advanced metrics
+        advanced_metrics = self._calculate_advanced_metrics(df)
+        
+        return {
+            # Basic metrics
+            'total_trades': total_trades,
+            'winning_trades': winning_trades,
+            'losing_trades': losing_trades,
+            'win_rate': round(win_rate, 2),
+            
+            # P&L metrics
+            'total_pnl': round(total_pnl, 2),
+            'gross_profit': round(gross_profit, 2),
+            'gross_loss': round(gross_loss, 2),
+            'profit_factor': round(profit_factor, 2) if profit_factor != float('inf') else 999,
+            'average_win': round(df[df['pnl'] > 0]['pnl'].mean(), 2) if winning_trades > 0 else 0,
+            'average_loss': round(df[df['pnl'] < 0]['pnl'].mean(), 2) if losing_trades > 0 else 0,
+            'largest_win': round(df['pnl'].max(), 2),
+            'largest_loss': round(df['pnl'].min(), 2),
+            
+            # Risk metrics
+            'max_drawdown': round(max_drawdown, 2),
+            'sharpe_ratio': round(sharpe_ratio, 2),
+            'expectancy': round(df['pnl'].mean(), 2),
+            
+            # Performance tracking
+            'equity_curve': equity_curve,
+            'monthly_returns': self._calculate_monthly_returns(df),
+            
+            # Breakdowns
+            'symbol_breakdown': symbol_stats,
+            'strategy_breakdown': strategy_stats,
+            'time_analysis': time_analysis,
+            
+            # Advanced analytics
+            **advanced_metrics
+        }
     
-    def _max_consecutive(self, condition_series) -> int:
-        """Calculate maximum consecutive occurrences"""
-        groups = (condition_series != condition_series.shift()).cumsum()
-        return condition_series.groupby(groups).sum().max() if len(condition_series) > 0 else 0
+    def _calculate_max_drawdown(self, pnl_series: pd.Series) -> float:
+        """Calculate maximum drawdown"""
+        cumulative = pnl_series.cumsum()
+        running_max = cumulative.expanding().max()
+        drawdown = running_max - cumulative
+        return drawdown.max()
     
-    # Additional helper methods...
+    def _calculate_sharpe_ratio(self, pnl_series: pd.Series) -> float:
+        """Calculate Sharpe ratio"""
+        if len(pnl_series) < 2 or pnl_series.std() == 0:
+            return 0
+        return pnl_series.mean() / pnl_series.std() * np.sqrt(252)  # Annualized
+    
+    def _calculate_symbol_breakdown(self, df: pd.DataFrame) -> List[Dict]:
+        """Calculate performance by symbol"""
+        symbol_stats = []
+        
+        for symbol in df['symbol'].unique():
+            symbol_df = df[df['symbol'] == symbol]
+            
+            stats = {
+                'symbol': symbol,
+                'trades': len(symbol_df),
+                'win_rate': round(len(symbol_df[symbol_df['pnl'] > 0]) / len(symbol_df) * 100, 1),
+                'total_pnl': round(symbol_df['pnl'].sum(), 2),
+                'avg_pnl': round(symbol_df['pnl'].mean(), 2),
+                'profit_factor': self._calculate_profit_factor(symbol_df['pnl'])
+            }
+            symbol_stats.append(stats)
+        
+        return sorted(symbol_stats, key=lambda x: x['total_pnl'], reverse=True)
+    
+    def _calculate_strategy_breakdown(self, df: pd.DataFrame) -> List[Dict]:
+        """Calculate performance by strategy"""
+        strategy_stats = []
+        
+        strategies = df['strategy_tag'].dropna().unique()
+        for strategy in strategies:
+            strategy_df = df[df['strategy_tag'] == strategy]
+            
+            stats = {
+                'strategy': strategy,
+                'trades': len(strategy_df),
+                'win_rate': round(len(strategy_df[strategy_df['pnl'] > 0]) / len(strategy_df) * 100, 1),
+                'total_pnl': round(strategy_df['pnl'].sum(), 2),
+                'avg_pnl': round(strategy_df['pnl'].mean(), 2)
+            }
+            strategy_stats.append(stats)
+        
+        return sorted(strategy_stats, key=lambda x: x['total_pnl'], reverse=True)
+    
+    def _calculate_time_analysis(self, df: pd.DataFrame) -> Dict:
+        """Analyze performance by time periods"""
+        df['hour'] = pd.to_datetime(df['entry_time']).dt.hour
+        df['day_of_week'] = pd.to_datetime(df['entry_time']).dt.day_name()
+        
+        hourly_pnl = df.groupby('hour')['pnl'].agg(['sum', 'count', 'mean']).round(2)
+        daily_pnl = df.groupby('day_of_week')['pnl'].agg(['sum', 'count', 'mean']).round(2)
+        
+        return {
+            'best_trading_hour': int(hourly_pnl['sum'].idxmax()),
+            'worst_trading_hour': int(hourly_pnl['sum'].idxmin()),
+            'best_trading_day': daily_pnl['sum'].idxmax(),
+            'worst_trading_day': daily_pnl['sum'].idxmin(),
+            'hourly_performance': hourly_pnl.to_dict('index'),
+            'daily_performance': daily_pnl.to_dict('index')
+        }
+    
+    def _calculate_monthly_returns(self, df: pd.DataFrame) -> List[Dict]:
+        """Calculate monthly returns"""
+        df['month'] = pd.to_datetime(df['entry_time']).dt.to_period('M')
+        monthly = df.groupby('month')['pnl'].sum().round(2)
+        
+        return [
+            {'month': str(month), 'pnl': pnl}
+            for month, pnl in monthly.items()
+        ]
+    
+    def _calculate_profit_factor(self, pnl_series: pd.Series) -> float:
+        """Calculate profit factor for a series"""
+        gross_profit = pnl_series[pnl_series > 0].sum()
+        gross_loss = abs(pnl_series[pnl_series < 0].sum())
+        return round(gross_profit / gross_loss, 2) if gross_loss > 0 else 999
+    
+    def _calculate_advanced_metrics(self, df: pd.DataFrame) -> Dict:
+        """Calculate advanced trading metrics"""
+        
+        # Consecutive wins/losses
+        df['win'] = df['pnl'] > 0
+        df['streak'] = (df['win'] != df['win'].shift()).cumsum()
+        win_streaks = df[df['win']].groupby('streak').size()
+        loss_streaks = df[~df['win']].groupby('streak').size()
+        
+        # Trade duration analysis (if exit_time exists)
+        durations = []
+        if 'exit_time' in df.columns:
+            df['duration'] = pd.to_datetime(df['exit_time']) - pd.to_datetime(df['entry_time'])
+            durations = df['duration'].dt.total_seconds() / 3600  # Convert to hours
+        
+        return {
+            'max_consecutive_wins': int(win_streaks.max()) if not win_streaks.empty else 0,
+            'max_consecutive_losses': int(loss_streaks.max()) if not loss_streaks.empty else 0,
+            'avg_trade_duration_hours': round(np.mean(durations), 2) if durations else 0,
+            'median_trade_duration_hours': round(np.median(durations), 2) if durations else 0,
+            'total_commissions': round(df['commission'].sum(), 2),
+            'net_profit_after_commissions': round(df['net_pnl'].sum(), 2)
+        }

@@ -207,7 +207,9 @@ async def delete_note(
 from backend.api.v1.notes.schemas import (
     JournalEntryCreate, 
     JournalEntryUpdate, 
-    JournalEntryResponse
+    JournalEntryResponse,
+    EmotionAnalytics,
+    PsychologyInsights
 )
 
 def get_notes_service(db: Session = Depends(get_db)) -> NotesService:
@@ -310,4 +312,33 @@ async def get_all_journal_entries(
         user_id=current_user["user_id"],
         limit=limit,
         offset=offset
+    )
+
+@router.get("/analytics/emotions", response_model=EmotionAnalytics)
+async def get_emotion_analytics(
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Get emotion analytics for the current user"""
+    from datetime import datetime
+    
+    start_dt = datetime.fromisoformat(start_date) if start_date else None
+    end_dt = datetime.fromisoformat(end_date) if end_date else None
+    
+    return notes_service.get_emotion_analytics(
+        user_id=current_user["user_id"],
+        start_date=start_dt,
+        end_date=end_dt
+    )
+
+@router.get("/analytics/psychology", response_model=PsychologyInsights)
+async def get_psychology_insights(
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Get psychology insights and recommendations for the current user"""
+    return notes_service.get_psychology_insights(
+        user_id=current_user["user_id"]
     )

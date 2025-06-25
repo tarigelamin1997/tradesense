@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field, validator
@@ -41,7 +41,8 @@ class Trade(Base):
 
     # Metadata
     notes = Column(Text)
-    tags = Column(String)
+    tags = Column(JSON)  # List of strings stored as JSON
+    strategy_tag = Column(String, index=True)  # Reference to strategy name
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -50,6 +51,7 @@ class Trade(Base):
         Index('idx_user_symbol', 'user_id', 'symbol'),
         Index('idx_user_date', 'user_id', 'entry_time'),
         Index('idx_pnl_filter', 'user_id', 'pnl'),
+        Index('idx_user_strategy', 'user_id', 'strategy_tag'),
     )
 
 # Pydantic models for API
@@ -64,6 +66,8 @@ class TradeBase(BaseModel):
     strategy_tag: Optional[str] = Field(None, max_length=50)
     confidence_score: Optional[int] = Field(None, ge=1, le=10)
     notes: Optional[str] = Field(None, max_length=1000)
+    tags: Optional[List[str]] = Field(None, description="Trade tags")
+    strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
 
     @validator('exit_time')
     def validate_exit_time(cls, v, values):
@@ -78,7 +82,8 @@ class TradeUpdate(BaseModel):
     exit_price: Optional[float] = Field(None, gt=0)
     exit_time: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=1000)
-    tags: Optional[str] = Field(None, max_length=200)
+    tags: Optional[List[str]] = Field(None, description="Trade tags")
+    strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
 
 class TradeResponse(TradeBase):
     id: str
@@ -86,6 +91,8 @@ class TradeResponse(TradeBase):
     pnl: Optional[float]
     commission: Optional[float]
     net_pnl: Optional[float]
+    tags: Optional[List[str]]
+    strategy_tag: Optional[str]
     created_at: datetime
     updated_at: datetime
 

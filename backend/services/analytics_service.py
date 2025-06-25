@@ -103,6 +103,9 @@ class AnalyticsService:
         # Strategy performance
         strategy_stats = self._calculate_strategy_breakdown(df)
         
+        # Tag analytics
+        tag_stats = self._calculate_tag_breakdown(df)
+        
         # Time-based analysis
         time_analysis = self._calculate_time_analysis(df)
         
@@ -138,6 +141,7 @@ class AnalyticsService:
             # Breakdowns
             'symbol_breakdown': symbol_stats,
             'strategy_breakdown': strategy_stats,
+            'tag_breakdown': tag_stats,
             'time_analysis': time_analysis,
             
             # Advanced analytics
@@ -189,11 +193,47 @@ class AnalyticsService:
                 'trades': len(strategy_df),
                 'win_rate': round(len(strategy_df[strategy_df['pnl'] > 0]) / len(strategy_df) * 100, 1),
                 'total_pnl': round(strategy_df['pnl'].sum(), 2),
-                'avg_pnl': round(strategy_df['pnl'].mean(), 2)
+                'avg_pnl': round(strategy_df['pnl'].mean(), 2),
+                'profit_factor': self._calculate_profit_factor(strategy_df['pnl'])
             }
             strategy_stats.append(stats)
         
         return sorted(strategy_stats, key=lambda x: x['total_pnl'], reverse=True)
+    
+    def _calculate_tag_breakdown(self, df: pd.DataFrame) -> List[Dict]:
+        """Calculate performance by tag"""
+        tag_stats = {}
+        
+        # Process tags from each trade
+        for _, trade in df.iterrows():
+            if pd.notna(trade.get('tags')) and isinstance(trade['tags'], list):
+                for tag in trade['tags']:
+                    if tag not in tag_stats:
+                        tag_stats[tag] = {
+                            'trades': [],
+                            'pnl_list': []
+                        }
+                    tag_stats[tag]['trades'].append(trade)
+                    tag_stats[tag]['pnl_list'].append(trade['pnl'])
+        
+        # Calculate stats for each tag
+        tag_breakdown = []
+        for tag, data in tag_stats.items():
+            pnl_series = pd.Series(data['pnl_list'])
+            wins = len(pnl_series[pnl_series > 0])
+            total_trades = len(pnl_series)
+            
+            stats = {
+                'tag': tag,
+                'trades': total_trades,
+                'win_rate': round(wins / total_trades * 100, 1) if total_trades > 0 else 0,
+                'total_pnl': round(pnl_series.sum(), 2),
+                'avg_pnl': round(pnl_series.mean(), 2),
+                'profit_factor': self._calculate_profit_factor(pnl_series)
+            }
+            tag_breakdown.append(stats)
+        
+        return sorted(tag_breakdown, key=lambda x: x['total_pnl'], reverse=True)
     
     def _calculate_time_analysis(self, df: pd.DataFrame) -> Dict:
         """Analyze performance by time periods"""

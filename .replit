@@ -23,7 +23,7 @@ LANG = "C"
 REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
 
 [workflows]
-runButton = "Quick Start"
+runButton = "Full Stack Development"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -383,3 +383,16 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 -m streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableWebsocketCompression=false"
+
+[[workflows.workflow]]
+name = "Full Stack Development"
+author = 43683701
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm start"

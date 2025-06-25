@@ -19,7 +19,9 @@ from backend.api.v1.trades.schemas import (
     TradeResponse, 
     TradeQueryParams,
     AnalyticsRequest,
-    AnalyticsResponse
+    AnalyticsResponse,
+    TradeIngestRequest,
+    TradeIngestResponse
 )
 from backend.core.exceptions import NotFoundError, ValidationError, BusinessLogicError
 from backend.services.analytics_service import AnalyticsService
@@ -245,6 +247,63 @@ class TradesService:
         except Exception as e:
             logger.error(f"Failed to delete trade {trade_id}: {str(e)}")
             raise BusinessLogicError(f"Failed to delete trade: {str(e)}")
+
+    async def ingest_trade(self, user_id: str, trade_data: TradeIngestRequest) -> TradeIngestResponse:
+        """Ingest a trade via API"""
+        try:
+            trade_id = str(uuid.uuid4())
+
+            # Calculate PnL if exit price is provided
+            pnl = None
+            net_pnl = None
+            status = "open"
+
+            if trade_data.exit_price:
+                if trade_data.position == "long":
+                    pnl = (trade_data.exit_price - trade_data.entry_price) * trade_data.size
+                else:  # short
+                    pnl = (trade_data.entry_price - trade_data.exit_price) * trade_data.size
+                
+                net_pnl = pnl
+                status = "closed"
+
+            # Create trade record
+            trade = {
+                "id": trade_id,
+                "user_id": user_id,
+                "symbol": trade_data.symbol.upper(),
+                "direction": trade_data.position,
+                "quantity": trade_data.size,
+                "entry_price": trade_data.entry_price,
+                "exit_price": trade_data.exit_price,
+                "entry_time": trade_data.entry_time,
+                "exit_time": trade_data.exit_time,
+                "pnl": pnl,
+                "commission": 0.0,
+                "net_pnl": net_pnl,
+                "strategy_tag": trade_data.strategy,
+                "confidence_score": None,
+                "notes": trade_data.notes,
+                "tags": trade_data.tags,
+                "status": status,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+
+            # Store trade (in production, save to database)
+            self._trades_storage[trade_id] = trade
+
+            logger.info(f"Trade {trade_id} ingested via API for user {user_id}")
+
+            return TradeIngestResponse(
+                status="ok",
+                trade_id=trade_id,
+                message="Trade ingested successfully"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to ingest trade via API: {str(e)}")
+            raise BusinessLogicError(f"Failed to ingest trade: {str(e)}")
 
     async def calculate_analytics(self, user_id: str, request: AnalyticsRequest) -> AnalyticsResponse:
         """Calculate trading analytics"""

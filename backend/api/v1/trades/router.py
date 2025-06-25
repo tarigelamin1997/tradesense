@@ -9,7 +9,8 @@ import logging
 from backend.api.v1.trades.schemas import (TradeCreateRequest,
                                            TradeUpdateRequest, TradeResponse,
                                            TradeQueryParams, AnalyticsRequest,
-                                           AnalyticsResponse)
+                                           AnalyticsResponse, TradeIngestRequest,
+                                           TradeIngestResponse)
 from backend.api.v1.trades.service import TradesService
 from backend.core.security import get_current_active_user
 from backend.core.response import ResponseHandler, APIResponse
@@ -156,6 +157,38 @@ async def delete_trade(
         raise
     except Exception as e:
         logger.error(f"Delete trade endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/ingest",
+             response_model=TradeIngestResponse,
+             summary="Ingest Trade via API")
+async def ingest_trade(
+    trade_data: TradeIngestRequest,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+) -> TradeIngestResponse:
+    """
+    Ingest a trade via authenticated API
+
+    - **entry_time**: Trade entry timestamp
+    - **exit_time**: Optional trade exit timestamp
+    - **symbol**: Trading symbol (e.g., NQ, ES, AAPL)
+    - **position**: Trade direction (long/short)
+    - **size**: Position size
+    - **entry_price**: Entry price
+    - **exit_price**: Optional exit price
+    - **tags**: Optional trade tags
+    - **strategy**: Optional strategy name
+    - **notes**: Optional trade notes
+
+    Enables automated trade ingestion from external tools, bots, and integrations
+    """
+    try:
+        return await trades_service.ingest_trade(current_user["user_id"], trade_data)
+    except TradeSenseException:
+        raise
+    except Exception as e:
+        logger.error(f"Ingest endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

@@ -1,4 +1,3 @@
-
 """
 Trade schemas for request/response validation
 """
@@ -32,7 +31,7 @@ class TradeCreateRequest(BaseModel):
     notes: Optional[str] = Field(None, max_length=1000, description="Trade notes")
     tags: Optional[List[str]] = Field(None, description="Trade tags (e.g., 'FOMO', 'breakout')")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -56,12 +55,12 @@ class TradeUpdateRequest(BaseModel):
     notes: Optional[str] = Field(None, max_length=1000, description="Updated trade notes")
     tags: Optional[List[str]] = Field(None, description="Trade tags")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
-    
+
     @validator('exit_time')
     def validate_exit_time(cls, v, values):
         # Note: In a real scenario, we'd validate against entry_time from database
         return v
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -96,7 +95,7 @@ class TradeResponse(BaseModel):
     status: TradeStatus = Field(..., description="Trade status")
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Record update timestamp")
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -137,7 +136,7 @@ class AnalyticsRequest(BaseModel):
     """Analytics calculation request"""
     data: List[Dict[str, Any]] = Field(..., description="Trade data for analysis")
     analysis_type: str = Field(default="comprehensive", description="Type of analysis")
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -149,37 +148,69 @@ class AnalyticsRequest(BaseModel):
             }
         }
 
+class PaginatedResponse(BaseModel):
+    """Enhanced pagination response"""
+    items: List[Any]
+    total_count: int
+    current_page: int
+    per_page: int
+    total_pages: int
+    has_previous: bool
+    has_next: bool
+
+    @validator('total_pages', pre=True, always=True)
+    def calculate_total_pages(cls, v, values):
+        total_count = values.get('total_count', 0)
+        per_page = values.get('per_page', 50)
+        return max(1, (total_count + per_page - 1) // per_page)
+
+    @validator('has_previous', pre=True, always=True)
+    def calculate_has_previous(cls, v, values):
+        return values.get('current_page', 1) > 1
+
+    @validator('has_next', pre=True, always=True)
+    def calculate_has_next(cls, v, values):
+        current_page = values.get('current_page', 1)
+        total_pages = values.get('total_pages', 1)
+        return current_page < total_pages
+
+class AnalyticsFilters(BaseModel):
+    """Analytics filters"""
+    start_date: Optional[datetime] = Field(None, description="Start date filter")
+    end_date: Optional[datetime] = Field(None, description="End date filter")
+    strategy_tag: Optional[str] = Field(None, description="Filter by strategy")
+    tags: Optional[List[str]] = Field(None, description="Filter by tags")
+    confidence_score_min: Optional[int] = Field(None, ge=1, le=10)
+    confidence_score_max: Optional[int] = Field(None, ge=1, le=10)
+    min_pnl: Optional[float] = Field(None, description="Minimum PnL")
+    max_pnl: Optional[float] = Field(None, description="Maximum PnL")
 
 class AnalyticsResponse(BaseModel):
-    """Analytics response schema"""
-    total_trades: int = Field(..., description="Total number of trades")
-    winning_trades: int = Field(..., description="Number of winning trades")
-    losing_trades: int = Field(..., description="Number of losing trades")
-    win_rate: float = Field(..., description="Win rate percentage")
-    total_pnl: float = Field(..., description="Total profit/loss")
-    profit_factor: float = Field(..., description="Profit factor")
-    max_drawdown: float = Field(..., description="Maximum drawdown")
-    sharpe_ratio: float = Field(..., description="Sharpe ratio")
-    expectancy: float = Field(..., description="Expected value per trade")
-    equity_curve: List[float] = Field(..., description="Cumulative P&L curve")
-    symbol_breakdown: List[Dict[str, Any]] = Field(..., description="Performance by symbol")
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "total_trades": 100,
-                "winning_trades": 65,
-                "losing_trades": 35,
-                "win_rate": 65.0,
-                "total_pnl": 12500.0,
-                "profit_factor": 1.85,
-                "max_drawdown": 2500.0,
-                "sharpe_ratio": 1.45,
-                "expectancy": 125.0,
-                "equity_curve": [0, 500, 750, 1250, 1000, 1500],
-                "symbol_breakdown": [
-                    {"symbol": "ES", "trades": 50, "pnl": 8000.0, "win_rate": 70.0},
-                    {"symbol": "NQ", "trades": 30, "pnl": 3500.0, "win_rate": 60.0}
-                ]
-            }
-        }
+    """Enhanced analytics response model"""
+    # Basic metrics
+    total_trades: int
+    winning_trades: int
+    losing_trades: int
+    win_rate: float
+    total_pnl: float
+    avg_pnl_per_trade: float
+    best_trade: float
+    worst_trade: float
+    profit_factor: float
+
+    # Advanced metrics
+    avg_confidence_score: Optional[float] = None
+    confidence_distribution: Dict[str, int] = {}
+
+    # Breakdowns
+    strategy_performance: Dict[str, Dict[str, Any]] = {}
+    tag_performance: Dict[str, Dict[str, Any]] = {}
+    monthly_pnl: Dict[str, float] = {}
+    daily_pnl: Dict[str, float] = {}
+
+    # Time-based metrics
+    avg_trade_duration: Optional[float] = None
+    trades_by_day_of_week: Dict[str, int] = {}
+
+    # Applied filters (for reference)
+    filters_applied: Optional[AnalyticsFilters] = None

@@ -29,7 +29,7 @@ async def create_trade(
 ) -> TradeResponse:
     """
     Create a new trade record
-    
+
     - **symbol**: Trading symbol (e.g., ES, NQ, AAPL)
     - **direction**: Trade direction (long/short)
     - **quantity**: Number of shares/contracts
@@ -65,7 +65,7 @@ async def get_trades(
 ) -> APIResponse:
     """
     Get trades with filtering and pagination
-    
+
     Returns paginated list of user's trades with optional filters
     """
     try:
@@ -121,7 +121,7 @@ async def update_trade(
 ) -> TradeResponse:
     """
     Update an existing trade
-    
+
     - **exit_price**: Exit price (closes the trade)
     - **exit_time**: Exit timestamp
     - **notes**: Updated trade notes
@@ -168,10 +168,10 @@ async def calculate_analytics(
 ) -> AnalyticsResponse:
     """
     Calculate trading analytics from trade data
-    
+
     - **data**: Array of trade data for analysis
     - **analysis_type**: Type of analysis to perform
-    
+
     Returns comprehensive trading metrics and performance statistics
     """
     try:
@@ -195,7 +195,7 @@ async def get_dashboard_analytics(start_date: Optional[datetime] = Query(
                                       get_current_active_user)) -> APIResponse:
     """
     Get comprehensive dashboard analytics for user
-    
+
     Returns all analytics data needed for the dashboard
     """
     try:

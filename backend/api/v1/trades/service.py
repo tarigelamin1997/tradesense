@@ -1,13 +1,18 @@
 """
 Trades service layer - handles all trade-related business logic
 """
-from typing import Dict, List, Optional, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import pandas as pd
 import numpy as np
 import uuid
 import logging
 
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, or_, desc, asc, func
+
+from backend.models.trade import Trade
+from backend.models.tag import Tag
 from backend.api.v1.trades.schemas import (
     TradeCreateRequest, 
     TradeUpdateRequest, 
@@ -495,3 +500,304 @@ class TradesService:
                 day_counts[day_name] += 1
 
         return day_counts
+```
+
+```python
+"""Service layer to handle trade-related business logic with tag support."""
+from typing import List, Optional, Dict, Any, Tuple
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, or_, desc, asc, func
+
+from backend.models.trade import Trade
+from backend.models.tag import Tag
+from backend.api.v1.trades.schemas import TradeCreateRequest, TradeUpdateRequest, TradeQueryParams
+from backend.core.exceptions import NotFoundError, ValidationError
+
+class TradeService:
+    """Service for managing trades"""
+
+    @staticmethod
+    async def get_trade_by_id(db: Session, trade_id: str, user_id: str) -> Trade:
+        """Get a specific trade by ID"""
+
+        trade = db.query(Trade).filter(
+            and_(Trade.id == trade_id, Trade.user_id == user_id)
+        ).options(joinedload(Trade.tag_objects)).first()
+
+        if not trade:
+            raise NotFoundError("Trade not found")
+
+        return trade
+
+    @staticmethod
+    async def create_trade(db: Session, trade_data: TradeCreateRequest, user_id: str) -> Trade:
+        """Create a new trade"""
+
+        # Calculate P&L if exit price is provided
+        pnl = None
+        net_pnl = None
+        if trade_data.exit_price:
+            if trade_data.direction == "long":
+                pnl = (trade_data.exit_price - trade_data.entry_price) * trade_data.quantity
+            else:  # short
+                pnl = (trade_data.entry_price - trade_data.exit_price) * trade_data.quantity
+
+            net_pnl = pnl - (trade_data.commission or 0)
+
+        # Create trade instance
+        trade = Trade(
+            user_id=user_id,
+            symbol=trade_data.symbol.upper(),
+            direction=trade_data.direction,
+            quantity=trade_data.quantity,
+            entry_price=trade_data.entry_price,
+            exit_price=trade_data.exit_price,
+            entry_time=trade_data.entry_time,
+            exit_time=trade_data.exit_time,
+            strategy_tag=trade_data.strategy_tag,
+            confidence_score=trade_data.confidence_score,
+            notes=trade_data.notes,
+            tags=trade_data.tags,
+            pnl=pnl,
+            net_pnl=net_pnl
+        )
+
+        db.add(trade)
+        db.flush()  # Get the trade ID without committing
+
+        # Assign tags if provided
+        if trade_data.tag_ids:
+            await TradeService._assign_tags_to_trade(db, trade, trade_data.tag_ids, user_id)
+
+        db.commit()
+        db.refresh(trade)
+        return trade
+
+    @staticmethod
+    async def update_trade(db: Session, trade_id: str, trade_data: TradeUpdateRequest, user_id: str) -> Trade:
+        """Update an existing trade"""
+
+        trade = await TradeService.get_trade_by_id(db, trade_id, user_id)
+
+        # Handle tag updates separately
+        tag_ids = trade_data.dict().pop('tag_ids', None)
+
+        # Update fields
+        for field, value in trade_data.dict(exclude_unset=True).items():
+            if field != 'tag_ids':  # Skip tag_ids as it's handled separately
+                setattr(trade, field, value)
+
+        # Update tags if provided
+        if tag_ids is not None:
+            await TradeService._assign_tags_to_trade(db, trade, tag_ids, user_id)
+
+        # Recalculate P&L if exit price was updated
+        if trade_data.exit_price is not None and trade.entry_price:
+            if trade.direction == "long":
+                trade.pnl = (trade.exit_price - trade.entry_price) * trade.quantity
+            else:  # short
+                trade.pnl = (trade.entry_price - trade.exit_price) * trade.quantity
+
+            trade.net_pnl = trade.pnl - (trade.commission or 0)
+
+        db.commit()
+        db.refresh(trade)
+        return trade
+
+    @staticmethod
+    async def get_trades(db: Session, user_id: str, params: TradeQueryParams) -> Dict[str, Any]:
+        """Get trades with filtering, sorting, and pagination"""
+
+        query = db.query(Trade).filter(Trade.user_id == user_id).options(
+            joinedload(Trade.tag_objects)  # Eager load tag relationships
+        )
+
+        # Apply filters
+        if params.symbol:
+            query = query.filter(Trade.symbol == params.symbol.upper())
+
+        if params.strategy_tag:
+            query = query.filter(Trade.strategy_tag == params.strategy_tag)
+
+        if params.tags:
+            # Filter by legacy tags stored in JSON field
+            for tag in params.tags:
+                query = query.filter(Trade.tags.contains([tag]))
+
+        if params.tag_ids:
+            # Filter by new tag system
+            query = query.join(Trade.tag_objects).filter(Tag.id.in_(params.tag_ids))
+
+        if params.confidence_score_min:
+            query = query.filter(Trade.confidence_score >= params.confidence_score_min)
+
+        if params.confidence_score_max:
+            query = query.filter(Trade.confidence_score <= params.confidence_score_max)
+
+        if params.status:
+            if params.status == "open":
+                query = query.filter(Trade.exit_time.is_(None))
+            else:  # closed
+                query = query.filter(Trade.exit_time.isnot(None))
+
+        if params.start_date:
+            query = query.filter(Trade.entry_time >= params.start_date)
+
+        if params.end_date:
+            query = query.filter(Trade.entry_time <= params.end_date)
+
+        # Apply sorting
+        sort_column = getattr(Trade, params.sort_by, Trade.entry_time)
+        if params.sort_order == "asc":
+            query = query.order_by(asc(sort_column))
+        else:
+            query = query.order_by(desc(sort_column))
+
+        # Get total count before pagination
+        total_count = query.count()
+
+        # Apply pagination
+        offset = (params.page - 1) * params.per_page
+        trades = query.offset(offset).limit(params.per_page).all()
+
+        return {
+            "trades": trades,
+            "total_count": total_count,
+            "page": params.page,
+            "per_page": params.per_page,
+            "has_more": total_count > params.page * params.per_page
+        }
+
+    @staticmethod
+    async def delete_trade(db: Session, trade_id: str, user_id: str) -> bool:
+        """Delete a trade"""
+
+        trade = await TradeService.get_trade_by_id(db, trade_id, user_id)
+
+        db.delete(trade)
+        db.commit()
+        return True
+
+    @staticmethod
+    async def _assign_tags_to_trade(db: Session, trade: Trade, tag_ids: List[str], user_id: str) -> None:
+        """Helper method to assign tags to a trade"""
+
+        if not tag_ids:
+            # Clear all tags if empty list is provided
+            trade.tag_objects.clear()
+            return
+
+        # Get valid tags for this user
+        tags = db.query(Tag).filter(
+            and_(Tag.id.in_(tag_ids), Tag.user_id == user_id)
+        ).all()
+
+        if len(tags) != len(tag_ids):
+            raise ValidationError("Some tags were not found or don't belong to this user")
+
+        # Clear existing tags and assign new ones
+        trade.tag_objects.clear()
+        trade.tag_objects.extend(tags)
+```
+
+This code implements tag management for trades, including model updates, CRUD operations, and API enhancements.
+```replit_final_file
+"""Service layer to handle trade-related business logic with tag support."""
+from typing import List, Optional, Dict, Any, Tuple
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, or_, desc, asc, func
+
+from backend.models.trade import Trade
+from backend.models.tag import Tag
+from backend.api.v1.trades.schemas import TradeCreateRequest, TradeUpdateRequest, TradeQueryParams
+from backend.core.exceptions import NotFoundError, ValidationError
+
+class TradeService:
+    """Service for managing trades"""
+
+    @staticmethod
+    async def get_trade_by_id(db: Session, trade_id: str, user_id: str) -> Trade:
+        """Get a specific trade by ID"""
+
+        trade = db.query(Trade).filter(
+            and_(Trade.id == trade_id, Trade.user_id == user_id)
+        ).options(joinedload(Trade.tag_objects)).first()
+
+        if not trade:
+            raise NotFoundError("Trade not found")
+
+        return trade
+
+    @staticmethod
+    async def create_trade(db: Session, trade_data: TradeCreateRequest, user_id: str) -> Trade:
+        """Create a new trade"""
+
+        # Calculate P&L if exit price is provided
+        pnl = None
+        net_pnl = None
+        if trade_data.exit_price:
+            if trade_data.direction == "long":
+                pnl = (trade_data.exit_price - trade_data.entry_price) * trade_data.quantity
+            else:  # short
+                pnl = (trade_data.entry_price - trade_data.exit_price) * trade_data.quantity
+
+            net_pnl = pnl - (trade_data.commission or 0)
+
+        # Create trade instance
+        trade = Trade(
+            user_id=user_id,
+            symbol=trade_data.symbol.upper(),
+            direction=trade_data.direction,
+            quantity=trade_data.quantity,
+            entry_price=trade_data.entry_price,
+            exit_price=trade_data.exit_price,
+            entry_time=trade_data.entry_time,
+            exit_time=trade_data.exit_time,
+            strategy_tag=trade_data.strategy_tag,
+            confidence_score=trade_data.confidence_score,
+            notes=trade_data.notes,
+            tags=trade_data.tags,
+            pnl=pnl,
+            net_pnl=net_pnl
+        )
+
+        db.add(trade)
+        db.flush()  # Get the trade ID without committing
+
+        # Assign tags if provided
+        if trade_data.tag_ids:
+            await TradeService._assign_tags_to_trade(db, trade, trade_data.tag_ids, user_id)
+
+        db.commit()
+        db.refresh(trade)
+        return trade
+
+    @staticmethod
+    async def update_trade(db: Session, trade_id: str, trade_data: TradeUpdateRequest, user_id: str) -> Trade:
+        """Update an existing trade"""
+
+        trade = await TradeService.get_trade_by_id(db, trade_id, user_id)
+
+        # Handle tag updates separately
+        tag_ids = trade_data.dict().pop('tag_ids', None)
+
+        # Update fields
+        for field, value in trade_data.dict(exclude_unset=True).items():
+            if field != 'tag_ids':  # Skip tag_ids as it's handled separately
+                setattr(trade, field, value)
+
+        # Update tags if provided
+        if tag_ids is not None:
+            await TradeService._assign_tags_to_trade(db, trade, tag_ids, user_id)
+
+        # Recalculate P&L if exit price was updated
+        if trade_data.exit_price is not None and trade.entry_price:
+            if trade.direction == "long":
+                trade.pnl = (trade.exit_price - trade.entry_price) * trade.quantity
+            else:  # short
+                trade.pnl = (trade.entry_price - trade.exit_price) * trade.quantity
+
+            trade.net_pnl = trade.pnl - (trade.commission or 0)
+
+        db.commit()
+        db.refresh(trade)

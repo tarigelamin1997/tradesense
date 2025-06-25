@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
@@ -41,10 +42,13 @@ class Trade(Base):
 
     # Metadata
     notes = Column(Text)
-    tags = Column(JSON)  # List of strings stored as JSON
+    tags = Column(JSON)  # List of strings stored as JSON (legacy)
     strategy_tag = Column(String, index=True)  # Reference to strategy name
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationships
+    tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
 
     # Indexes for performance
     __table_args__ = (

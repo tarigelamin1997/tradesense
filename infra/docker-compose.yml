@@ -4,29 +4,37 @@ version: '3.8'
 services:
   backend:
     build: 
-      context: .
+      context: ..
       dockerfile: infra/Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./tradesense.db
+      - DATABASE_URL=postgresql://tradesense:tradesense_password@db:5432/tradesense
       - JWT_SECRET=${JWT_SECRET:-dev_secret_key}
+      - PYTHONPATH=/app
     volumes:
-      - ./backend:/app/backend
-      - ./logs:/app/logs
+      - ../backend:/app/backend
+      - ../logs:/app/logs
+      - ../core:/app/core
+      - ../analytics:/app/analytics
+      - ../connectors:/app/connectors
     depends_on:
       - db
+    restart: unless-stopped
 
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       - REACT_APP_API_URL=http://localhost:8000
+      - NODE_ENV=development
     volumes:
-      - ./frontend/src:/app/src
+      - ../frontend/src:/app/src
+      - ../frontend/public:/app/public
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine
@@ -36,8 +44,15 @@ services:
       - POSTGRES_PASSWORD=tradesense_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradesense"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:alpine
@@ -45,10 +60,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - backend
       - frontend
+    restart: unless-stopped
 
 volumes:
   postgres_data:

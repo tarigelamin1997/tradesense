@@ -20,3 +20,7 @@ plotly==5.17.0
 pyjwt==2.8.0
 streamlit-aggrid==0.3.4
 #fpdf
+fpdf
+python-multipart
+python-multipart
+uvicorn

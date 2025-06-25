@@ -1,120 +1,124 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { AuthProvider } from './contexts/AuthContext';
-import { DataProvider } from './contexts/DataContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAuthStore } from './stores/authStore';
 import Navbar from './components/Layout/Navbar';
 import Dashboard from './pages/Dashboard';
-import Analytics from './pages/Analytics';
 import UploadData from './pages/UploadData';
+import Analytics from './pages/Analytics';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
-// TradeSense Professional Theme
-const theme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#667eea',
-      light: '#9bb5ff',
-      dark: '#3049b7',
-    },
-    secondary: {
-      main: '#764ba2',
-      light: '#a67dd4',
-      dark: '#461f73',
-    },
-    background: {
-      default: '#0f172a',
-      paper: 'rgba(255, 255, 255, 0.05)',
-    },
-    text: {
-      primary: '#f8fafc',
-      secondary: '#94a3b8',
-    },
-  },
-  typography: {
-    fontFamily: [
-      'Inter',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      'Segoe UI',
-      'sans-serif'
-    ].join(','),
-    h1: {
-      fontWeight: 700,
-      fontSize: '2.5rem',
-    },
-    h2: {
-      fontWeight: 600,
-      fontSize: '2rem',
-    },
-    h3: {
-      fontWeight: 600,
-      fontSize: '1.5rem',
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          textTransform: 'none',
-          fontWeight: 600,
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        },
-      },
+// Create a client for React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
     },
   },
 });
 
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+// Public Route Component (redirects to dashboard if authenticated)
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated } = useAuthStore();
+  return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+};
+
 function App() {
+  const { isAuthenticated } = useAuthStore();
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <DataProvider>
-          <Router>
-            <div className="App">
-              <Navbar />
-              <main className="main-content">
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/analytics" element={
-                    <ProtectedRoute>
-                      <Analytics />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/upload" element={
-                    <ProtectedRoute>
-                      <UploadData />
-                    </ProtectedRoute>
-                  } />
-                </Routes>
-              </main>
-            </div>
-          </Router>
-        </DataProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          {isAuthenticated && <Navbar />}
+          
+          <Routes>
+            {/* Public Routes */}
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/register" 
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              } 
+            />
+
+            {/* Protected Routes */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/upload" 
+              element={
+                <ProtectedRoute>
+                  <UploadData />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Default Route */}
+            <Route 
+              path="/" 
+              element={
+                isAuthenticated ? 
+                <Navigate to="/dashboard" replace /> : 
+                <Navigate to="/login" replace />
+              } 
+            />
+
+            {/* Catch-all Route */}
+            <Route 
+              path="*" 
+              element={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
+                    <p className="text-gray-600 mb-4">Page not found</p>
+                    <button 
+                      onClick={() => window.history.back()}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Go back
+                    </button>
+                  </div>
+                </div>
+              } 
+            />
+          </Routes>
+        </div>
+      </Router>
+    </QueryClientProvider>
   );
 }
 

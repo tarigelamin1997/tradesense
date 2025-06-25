@@ -1,12 +1,14 @@
-
 """
 Notes router - handles all trade note endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List, Optional
+from typing import List, Dict, Any, Optional
 import logging
 
+from backend.core.db.session import get_db
+from backend.core.security import get_current_active_user
+from backend.api.v1.notes.service import NotesService
 from backend.api.v1.notes.schemas import (
     TradeNoteCreate, 
     TradeNoteRead, 
@@ -14,9 +16,6 @@ from backend.api.v1.notes.schemas import (
     TradeNoteListResponse,
     MoodStatsResponse
 )
-from backend.api.v1.notes.service import NotesService
-from backend.core.db.session import get_db
-from backend.core.security import get_current_active_user
 from backend.core.response import ResponseHandler, APIResponse
 from backend.core.exceptions import TradeSenseException
 
@@ -204,3 +203,111 @@ async def delete_note(
     except Exception as e:
         logger.error(f"Delete note endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+from backend.api.v1.notes.schemas import (
+    JournalEntryCreate, 
+    JournalEntryUpdate, 
+    JournalEntryResponse
+)
+
+def get_notes_service(db: Session = Depends(get_db)) -> NotesService:
+    return NotesService(db)
+
+@router.post("/trades/{trade_id}/journal", response_model=JournalEntryResponse)
+async def create_journal_entry(
+    trade_id: str,
+    entry_data: JournalEntryCreate,
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Create a new journal entry for a trade"""
+    try:
+        return await notes_service.create_journal_entry(
+            trade_id=trade_id,
+            user_id=current_user["user_id"],
+            entry_data=entry_data
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to create journal entry")
+
+@router.get("/trades/{trade_id}/journal", response_model=List[JournalEntryResponse])
+async def get_trade_journal_entries(
+    trade_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Get all journal entries for a specific trade"""
+    return await notes_service.get_trade_journal_entries(
+        trade_id=trade_id,
+        user_id=current_user["user_id"]
+    )
+
+@router.put("/journal/{entry_id}", response_model=JournalEntryResponse)
+async def update_journal_entry(
+    entry_id: str,
+    update_data: JournalEntryUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Update a journal entry"""
+    try:
+        return await notes_service.update_journal_entry(
+            entry_id=entry_id,
+            user_id=current_user["user_id"],
+            update_data=update_data
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to update journal entry")
+
+@router.delete("/journal/{entry_id}")
+async def delete_journal_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Delete a journal entry"""
+    try:
+        await notes_service.delete_journal_entry(
+            entry_id=entry_id,
+            user_id=current_user["user_id"]
+        )
+        return {"message": "Journal entry deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to delete journal entry")
+
+@router.get("/journal/{entry_id}", response_model=JournalEntryResponse)
+async def get_journal_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Get a specific journal entry"""
+    entry = await notes_service.get_journal_entry(
+        entry_id=entry_id,
+        user_id=current_user["user_id"]
+    )
+
+    if not entry:
+        raise HTTPException(status_code=404, detail="Journal entry not found")
+
+    return entry
+
+@router.get("/journal", response_model=List[JournalEntryResponse])
+async def get_all_journal_entries(
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_active_user),
+    notes_service: NotesService = Depends(get_notes_service)
+):
+    """Get all journal entries for the current user"""
+    return await notes_service.get_all_user_journal_entries(
+        user_id=current_user["user_id"],
+        limit=limit,
+        offset=offset
+    )

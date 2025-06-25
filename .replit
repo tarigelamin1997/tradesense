@@ -395,7 +395,7 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && mkdir -p logs && python -m pip install --user fastapi uvicorn python-multipart sqlalchemy psycopg2-binary && python main.py"
+args = "cd backend && mkdir -p logs && python -m pip install --user --break-system-packages fastapi uvicorn python-multipart sqlalchemy psycopg2-binary && python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

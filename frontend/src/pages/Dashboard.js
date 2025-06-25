@@ -1,202 +1,394 @@
 
 import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../stores/authStore';
+import { useDataStore } from '../stores/dataStore';
+import { api } from '../lib/api';
 import {
-  Grid,
-  Paper,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  Chip
-} from '@mui/material';
-import { motion } from 'framer-motion';
+  ChartBarIcon,
+  CurrencyDollarIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  DocumentTextIcon,
+  CloudArrowUpIcon
+} from '@heroicons/react/24/outline';
 import {
   LineChart,
   Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell
 } from 'recharts';
-import { useAuth } from '../contexts/AuthContext';
-import { useData } from '../contexts/DataContext';
-import MetricCard from '../components/Dashboard/MetricCard';
-import TradingChart from '../components/Charts/TradingChart';
-import axios from 'axios';
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const { dashboardData, loading, fetchDashboardData } = useData();
-  const [performanceData, setPerformanceData] = useState([]);
+  const { user } = useAuthStore();
+  const { 
+    tradeData, 
+    analytics, 
+    isLoading, 
+    uploadData, 
+    analyzeData, 
+    setAnalytics 
+  } = useDataStore();
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (user) {
-      fetchDashboardData(user.user_id);
+      fetchDashboardData();
     }
   }, [user]);
 
-  if (loading) {
+  const fetchDashboardData = async () => {
+    try {
+      const response = await api.get(`/analytics/dashboard/${user.user_id}`);
+      setAnalytics(response.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await uploadData(formData, (progress) => {
+        setUploadProgress(progress);
+      });
+      
+      if (response.success) {
+        // Automatically analyze uploaded data
+        await analyzeData(response.data);
+        await fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+    }
+  };
+
+  const MetricCard = ({ title, value, change, icon: Icon, trend }) => (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${trend === 'up' ? 'bg-green-100' : trend === 'down' ? 'bg-red-100' : 'bg-blue-100'}`}>
+            <Icon className={`h-6 w-6 ${trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-blue-600'}`} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+          </div>
+        </div>
+        {change && (
+          <div className={`flex items-center space-x-1 ${change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+            {change.startsWith('+') ? (
+              <TrendingUpIcon className="h-4 w-4" />
+            ) : (
+              <TrendingDownIcon className="h-4 w-4" />
+            )}
+            <span className="text-sm font-medium">{change}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const EquityCurveChart = ({ data }) => (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis />
+        <Tooltip 
+          formatter={(value) => [`$${value.toLocaleString()}`, 'Cumulative P&L']}
+          labelFormatter={(label) => `Trade: ${label}`}
+        />
+        <Area 
+          type="monotone" 
+          dataKey="cumulativePnL" 
+          stroke="#3B82F6" 
+          fill="#3B82F6" 
+          fillOpacity={0.2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+
+  const PnLDistribution = ({ data }) => (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="range" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="count" fill="#10B981" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+
+  const WinRateGauge = ({ winRate }) => {
+    const data = [
+      { name: 'Win Rate', value: winRate, fill: '#10B981' },
+      { name: 'Loss Rate', value: 100 - winRate, fill: '#EF4444' }
+    ];
+
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress size={60} />
-      </Box>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={80}
+            paddingAngle={5}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fill} />
+            ))}
+          </Pie>
+          <Tooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  if (!tradeData && !analytics) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <CloudArrowUpIcon className="mx-auto h-24 w-24 text-gray-400" />
+            <h2 className="mt-4 text-3xl font-bold text-gray-900">Welcome to TradeSense</h2>
+            <p className="mt-2 text-lg text-gray-600">Upload your trade data to begin advanced analytics</p>
+            
+            <div className="mt-8 max-w-md mx-auto">
+              <label className="flex justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-gray-400 focus:outline-none">
+                <span className="flex items-center space-x-2">
+                  <DocumentTextIcon className="w-6 h-6 text-gray-600" />
+                  <span className="font-medium text-gray-600">
+                    Drop files to upload, or <span className="text-blue-600 underline">browse</span>
+                  </span>
+                </span>
+                <input 
+                  type="file" 
+                  name="file_upload" 
+                  className="hidden" 
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                />
+              </label>
+              {uploadProgress > 0 && (
+                <div className="mt-4">
+                  <div className="bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">{uploadProgress}% uploaded</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5
-      }
-    }
-  };
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      style={{ padding: '2rem' }}
-    >
-      {/* Header */}
-      <motion.div variants={itemVariants}>
-        <Box mb={4}>
-          <Typography variant="h1" gutterBottom sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            Trading Dashboard
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Welcome back, {user?.username}! Here's your trading overview.
-          </Typography>
-        </Box>
-      </motion.div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Trading Analytics Dashboard</h1>
+          <p className="mt-2 text-gray-600">Advanced insights for data-driven trading decisions</p>
+        </div>
 
-      {/* Key Metrics */}
-      <motion.div variants={itemVariants}>
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title="Total P&L"
-              value={`$${dashboardData?.total_pnl?.toLocaleString() || '0'}`}
-              change="+12.5%"
-              positive={true}
-              icon="💰"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title="Win Rate"
-              value={`${dashboardData?.win_rate || 0}%`}
-              change="+2.1%"
-              positive={true}
-              icon="🎯"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title="Total Trades"
-              value={dashboardData?.total_trades?.toLocaleString() || '0'}
-              change="+45"
-              positive={true}
-              icon="📊"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title="Profit Factor"
-              value={dashboardData?.profit_factor || '0.00'}
-              change="+0.15"
-              positive={true}
-              icon="⚡"
-            />
-          </Grid>
-        </Grid>
-      </motion.div>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            title="Total P&L"
+            value={`$${analytics?.total_pnl?.toLocaleString() || '0'}`}
+            change={analytics?.total_pnl > 0 ? '+12.5%' : '-5.2%'}
+            icon={CurrencyDollarIcon}
+            trend={analytics?.total_pnl > 0 ? 'up' : 'down'}
+          />
+          <MetricCard
+            title="Win Rate"
+            value={`${analytics?.win_rate?.toFixed(1) || '0'}%`}
+            change="+2.1%"
+            icon={TrendingUpIcon}
+            trend="up"
+          />
+          <MetricCard
+            title="Profit Factor"
+            value={analytics?.profit_factor?.toFixed(2) || '0'}
+            change={analytics?.profit_factor > 1.5 ? '+0.15' : '-0.08'}
+            icon={ChartBarIcon}
+            trend={analytics?.profit_factor > 1.5 ? 'up' : 'down'}
+          />
+          <MetricCard
+            title="Total Trades"
+            value={analytics?.total_trades?.toLocaleString() || '0'}
+            change="+47"
+            icon={DocumentTextIcon}
+            trend="up"
+          />
+        </div>
 
-      {/* Charts Section */}
-      <Grid container spacing={3}>
-        {/* Equity Curve */}
-        <Grid item xs={12} lg={8}>
-          <motion.div variants={itemVariants}>
-            <Paper sx={{ p: 3, height: 400 }}>
-              <Typography variant="h6" gutterBottom>
-                Equity Curve
-              </Typography>
-              <TradingChart data={performanceData} />
-            </Paper>
-          </motion.div>
-        </Grid>
+        {/* Navigation Tabs */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'overview', name: 'Overview' },
+              { id: 'performance', name: 'Performance' },
+              { id: 'analysis', name: 'Analysis' },
+              { id: 'risk', name: 'Risk Management' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.name}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        {/* Performance Breakdown */}
-        <Grid item xs={12} lg={4}>
-          <motion.div variants={itemVariants}>
-            <Paper sx={{ p: 3, height: 400 }}>
-              <Typography variant="h6" gutterBottom>
-                Performance Breakdown
-              </Typography>
-              <Box display="flex" flexDirection="column" gap={2}>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2">Best Day</Typography>
-                  <Chip 
-                    label={`$${dashboardData?.best_day?.toLocaleString() || '0'}`}
-                    color="success"
-                    size="small"
-                  />
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2">Worst Day</Typography>
-                  <Chip 
-                    label={`$${dashboardData?.worst_day?.toLocaleString() || '0'}`}
-                    color="error"
-                    size="small"
-                  />
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2">Average Trade</Typography>
-                  <Chip 
-                    label="$245.60"
-                    color="primary"
-                    size="small"
-                  />
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2">Max Drawdown</Typography>
-                  <Chip 
-                    label="-8.2%"
-                    color="warning"
-                    size="small"
-                  />
-                </Box>
-              </Box>
-            </Paper>
-          </motion.div>
-        </Grid>
-      </Grid>
-    </motion.div>
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Equity Curve</h3>
+              <EquityCurveChart data={analytics?.equity_curve || []} />
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Win Rate Distribution</h3>
+              <WinRateGauge winRate={analytics?.win_rate || 0} />
+              <div className="text-center mt-4">
+                <p className="text-2xl font-bold text-gray-900">{analytics?.win_rate?.toFixed(1) || '0'}%</p>
+                <p className="text-sm text-gray-600">Overall Win Rate</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'performance' && (
+          <div className="grid grid-cols-1 gap-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">P&L Distribution</h3>
+              <PnLDistribution data={analytics?.pnl_distribution || []} />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                <h4 className="text-sm font-medium text-gray-600">Best Day</h4>
+                <p className="text-2xl font-bold text-green-600">${analytics?.best_day?.toLocaleString() || '0'}</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                <h4 className="text-sm font-medium text-gray-600">Worst Day</h4>
+                <p className="text-2xl font-bold text-red-600">${analytics?.worst_day?.toLocaleString() || '0'}</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                <h4 className="text-sm font-medium text-gray-600">Avg Daily P&L</h4>
+                <p className="text-2xl font-bold text-gray-900">${analytics?.avg_daily_pnl?.toLocaleString() || '0'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analysis' && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Trade Analysis</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trades</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Win Rate</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {(analytics?.symbol_breakdown || []).map((symbol, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{symbol.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{symbol.trades}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{symbol.winRate}%</td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${symbol.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${symbol.pnl.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'risk' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Metrics</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Max Drawdown</span>
+                  <span className="font-semibold text-red-600">${analytics?.max_drawdown?.toLocaleString() || '0'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sharpe Ratio</span>
+                  <span className="font-semibold">{analytics?.sharpe_ratio?.toFixed(2) || '0'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Risk/Reward Ratio</span>
+                  <span className="font-semibold">{analytics?.risk_reward_ratio?.toFixed(2) || '0'}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Position Sizing Recommendations</h3>
+              <div className="space-y-3">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">Recommended position size: 2.5% of account per trade</p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-800">Current risk level: Conservative</p>
+                </div>
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-800">Consider tightening stop losses on trending positions</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

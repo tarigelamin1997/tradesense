@@ -30,6 +30,8 @@ class TradeCreateRequest(BaseModel):
     strategy_tag: Optional[str] = Field(None, max_length=50, description="Strategy identifier")
     confidence_score: Optional[int] = Field(None, ge=1, le=10, description="Confidence score (1-10)")
     notes: Optional[str] = Field(None, max_length=1000, description="Trade notes")
+    tags: Optional[List[str]] = Field(None, description="Trade tags (e.g., 'FOMO', 'breakout')")
+    strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
     
     class Config:
         schema_extra = {
@@ -39,9 +41,10 @@ class TradeCreateRequest(BaseModel):
                 "quantity": 1.0,
                 "entry_price": 4500.25,
                 "entry_time": "2024-01-15T10:30:00Z",
-                "strategy_tag": "momentum",
+                "strategy_tag": "Scalping v2",
                 "confidence_score": 8,
-                "notes": "Strong bullish momentum"
+                "notes": "Strong bullish momentum",
+                "tags": ["breakout", "high-volume"]
             }
         }
 
@@ -51,7 +54,8 @@ class TradeUpdateRequest(BaseModel):
     exit_price: Optional[float] = Field(None, gt=0, description="Exit price")
     exit_time: Optional[datetime] = Field(None, description="Exit timestamp")
     notes: Optional[str] = Field(None, max_length=1000, description="Updated trade notes")
-    tags: Optional[str] = Field(None, max_length=200, description="Trade tags")
+    tags: Optional[List[str]] = Field(None, description="Trade tags")
+    strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
     
     @validator('exit_time')
     def validate_exit_time(cls, v, values):
@@ -64,7 +68,8 @@ class TradeUpdateRequest(BaseModel):
                 "exit_price": 4525.75,
                 "exit_time": "2024-01-15T14:45:00Z",
                 "notes": "Target reached, good profit",
-                "tags": "profitable,quick"
+                "tags": ["profitable", "quick"],
+                "strategy_tag": "Scalping v2"
             }
         }
 
@@ -86,6 +91,8 @@ class TradeResponse(BaseModel):
     strategy_tag: Optional[str] = Field(None, description="Strategy identifier")
     confidence_score: Optional[int] = Field(None, description="Confidence score")
     notes: Optional[str] = Field(None, description="Trade notes")
+    tags: Optional[List[str]] = Field(None, description="Trade tags")
+    strategy_tag: Optional[str] = Field(None, description="Strategy identifier")
     status: TradeStatus = Field(..., description="Trade status")
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Record update timestamp")

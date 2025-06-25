@@ -44,6 +44,7 @@ class Trade(Base):
     notes = Column(Text)
     tags = Column(JSON)  # List of strings stored as JSON (legacy)
     strategy_tag = Column(String, index=True)  # Reference to strategy name
+    strategy_id = Column(String, index=True)  # Reference to strategy ID
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 

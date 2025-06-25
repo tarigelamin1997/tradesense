@@ -197,6 +197,35 @@ class TradesService:
             if query_params.status:
                 user_trades = [t for t in user_trades if t["status"] == query_params.status]
 
+
+
+    @staticmethod
+    async def get_trades_by_strategy(db: Session, user_id: str, strategy_id: str) -> List[Trade]:
+        """Get all trades for a specific strategy"""
+        return db.query(Trade).filter(
+            and_(Trade.user_id == user_id, Trade.strategy_id == strategy_id)
+        ).options(joinedload(Trade.tag_objects)).all()
+
+    @staticmethod
+    async def get_strategy_performance(db: Session, user_id: str, strategy_id: str) -> Dict[str, Any]:
+        """Get performance metrics for a specific strategy"""
+        trades = await TradeService.get_trades_by_strategy(db, user_id, strategy_id)
+        
+        if not trades:
+            return {"total_trades": 0, "total_pnl": 0, "win_rate": 0}
+        
+        total_pnl = sum(trade.pnl or 0 for trade in trades)
+        winning_trades = sum(1 for trade in trades if (trade.pnl or 0) > 0)
+        win_rate = (winning_trades / len(trades)) * 100 if trades else 0
+        
+        return {
+            "total_trades": len(trades),
+            "total_pnl": total_pnl,
+            "win_rate": win_rate,
+            "winning_trades": winning_trades,
+            "losing_trades": len(trades) - winning_trades
+        }
+
             if query_params.start_date:
                 user_trades = [t for t in user_trades if t["entry_time"] >= query_params.start_date]
 

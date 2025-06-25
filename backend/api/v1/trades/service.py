@@ -56,6 +56,17 @@ class TradesService:
         self.analytics_service = AnalyticsService()
         # In production, this would be a database connection
         self._trades_storage = {}
+        
+        # Import analytics modules
+        from ...analytics.performance import calculate_risk_reward_metrics
+        from ...analytics.equity import generate_equity_curve
+        from ...analytics.streaks import calculate_win_loss_streaks
+        from ...analytics.filters import apply_trade_filters
+        
+        self.calculate_performance = calculate_risk_reward_metrics
+        self.calculate_equity = generate_equity_curve
+        self.calculate_streaks = calculate_win_loss_streaks
+        self.apply_filters = apply_trade_filters
 
     async def create_trade(self, user_id: str, trade_data: TradeCreateRequest) -> TradeResponse:
         """Create a new trade"""

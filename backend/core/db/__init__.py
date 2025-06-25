@@ -7,13 +7,15 @@ from backend.core.db.session import engine, Base
 """
 Database module for TradeSense
 """
-from backend.models.trade import Trade
-from backend.models.user import User
-from backend.models.trade_note import TradeNote
-from backend.models.strategy import Strategy
-from backend.models.tag import Tag
+from ..models.user import User
+from ..models.trade import Trade
+from ..models.trade_note import TradeNote
+from ..models.strategy import Strategy
 
-__all__ = ["Trade", "User", "TradeNote", "Strategy", "Tag"]
+# Analytics modules are available for import
+from ... import analytics
+
+__all__ = ["User", "Trade", "TradeNote", "Strategy", "analytics"]
 
 # Create tables
 Base.metadata.create_all(bind=engine)

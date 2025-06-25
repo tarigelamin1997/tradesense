@@ -6,3 +6,4 @@ pytest-mock>=3.11.0
 httpx>=0.24.0
 factory-boy>=3.3.0
 freezegun>=1.2.0
+pydantic[email]

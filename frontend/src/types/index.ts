@@ -1,64 +1,49 @@
-
 export interface User {
-  id: string;
-  username: string;
+  user_id: string;
   email: string;
-  role: 'user' | 'admin' | 'partner';
-  partnerId?: string;
+  created_at: string;
 }
 
 export interface Trade {
   id: string;
   symbol: string;
-  entryTime: string;
-  exitTime: string;
-  entryPrice: number;
-  exitPrice: number;
-  qty: number;
+  entry_time: string;
+  exit_time: string;
   direction: 'long' | 'short';
+  quantity: number;
+  entry_price: number;
+  exit_price: number;
   pnl: number;
-  tradeType: 'futures' | 'stocks' | 'options' | 'forex' | 'crypto';
-  broker: string;
-  notes?: string;
-  commission?: number;
-  stopLoss?: number;
-  takeProfit?: number;
 }
 
-export interface DashboardMetrics {
-  totalTrades: number;
-  winRate: number;
-  profitFactor: number;
-  totalPnl: number;
-  bestDay: number;
-  worstDay: number;
-  avgWin: number;
-  avgLoss: number;
-  maxDrawdown: number;
-  sharpeRatio: number;
+export interface Analytics {
+  total_trades: number;
+  total_pnl: number;
+  win_rate: number;
+  profit_factor: number;
+  max_drawdown: number;
+  sharpe_ratio: number;
+  best_day: number;
+  worst_day: number;
+  avg_daily_pnl: number;
+  risk_reward_ratio: number;
+  equity_curve: Array<{ date: string; cumulativePnL: number }>;
+  pnl_distribution: Array<{ range: string; count: number }>;
+  symbol_breakdown: Array<{
+    name: string;
+    trades: number;
+    winRate: number;
+    pnl: number;
+  }>;
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
+  message?: string;
   error?: string;
-  message?: string;
 }
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  token?: string;
-  user?: User;
-  message?: string;
-}
+export type TradeDirection = 'long' | 'short';
+export type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+export type AnalysisStatus = 'idle' | 'analyzing' | 'success' | 'error';

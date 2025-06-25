@@ -55,7 +55,7 @@ class Trade(Base):
 # Pydantic models for API
 class TradeBase(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=10)
-    direction: str = Field(..., regex="^(long|short)$")
+    direction: str = Field(..., pattern="^(long|short)$")
     quantity: float = Field(..., gt=0)
     entry_price: float = Field(..., gt=0)
     exit_price: Optional[float] = Field(None, gt=0)

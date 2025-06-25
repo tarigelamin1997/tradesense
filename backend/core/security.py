@@ -88,3 +88,11 @@ async def get_current_active_user(current_user: Dict[str, Any] = Depends(get_cur
     """Dependency to get current active user"""
     # Add any additional active user checks here
     return current_user
+
+
+def verify_token(token: str) -> Dict[str, Any]:
+    """
+    Legacy function for backward compatibility
+    Use SecurityManager.verify_token instead
+    """
+    return SecurityManager.verify_token(token)

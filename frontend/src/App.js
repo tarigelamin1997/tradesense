@@ -1,14 +1,17 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/auth';
 import { AppLayout } from './components/layout';
-import { DashboardPage } from './features/dashboard/pages/DashboardPage';
-import { UploadPage } from './features/upload/pages/UploadPage';
-import { LoginPage } from './features/auth/pages/LoginPage';
-import { RegisterPage } from './features/auth/pages/RegisterPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
+
+// Lazy load components for better performance
+const DashboardPage = React.lazy(() => import('./features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
+const UploadPage = React.lazy(() => import('./features/upload/pages/UploadPage').then(module => ({ default: module.UploadPage })));
+const LoginPage = React.lazy(() => import('./features/auth/pages/LoginPage').then(module => ({ default: module.LoginPage })));
+const RegisterPage = React.lazy(() => import('./features/auth/pages/RegisterPage').then(module => ({ default: module.RegisterPage })));
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -19,6 +22,16 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p className="text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,8 +53,11 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
+    <React.StrictMode>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public Routes */}
           <Route 
@@ -112,8 +128,10 @@ function App() {
             } 
           />
         </Routes>
-      </Router>
-    </QueryClientProvider>
+          </Router>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </React.StrictMode>
   );
 }
 

@@ -1,0 +1,108 @@
+
+/* Mobile-specific styles and optimizations */
+
+/* Ensure minimum touch target size (44px) */
+@media (max-width: 768px) {
+  button, 
+  input[type="button"], 
+  input[type="submit"], 
+  a[role="button"],
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve form inputs on mobile */
+  input[type="text"],
+  input[type="email"], 
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Better spacing for mobile cards */
+  .card-mobile {
+    margin-bottom: 16px;
+    padding: 16px;
+  }
+
+  /* Improved table responsiveness */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-responsive table {
+    min-width: 600px;
+  }
+
+  /* Mobile-friendly modals */
+  .modal-mobile {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  /* Better tap targets for navigation */
+  .nav-link-mobile {
+    padding: 16px 20px;
+    display: block;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* Prevent horizontal scroll */
+  .container-mobile {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* iOS Safari specific fixes */
+  input[type="search"] {
+    -webkit-appearance: none;
+    border-radius: 8px;
+  }
+
+  /* Android Chrome specific fixes */
+  input:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .icon-svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Landscape orientation optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .navbar-mobile {
+    height: 56px; /* Reduced height in landscape */
+  }
+  
+  .content-landscape {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .card-mobile {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .nav-link-mobile {
+    color: #f9fafb;
+    border-bottom-color: #374151;
+  }
+}

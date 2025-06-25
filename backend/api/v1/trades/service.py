@@ -559,10 +559,106 @@ class TradesService:
                 "avg_pnl": stats["pnl"] / trade_count if trade_count > 0 else 0,
                 "win_rate": (winning / trade_count) * 100 if trade_count > 0 else 0,
                 "winning_trades": winning,
-                "losing_trades": trade_count - winning
+                "losing_trades": trade_count - winning,
+                "best_trade": max(pnl_values) if pnl_values else 0,
+                "worst_trade": min(pnl_values) if pnl_values else 0
             }
 
         return performance
+
+    async def get_tag_analytics(self, user_id: str, tag: str) -> Dict[str, Any]:
+        """Get analytics for a specific tag"""
+        try:
+            # Get all trades for user
+            user_trades = [
+                trade for trade in self._trades_storage.values() 
+                if trade["user_id"] == user_id
+            ]
+
+            # Filter trades that have the specified tag
+            tag_trades = []
+            for trade in user_trades:
+                tags = trade.get("tags", [])
+                if isinstance(tags, str):
+                    tags = [t.strip() for t in tags.split(",") if t.strip()]
+                
+                if tag.lower() in [t.lower() for t in tags]:
+                    tag_trades.append(trade)
+
+            if not tag_trades:
+                return {
+                    "tag": tag,
+                    "total_trades": 0,
+                    "total_pnl": 0,
+                    "win_rate": 0,
+                    "avg_pnl": 0
+                }
+
+            # Calculate analytics for tag
+            total_trades = len(tag_trades) 
+            pnl_values = [trade.get("pnl", 0) for trade in tag_trades]
+            total_pnl = sum(pnl_values)
+            winning_trades = len([pnl for pnl in pnl_values if pnl > 0])
+            win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
+
+            return {
+                "tag": tag,
+                "total_trades": total_trades,
+                "total_pnl": total_pnl,
+                "avg_pnl": total_pnl / total_trades if total_trades > 0 else 0,
+                "win_rate": win_rate,
+                "winning_trades": winning_trades,
+                "losing_trades": total_trades - winning_trades,
+                "best_trade": max(pnl_values) if pnl_values else 0,
+                "worst_trade": min(pnl_values) if pnl_values else 0
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get tag analytics: {str(e)}")
+            raise BusinessLogicError(f"Failed to calculate tag analytics: {str(e)}")
+
+    async def get_popular_tags(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get most frequently used tags"""
+        try:
+            user_trades = [
+                trade for trade in self._trades_storage.values() 
+                if trade["user_id"] == user_id
+            ]
+
+            tag_counts = {}
+            tag_pnl = {}
+
+            for trade in user_trades:
+                tags = trade.get("tags", [])
+                if isinstance(tags, str):
+                    tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
+                
+                trade_pnl = trade.get("pnl", 0)
+                
+                for tag in tags:
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+                    tag_pnl[tag] = tag_pnl.get(tag, 0) + trade_pnl
+
+            # Sort by usage count
+            popular_tags = sorted(
+                tag_counts.items(), 
+                key=lambda x: x[1], 
+                reverse=True
+            )[:limit]
+
+            return [
+                {
+                    "name": tag,
+                    "usage_count": count,
+                    "total_pnl": tag_pnl.get(tag, 0),
+                    "avg_pnl": tag_pnl.get(tag, 0) / count if count > 0 else 0
+                }
+                for tag, count in popular_tags
+            ]
+
+        except Exception as e:
+            logger.error(f"Failed to get popular tags: {str(e)}")
+            raise BusinessLogicError(f"Failed to get popular tags: {str(e)}")
 
     def _calculate_monthly_pnl(self, trades: List[Dict]) -> Dict[str, float]:
         """Calculate PnL by month"""

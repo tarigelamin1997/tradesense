@@ -399,8 +399,25 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && mkdir -p logs && python -m pip install --user --break-system-packages fastapi uvicorn python-multipart sqlalchemy psycopg2-binary && python main.py"
+args = "cd backend && mkdir -p logs && python -m pip install --user fastapi uvicorn python-multipart sqlalchemy psycopg2-binary && python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd frontend && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Fix Backend Dependencies"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pip install --user --break-system-packages --no-cache-dir fastapi uvicorn python-multipart sqlalchemy psycopg2-binary python-jose[cryptography] passlib[bcrypt] python-dateutil"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"

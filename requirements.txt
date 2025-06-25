@@ -24,3 +24,11 @@ fpdf
 python-multipart
 python-multipart
 uvicorn
+bcrypt
+fastapi
+passlib
+pydantic
+python-jose
+python-multipart
+sqlalchemy
+uvicorn

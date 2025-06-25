@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["nodejs-20", "python-3.11"]
 
 [run]
 command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableWebsocketCompression=false"
@@ -23,7 +23,7 @@ LANG = "C"
 REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
 
 [workflows]
-runButton = "Full Stack Development V2"
+runButton = "Full Stack Development"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -391,21 +391,8 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && python main.py"
+args = "cd backend && python -m pip install python-multipart && python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && npm start"
-
-[[workflows.workflow]]
-name = "Full Stack Development V2"
-author = 43683701
-mode = "parallel"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend && npm run dev"
+args = "cd frontend && npm install && npm run dev"

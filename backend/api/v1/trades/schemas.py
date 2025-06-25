@@ -32,6 +32,7 @@ class TradeCreateRequest(BaseModel):
     tags: Optional[List[str]] = Field(None, description="Trade tags (e.g., 'FOMO', 'breakout')")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
     tag_ids: Optional[List[str]] = Field(None, description="Tag IDs to assign to trade")
+    strategy_id: Optional[str] = Field(None, max_length=100, description="Strategy ID reference")
 
     class Config:
         schema_extra = {
@@ -57,6 +58,7 @@ class TradeUpdateRequest(BaseModel):
     tags: Optional[List[str]] = Field(None, description="Trade tags")
     tag_ids: Optional[List[str]] = Field(None, description="Tag IDs to assign to trade")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
+    strategy_id: Optional[str] = Field(None, max_length=100, description="Strategy ID reference")
 
     @validator('exit_time')
     def validate_exit_time(cls, v, values):

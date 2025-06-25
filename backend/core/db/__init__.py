@@ -11,8 +11,9 @@ from backend.models.trade import Trade
 from backend.models.user import User
 from backend.models.trade_note import TradeNote
 from backend.models.strategy import Strategy
+from backend.models.tag import Tag
 
-__all__ = ["Trade", "User", "TradeNote", "Strategy"]
+__all__ = ["Trade", "User", "TradeNote", "Strategy", "Tag"]
 
 # Create tables
 Base.metadata.create_all(bind=engine)

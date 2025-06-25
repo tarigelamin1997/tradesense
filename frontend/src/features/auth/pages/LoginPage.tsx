@@ -1,80 +1,106 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../../store/auth';
-import { Button, Input, Card } from '../../../components/ui';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 
-export const LoginPage: React.FC = () => {
+const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading, error } = useAuthStore();
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login, isLoading, error, clearError } = useAuthStore();
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
     
     try {
-      await login({ email, password });
+      await login(credentials);
       navigate('/dashboard');
     } catch (error) {
-      console.error('Login failed:', error);
+      // Error is handled by the store
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCredentials(prev => ({ ...prev, [name]: value }));
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="flex justify-center">
-            <ChartBarIcon className="h-12 w-12 text-blue-600" />
-          </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to TradeSense
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link 
+              to="/register" 
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               create a new account
             </Link>
           </p>
         </div>
-
-        <Card className="mt-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          
+          <div className="space-y-4">
             <Input
-              label="Email address"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="username"
+              type="text"
               required
-              autoComplete="email"
+              placeholder="Username"
+              value={credentials.username}
+              onChange={handleChange}
+              disabled={isLoading}
             />
-
+            
             <Input
-              label="Password"
+              name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               required
-              autoComplete="current-password"
+              placeholder="Password"
+              value={credentials.password}
+              onChange={handleChange}
+              disabled={isLoading}
             />
+          </div>
 
-            {error && (
-              <div className="text-red-600 text-sm">{error}</div>
-            )}
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <span className="text-gray-600">Demo: </span>
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-500"
+                onClick={() => setCredentials({ username: 'demo', password: 'demo123' })}
+              >
+                Use demo credentials
+              </button>
+            </div>
+          </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              isLoading={isLoading}
-            >
-              Sign in
-            </Button>
-          </form>
-        </Card>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing in...' : 'Sign in'}
+          </Button>
+        </form>
       </div>
     </div>
   );
 };
+
+export default LoginPage;

@@ -1,125 +1,115 @@
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { authService, type LoginRequest, type RegisterRequest } from '../services/auth';
-
-interface User {
-  user_id: string;
-  email: string;
-  created_at: string;
-}
+import { authService, LoginRequest, RegisterRequest } from '../services/auth';
+import { User } from '../types';
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-}
-
-interface AuthActions {
+  
+  // Actions
   login: (credentials: LoginRequest) => Promise<void>;
   register: (userData: RegisterRequest) => Promise<void>;
-  logout: () => void;
-  clearError: () => void;
+  logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  clearError: () => void;
+  setUser: (user: User | null) => void;
 }
 
-export const useAuthStore = create<AuthState & AuthActions>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: authService.getCurrentUserFromStorage(),
+  isAuthenticated: authService.isAuthenticated(),
+  isLoading: false,
+  error: null,
 
-      login: async (credentials: LoginRequest) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await authService.login(credentials);
-          
-          localStorage.setItem('authToken', response.access_token);
-          
-          set({
-            user: response.user,
-            token: response.access_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-        } catch (error: any) {
-          set({
-            isLoading: false,
-            error: error.response?.data?.detail || 'Login failed',
-          });
-          throw error;
-        }
-      },
-
-      register: async (userData: RegisterRequest) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await authService.register(userData);
-          
-          localStorage.setItem('authToken', response.access_token);
-          
-          set({
-            user: response.user,
-            token: response.access_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-        } catch (error: any) {
-          set({
-            isLoading: false,
-            error: error.response?.data?.detail || 'Registration failed',
-          });
-          throw error;
-        }
-      },
-
-      logout: () => {
-        localStorage.removeItem('authToken');
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          error: null,
-        });
-      },
-
-      clearError: () => {
-        set({ error: null });
-      },
-
-      checkAuth: async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          set({ isAuthenticated: false });
-          return;
-        }
-
-        try {
-          const isValid = await authService.verifyToken();
-          if (!isValid) {
-            get().logout();
-          }
-        } catch {
-          get().logout();
-        }
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
+  login: async (credentials: LoginRequest) => {
+    set({ isLoading: true, error: null });
+    try {
+      const tokenData = await authService.login(credentials);
+      set({ 
+        user: tokenData.user,
+        isAuthenticated: true,
+        isLoading: false 
+      });
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.detail || 'Login failed',
+        isLoading: false 
+      });
+      throw error;
     }
-  )
-);
+  },
+
+  register: async (userData: RegisterRequest) => {
+    set({ isLoading: true, error: null });
+    try {
+      await authService.register(userData);
+      set({ isLoading: false });
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.detail || 'Registration failed',
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    set({ isLoading: true });
+    try {
+      await authService.logout();
+      set({ 
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null 
+      });
+    } catch (error) {
+      // Still clear local state even if API call fails
+      set({ 
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null 
+      });
+    }
+  },
+
+  checkAuth: async () => {
+    if (!authService.isAuthenticated()) {
+      set({ user: null, isAuthenticated: false });
+      return;
+    }
+
+    set({ isLoading: true });
+    try {
+      const isValid = await authService.checkAndRefreshToken();
+      if (isValid) {
+        const user = await authService.getCurrentUser();
+        set({ 
+          user,
+          isAuthenticated: true,
+          isLoading: false 
+        });
+      } else {
+        set({ 
+          user: null,
+          isAuthenticated: false,
+          isLoading: false 
+        });
+      }
+    } catch (error) {
+      set({ 
+        user: null,
+        isAuthenticated: false,
+        isLoading: false 
+      });
+    }
+  },
+
+  clearError: () => set({ error: null }),
+  
+  setUser: (user: User | null) => set({ user, isAuthenticated: !!user })
+}));

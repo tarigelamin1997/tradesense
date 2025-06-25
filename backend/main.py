@@ -15,6 +15,8 @@ import json
 import logging
 import os
 import sys
+import jwt
+from datetime import datetime, timedelta
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,7 +36,13 @@ app = FastAPI(
 # CORS middleware for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # React dev server
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "http://0.0.0.0:3000",
+        "https://*.replit.dev",
+        "https://*.replit.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,15 +72,38 @@ class UserResponse(BaseModel):
     email: str
     role: str
 
+# JWT configuration
+JWT_SECRET = "tradesense_jwt_secret_key_2024"  # In production, use environment variable
+JWT_ALGORITHM = "HS256"
+
+def create_jwt_token(user_data: dict) -> str:
+    """Create JWT token for user."""
+    payload = {
+        "user_id": user_data["id"],
+        "username": user_data["username"],
+        "email": user_data["email"],
+        "role": user_data["role"],
+        "exp": datetime.utcnow() + timedelta(days=30)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def verify_jwt_token(token: str) -> dict:
+    """Verify and decode JWT token."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 # Authentication dependency
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
-        # Validate JWT token
-        user = auth_manager.verify_token(credentials.credentials)
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid authentication")
-        return user
-    except Exception:
+        # Verify JWT token
+        payload = verify_jwt_token(credentials.credentials)
+        return payload
+    except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
 # Health check
@@ -85,10 +116,12 @@ async def health_check():
 async def login(request: LoginRequest):
     result = auth_manager.login_user(request.username, request.password)
     if result["success"]:
+        # Create JWT token
+        token = create_jwt_token(result["user"])
         return {
             "success": True,
-            "token": result.get("token"),
-            "user": result.get("user")
+            "token": token,
+            "user": result["user"]
         }
     raise HTTPException(status_code=401, detail=result["message"])
 

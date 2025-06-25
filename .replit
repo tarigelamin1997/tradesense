@@ -395,4 +395,4 @@ args = "cd backend && python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && npm start"
+args = "cd frontend && npm run dev"

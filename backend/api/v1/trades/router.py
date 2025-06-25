@@ -317,3 +317,220 @@ async def get_dashboard_analytics(
             message=f"Failed to retrieve analytics: {str(e)}",
             status_code=500
         )
+"""
+Trades API endpoints with comprehensive filtering and analytics
+"""
+from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from backend.core.db.session import get_db
+from backend.api.deps import get_current_active_user
+from backend.api.v1.trades.schemas import (
+    TradeCreateRequest, TradeUpdateRequest, TradeResponse, 
+    TradeQueryParams, AnalyticsRequest, AnalyticsResponse
+)
+from backend.api.v1.trades.service import TradesService
+from backend.core.exceptions import NotFoundError, ValidationError, BusinessLogicError
+from backend.core.response import create_response
+
+router = APIRouter(prefix="/trades", tags=["Trades"])
+trades_service = TradesService()
+
+
+@router.post("/", response_model=TradeResponse, status_code=201)
+async def create_trade(
+    trade_data: TradeCreateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Create a new trade with optional tags"""
+    try:
+        trade = await trades_service.create_trade(current_user["user_id"], trade_data)
+        return trade
+    except (ValidationError, BusinessLogicError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/", response_model=Dict[str, Any])
+async def get_trades(
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(50, ge=1, le=1000, description="Items per page"),
+    symbol: Optional[str] = Query(None, description="Filter by symbol"),
+    strategy_tag: Optional[str] = Query(None, description="Filter by strategy"),
+    tags: Optional[List[str]] = Query(None, description="Filter by tags"),
+    status: Optional[str] = Query(None, description="Filter by status (open/closed)"),
+    start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
+    end_date: Optional[str] = Query(None, description="End date (ISO format)"),
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get trades with filtering, sorting, and pagination"""
+    try:
+        query_params = TradeQueryParams(
+            page=page,
+            per_page=per_page,
+            symbol=symbol,
+            strategy_tag=strategy_tag,
+            tags=tags,
+            status=status,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        result = await trades_service.get_trades(current_user["user_id"], query_params)
+        return result
+        
+    except (ValidationError, BusinessLogicError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/strategy/{strategy_id}", response_model=List[Dict[str, Any]])
+async def get_trades_by_strategy(
+    strategy_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get all trades for a specific strategy"""
+    try:
+        trades = await trades_service.get_trades_by_strategy(current_user["user_id"], strategy_id)
+        return create_response(
+            data=trades,
+            message=f"Retrieved {len(trades)} trades for strategy"
+        )
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/strategy/{strategy_id}/performance", response_model=Dict[str, Any])
+async def get_strategy_performance(
+    strategy_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get performance metrics for a specific strategy"""
+    try:
+        performance = await trades_service.get_strategy_performance(current_user["user_id"], strategy_id)
+        return create_response(
+            data=performance,
+            message="Strategy performance calculated successfully"
+        )
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{trade_id}", response_model=TradeResponse)
+async def get_trade(
+    trade_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get a specific trade by ID"""
+    try:
+        trade = await trades_service.get_trade(current_user["user_id"], trade_id)
+        return trade
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{trade_id}", response_model=TradeResponse)
+async def update_trade(
+    trade_id: str,
+    trade_data: TradeUpdateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Update an existing trade"""
+    try:
+        trade = await trades_service.update_trade(current_user["user_id"], trade_id, trade_data)
+        return trade
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    except (ValidationError, BusinessLogicError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{trade_id}", status_code=204)
+async def delete_trade(
+    trade_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Delete a trade"""
+    try:
+        await trades_service.delete_trade(current_user["user_id"], trade_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/analytics", response_model=AnalyticsResponse)
+async def calculate_analytics(
+    request: AnalyticsRequest,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Calculate trading analytics with optional filtering"""
+    try:
+        analytics = await trades_service.calculate_analytics(current_user["user_id"], request)
+        return analytics
+    except (ValidationError, BusinessLogicError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/analytics/dashboard", response_model=Dict[str, Any])
+async def get_dashboard_analytics(
+    start_date: Optional[str] = Query(None, description="Start date filter"),
+    end_date: Optional[str] = Query(None, description="End date filter"),
+    strategy_tag: Optional[str] = Query(None, description="Filter by strategy"),
+    tags: Optional[List[str]] = Query(None, description="Filter by tags"),
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get comprehensive analytics for dashboard"""
+    try:
+        from backend.api.v1.trades.service import AnalyticsFilters
+        from datetime import datetime
+        
+        filters = None
+        if any([start_date, end_date, strategy_tag, tags]):
+            filters = AnalyticsFilters(
+                start_date=datetime.fromisoformat(start_date) if start_date else None,
+                end_date=datetime.fromisoformat(end_date) if end_date else None,
+                strategy_tag=strategy_tag,
+                tags=tags
+            )
+        
+        analytics = await trades_service.get_analytics(current_user["user_id"], filters)
+        return create_response(
+            data=analytics,
+            message="Dashboard analytics calculated successfully"
+        )
+    except (ValidationError, BusinessLogicError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/analytics/tags/{tag}", response_model=Dict[str, Any])
+async def get_tag_analytics(
+    tag: str,
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get analytics for a specific tag"""
+    try:
+        analytics = await trades_service.get_tag_analytics(current_user["user_id"], tag)
+        return create_response(
+            data=analytics,
+            message=f"Analytics calculated for tag '{tag}'"
+        )
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/analytics/tags/popular", response_model=List[Dict[str, Any]])
+async def get_popular_tags(
+    limit: int = Query(10, ge=1, le=50, description="Number of tags to return"),
+    current_user: Dict[str, Any] = Depends(get_current_active_user)
+):
+    """Get most frequently used tags with performance data"""
+    try:
+        popular_tags = await trades_service.get_popular_tags(current_user["user_id"], limit)
+        return create_response(
+            data=popular_tags,
+            message=f"Retrieved {len(popular_tags)} popular tags"
+        )
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=400, detail=str(e))

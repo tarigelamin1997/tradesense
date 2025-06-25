@@ -15,7 +15,6 @@ from backend.core.security import get_current_active_user
 from backend.core.response import ResponseHandler, APIResponse
 from backend.core.exceptions import TradeSenseException
 from backend.core.db.session import get_db
-# Or however you set up your DB session
 
 logger = logging.getLogger(__name__)
 

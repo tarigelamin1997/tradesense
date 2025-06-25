@@ -1,12 +1,13 @@
-
 """
 Test configuration and shared fixtures for TradeSense backend
 """
 import pytest
 import asyncio
+from typing import AsyncGenerator, Generator
+from httpx import AsyncClient
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 import tempfile
 import os
@@ -31,13 +32,15 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def override_get_db():
-    """Override database dependency for testing"""
+def override_get_db() -> Generator[Session, None, None]:
+    """Override database dependency for tests"""
     try:
         db = TestingSessionLocal()
         yield db
     finally:
         db.close()
+
+app.dependency_overrides[get_db] = override_get_db
 
 
 @pytest.fixture(scope="session")
@@ -53,10 +56,10 @@ def db_session():
     """Create a fresh database session for each test"""
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
+
     # Create session
     session = TestingSessionLocal()
-    
+
     try:
         yield session
     finally:
@@ -69,10 +72,10 @@ def db_session():
 def client(db_session):
     """Create a test client with database override"""
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     # Clean up
     app.dependency_overrides.clear()
 
@@ -142,9 +145,9 @@ def mock_file_upload():
         f.write("AAPL,2024-01-15 10:30:00,2024-01-15 15:30:00,150.0,155.0,100,long,500.0\n")
         f.write("TSLA,2024-01-16 09:30:00,2024-01-16 16:00:00,800.0,790.0,10,long,-100.0\n")
         f.flush()
-        
+
         yield f.name
-    
+
     # Cleanup
     try:
         os.unlink(f.name)
@@ -170,7 +173,7 @@ def create_test_user(db_session, user_data=None):
             "email": "test@example.com",
             "password_hash": SecurityManager.hash_password("TestPassword123")
         }
-    
+
     # Mock user creation since we don't have User model yet
     # This would be replaced with actual User model creation
     return {"id": "test-user-123", **user_data}

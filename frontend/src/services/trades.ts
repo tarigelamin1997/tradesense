@@ -1,63 +1,102 @@
 
 import { apiClient } from './api';
+import { Trade, Analytics } from '../types';
 
-export interface Trade {
-  id: string;
+export interface TradeCreateRequest {
   symbol: string;
-  entry_time: string;
-  exit_time: string;
   direction: 'long' | 'short';
   quantity: number;
   entry_price: number;
-  exit_price: number;
-  pnl: number;
+  entry_time: string;
+  strategy_tag?: string;
+  confidence_score?: number;
+  notes?: string;
 }
 
-export interface Analytics {
-  total_trades: number;
-  total_pnl: number;
-  win_rate: number;
-  profit_factor: number;
-  max_drawdown: number;
-  sharpe_ratio: number;
-  best_day: number;
-  worst_day: number;
-  avg_daily_pnl: number;
-  risk_reward_ratio: number;
-  equity_curve: Array<{ date: string; cumulativePnL: number }>;
-  pnl_distribution: Array<{ range: string; count: number }>;
-  symbol_breakdown: Array<{
-    name: string;
-    trades: number;
-    winRate: number;
-    pnl: number;
-  }>;
+export interface TradeUpdateRequest {
+  exit_price?: number;
+  exit_time?: string;
+  notes?: string;
+  tags?: string[];
 }
 
-export interface UploadResponse {
+export interface TradeQueryParams {
+  symbol?: string;
+  strategy_tag?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export interface PaginatedTradesResponse {
   success: boolean;
-  data?: Trade[];
-  message?: string;
+  data: {
+    items: Trade[];
+    total: number;
+    page: number;
+    per_page: number;
+    pages: number;
+  };
+  message: string;
 }
 
-export const tradesService = {
-  async uploadTrades(formData: FormData, onProgress?: (progress: number) => void): Promise<UploadResponse> {
-    const response = await apiClient.uploadFile<UploadResponse>('/trades/upload', formData, onProgress);
-    return response.data;
-  },
+export interface AnalyticsRequest {
+  data: any[];
+  analysis_type?: string;
+}
 
-  async getTrades(): Promise<Trade[]> {
-    const response = await apiClient.get<Trade[]>('/trades');
+class TradesService {
+  async createTrade(tradeData: TradeCreateRequest): Promise<Trade> {
+    const response = await apiClient.post<Trade>('/api/v1/trades/', tradeData);
     return response.data;
-  },
+  }
 
-  async getAnalytics(): Promise<Analytics> {
-    const response = await apiClient.get<Analytics>('/analytics/dashboard');
-    return response.data;
-  },
+  async getTrades(params: TradeQueryParams = {}): Promise<PaginatedTradesResponse> {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
 
-  async analyzeTrades(trades: Trade[]): Promise<Analytics> {
-    const response = await apiClient.post<Analytics>('/analytics/analyze', { trades });
+    const response = await apiClient.get<PaginatedTradesResponse>(
+      `/api/v1/trades/?${queryParams.toString()}`
+    );
     return response.data;
-  },
-};
+  }
+
+  async getTrade(tradeId: string): Promise<Trade> {
+    const response = await apiClient.get<Trade>(`/api/v1/trades/${tradeId}`);
+    return response.data;
+  }
+
+  async updateTrade(tradeId: string, updateData: TradeUpdateRequest): Promise<Trade> {
+    const response = await apiClient.put<Trade>(`/api/v1/trades/${tradeId}`, updateData);
+    return response.data;
+  }
+
+  async deleteTrade(tradeId: string): Promise<void> {
+    await apiClient.delete(`/api/v1/trades/${tradeId}`);
+  }
+
+  async calculateAnalytics(request: AnalyticsRequest): Promise<Analytics> {
+    const response = await apiClient.post<Analytics>('/api/v1/trades/analytics', request);
+    return response.data;
+  }
+
+  async getDashboardAnalytics(startDate?: string, endDate?: string): Promise<Analytics> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+
+    const response = await apiClient.get<{ data: Analytics; success: boolean }>(
+      `/api/v1/trades/analytics/dashboard?${params.toString()}`
+    );
+    return response.data.data;
+  }
+}
+
+export const tradesService = new TradesService();

@@ -95,6 +95,7 @@ class TradesService:
                 "commission": 0.0,
                 "net_pnl": net_pnl,
                 "strategy_tag": trade_data.strategy_tag,
+                "strategy_id": trade_data.strategy_id,
                 "confidence_score": trade_data.confidence_score,
                 "notes": trade_data.notes,
                 "status": status,
@@ -199,23 +200,23 @@ class TradesService:
 
 
 
-    @staticmethod
-    async def get_trades_by_strategy(db: Session, user_id: str, strategy_id: str) -> List[Trade]:
+    async def get_trades_by_strategy(self, user_id: str, strategy_id: str) -> List[Dict[str, Any]]:
         """Get all trades for a specific strategy"""
-        return db.query(Trade).filter(
-            and_(Trade.user_id == user_id, Trade.strategy_id == strategy_id)
-        ).options(joinedload(Trade.tag_objects)).all()
+        user_trades = [
+            trade for trade in self._trades_storage.values() 
+            if trade["user_id"] == user_id and trade.get("strategy_id") == strategy_id
+        ]
+        return user_trades
 
-    @staticmethod
-    async def get_strategy_performance(db: Session, user_id: str, strategy_id: str) -> Dict[str, Any]:
+    async def get_strategy_performance(self, user_id: str, strategy_id: str) -> Dict[str, Any]:
         """Get performance metrics for a specific strategy"""
-        trades = await TradeService.get_trades_by_strategy(db, user_id, strategy_id)
+        trades = await self.get_trades_by_strategy(user_id, strategy_id)
         
         if not trades:
             return {"total_trades": 0, "total_pnl": 0, "win_rate": 0}
         
-        total_pnl = sum(trade.pnl or 0 for trade in trades)
-        winning_trades = sum(1 for trade in trades if (trade.pnl or 0) > 0)
+        total_pnl = sum(trade.get("pnl", 0) or 0 for trade in trades)
+        winning_trades = sum(1 for trade in trades if (trade.get("pnl", 0) or 0) > 0)
         win_rate = (winning_trades / len(trades)) * 100 if trades else 0
         
         return {

@@ -1,17 +1,34 @@
 
+#!/usr/bin/env python3
 """
-Migration to add playbooks table and update trades table
+Migration to add playbooks table
 """
+import os
+import sys
 import sqlite3
-import uuid
-from datetime import datetime
+from pathlib import Path
 
-def migrate_database(db_path: str = "backend/tradesense.db"):
-    """Add playbooks table and playbook_id column to trades table."""
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+# Add the backend directory to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+def create_playbooks_table():
+    """Create the playbooks table"""
+    # Database path relative to backend directory
+    db_path = backend_dir / "tradesense.db"
+    
+    # Ensure the database file exists
+    if not db_path.exists():
+        print(f"Creating database at: {db_path}")
+        # Touch the file to create it
+        db_path.touch()
     
     try:
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        
+        print("Creating playbooks table...")
+        
         # Create playbooks table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS playbooks (
@@ -21,39 +38,38 @@ def migrate_database(db_path: str = "backend/tradesense.db"):
                 entry_criteria TEXT NOT NULL,
                 exit_criteria TEXT NOT NULL,
                 description TEXT,
-                status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+                status TEXT DEFAULT 'active',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
-        # Check if playbook_id column exists in trades table
-        cursor.execute("PRAGMA table_info(trades)")
-        columns = [column[1] for column in cursor.fetchall()]
+        # Add playbook_id column to trades table if it doesn't exist
+        print("Adding playbook_id column to trades table...")
+        try:
+            cursor.execute("ALTER TABLE trades ADD COLUMN playbook_id TEXT")
+            print("✅ Added playbook_id column to trades table")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e).lower():
+                print("✅ playbook_id column already exists in trades table")
+            else:
+                raise
         
-        if 'playbook_id' not in columns:
-            # Add playbook_id column to trades table
-            cursor.execute("""
-                ALTER TABLE trades 
-                ADD COLUMN playbook_id TEXT 
-                REFERENCES playbooks(id)
-            """)
-        
-        # Create indexes for better performance
+        # Create index for better performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_playbooks_user_id ON playbooks(user_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_playbooks_status ON playbooks(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_trades_playbook_id ON trades(playbook_id)")
         
         conn.commit()
-        print("✅ Playbook migration completed successfully")
+        print("✅ Playbooks migration completed successfully!")
+        return True
         
     except Exception as e:
-        conn.rollback()
         print(f"❌ Migration failed: {e}")
-        raise
+        return False
     finally:
-        conn.close()
+        if 'conn' in locals():
+            conn.close()
 
 if __name__ == "__main__":
-    migrate_database()
+    success = create_playbooks_table()
+    sys.exit(0 if success else 1)

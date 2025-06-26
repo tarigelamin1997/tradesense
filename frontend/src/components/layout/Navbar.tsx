@@ -88,6 +88,18 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <ChartBarIcon className="h-4 w-4" />
                   <span>Edge Strength</span>
                 </Link>
+                 <Link
+                  key="/heatmap"
+                  to="/heatmap"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/heatmap'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>📊 Heatmap</span>
+                </Link>
 
             <Button
               variant="ghost"
@@ -173,6 +185,19 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                 >
                   <ChartBarIcon className="h-4 w-4" />
                   <span>Edge Strength</span>
+                </Link>
+                 <Link
+                  key="/heatmap"
+                  to="/heatmap"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/heatmap'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>📊 Heatmap</span>
                 </Link>
             <button
               onClick={() => {

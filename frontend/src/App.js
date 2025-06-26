@@ -13,6 +13,7 @@ import TimelinePage from './features/analytics/pages/TimelinePage';
 import EdgeStrengthPage from './features/analytics/pages/EdgeStrengthPage';
 import { HeatmapPage } from './features/analytics/pages/HeatmapPage';
 import { StreakAnalysisPage } from './features/analytics/pages/StreakAnalysisPage';
+import { TradeSearchPage } from './features/analytics/pages/TradeSearchPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -65,6 +66,7 @@ function App() {
           <Route path="/edge-strength" element={<EdgeStrengthPage />} />
             <Route path="/heatmap" element={<HeatmapPage />} />
         <Route path="/analytics/streaks" element={<StreakAnalysisPage />} />
+        <Route path="/trade-search" element={<TradeSearchPage />} />
         </Routes>
         </div>
       </Router>

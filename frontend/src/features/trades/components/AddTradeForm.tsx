@@ -1,10 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTradeStore } from '../../../store/trades';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { TradeCreateRequest } from '../../../services/trades';
 import { PlaybookSelector } from './PlaybookSelector';
+import { TradeReviewModal } from './TradeReviewModal';
 
 interface AddTradeFormProps {
   onSuccess?: () => void;
@@ -24,12 +24,20 @@ const AddTradeForm: React.FC<AddTradeFormProps> = ({ onSuccess, onCancel }) => {
     notes: '',
     playbook_id: null
   });
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [lastCreatedTradeId, setLastCreatedTradeId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createTrade(formData);
+      const trade = await createTrade(formData);
       onSuccess?.();
+      setLastCreatedTradeId(trade.id);
+
+      // Show review modal for completed trades
+      if (formData.entry_time) {
+        setShowReviewModal(true);
+      }
       // Reset form
       setFormData({
         symbol: '',
@@ -56,6 +64,7 @@ const AddTradeForm: React.FC<AddTradeFormProps> = ({ onSuccess, onCancel }) => {
   };
 
   return (
+    <div className="relative">
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -154,6 +163,23 @@ const AddTradeForm: React.FC<AddTradeFormProps> = ({ onSuccess, onCancel }) => {
         )}
       </div>
     </form>
+      {showReviewModal && lastCreatedTradeId && (
+        <TradeReviewModal
+          isOpen={showReviewModal}
+          onClose={() => {
+            setShowReviewModal(false);
+            setLastCreatedTradeId(null);
+          }}
+          tradeId={lastCreatedTradeId}
+          tradeSummary={{
+            symbol: formData.symbol,
+            direction: formData.direction,
+            pnl: 0,
+            result: 'In Progress'
+          }}
+        />
+      )}
+    </div>
   );
 };
 

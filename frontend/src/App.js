@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -19,8 +18,9 @@ import MilestonePage from './features/analytics/pages/MilestonePage';
 import CrossAccountPage from './features/analytics/pages/CrossAccountPage';
 import { MentalMapPage } from './features/analytics/pages/MentalMapPage';
 import { PatternExplorerPage } from './features/analytics/pages/PatternExplorerPage';
-import PlaybookManagerPage from './features/analytics/pages/PlaybookManagerPage';
-import PlaybookAnalyticsPage from './features/analytics/pages/PlaybookAnalyticsPage';
+import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerPage';
+import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
+import { ReviewAnalyticsPage } from './features/analytics/pages/ReviewAnalyticsPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -80,7 +80,8 @@ function App() {
             <Route path="/pattern-explorer" element={<PatternExplorerPage />} />
             <Route path="/playbook-manager" element={<PlaybookManagerPage />} />
             <Route path="/analytics/playbooks" element={<PlaybookAnalyticsPage />} />
-            
+            <Route path="/review-analytics" element={<ReviewAnalyticsPage />} />
+
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>

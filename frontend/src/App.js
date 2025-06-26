@@ -1,4 +1,3 @@
-
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -22,6 +21,7 @@ const StrategyLabPage = React.lazy(() => import('./features/analytics/pages/Stra
 const PortfolioSimulatorPage = React.lazy(() => import('./features/portfolio/pages/PortfolioSimulatorPage.tsx'));
 const ConfidenceCalibrationPage = React.lazy(() => import('./features/analytics/pages/ConfidenceCalibrationPage.tsx'));
 const ExecutionQualityPage = React.lazy(() => import('./features/analytics/pages/ExecutionQualityPage.tsx'));
+import { MarketContextPage } from './features/analytics/pages/MarketContextPage';
 const TradeSearchPage = React.lazy(() => import('./features/analytics/pages/TradeSearchPage.tsx'));
 const MentalMapPage = React.lazy(() => import('./features/analytics/pages/MentalMapPage.tsx'));
 const MilestonePage = React.lazy(() => import('./features/analytics/pages/MilestonePage.tsx'));
@@ -56,7 +56,7 @@ function App() {
                   <RegisterPage />
                 </Suspense>
               } />
-              
+
               {/* Protected routes */}
               <Route path="/*" element={
                 <AuthWrapper>
@@ -76,6 +76,7 @@ function App() {
                         <Route path="/analytics/strategy-lab" element={<StrategyLabPage />} />
                         <Route path="/analytics/confidence-calibration" element={<ConfidenceCalibrationPage />} />
                         <Route path="/analytics/execution-quality" element={<ExecutionQualityPage />} />
+                        <Route path="/analytics/market-context" element={<MarketContextPage />} />
                         <Route path="/analytics/trade-search" element={<TradeSearchPage />} />
                         <Route path="/analytics/mental-map" element={<MentalMapPage />} />
                         <Route path="/analytics/milestones" element={<MilestonePage />} />

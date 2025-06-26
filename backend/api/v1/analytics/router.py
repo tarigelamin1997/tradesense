@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
@@ -8,6 +7,10 @@ from backend.core.db.session import get_db
 from backend.core.security import get_current_user
 from .service import AnalyticsService
 from .schemas import AnalyticsSummaryResponse, AnalyticsFilters, TimelineResponse
+from .edge_strength import get_edge_strength_analysis
+from .streaks import get_streak_analysis
+from .heatmap import get_heatmap_data
+from .playbook_comparison import get_playbook_metrics
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
@@ -29,12 +32,12 @@ async def get_analytics_summary(
             end_date=end_date,
             strategy_filter=strategy_filter
         )
-        
+
         summary = await service.get_analytics_summary(
             user_id=current_user["user_id"],
             filters=filters
         )
-        
+
         return summary
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analytics calculation failed: {str(e)}")
@@ -88,3 +91,21 @@ async def get_timeline_analysis(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Timeline analysis failed: {str(e)}")
+
+@router.get("/heatmap")
+async def heatmap_endpoint(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    return await get_heatmap_data(start_date, end_date, db, current_user)
+
+@router.get("/playbooks/{playbook_name}/metrics")
+async def playbook_metrics_endpoint(
+    playbook_name: str,
+    time_range: str = "6M",
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    return await get_playbook_metrics(playbook_name, time_range, db, current_user)

@@ -220,6 +220,30 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <ChartBarIcon className="h-4 w-4" />
                   <span>Portfolio Simulator</span>
                 </Link>
+                <Link
+                  key="/execution-quality"
+                  to="/execution-quality"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/execution-quality'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Execution Quality</span>
+                </Link>
+                <Link
+                  key="/analytics/playbook-comparison"
+                  to="/analytics/playbook-comparison"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/analytics/playbook-comparison'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Playbook Comparison</span>
+                </Link>
 
             <Button
               variant="ghost"
@@ -448,6 +472,19 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                 >
                   <ChartBarIcon className="h-4 w-4" />
                   <span>Execution Quality</span>
+                </Link>
+                <Link
+                  key="/analytics/playbook-comparison"
+                  to="/analytics/playbook-comparison"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/analytics/playbook-comparison'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Playbook Comparison</span>
                 </Link>
                 <Link
                   key="/portfolio-simulator"

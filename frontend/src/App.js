@@ -1,101 +1,100 @@
-import React from 'react';
+
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import AuthWrapper from './components/AuthWrapper';
-import LoginPage from './features/auth/pages/LoginPage';
-import RegisterPage from './features/auth/pages/RegisterPage';
-import DashboardPage from './features/dashboard/pages/DashboardPage';
-import UploadPage from './features/upload/pages/UploadPage';
-import { useAuthStore } from './store/auth';
-import './styles/mobile.css';
-import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
-import TimelinePage from './features/analytics/pages/TimelinePage';
-import EdgeStrengthPage from './features/analytics/pages/EdgeStrengthPage';
-import { HeatmapPage } from './features/analytics/pages/HeatmapPage';
-import { StreakAnalysisPage } from './features/analytics/pages/StreakAnalysisPage';
-import { TradeSearchPage } from './features/analytics/pages/TradeSearchPage';
-import MilestonePage from './features/analytics/pages/MilestonePage';
-import CrossAccountPage from './features/analytics/pages/CrossAccountPage';
-import { MentalMapPage } from './features/analytics/pages/MentalMapPage';
-import { PatternExplorerPage } from './features/analytics/pages/PatternExplorerPage';
-import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerPage';
-import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
-import { ReviewAnalyticsPage } from './features/analytics/pages/ReviewAnalyticsPage';
-import ConfidenceCalibrationPage from './features/analytics/pages/ConfidenceCalibrationPage';
-import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage';
-import PortfolioSimulatorPage from './features/portfolio/pages/PortfolioSimulatorPage';
-import { PlaybookComparisonPage } from './features/analytics/pages/PlaybookComparisonPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthWrapper } from './components/AuthWrapper.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { AppLayout } from './components/layout/AppLayout.tsx';
+
+// Lazy load pages
+const DashboardPage = React.lazy(() => import('./features/dashboard/pages/DashboardPage.tsx'));
+const LoginPage = React.lazy(() => import('./features/auth/pages/LoginPage.tsx'));
+const RegisterPage = React.lazy(() => import('./features/auth/pages/RegisterPage.tsx'));
+const UploadPage = React.lazy(() => import('./features/upload/pages/UploadPage.tsx'));
+const AnalyticsPage = React.lazy(() => import('./features/analytics/pages/AnalyticsPage.tsx'));
+const HeatmapPage = React.lazy(() => import('./features/analytics/pages/HeatmapPage.tsx'));
+const StreakAnalysisPage = React.lazy(() => import('./features/analytics/pages/StreakAnalysisPage.tsx'));
+const EdgeStrengthPage = React.lazy(() => import('./features/analytics/pages/EdgeStrengthPage.tsx'));
+const PlaybookAnalyticsPage = React.lazy(() => import('./features/analytics/pages/PlaybookAnalyticsPage.tsx'));
+const PlaybookComparisonPage = React.lazy(() => import('./features/analytics/pages/PlaybookComparisonPage.tsx'));
+const PlaybookManagerPage = React.lazy(() => import('./features/analytics/pages/PlaybookManagerPage.tsx'));
+const StrategyLabPage = React.lazy(() => import('./features/analytics/pages/StrategyLabPage.tsx'));
+const PortfolioSimulatorPage = React.lazy(() => import('./features/portfolio/pages/PortfolioSimulatorPage.tsx'));
+const ConfidenceCalibrationPage = React.lazy(() => import('./features/analytics/pages/ConfidenceCalibrationPage.tsx'));
+const ExecutionQualityPage = React.lazy(() => import('./features/analytics/pages/ExecutionQualityPage.tsx'));
+const TradeSearchPage = React.lazy(() => import('./features/analytics/pages/TradeSearchPage.tsx'));
+const MentalMapPage = React.lazy(() => import('./features/analytics/pages/MentalMapPage.tsx'));
+const MilestonePage = React.lazy(() => import('./features/analytics/pages/MilestonePage.tsx'));
+const ReviewAnalyticsPage = React.lazy(() => import('./features/analytics/pages/ReviewAnalyticsPage.tsx'));
+const PatternExplorerPage = React.lazy(() => import('./features/analytics/pages/PatternExplorerPage.tsx'));
+const TimelinePage = React.lazy(() => import('./features/analytics/pages/TimelinePage.tsx'));
+const CrossAccountPage = React.lazy(() => import('./features/analytics/pages/CrossAccountPage.tsx'));
+
+const queryClient = new QueryClient();
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="text-lg">Loading...</div>
+  </div>
+);
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
-
   return (
-    <ErrorBoundary>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Public routes */}
-            <Route 
-              path="/login" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
-              } 
-            />
-            <Route 
-              path="/register" 
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />
-              } 
-            />
-
-            {/* Protected routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <AuthWrapper fallback={<Navigate to="/login" replace />}>
-                  <DashboardPage />
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Router>
+          <div className="App">
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <LoginPage />
+                </Suspense>
+              } />
+              <Route path="/register" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <RegisterPage />
+                </Suspense>
+              } />
+              
+              {/* Protected routes */}
+              <Route path="/*" element={
+                <AuthWrapper>
+                  <AppLayout>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Routes>
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/upload" element={<UploadPage />} />
+                        <Route path="/analytics" element={<AnalyticsPage />} />
+                        <Route path="/analytics/heatmap" element={<HeatmapPage />} />
+                        <Route path="/analytics/streaks" element={<StreakAnalysisPage />} />
+                        <Route path="/analytics/edge-strength" element={<EdgeStrengthPage />} />
+                        <Route path="/analytics/playbook-analytics" element={<PlaybookAnalyticsPage />} />
+                        <Route path="/analytics/playbook-comparison" element={<PlaybookComparisonPage />} />
+                        <Route path="/analytics/playbook-manager" element={<PlaybookManagerPage />} />
+                        <Route path="/analytics/strategy-lab" element={<StrategyLabPage />} />
+                        <Route path="/analytics/confidence-calibration" element={<ConfidenceCalibrationPage />} />
+                        <Route path="/analytics/execution-quality" element={<ExecutionQualityPage />} />
+                        <Route path="/analytics/trade-search" element={<TradeSearchPage />} />
+                        <Route path="/analytics/mental-map" element={<MentalMapPage />} />
+                        <Route path="/analytics/milestones" element={<MilestonePage />} />
+                        <Route path="/analytics/reviews" element={<ReviewAnalyticsPage />} />
+                        <Route path="/analytics/patterns" element={<PatternExplorerPage />} />
+                        <Route path="/analytics/timeline" element={<TimelinePage />} />
+                        <Route path="/analytics/cross-account" element={<CrossAccountPage />} />
+                        <Route path="/portfolio" element={<PortfolioSimulatorPage />} />
+                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                      </Routes>
+                    </Suspense>
+                  </AppLayout>
                 </AuthWrapper>
-              }
-            />
-            <Route
-              path="/upload"
-              element={
-                <AuthWrapper fallback={<Navigate to="/login" replace />}>
-                  <UploadPage />
-                </AuthWrapper>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <AuthWrapper fallback={<Navigate to="/login" replace />}>
-                  <AnalyticsPage />
-                </AuthWrapper>
-              }
-            />
-            <Route path="/timeline" element={<TimelinePage />} />
-            <Route path="/edge-strength" element={<EdgeStrengthPage />} />
-            <Route path="/heatmap" element={<HeatmapPage />} />
-            <Route path="/analytics/streaks" element={<StreakAnalysisPage />} />
-            <Route path="/trade-search" element={<TradeSearchPage />} />
-            <Route path="/analytics/milestones" element={<MilestonePage />} />
-            <Route path="/cross-account" element={<CrossAccountPage />} />
-            <Route path="/mental-map" element={<MentalMapPage />} />
-            <Route path="/pattern-explorer" element={<PatternExplorerPage />} />
-            <Route path="/playbook-manager" element={<PlaybookManagerPage />} />
-            <Route path="/analytics/playbooks" element={<PlaybookAnalyticsPage />} />
-            <Route path="/review-analytics" element={<ReviewAnalyticsPage />} />
-            <Route path="/confidence-calibration" element={<ConfidenceCalibrationPage />} />
-            <Route path="/analytics/execution-quality" element={<ExecutionQualityPage />} />
-        <Route path="/analytics/playbook-comparison" element={<PlaybookComparisonPage />} />
-            <Route path="/portfolio-simulator" element={<PortfolioSimulatorPage />} />
-
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    </ErrorBoundary>
+              } />
+            </Routes>
+          </div>
+        </Router>
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 }
 

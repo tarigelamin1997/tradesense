@@ -2,113 +2,83 @@ import { api } from './api';
 
 export interface Playbook {
   id: string;
+  name: string;
+  description?: string;
+  criteria: string[];
   user_id: string;
-  name: string;
-  entry_criteria: string;
-  exit_criteria: string;
-  description?: string;
-  status: 'active' | 'archived';
   created_at: string;
-  updated_at?: string;
-}
-
-export interface PlaybookCreate {
-  name: string;
-  entry_criteria: string;
-  exit_criteria: string;
-  description?: string;
-  status?: 'active' | 'archived';
-}
-
-export interface PlaybookUpdate {
-  name?: string;
-  entry_criteria?: string;
-  exit_criteria?: string;
-  description?: string;
-  status?: 'active' | 'archived';
-}
-
-export interface PlaybookPerformance {
-  playbook_id: string;
-  playbook_name: string;
-  trade_count: number;
-  total_pnl: number;
-  avg_pnl: number;
-  win_rate: number;
-  avg_win: number;
-  avg_loss: number;
-  avg_hold_time_minutes?: number;
-  profit_factor?: number;
+  updated_at: string;
 }
 
 export interface PlaybookAnalytics {
-  playbooks: PlaybookPerformance[];
-  summary: {
-    total_playbooks: number;
-    total_trades: number;
-    total_pnl: number;
-    best_performing?: string;
-    most_active?: string;
-  };
+  playbook_id: string;
+  total_trades: number;
+  win_rate: number;
+  avg_return: number;
+  total_pnl: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
 }
 
-export const playbooksService = {
-  // Create a new playbook
-  createPlaybook: async (data: PlaybookCreate): Promise<Playbook> => {
-    const response = await api.post('/playbooks/', data);
-    return response.data;
-  },
+export interface PlaybookComparison {
+  playbooks: Array<{
+    playbook_id: string;
+    playbook_name: string;
+    total_trades: number;
+    win_rate: number;
+    avg_return: number;
+    total_pnl: number;
+    sharpe_ratio: number;
+    max_drawdown: number;
+    profit_factor: number;
+    expectancy: number;
+    avg_win: number;
+    avg_loss: number;
+    largest_win: number;
+    largest_loss: number;
+  }>;
+  comparison_matrix: Array<{
+    metric: string;
+    values: { [playbook_name: string]: number };
+  }>;
+}
 
-  // Get all playbooks
-  getPlaybooks: async (includeArchived = false): Promise<Playbook[]> => {
-    const response = await api.get(`/playbooks/?include_archived=${includeArchived}`);
+class PlaybooksService {
+  async getPlaybooks(): Promise<Playbook[]> {
+    const response = await api.get('/playbooks');
     return response.data;
-  },
+  }
 
-  // Get a specific playbook
-  getPlaybook: async (id: string): Promise<Playbook> => {
-    const response = await api.get(`/playbooks/${id}`);
+  async createPlaybook(playbook: Omit<Playbook, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Playbook> {
+    const response = await api.post('/playbooks', playbook);
     return response.data;
-  },
+  }
 
-  // Update a playbook
-  updatePlaybook: async (id: string, data: PlaybookUpdate): Promise<Playbook> => {
-    const response = await api.put(`/playbooks/${id}`, data);
+  async updatePlaybook(id: string, updates: Partial<Playbook>): Promise<Playbook> {
+    const response = await api.put(`/playbooks/${id}`, updates);
     return response.data;
-  },
+  }
 
-  // Delete (archive) a playbook
-  deletePlaybook: async (id: string): Promise<void> => {
+  async deletePlaybook(id: string): Promise<void> {
     await api.delete(`/playbooks/${id}`);
-  },
+  }
 
-  // Get playbook analytics
-  getPlaybookAnalytics: async (days?: number): Promise<PlaybookAnalytics> => {
-    const response = await api.get(`/playbooks/analytics${days ? `?days=${days}` : ''}`);
+  async getPlaybookAnalytics(playbookId: string): Promise<PlaybookAnalytics> {
+    const response = await api.get(`/playbooks/${playbookId}/analytics`);
     return response.data;
-  },
+  }
 
-  // Attach playbook to trade
-  attachPlaybookToTrade: async (tradeId: string, playbookId?: string): Promise<any> => {
-    const response = await api.put(`/trades/${tradeId}/playbook`, { playbook_id: playbookId });
+  async comparePlaybooks(playbookIds: string[]): Promise<PlaybookComparison> {
+    const response = await api.post('/analytics/playbook-comparison', {
+      playbook_ids: playbookIds
+    });
     return response.data;
-  },
+  }
 
-  // Get optimization summary for all playbooks
-  getOptimizationSummary: async () => {
-    const response = await api.get('/playbooks/performance-summary');
+  async getPlaybookTrades(playbookId: string) {
+    const response = await api.get(`/playbooks/${playbookId}/trades`);
     return response.data;
-  },
+  }
+}
 
-  // Get session heatmap data
-  getSessionHeatmap: async () => {
-    const response = await api.get('/playbooks/session-heatmap');
-    return response.data;
-  },
-
-  // Get detailed analysis for a single playbook
-  getPlaybookOptimizationAnalysis: async (playbookId: string) => {
-    const response = await api.get(`/playbooks/${playbookId}/optimization-analysis`);
-    return response.data;
-  },
-};
+export const playbooksService = new PlaybooksService();

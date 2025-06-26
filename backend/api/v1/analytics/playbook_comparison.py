@@ -1,136 +1,175 @@
 
-from typing import List, Dict, Any, Optional
-from fastapi import HTTPException, Depends
+from typing import List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
-from datetime import datetime, timedelta
-from backend.api.deps import get_db, get_current_user
+from pydantic import BaseModel
+
+from backend.api.deps import get_current_user, get_db
+from backend.models.user import User
 from backend.models.trade import Trade
 from backend.models.playbook import Playbook
-from backend.analytics.performance import (
-    calculate_win_rate,
-    calculate_profit_factor,
-    calculate_expectancy,
-    calculate_sharpe_ratio
-)
-from backend.analytics.equity import calculate_max_drawdown
+from sqlalchemy import func, and_
 
+router = APIRouter()
 
-async def get_playbook_metrics(
-    playbook_name: str,
-    time_range: str = "6M",
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
-) -> Dict[str, Any]:
-    """Get comprehensive metrics for a specific playbook"""
+class PlaybookComparisonRequest(BaseModel):
+    playbook_ids: List[str]
+
+class PlaybookMetrics(BaseModel):
+    playbook_id: str
+    playbook_name: str
+    total_trades: int
+    win_rate: float
+    avg_return: float
+    total_pnl: float
+    sharpe_ratio: float
+    max_drawdown: float
+    profit_factor: float
+    expectancy: float
+    avg_win: float
+    avg_loss: float
+    largest_win: float
+    largest_loss: float
+
+class PlaybookComparisonResponse(BaseModel):
+    playbooks: List[PlaybookMetrics]
+    comparison_matrix: List[Dict[str, Any]]
+
+@router.post("/playbook-comparison", response_model=PlaybookComparisonResponse)
+async def compare_playbooks(
+    request: PlaybookComparisonRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Compare multiple playbooks side by side"""
     
-    # Calculate date range
-    end_date = datetime.now()
-    if time_range == "1M":
-        start_date = end_date - timedelta(days=30)
-    elif time_range == "3M":
-        start_date = end_date - timedelta(days=90)
-    elif time_range == "6M":
-        start_date = end_date - timedelta(days=180)
-    elif time_range == "1Y":
-        start_date = end_date - timedelta(days=365)
-    else:  # ALL
-        start_date = datetime(2020, 1, 1)
+    if len(request.playbook_ids) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 playbooks required for comparison")
     
-    # Get trades for this playbook
-    trades_query = db.query(Trade).filter(
+    # Verify all playbooks belong to the user
+    playbooks = db.query(Playbook).filter(
         and_(
-            Trade.user_id == current_user["sub"],
-            Trade.playbook_name == playbook_name,
-            Trade.entry_time >= start_date,
-            Trade.entry_time <= end_date,
-            Trade.exit_time.isnot(None)  # Only completed trades
+            Playbook.id.in_(request.playbook_ids),
+            Playbook.user_id == current_user.id
         )
-    )
+    ).all()
     
-    trades = trades_query.all()
+    if len(playbooks) != len(request.playbook_ids):
+        raise HTTPException(status_code=404, detail="One or more playbooks not found")
     
-    if not trades:
-        raise HTTPException(status_code=404, detail="No trades found for this playbook")
+    playbook_metrics = []
     
-    # Convert trades to list of dicts for analytics functions
-    trade_data = []
-    for trade in trades:
-        pnl = (trade.exit_price - trade.entry_price) * trade.quantity
-        if trade.side.lower() == 'short':
-            pnl = -pnl
-            
-        trade_data.append({
-            'pnl': pnl,
-            'entry_time': trade.entry_time,
-            'exit_time': trade.exit_time,
-            'quantity': trade.quantity,
-            'entry_price': trade.entry_price,
-            'exit_price': trade.exit_price
-        })
-    
-    # Calculate metrics
-    total_trades = len(trade_data)
-    win_rate = calculate_win_rate(trade_data)
-    profit_factor = calculate_profit_factor(trade_data)
-    expectancy = calculate_expectancy(trade_data)
-    
-    # Calculate P&L metrics
-    total_pnl = sum(t['pnl'] for t in trade_data)
-    winning_trades = [t for t in trade_data if t['pnl'] > 0]
-    losing_trades = [t for t in trade_data if t['pnl'] < 0]
-    
-    avg_win = sum(t['pnl'] for t in winning_trades) / len(winning_trades) if winning_trades else 0
-    avg_loss = sum(t['pnl'] for t in losing_trades) / len(losing_trades) if losing_trades else 0
-    
-    # Calculate equity curve for drawdown and Sharpe
-    equity_curve = []
-    running_balance = 0
-    
-    sorted_trades = sorted(trade_data, key=lambda x: x['exit_time'])
-    for trade in sorted_trades:
-        running_balance += trade['pnl']
-        equity_curve.append({
-            'date': trade['exit_time'].strftime('%Y-%m-%d'),
-            'value': running_balance
-        })
-    
-    max_drawdown = calculate_max_drawdown(equity_curve) if equity_curve else 0
-    
-    # Calculate Sharpe ratio (simplified)
-    if equity_curve and len(equity_curve) > 1:
-        returns = []
-        for i in range(1, len(equity_curve)):
-            if equity_curve[i-1]['value'] != 0:
-                daily_return = (equity_curve[i]['value'] - equity_curve[i-1]['value']) / abs(equity_curve[i-1]['value'])
-                returns.append(daily_return)
+    for playbook in playbooks:
+        # Get trades for this playbook
+        trades = db.query(Trade).filter(
+            and_(
+                Trade.user_id == current_user.id,
+                Trade.playbook_id == playbook.id
+            )
+        ).all()
         
-        sharpe_ratio = calculate_sharpe_ratio(returns) if returns else 0
-    else:
-        sharpe_ratio = 0
+        if not trades:
+            # Include playbook with zero metrics
+            playbook_metrics.append(PlaybookMetrics(
+                playbook_id=playbook.id,
+                playbook_name=playbook.name,
+                total_trades=0,
+                win_rate=0.0,
+                avg_return=0.0,
+                total_pnl=0.0,
+                sharpe_ratio=0.0,
+                max_drawdown=0.0,
+                profit_factor=0.0,
+                expectancy=0.0,
+                avg_win=0.0,
+                avg_loss=0.0,
+                largest_win=0.0,
+                largest_loss=0.0
+            ))
+            continue
+        
+        # Calculate metrics
+        total_trades = len(trades)
+        winning_trades = [t for t in trades if t.pnl > 0]
+        losing_trades = [t for t in trades if t.pnl < 0]
+        
+        win_rate = len(winning_trades) / total_trades if total_trades > 0 else 0
+        total_pnl = sum(t.pnl for t in trades)
+        avg_return = total_pnl / total_trades if total_trades > 0 else 0
+        
+        # Profit factor
+        gross_profit = sum(t.pnl for t in winning_trades) if winning_trades else 0
+        gross_loss = abs(sum(t.pnl for t in losing_trades)) if losing_trades else 0
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else 0
+        
+        # Expectancy
+        avg_win = gross_profit / len(winning_trades) if winning_trades else 0
+        avg_loss = gross_loss / len(losing_trades) if losing_trades else 0
+        expectancy = (win_rate * avg_win) - ((1 - win_rate) * avg_loss)
+        
+        # Simple Sharpe ratio approximation (using daily returns)
+        returns = [t.pnl for t in trades]
+        if len(returns) > 1:
+            import statistics
+            avg_return_period = statistics.mean(returns)
+            std_return = statistics.stdev(returns)
+            sharpe_ratio = avg_return_period / std_return if std_return > 0 else 0
+        else:
+            sharpe_ratio = 0
+        
+        # Max drawdown calculation
+        cumulative_pnl = 0
+        peak = 0
+        max_drawdown = 0
+        
+        for trade in sorted(trades, key=lambda x: x.entry_time):
+            cumulative_pnl += trade.pnl
+            if cumulative_pnl > peak:
+                peak = cumulative_pnl
+            else:
+                drawdown = peak - cumulative_pnl
+                if drawdown > max_drawdown:
+                    max_drawdown = drawdown
+        
+        # Largest win/loss
+        largest_win = max([t.pnl for t in trades]) if trades else 0
+        largest_loss = min([t.pnl for t in trades]) if trades else 0
+        
+        playbook_metrics.append(PlaybookMetrics(
+            playbook_id=playbook.id,
+            playbook_name=playbook.name,
+            total_trades=total_trades,
+            win_rate=win_rate,
+            avg_return=avg_return,
+            total_pnl=total_pnl,
+            sharpe_ratio=sharpe_ratio,
+            max_drawdown=max_drawdown,
+            profit_factor=profit_factor,
+            expectancy=expectancy,
+            avg_win=avg_win,
+            avg_loss=avg_loss,
+            largest_win=largest_win,
+            largest_loss=largest_loss
+        ))
     
-    # Calculate monthly returns for consistency analysis
-    monthly_returns = []
-    monthly_pnl = {}
+    # Create comparison matrix
+    metrics_to_compare = [
+        'total_trades', 'win_rate', 'avg_return', 'total_pnl', 
+        'sharpe_ratio', 'profit_factor', 'expectancy'
+    ]
     
-    for trade in sorted_trades:
-        month_key = trade['exit_time'].strftime('%Y-%m')
-        if month_key not in monthly_pnl:
-            monthly_pnl[month_key] = 0
-        monthly_pnl[month_key] += trade['pnl']
+    comparison_matrix = []
+    for metric in metrics_to_compare:
+        values = {}
+        for pm in playbook_metrics:
+            values[pm.playbook_name] = getattr(pm, metric)
+        
+        comparison_matrix.append({
+            'metric': metric,
+            'values': values
+        })
     
-    monthly_returns = list(monthly_pnl.values())
-    
-    return {
-        'totalTrades': total_trades,
-        'winRate': win_rate,
-        'profitFactor': profit_factor,
-        'expectancy': expectancy,
-        'maxDrawdown': max_drawdown,
-        'sharpeRatio': sharpe_ratio,
-        'avgWin': avg_win,
-        'avgLoss': avg_loss,
-        'totalPnL': total_pnl,
-        'monthlyReturns': monthly_returns,
-        'equityCurve': equity_curve
-    }
+    return PlaybookComparisonResponse(
+        playbooks=playbook_metrics,
+        comparison_matrix=comparison_matrix
+    )

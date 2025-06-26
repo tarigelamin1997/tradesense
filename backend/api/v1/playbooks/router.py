@@ -43,6 +43,68 @@ async def get_playbooks(
         limit=limit
     )
 
+@router.get("/performance-summary")
+async def get_playbook_optimization_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    🚀 PLAYBOOK OPTIMIZATION ENGINE
+    Analyze all playbooks and return comprehensive performance metrics including:
+    - Win rate, Sharpe ratio, profit factor
+    - Risk metrics (max drawdown, Sortino ratio)
+    - Confidence score analysis
+    - Time-based performance (best days/hours)
+    - Actionable recommendations
+    """
+    service = PlaybookService(db)
+    optimization_data = service.get_playbook_optimization_summary(current_user.id)
+    
+    if not optimization_data:
+        return {
+            "message": "No playbooks with sufficient trade data found",
+            "recommendations": [
+                "Create playbooks and link them to trades",
+                "Need at least 5 trades per playbook for meaningful analysis"
+            ],
+            "playbooks": []
+        }
+    
+    # Generate summary insights
+    total_playbooks = len(optimization_data)
+    top_performer = optimization_data[0] if optimization_data else None
+    
+    # Calculate overall metrics
+    total_trades = sum([p['total_trades'] for p in optimization_data])
+    avg_performance_score = sum([p['performance_score'] for p in optimization_data]) / total_playbooks
+    
+    # Count recommendations
+    high_priority_actions = len([p for p in optimization_data if p['recommendation']['priority'] == 'high'])
+    
+    return {
+        "summary": {
+            "total_playbooks_analyzed": total_playbooks,
+            "total_trades_analyzed": total_trades,
+            "avg_performance_score": round(avg_performance_score, 1),
+            "top_performer": top_performer['playbook_name'] if top_performer else None,
+            "high_priority_actions": high_priority_actions
+        },
+        "playbooks": optimization_data,
+        "generated_at": datetime.utcnow().isoformat()
+    }
+
+@router.get("/session-heatmap")
+async def get_playbook_session_heatmap(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get heatmap showing playbook performance across different trading sessions
+    (Sydney, Tokyo, London, New York)
+    """
+    service = PlaybookService(db)
+    return service.get_playbook_session_heatmap(current_user.id)
+
 @router.get("/{playbook_id}", response_model=PlaybookResponse)
 async def get_playbook(
     playbook_id: str,
@@ -55,6 +117,38 @@ async def get_playbook(
     if not playbook:
         raise HTTPException(status_code=404, detail="Playbook not found")
     return playbook
+
+@router.get("/{playbook_id}/optimization-analysis")
+async def get_single_playbook_analysis(
+    playbook_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get detailed optimization analysis for a single playbook"""
+    service = PlaybookService(db)
+    
+    # Verify playbook exists and belongs to user
+    playbook = service.get_playbook(playbook_id=playbook_id, user_id=current_user.id)
+    if not playbook:
+        raise HTTPException(status_code=404, detail="Playbook not found")
+    
+    # Get optimization analysis for all playbooks and filter for this one
+    all_analyses = service.get_playbook_optimization_summary(current_user.id)
+    
+    playbook_analysis = next(
+        (analysis for analysis in all_analyses if analysis['playbook_id'] == playbook_id),
+        None
+    )
+    
+    if not playbook_analysis:
+        return {
+            "message": "Insufficient trade data for analysis",
+            "playbook_id": playbook_id,
+            "playbook_name": playbook.name,
+            "min_trades_required": 5
+        }
+    
+    return playbook_analysis
 
 @router.put("/{playbook_id}", response_model=PlaybookResponse)
 async def update_playbook(
@@ -156,85 +250,3 @@ async def refresh_playbook_stats(
     service = PlaybookService(db)
     background_tasks.add_task(service.refresh_all_playbook_stats, current_user.id)
     return {"message": "Playbook statistics refresh started"}
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from uuid import UUID
-
-from backend.api.deps import get_db, get_current_user
-from backend.models.user import User
-from backend.api.v1.playbooks.service import PlaybookService
-from backend.api.v1.playbooks.schemas import (
-    PlaybookCreate, PlaybookUpdate, PlaybookResponse, PlaybookAnalytics
-)
-
-router = APIRouter()
-
-@router.post("/", response_model=PlaybookResponse)
-def create_playbook(
-    playbook_data: PlaybookCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Create a new playbook."""
-    service = PlaybookService(db)
-    return service.create_playbook(current_user.id, playbook_data)
-
-@router.get("/", response_model=List[PlaybookResponse])
-def get_playbooks(
-    include_archived: bool = Query(False, description="Include archived playbooks"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get all playbooks for the current user."""
-    service = PlaybookService(db)
-    return service.get_playbooks(current_user.id, include_archived)
-
-@router.get("/analytics", response_model=PlaybookAnalytics)
-def get_playbook_analytics(
-    days: Optional[int] = Query(None, description="Number of days to analyze"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get performance analytics for all playbooks."""
-    service = PlaybookService(db)
-    return service.get_playbook_analytics(current_user.id, days)
-
-@router.get("/{playbook_id}", response_model=PlaybookResponse)
-def get_playbook(
-    playbook_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get a specific playbook."""
-    service = PlaybookService(db)
-    playbook = service.get_playbook(current_user.id, playbook_id)
-    if not playbook:
-        raise HTTPException(status_code=404, detail="Playbook not found")
-    return playbook
-
-@router.put("/{playbook_id}", response_model=PlaybookResponse)
-def update_playbook(
-    playbook_id: UUID,
-    playbook_data: PlaybookUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Update a playbook."""
-    service = PlaybookService(db)
-    playbook = service.update_playbook(current_user.id, playbook_id, playbook_data)
-    if not playbook:
-        raise HTTPException(status_code=404, detail="Playbook not found")
-    return playbook
-
-@router.delete("/{playbook_id}")
-def delete_playbook(
-    playbook_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Delete (archive) a playbook."""
-    service = PlaybookService(db)
-    if not service.delete_playbook(current_user.id, playbook_id):
-        raise HTTPException(status_code=404, detail="Playbook not found")
-    return {"message": "Playbook archived successfully"}

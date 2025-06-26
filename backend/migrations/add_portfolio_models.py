@@ -1,22 +1,32 @@
-
 #!/usr/bin/env python3
 """
 Add Portfolio and EquitySnapshot models to database
 """
 import sqlite3
 import os
+import sys
 from datetime import datetime
+
+# Add backend directory to path for imports
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from backend.models.user import User
+from backend.models.trade_note import TradeNote
+from backend.models.portfolio import Portfolio, PortfolioSnapshot
+from core.db.session import engine
 
 def add_portfolio_tables():
     """Add portfolio-related tables to the database"""
-    
+
     # Get the database path
     db_path = os.path.join(os.path.dirname(__file__), '..', 'tradesense.db')
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # Create portfolios table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS portfolios (
@@ -34,7 +44,7 @@ def add_portfolio_tables():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
-        
+
         # Create equity_snapshots table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS equity_snapshots (
@@ -48,33 +58,33 @@ def add_portfolio_tables():
                 FOREIGN KEY (portfolio_id) REFERENCES portfolios (id) ON DELETE CASCADE
             )
         ''')
-        
+
         # Create indices for better performance
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios (user_id)
         ''')
-        
+
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_equity_snapshots_portfolio_id ON equity_snapshots (portfolio_id)
         ''')
-        
+
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_equity_snapshots_timestamp ON equity_snapshots (timestamp)
         ''')
-        
+
         conn.commit()
         print("✅ Portfolio tables created successfully")
-        
+
         # Verify tables exist
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = cursor.fetchall()
         table_names = [table[0] for table in tables]
-        
+
         if 'portfolios' in table_names and 'equity_snapshots' in table_names:
             print("✅ Tables verified successfully")
         else:
             print("❌ Table verification failed")
-            
+
     except Exception as e:
         print(f"❌ Error creating portfolio tables: {e}")
         if 'conn' in locals():

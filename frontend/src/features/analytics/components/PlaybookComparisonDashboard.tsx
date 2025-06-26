@@ -1,19 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { playbookComparisonService } from '../../services/playbookComparison';
+import Plot from 'react-plotly.js';
 
 interface PlaybookMetrics {
   playbook_name: string;
   total_trades: number;
   win_rate: number;
+  avg_pnl: number;
   profit_factor: number;
-  average_return: number;
   max_drawdown: number;
   sharpe_ratio: number;
   total_pnl: number;
-  avg_trade_duration: number;
+  avg_win: number;
+  avg_loss: number;
   largest_win: number;
   largest_loss: number;
   consecutive_wins: number;
@@ -21,29 +22,25 @@ interface PlaybookMetrics {
 }
 
 interface ComparisonData {
-  metrics: PlaybookMetrics[];
-  performance_comparison: {
-    playbook_name: string;
-    monthly_returns: Array<{
-      month: string;
-      return: number;
-    }>;
-  }[];
-  risk_analysis: {
-    playbook_name: string;
-    var_95: number;
-    var_99: number;
-    expected_shortfall: number;
-    volatility: number;
-  }[];
+  playbooks: PlaybookMetrics[];
+  period: string;
+  equity_curves: { [key: string]: { dates: string[], values: number[] } };
+  monthly_returns: { [key: string]: { months: string[], returns: number[] } };
+}
+
+interface PlaybookOption {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export const PlaybookComparisonDashboard: React.FC = () => {
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
+  const [availablePlaybooks, setAvailablePlaybooks] = useState<PlaybookOption[]>([]);
   const [selectedPlaybooks, setSelectedPlaybooks] = useState<string[]>([]);
-  const [availablePlaybooks, setAvailablePlaybooks] = useState<string[]>([]);
+  const [period, setPeriod] = useState('30d');
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'metrics' | 'performance' | 'risk'>('metrics');
+  const [activeTab, setActiveTab] = useState('metrics');
 
   useEffect(() => {
     loadAvailablePlaybooks();
@@ -54,7 +51,7 @@ export const PlaybookComparisonDashboard: React.FC = () => {
       const playbooks = await playbookComparisonService.getAvailablePlaybooks();
       setAvailablePlaybooks(playbooks);
       if (playbooks.length >= 2) {
-        setSelectedPlaybooks(playbooks.slice(0, 2));
+        setSelectedPlaybooks([playbooks[0].id, playbooks[1].id]);
       }
     } catch (error) {
       console.error('Failed to load playbooks:', error);
@@ -66,7 +63,7 @@ export const PlaybookComparisonDashboard: React.FC = () => {
 
     setLoading(true);
     try {
-      const data = await playbookComparisonService.comparePlaybooks(selectedPlaybooks);
+      const data = await playbookComparisonService.comparePlaybooks(selectedPlaybooks, period);
       setComparisonData(data);
     } catch (error) {
       console.error('Failed to load comparison data:', error);
@@ -79,216 +76,334 @@ export const PlaybookComparisonDashboard: React.FC = () => {
     if (selectedPlaybooks.length >= 2) {
       loadComparisonData();
     }
-  }, [selectedPlaybooks]);
+  }, [selectedPlaybooks, period]);
 
-  const togglePlaybook = (playbook: string) => {
+  const handlePlaybookToggle = (playbookId: string) => {
     setSelectedPlaybooks(prev => {
-      if (prev.includes(playbook)) {
-        return prev.filter(p => p !== playbook);
+      if (prev.includes(playbookId)) {
+        return prev.filter(id => id !== playbookId);
       } else {
-        return [...prev, playbook];
+        return [...prev, playbookId];
       }
     });
   };
 
-  const renderMetricsComparison = () => {
-    if (!comparisonData?.metrics) return null;
-
-    const metricLabels = [
-      { key: 'win_rate', label: 'Win Rate', format: (v: number) => `${(v * 100).toFixed(1)}%` },
-      { key: 'profit_factor', label: 'Profit Factor', format: (v: number) => v.toFixed(2) },
-      { key: 'average_return', label: 'Avg Return', format: (v: number) => `$${v.toFixed(2)}` },
-      { key: 'max_drawdown', label: 'Max Drawdown', format: (v: number) => `${(v * 100).toFixed(1)}%` },
-      { key: 'sharpe_ratio', label: 'Sharpe Ratio', format: (v: number) => v.toFixed(2) },
-      { key: 'total_pnl', label: 'Total P&L', format: (v: number) => `$${v.toFixed(2)}` }
-    ];
-
-    return (
-      <div className="space-y-4">
-        {metricLabels.map(({ key, label, format }) => (
-          <div key={key} className="bg-white p-4 rounded-lg border">
-            <h4 className="font-semibold text-gray-700 mb-3">{label}</h4>
-            <div className="flex justify-between items-center">
-              {comparisonData.metrics.map((playbook, index) => (
-                <div key={playbook.playbook_name} className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">{playbook.playbook_name}</div>
-                  <div className={`text-lg font-bold ${
-                    index === 0 ? 'text-blue-600' : 
-                    index === 1 ? 'text-green-600' : 'text-purple-600'
-                  }`}>
-                    {format((playbook as any)[key])}
-                  </div>
-                </div>
-              ))}
+  const renderPlaybookSelector = () => (
+    <Card className="p-4">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Select Playbooks to Compare</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {availablePlaybooks.map((playbook) => (
+          <label key={playbook.id} className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedPlaybooks.includes(playbook.id)}
+              onChange={() => handlePlaybookToggle(playbook.id)}
+              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">{playbook.name}</span>
+              <p className="text-xs text-gray-500">{playbook.description}</p>
             </div>
-          </div>
+          </label>
         ))}
       </div>
-    );
-  };
+    </Card>
+  );
 
-  const renderPerformanceChart = () => {
-    if (!comparisonData?.performance_comparison) return null;
+  const renderMetricsTable = () => {
+    if (!comparisonData) return null;
+
+    const getBestValue = (metric: keyof PlaybookMetrics, higher: boolean = true) => {
+      const values = comparisonData.playbooks.map(p => p[metric] as number);
+      return higher ? Math.max(...values) : Math.min(...values);
+    };
+
+    const isBest = (value: number, metric: keyof PlaybookMetrics, higher: boolean = true) => {
+      return value === getBestValue(metric, higher);
+    };
 
     return (
-      <div className="bg-white p-6 rounded-lg border">
-        <h3 className="text-lg font-semibold mb-4">Monthly Returns Comparison</h3>
-        <div className="h-64 flex items-end justify-between space-x-2">
-          {comparisonData.performance_comparison[0]?.monthly_returns.map((month, monthIndex) => (
-            <div key={month.month} className="flex flex-col items-center space-y-1">
-              <div className="flex space-x-1">
-                {comparisonData.performance_comparison.map((playbook, playbookIndex) => {
-                  const monthData = playbook.monthly_returns[monthIndex];
-                  const height = Math.abs(monthData.return) * 2; // Scale for visibility
-                  const isPositive = monthData.return >= 0;
-                  
-                  return (
-                    <div
-                      key={playbook.playbook_name}
-                      className={`w-4 ${
-                        playbookIndex === 0 ? 'bg-blue-500' :
-                        playbookIndex === 1 ? 'bg-green-500' : 'bg-purple-500'
-                      } ${isPositive ? '' : 'bg-opacity-50'}`}
-                      style={{ 
-                        height: `${Math.max(height, 4)}px`,
-                        marginTop: isPositive ? 'auto' : '0'
-                      }}
-                      title={`${playbook.playbook_name}: ${monthData.return.toFixed(2)}%`}
-                    />
-                  );
-                })}
-              </div>
-              <div className="text-xs text-gray-600 transform -rotate-45">
-                {month.month}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 flex justify-center space-x-4">
-          {comparisonData.performance_comparison.map((playbook, index) => (
-            <div key={playbook.playbook_name} className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded ${
-                index === 0 ? 'bg-blue-500' :
-                index === 1 ? 'bg-green-500' : 'bg-purple-500'
-              }`} />
-              <span className="text-sm text-gray-600">{playbook.playbook_name}</span>
-            </div>
-          ))}
-        </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Playbook
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Trades
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Win Rate
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total P&L
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Avg P&L
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Profit Factor
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Max DD
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Sharpe
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {comparisonData.playbooks.map((playbook) => (
+              <tr key={playbook.playbook_name}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {playbook.playbook_name}
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.total_trades, 'total_trades') ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  {playbook.total_trades}
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.win_rate, 'win_rate') ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  {(playbook.win_rate * 100).toFixed(1)}%
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.total_pnl, 'total_pnl') ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  ${playbook.total_pnl.toFixed(2)}
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.avg_pnl, 'avg_pnl') ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  ${playbook.avg_pnl.toFixed(2)}
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.profit_factor, 'profit_factor') ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  {playbook.profit_factor.toFixed(2)}
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.max_drawdown, 'max_drawdown', false) ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  {(playbook.max_drawdown * 100).toFixed(1)}%
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                  isBest(playbook.sharpe_ratio, 'sharpe_ratio') ? 'font-bold text-green-600' : 'text-gray-500'
+                }`}>
+                  {playbook.sharpe_ratio.toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   };
 
-  const renderRiskAnalysis = () => {
-    if (!comparisonData?.risk_analysis) return null;
+  const renderEquityCurveChart = () => {
+    if (!comparisonData?.equity_curves) return null;
+
+    const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#F97316'];
+
+    const traces = Object.entries(comparisonData.equity_curves).map(([playbook, data], index) => ({
+      x: data.dates,
+      y: data.values,
+      type: 'scatter' as const,
+      mode: 'lines' as const,
+      name: playbook,
+      line: { color: colors[index % colors.length], width: 2 }
+    }));
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {comparisonData.risk_analysis.map((risk, index) => (
-          <Card key={risk.playbook_name} className="p-4">
-            <h3 className={`font-semibold mb-3 ${
-              index === 0 ? 'text-blue-600' :
-              index === 1 ? 'text-green-600' : 'text-purple-600'
-            }`}>
-              {risk.playbook_name} Risk Metrics
-            </h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">VaR (95%)</span>
-                <span className="font-medium">{(risk.var_95 * 100).toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">VaR (99%)</span>
-                <span className="font-medium">{(risk.var_99 * 100).toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Expected Shortfall</span>
-                <span className="font-medium">{(risk.expected_shortfall * 100).toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Volatility</span>
-                <span className="font-medium">{(risk.volatility * 100).toFixed(2)}%</span>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <Plot
+        data={traces}
+        layout={{
+          title: 'Equity Curve Comparison',
+          xaxis: { title: 'Date' },
+          yaxis: { title: 'Cumulative P&L ($)' },
+          hovermode: 'x unified',
+          showlegend: true,
+          height: 400,
+          margin: { t: 40, r: 20, b: 40, l: 60 }
+        }}
+        style={{ width: '100%' }}
+        config={{ responsive: true }}
+      />
     );
   };
+
+  const renderMonthlyReturnsChart = () => {
+    if (!comparisonData?.monthly_returns) return null;
+
+    const playbooks = Object.keys(comparisonData.monthly_returns);
+    const months = comparisonData.monthly_returns[playbooks[0]]?.months || [];
+
+    const traces = playbooks.map((playbook, index) => ({
+      x: months,
+      y: comparisonData.monthly_returns[playbook].returns,
+      type: 'bar' as const,
+      name: playbook,
+      opacity: 0.8
+    }));
+
+    return (
+      <Plot
+        data={traces}
+        layout={{
+          title: 'Monthly Returns Comparison',
+          xaxis: { title: 'Month' },
+          yaxis: { title: 'Return (%)' },
+          barmode: 'group',
+          showlegend: true,
+          height: 400,
+          margin: { t: 40, r: 20, b: 40, l: 60 }
+        }}
+        style={{ width: '100%' }}
+        config={{ responsive: true }}
+      />
+    );
+  };
+
+  const renderRadarChart = () => {
+    if (!comparisonData) return null;
+
+    const metrics = ['win_rate', 'profit_factor', 'sharpe_ratio'];
+    const traces = comparisonData.playbooks.map((playbook, index) => ({
+      type: 'scatterpolar' as const,
+      r: [
+        playbook.win_rate * 100,
+        Math.min(playbook.profit_factor * 20, 100), // Scale to 0-100
+        Math.max(Math.min((playbook.sharpe_ratio + 2) * 25, 100), 0) // Scale to 0-100
+      ],
+      theta: ['Win Rate (%)', 'Profit Factor', 'Sharpe Ratio'],
+      fill: 'toself',
+      name: playbook.playbook_name,
+      opacity: 0.6
+    }));
+
+    return (
+      <Plot
+        data={traces}
+        layout={{
+          title: 'Performance Radar Chart',
+          polar: {
+            radialaxis: {
+              visible: true,
+              range: [0, 100]
+            }
+          },
+          showlegend: true,
+          height: 400
+        }}
+        style={{ width: '100%' }}
+        config={{ responsive: true }}
+      />
+    );
+  };
+
+  const tabs = [
+    { id: 'metrics', label: 'Metrics Table', icon: '📊' },
+    { id: 'equity', label: 'Equity Curves', icon: '📈' },
+    { id: 'monthly', label: 'Monthly Returns', icon: '📅' },
+    { id: 'radar', label: 'Performance Radar', icon: '🎯' }
+  ];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Playbook Comparison</h1>
-        <Button onClick={loadComparisonData} disabled={loading || selectedPlaybooks.length < 2}>
-          {loading ? 'Loading...' : 'Refresh Analysis'}
-        </Button>
-      </div>
+    <div className="space-y-6">
+      {renderPlaybookSelector()}
 
-      {/* Playbook Selection */}
-      <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-3">Select Playbooks to Compare</h2>
-        <div className="flex flex-wrap gap-2">
-          {availablePlaybooks.map(playbook => (
-            <button
-              key={playbook}
-              onClick={() => togglePlaybook(playbook)}
-              className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                selectedPlaybooks.includes(playbook)
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
-              }`}
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Playbook Comparison Dashboard
+          </h2>
+
+          <div className="flex gap-4">
+            <select 
+              value={period} 
+              onChange={(e) => setPeriod(e.target.value)}
+              className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
-              {playbook}
-            </button>
-          ))}
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="90d">Last 90 Days</option>
+              <option value="6m">Last 6 Months</option>
+              <option value="1y">Last Year</option>
+              <option value="all">All Time</option>
+            </select>
+
+            <Button onClick={loadComparisonData} disabled={loading || selectedPlaybooks.length < 2}>
+              {loading ? 'Loading...' : 'Refresh Comparison'}
+            </Button>
+          </div>
         </div>
+
         {selectedPlaybooks.length < 2 && (
-          <p className="text-sm text-gray-500 mt-2">Select at least 2 playbooks to compare</p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+            <p className="text-yellow-800">Please select at least 2 playbooks to compare.</p>
+          </div>
+        )}
+
+        {comparisonData && selectedPlaybooks.length >= 2 && (
+          <div className="space-y-6">
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="mt-6">
+              {activeTab === 'metrics' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Performance Metrics</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Best values in each category are highlighted in green. Comparing {selectedPlaybooks.length} playbooks over {period}.
+                  </p>
+                  {renderMetricsTable()}
+                </div>
+              )}
+
+              {activeTab === 'equity' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Equity Curve Comparison</h3>
+                  {renderEquityCurveChart()}
+                </div>
+              )}
+
+              {activeTab === 'monthly' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Returns</h3>
+                  {renderMonthlyReturnsChart()}
+                </div>
+              )}
+
+              {activeTab === 'radar' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Performance Radar</h3>
+                  {renderRadarChart()}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </Card>
-
-      {/* View Mode Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {[
-          { key: 'metrics', label: 'Key Metrics' },
-          { key: 'performance', label: 'Performance' },
-          { key: 'risk', label: 'Risk Analysis' }
-        ].map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setViewMode(key as any)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              viewMode === key
-                ? 'bg-white text-blue-600 shadow'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">Loading comparison data...</div>
-        </div>
-      ) : comparisonData ? (
-        <div>
-          {viewMode === 'metrics' && renderMetricsComparison()}
-          {viewMode === 'performance' && renderPerformanceChart()}
-          {viewMode === 'risk' && renderRiskAnalysis()}
-        </div>
-      ) : selectedPlaybooks.length >= 2 ? (
-        <div className="text-center text-gray-500 py-8">
-          Click "Refresh Analysis" to load comparison data
-        </div>
-      ) : (
-        <div className="text-center text-gray-500 py-8">
-          Select at least 2 playbooks to begin comparison
-        </div>
-      )}
     </div>
   );
 };

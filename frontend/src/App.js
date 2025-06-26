@@ -17,6 +17,7 @@ import { TradeSearchPage } from './features/analytics/pages/TradeSearchPage';
 import MilestonePage from './features/analytics/pages/MilestonePage';
 import CrossAccountPage from './features/analytics/pages/CrossAccountPage';
 import { MentalMapPage } from './features/analytics/pages/MentalMapPage';
+import PatternExplorerPage from './features/analytics/pages/PatternExplorerPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -73,6 +74,7 @@ function App() {
             <Route path="/analytics/milestones" element={<MilestonePage />} />
         <Route path="/cross-account" element={<CrossAccountPage />} />
           <Route path="/mental-map" element={<MentalMapPage />} />
+          <Route path="/pattern-explorer" element={<PatternExplorerPage />} />
         </Routes>
         </div>
       </Router>

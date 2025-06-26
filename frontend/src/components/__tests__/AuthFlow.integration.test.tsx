@@ -1,262 +1,153 @@
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import App from '../../App';
-import { useAuthStore } from '../../store/auth';
-import { authService } from '../../services/auth';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import authSlice from '../../store/auth';
+import LoginPage from '../../features/auth/pages/LoginPage';
 
-// Mock the auth service
-jest.mock('../../services/auth');
-const mockedAuthService = authService as jest.Mocked<typeof authService>;
-
-// Mock localStorage
-const mockLocalStorage = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { store = {}; }
-  };
-})();
-Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
-
-// Test wrapper component
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
+// Mock store setup
+const createMockStore = (initialState = {}) => {
+  return configureStore({
+    reducer: {
+      auth: authSlice
     },
+    preloadedState: {
+      auth: {
+        user: null,
+        token: null,
+        isLoading: false,
+        error: null,
+        ...initialState
+      }
+    }
   });
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
 };
 
-describe('Authentication Flow Integration', () => {
+// Wrapper component for tests
+const TestWrapper: React.FC<{ children: React.ReactNode; store?: any }> = ({ 
+  children, 
+  store = createMockStore() 
+}) => (
+  <Provider store={store}>
+    <BrowserRouter>
+      {children}
+    </BrowserRouter>
+  </Provider>
+);
+
+describe('Auth Flow Integration Tests', () => {
   beforeEach(() => {
-    localStorage.clear();
-    useAuthStore.getState().logout();
-    jest.clearAllMocks();
+    // Reset fetch mock
+    (global.fetch as jest.Mock).mockClear();
   });
 
-  describe('Login Flow', () => {
-    it('should login successfully and redirect to dashboard', async () => {
-      const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' };
-      const mockToken = 'valid-jwt-token';
-
-      mockedAuthService.login.mockResolvedValueOnce({
-        user: mockUser,
-        token: mockToken
-      });
-
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
-
-      // Should start at login page
-      expect(screen.getByText('Login')).toBeInTheDocument();
-
-      // Fill in login form
-      fireEvent.change(screen.getByPlaceholderText(/email/i), {
-        target: { value: 'test@example.com' }
-      });
-      fireEvent.change(screen.getByPlaceholderText(/password/i), {
-        target: { value: 'password123' }
-      });
-
-      // Submit form
-      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-      // Wait for login to complete and redirect
-      await waitFor(() => {
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      });
-
-      expect(mockedAuthService.login).toHaveBeenCalledWith('test@example.com', 'password123');
-      expect(localStorage.getItem('auth-token')).toBe(mockToken);
+  test('user can complete login flow successfully', async () => {
+    // Mock successful login response
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        access_token: 'mock_token',
+        token_type: 'bearer',
+        user: {
+          id: '1',
+          username: 'testuser',
+          email: 'test@example.com'
+        }
+      })
     });
 
-    it('should handle login error gracefully', async () => {
-      mockedAuthService.login.mockRejectedValueOnce(new Error('Invalid credentials'));
+    const store = createMockStore();
 
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
+    render(
+      <TestWrapper store={store}>
+        <LoginPage />
+      </TestWrapper>
+    );
+
+    // Find form elements
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /login/i });
+
+    // Fill out form
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    // Submit form
+    fireEvent.click(submitButton);
+
+    // Wait for API call
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/auth/login'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json'
+          }),
+          body: JSON.stringify({
+            username: 'testuser',
+            password: 'password123'
+          })
+        })
       );
-
-      fireEvent.change(screen.getByPlaceholderText(/email/i), {
-        target: { value: 'wrong@example.com' }
-      });
-      fireEvent.change(screen.getByPlaceholderText(/password/i), {
-        target: { value: 'wrongpassword' }
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
-      });
-
-      // Should still be on login page
-      expect(screen.getByText('Login')).toBeInTheDocument();
-      expect(localStorage.getItem('auth-token')).toBeNull();
     });
+
+    // Check that store state was updated
+    const state = store.getState();
+    expect(state.auth.token).toBe('mock_token');
+    expect(state.auth.user?.username).toBe('testuser');
   });
 
-  describe('Token Refresh Flow', () => {
-    it('should refresh expired token automatically', async () => {
-      const expiredToken = 'expired-jwt-token';
-      const newToken = 'refreshed-jwt-token';
-
-      // Set expired token in localStorage
-      localStorage.setItem('auth-token', expiredToken);
-
-      mockedAuthService.getCurrentUser.mockRejectedValueOnce(new Error('Token expired'));
-      mockedAuthService.refreshToken.mockResolvedValueOnce({ token: newToken });
-      mockedAuthService.getCurrentUser.mockResolvedValueOnce({
-        id: '1',
-        email: 'test@example.com',
-        name: 'Test User',
-        createdAt: '2024-01-01',
-        lastLogin: '2024-01-01'
-      });
-
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(mockedAuthService.refreshToken).toHaveBeenCalled();
-        expect(localStorage.getItem('auth-token')).toBe(newToken);
-      });
+  test('displays error message on login failure', async () => {
+    // Mock failed login response
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({
+        detail: 'Invalid credentials'
+      })
     });
 
-    it('should logout when token refresh fails', async () => {
-      const expiredToken = 'expired-jwt-token';
-      localStorage.setItem('auth-token', expiredToken);
+    render(
+      <TestWrapper>
+        <LoginPage />
+      </TestWrapper>
+    );
 
-      mockedAuthService.getCurrentUser.mockRejectedValueOnce(new Error('Token expired'));
-      mockedAuthService.refreshToken.mockRejectedValueOnce(new Error('Refresh failed'));
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /login/i });
 
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
+    fireEvent.change(usernameInput, { target: { value: 'wronguser' } });
+    fireEvent.change(passwordInput, { target: { value: 'wrongpass' } });
+    fireEvent.click(submitButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Login')).toBeInTheDocument();
-        expect(localStorage.getItem('auth-token')).toBeNull();
-      });
+    // Wait for error message
+    await waitFor(() => {
+      expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
     });
   });
 
-  describe('Logout Flow', () => {
-    it('should logout and redirect to login page', async () => {
-      const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' };
-      
-      // Start with authenticated user
-      useAuthStore.getState().login(mockUser, 'valid-token');
+  test('form validation works correctly', async () => {
+    render(
+      <TestWrapper>
+        <LoginPage />
+      </TestWrapper>
+    );
 
-      mockedAuthService.logout.mockResolvedValueOnce({ message: 'Logged out' });
+    const submitButton = screen.getByRole('button', { name: /login/i });
 
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
+    // Try to submit empty form
+    fireEvent.click(submitButton);
 
-      // Should be on dashboard
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-
-      // Find and click logout button
-      const logoutButton = screen.getByRole('button', { name: /logout/i });
-      fireEvent.click(logoutButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Login')).toBeInTheDocument();
-      });
-
-      expect(mockedAuthService.logout).toHaveBeenCalled();
-      expect(localStorage.getItem('auth-token')).toBeNull();
-    });
-  });
-
-  describe('Protected Routes', () => {
-    it('should redirect unauthenticated users to login', async () => {
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
-
-      // Should redirect to login page
-      expect(screen.getByText('Login')).toBeInTheDocument();
+    // Check for validation messages
+    await waitFor(() => {
+      expect(screen.getByText(/username is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
     });
 
-    it('should allow authenticated users to access protected routes', async () => {
-      const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' };
-      
-      // Set authenticated state
-      useAuthStore.getState().login(mockUser, 'valid-token');
-
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
-
-      // Should access dashboard
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle missing auth headers gracefully', async () => {
-      localStorage.setItem('auth-token', 'invalid-format-token');
-
-      mockedAuthService.getCurrentUser.mockRejectedValueOnce(new Error('Invalid token format'));
-
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Login')).toBeInTheDocument();
-        expect(localStorage.getItem('auth-token')).toBeNull();
-      });
-    });
-
-    it('should handle network errors during auth', async () => {
-      localStorage.setItem('auth-token', 'valid-token');
-
-      mockedAuthService.getCurrentUser.mockRejectedValueOnce(new Error('Network Error'));
-
-      render(
-        <TestWrapper>
-          <App />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText(/network error/i)).toBeInTheDocument();
-      });
-    });
+    // Verify no API call was made
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });

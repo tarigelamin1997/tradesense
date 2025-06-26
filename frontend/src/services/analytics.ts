@@ -91,5 +91,23 @@ export const analyticsService = {
     const response = await api.get('/analytics/confidence-correlation');
     return response.data;
   },
-  getPlaybookMetrics
+  getPlaybookMetrics,
+
+  async getStreakAnalysis(timeframe: string = '3M'): Promise<any> {
+    const userId = this.getCurrentUserId();
+    const response = await api.get(`/analytics/streak-analysis/${userId}?timeframe=${timeframe}`);
+    return response.data;
+  },
+
+  async getPlaybookComparison(timeframe: string = '3M'): Promise<any> {
+    const userId = this.getCurrentUserId();
+    const response = await api.get(`/analytics/playbook-comparison/${userId}?timeframe=${timeframe}`);
+    return response.data;
+  },
+
+  async getAvailablePlaybooks(): Promise<any> {
+    const userId = this.getCurrentUserId();
+    const response = await api.get(`/analytics/available-playbooks/${userId}`);
+    return response.data;
+  },
 };

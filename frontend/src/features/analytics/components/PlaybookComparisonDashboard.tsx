@@ -1,425 +1,350 @@
-
 import React, { useState, useEffect } from 'react';
-import { Line, Bar, Radar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { playbookService } from '../../../services/playbooks';
 import { analyticsService } from '../../../services/analytics';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+interface PlaybookComparison {
+  playbook_name: string;
+  total_trades: number;
+  win_rate: number;
+  avg_pnl: number;
+  total_pnl: number;
+  profit_factor: number;
+  max_drawdown: number;
+  sharpe_ratio: number;
+  avg_hold_time: number;
+  best_month: string;
+  worst_month: string;
+  consistency_score: number;
+}
 
-interface PlaybookMetrics {
-  id: string;
-  name: string;
-  totalTrades: number;
-  winRate: number;
-  profitFactor: number;
-  expectancy: number;
-  maxDrawdown: number;
-  sharpeRatio: number;
-  avgWin: number;
-  avgLoss: number;
-  totalPnL: number;
-  monthlyReturns: number[];
-  equityCurve: { date: string; value: number }[];
+interface PerformanceMetric {
+  date: string;
+  [key: string]: string | number;
 }
 
 const PlaybookComparisonDashboard: React.FC = () => {
-  const [playbooks, setPlaybooks] = useState<string[]>([]);
+  const [comparisons, setComparisons] = useState<PlaybookComparison[]>([]);
+  const [performanceData, setPerformanceData] = useState<PerformanceMetric[]>([]);
   const [selectedPlaybooks, setSelectedPlaybooks] = useState<string[]>([]);
-  const [comparisonData, setComparisonData] = useState<PlaybookMetrics[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [timeRange, setTimeRange] = useState('6M');
-  const [comparisonType, setComparisonType] = useState<'performance' | 'risk' | 'consistency'>('performance');
+  const [availablePlaybooks, setAvailablePlaybooks] = useState<string[]>([]);
+  const [timeframe, setTimeframe] = useState('3M');
+  const [comparisonType, setComparisonType] = useState('win_rate');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadPlaybooks();
-  }, []);
+    loadPlaybookComparisons();
+    loadAvailablePlaybooks();
+  }, [timeframe]);
 
-  useEffect(() => {
-    if (selectedPlaybooks.length > 0) {
-      loadComparisonData();
-    }
-  }, [selectedPlaybooks, timeRange]);
-
-  const loadPlaybooks = async () => {
+  const loadPlaybookComparisons = async () => {
     try {
-      const response = await playbookService.getPlaybooks();
-      setPlaybooks(response.data.map((p: any) => p.name));
-    } catch (error) {
-      console.error('Failed to load playbooks:', error);
-    }
-  };
+      setLoading(true);
+      const data = await analyticsService.getPlaybookComparison(timeframe);
+      setComparisons(data.comparisons || []);
+      setPerformanceData(data.performance_timeline || []);
 
-  const loadComparisonData = async () => {
-    setLoading(true);
-    try {
-      const promises = selectedPlaybooks.map(async (playbookName) => {
-        const metrics = await analyticsService.getPlaybookMetrics(playbookName, timeRange);
-        return {
-          id: playbookName,
-          name: playbookName,
-          ...metrics
-        };
-      });
-      
-      const results = await Promise.all(promises);
-      setComparisonData(results);
-    } catch (error) {
-      console.error('Failed to load comparison data:', error);
+      // Auto-select top 3 performing playbooks
+      const topPlaybooks = data.comparisons
+        ?.sort((a: PlaybookComparison, b: PlaybookComparison) => b.profit_factor - a.profit_factor)
+        .slice(0, 3)
+        .map((p: PlaybookComparison) => p.playbook_name) || [];
+      setSelectedPlaybooks(topPlaybooks);
+    } catch (err) {
+      setError('Failed to load playbook comparisons');
+      console.error('Playbook comparison error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePlaybookToggle = (playbook: string) => {
+  const loadAvailablePlaybooks = async () => {
+    try {
+      const data = await analyticsService.getAvailablePlaybooks();
+      setAvailablePlaybooks(data.playbooks || []);
+    } catch (err) {
+      console.error('Failed to load available playbooks:', err);
+    }
+  };
+
+  const getMetricValue = (playbook: PlaybookComparison, metric: string): number => {
+    switch (metric) {
+      case 'win_rate': return playbook.win_rate;
+      case 'avg_pnl': return playbook.avg_pnl;
+      case 'profit_factor': return playbook.profit_factor;
+      case 'sharpe_ratio': return playbook.sharpe_ratio;
+      case 'consistency_score': return playbook.consistency_score;
+      default: return 0;
+    }
+  };
+
+  const getMetricLabel = (metric: string): string => {
+    switch (metric) {
+      case 'win_rate': return 'Win Rate (%)';
+      case 'avg_pnl': return 'Avg P&L ($)';
+      case 'profit_factor': return 'Profit Factor';
+      case 'sharpe_ratio': return 'Sharpe Ratio';
+      case 'consistency_score': return 'Consistency Score';
+      default: return metric;
+    }
+  };
+
+  const getMetricColor = (index: number): string => {
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    return colors[index % colors.length];
+  };
+
+  const togglePlaybookSelection = (playbook: string) => {
     setSelectedPlaybooks(prev => 
       prev.includes(playbook) 
         ? prev.filter(p => p !== playbook)
-        : [...prev, playbook].slice(0, 5) // Limit to 5 playbooks
+        : [...prev, playbook]
     );
   };
 
-  const generateColors = (count: number) => {
-    const colors = [
-      'rgba(75, 192, 192, 0.8)',
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 206, 86, 0.8)',
-      'rgba(153, 102, 255, 0.8)'
-    ];
-    return colors.slice(0, count);
+  const renderComparisonChart = () => {
+    const selectedData = comparisons.filter(p => selectedPlaybooks.includes(p.playbook_name));
+    const maxValue = Math.max(...selectedData.map(p => getMetricValue(p, comparisonType)));
+
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">{getMetricLabel(comparisonType)} Comparison</h3>
+        <div className="space-y-4">
+          {selectedData.map((playbook, index) => {
+            const value = getMetricValue(playbook, comparisonType);
+            const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
+            const color = getMetricColor(index);
+
+            return (
+              <div key={playbook.playbook_name} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-sm">{playbook.playbook_name}</span>
+                  <span className="text-sm font-semibold" style={{ color }}>
+                    {comparisonType === 'win_rate' ? `${value.toFixed(1)}%` :
+                     comparisonType === 'avg_pnl' ? `$${value.toFixed(2)}` :
+                     value.toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="h-3 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(percentage, 5)}%`,
+                      backgroundColor: color
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
-  const getPerformanceChartData = () => {
-    if (comparisonData.length === 0) return null;
+  const renderPerformanceTimeline = () => {
+    if (!performanceData.length) return null;
 
-    return {
-      labels: ['Win Rate %', 'Profit Factor', 'Expectancy', 'Sharpe Ratio', 'Total PnL'],
-      datasets: comparisonData.map((playbook, index) => ({
-        label: playbook.name,
-        data: [
-          playbook.winRate,
-          playbook.profitFactor,
-          playbook.expectancy,
-          playbook.sharpeRatio,
-          playbook.totalPnL / 1000 // Scale down for radar chart
-        ],
-        backgroundColor: generateColors(comparisonData.length)[index],
-        borderColor: generateColors(comparisonData.length)[index],
-        borderWidth: 2,
-        fill: false
-      }))
-    };
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Performance Timeline</h3>
+        <div className="h-64 relative">
+          <svg width="100%" height="100%" viewBox="0 0 800 200">
+            {selectedPlaybooks.map((playbook, index) => {
+              const color = getMetricColor(index);
+              const playbookData = performanceData.map(d => ({
+                date: d.date,
+                value: d[playbook] as number || 0
+              }));
+
+              const maxValue = Math.max(...playbookData.map(d => d.value));
+              const minValue = Math.min(...playbookData.map(d => d.value));
+              const range = maxValue - minValue || 1;
+
+              const pathData = playbookData.map((d, i) => {
+                const x = (i / (playbookData.length - 1)) * 750 + 25;
+                const y = 175 - ((d.value - minValue) / range) * 150;
+                return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+              }).join(' ');
+
+              return (
+                <g key={playbook}>
+                  <path
+                    d={pathData}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="2"
+                    className="transition-all duration-300"
+                  />
+                  {playbookData.map((d, i) => {
+                    const x = (i / (playbookData.length - 1)) * 750 + 25;
+                    const y = 175 - ((d.value - minValue) / range) * 150;
+                    return (
+                      <circle
+                        key={i}
+                        cx={x}
+                        cy={y}
+                        r="3"
+                        fill={color}
+                        className="hover:r-5 transition-all duration-200"
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+        <div className="flex flex-wrap gap-4 mt-4">
+          {selectedPlaybooks.map((playbook, index) => (
+            <div key={playbook} className="flex items-center space-x-2">
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: getMetricColor(index) }}
+              />
+              <span className="text-sm">{playbook}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  const getEquityCurveData = () => {
-    if (comparisonData.length === 0) return null;
+  const renderSummaryTable = () => {
+    const selectedData = comparisons.filter(p => selectedPlaybooks.includes(p.playbook_name));
 
-    // Get all unique dates and sort them
-    const allDates = [...new Set(
-      comparisonData.flatMap(p => p.equityCurve.map(point => point.date))
-    )].sort();
-
-    return {
-      labels: allDates,
-      datasets: comparisonData.map((playbook, index) => ({
-        label: playbook.name,
-        data: allDates.map(date => {
-          const point = playbook.equityCurve.find(p => p.date === date);
-          return point ? point.value : null;
-        }),
-        borderColor: generateColors(comparisonData.length)[index],
-        backgroundColor: generateColors(comparisonData.length)[index],
-        fill: false,
-        spanGaps: true
-      }))
-    };
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Detailed Comparison</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3 font-medium">Playbook</th>
+                <th className="text-right py-2 px-3 font-medium">Trades</th>
+                <th className="text-right py-2 px-3 font-medium">Win Rate</th>
+                <th className="text-right py-2 px-3 font-medium">Avg P&L</th>
+                <th className="text-right py-2 px-3 font-medium">Total P&L</th>
+                <th className="text-right py-2 px-3 font-medium">Profit Factor</th>
+                <th className="text-right py-2 px-3 font-medium">Sharpe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedData.map((playbook, index) => (
+                <tr key={playbook.playbook_name} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-3 font-medium">{playbook.playbook_name}</td>
+                  <td className="text-right py-2 px-3">{playbook.total_trades}</td>
+                  <td className="text-right py-2 px-3">{playbook.win_rate.toFixed(1)}%</td>
+                  <td className="text-right py-2 px-3">${playbook.avg_pnl.toFixed(2)}</td>
+                  <td className={`text-right py-2 px-3 font-medium ${
+                    playbook.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    ${playbook.total_pnl.toFixed(2)}
+                  </td>
+                  <td className="text-right py-2 px-3">{playbook.profit_factor.toFixed(2)}</td>
+                  <td className="text-right py-2 px-3">{playbook.sharpe_ratio.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
-  const getMetricsComparisonData = () => {
-    if (comparisonData.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-    const metrics = ['Win Rate', 'Profit Factor', 'Max Drawdown', 'Total Trades'];
-    
-    return {
-      labels: comparisonData.map(p => p.name),
-      datasets: metrics.map((metric, index) => ({
-        label: metric,
-        data: comparisonData.map(p => {
-          switch (metric) {
-            case 'Win Rate': return p.winRate;
-            case 'Profit Factor': return p.profitFactor;
-            case 'Max Drawdown': return Math.abs(p.maxDrawdown);
-            case 'Total Trades': return p.totalTrades;
-            default: return 0;
-          }
-        }),
-        backgroundColor: generateColors(metrics.length)[index]
-      }))
-    };
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Playbook Performance Comparison',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  };
-
-  const radarOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Multi-Dimensional Performance Radar',
-      },
-    },
-    scales: {
-      r: {
-        beginAtZero: true,
-      },
-    },
-  };
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Multi-Playbook Comparison Dashboard
-        </h2>
-        
-        {/* Controls */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Time Range
-            </label>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2"
-            >
-              <option value="1M">1 Month</option>
-              <option value="3M">3 Months</option>
-              <option value="6M">6 Months</option>
-              <option value="1Y">1 Year</option>
-              <option value="ALL">All Time</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Comparison Type
-            </label>
-            <select
-              value={comparisonType}
-              onChange={(e) => setComparisonType(e.target.value as any)}
-              className="border border-gray-300 rounded-md px-3 py-2"
-            >
-              <option value="performance">Performance</option>
-              <option value="risk">Risk Analysis</option>
-              <option value="consistency">Consistency</option>
-            </select>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-900">Playbook Comparison</h2>
 
-        {/* Playbook Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Playbooks to Compare (Max 5)
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {playbooks.map(playbook => (
-              <button
-                key={playbook}
-                onClick={() => handlePlaybookToggle(playbook)}
-                className={`px-4 py-2 rounded-md border ${
-                  selectedPlaybooks.includes(playbook)
-                    ? 'bg-blue-500 text-white border-blue-500'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {playbook}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          <select
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="1M">Last Month</option>
+            <option value="3M">Last 3 Months</option>
+            <option value="6M">Last 6 Months</option>
+            <option value="1Y">Last Year</option>
+            <option value="ALL">All Time</option>
+          </select>
+
+          <select
+            value={comparisonType}
+            onChange={(e) => setComparisonType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="win_rate">Win Rate</option>
+            <option value="avg_pnl">Average P&L</option>
+            <option value="profit_factor">Profit Factor</option>
+            <option value="sharpe_ratio">Sharpe Ratio</option>
+            <option value="consistency_score">Consistency</option>
+          </select>
         </div>
       </div>
 
-      {loading && (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-600">Loading comparison data...</p>
+      {/* Playbook Selection */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-sm font-medium mb-3">Select Playbooks to Compare:</h3>
+        <div className="flex flex-wrap gap-2">
+          {availablePlaybooks.map(playbook => (
+            <button
+              key={playbook}
+              onClick={() => togglePlaybookSelection(playbook)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                selectedPlaybooks.includes(playbook)
+                  ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
+                  : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
+              }`}
+            >
+              {playbook}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {!loading && selectedPlaybooks.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          Select playbooks above to start comparing performance metrics
-        </div>
-      )}
-
-      {!loading && comparisonData.length > 0 && (
-        <div className="space-y-8">
-          {/* Performance Summary Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Playbook
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Trades
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Win Rate
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Profit Factor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total P&L
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Max Drawdown
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sharpe Ratio
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {comparisonData.map((playbook) => (
-                  <tr key={playbook.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {playbook.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {playbook.totalTrades}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {playbook.winRate.toFixed(1)}%
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {playbook.profitFactor.toFixed(2)}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${playbook.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${playbook.totalPnL.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                      {playbook.maxDrawdown.toFixed(1)}%
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {playbook.sharpeRatio.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Charts Grid */}
+      {selectedPlaybooks.length > 0 ? (
+        <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Equity Curves Comparison */}
-            {getEquityCurveData() && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4">Equity Curve Comparison</h3>
-                <Line data={getEquityCurveData()!} options={chartOptions} />
-              </div>
-            )}
-
-            {/* Performance Radar Chart */}
-            {getPerformanceChartData() && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4">Performance Radar</h3>
-                <Radar data={getPerformanceChartData()!} options={radarOptions} />
-              </div>
-            )}
-
-            {/* Metrics Bar Chart */}
-            {getMetricsComparisonData() && (
-              <div className="bg-gray-50 p-4 rounded-lg lg:col-span-2">
-                <h3 className="text-lg font-semibold mb-4">Key Metrics Comparison</h3>
-                <Bar data={getMetricsComparisonData()!} options={chartOptions} />
-              </div>
-            )}
+            {renderComparisonChart()}
+            {renderPerformanceTimeline()}
           </div>
 
-          {/* Ranking Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Playbook Rankings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <h4 className="font-medium text-gray-700 mb-2">Best Win Rate</h4>
-                {[...comparisonData].sort((a, b) => b.winRate - a.winRate).slice(0, 3).map((playbook, index) => (
-                  <div key={playbook.id} className="flex justify-between items-center py-1">
-                    <span className="text-sm">{index + 1}. {playbook.name}</span>
-                    <span className="text-sm font-medium text-green-600">{playbook.winRate.toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-700 mb-2">Best Profit Factor</h4>
-                {[...comparisonData].sort((a, b) => b.profitFactor - a.profitFactor).slice(0, 3).map((playbook, index) => (
-                  <div key={playbook.id} className="flex justify-between items-center py-1">
-                    <span className="text-sm">{index + 1}. {playbook.name}</span>
-                    <span className="text-sm font-medium text-blue-600">{playbook.profitFactor.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-700 mb-2">Best Total P&L</h4>
-                {[...comparisonData].sort((a, b) => b.totalPnL - a.totalPnL).slice(0, 3).map((playbook, index) => (
-                  <div key={playbook.id} className="flex justify-between items-center py-1">
-                    <span className="text-sm">{index + 1}. {playbook.name}</span>
-                    <span className={`text-sm font-medium ${playbook.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${playbook.totalPnL.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          {renderSummaryTable()}
+
+          {/* Key Insights */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">📊 Key Insights</h3>
+            <div className="text-blue-800 space-y-1 text-sm">
+              {comparisons.length > 0 && (
+                <>
+                  <p>• Best performing playbook: <strong>{comparisons.sort((a, b) => b.profit_factor - a.profit_factor)[0]?.playbook_name}</strong></p>
+                  <p>• Highest win rate: <strong>{comparisons.sort((a, b) => b.win_rate - a.win_rate)[0]?.playbook_name}</strong> ({comparisons.sort((a, b) => b.win_rate - a.win_rate)[0]?.win_rate.toFixed(1)}%)</p>
+                  <p>• Most consistent: <strong>{comparisons.sort((a, b) => b.consistency_score - a.consistency_score)[0]?.playbook_name}</strong></p>
+                </>
+              )}
             </div>
           </div>
+        </>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Select playbooks above to compare their performance</p>
         </div>
       )}
     </div>

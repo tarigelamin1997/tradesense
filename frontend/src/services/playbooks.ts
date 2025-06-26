@@ -93,4 +93,22 @@ export const playbooksService = {
     const response = await api.put(`/trades/${tradeId}/playbook`, { playbook_id: playbookId });
     return response.data;
   },
+
+  // Get optimization summary for all playbooks
+  getOptimizationSummary: async () => {
+    const response = await api.get('/playbooks/performance-summary');
+    return response.data;
+  },
+
+  // Get session heatmap data
+  getSessionHeatmap: async () => {
+    const response = await api.get('/playbooks/session-heatmap');
+    return response.data;
+  },
+
+  // Get detailed analysis for a single playbook
+  getPlaybookOptimizationAnalysis: async (playbookId: string) => {
+    const response = await api.get(`/playbooks/${playbookId}/optimization-analysis`);
+    return response.data;
+  },
 };

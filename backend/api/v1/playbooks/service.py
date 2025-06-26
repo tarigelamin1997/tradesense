@@ -4,6 +4,8 @@ from sqlalchemy import and_, func, desc, asc, or_
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import json
+import numpy as np
+import pandas as pd
 
 from backend.models.playbook import Playbook, PlaybookCreate, PlaybookUpdate, PlaybookAnalytics
 from backend.models.trade import Trade
@@ -146,6 +148,452 @@ class PlaybookService:
         
         return trade_data
 
+    def calculate_sharpe_ratio(self, pnl_series: List[float]) -> float:
+        """Calculate Sharpe ratio for a series of PnL values"""
+        if len(pnl_series) < 2:
+            return 0.0
+        
+        returns = np.array(pnl_series)
+        mean_return = np.mean(returns)
+        std_return = np.std(returns)
+        
+        if std_return == 0:
+            return 0.0
+        
+        # Assuming risk-free rate of 0 for simplicity
+        sharpe = mean_return / std_return
+        return round(sharpe * np.sqrt(252), 2)  # Annualized
+
+    def calculate_max_drawdown(self, pnl_series: List[float]) -> float:
+        """Calculate maximum drawdown from PnL series"""
+        if not pnl_series:
+            return 0.0
+        
+        cumulative = np.cumsum(pnl_series)
+        running_max = np.maximum.accumulate(cumulative)
+        drawdown = running_max - cumulative
+        return round(np.max(drawdown), 2)
+
+    def calculate_sortino_ratio(self, pnl_series: List[float]) -> float:
+        """Calculate Sortino ratio (downside deviation version of Sharpe)"""
+        if len(pnl_series) < 2:
+            return 0.0
+        
+        returns = np.array(pnl_series)
+        mean_return = np.mean(returns)
+        
+        # Calculate downside deviation (only negative returns)
+        negative_returns = returns[returns < 0]
+        if len(negative_returns) == 0:
+            return float('inf') if mean_return > 0 else 0.0
+        
+        downside_deviation = np.std(negative_returns)
+        if downside_deviation == 0:
+            return 0.0
+        
+        sortino = mean_return / downside_deviation
+        return round(sortino * np.sqrt(252), 2)  # Annualized
+
+    def analyze_confidence_trend(self, trades: List[Dict]) -> Dict[str, Any]:
+        """Analyze how confidence scores correlate with performance"""
+        if not trades:
+            return {"trend": "insufficient_data", "correlation": 0.0}
+        
+        confidence_data = []
+        pnl_data = []
+        
+        for trade in trades:
+            if trade.get('confidence_score') and trade.get('pnl') is not None:
+                confidence_data.append(trade['confidence_score'])
+                pnl_data.append(trade['pnl'])
+        
+        if len(confidence_data) < 3:
+            return {"trend": "insufficient_data", "correlation": 0.0}
+        
+        # Calculate correlation between confidence and PnL
+        correlation = np.corrcoef(confidence_data, pnl_data)[0, 1]
+        if np.isnan(correlation):
+            correlation = 0.0
+        
+        # Determine trend
+        if correlation > 0.3:
+            trend = "positive_correlation"
+        elif correlation < -0.3:
+            trend = "negative_correlation"
+        else:
+            trend = "no_clear_correlation"
+        
+        return {
+            "trend": trend,
+            "correlation": round(correlation, 3),
+            "avg_confidence": round(np.mean(confidence_data), 1),
+            "confidence_range": [round(min(confidence_data), 1), round(max(confidence_data), 1)]
+        }
+
+    def analyze_time_performance(self, trades: List[Dict]) -> Dict[str, Any]:
+        """Analyze performance by day of week and hour"""
+        if not trades:
+            return {}
+        
+        day_performance = {}
+        hour_performance = {}
+        
+        for trade in trades:
+            if trade.get('entry_time') and trade.get('pnl') is not None:
+                entry_time = trade['entry_time']
+                pnl = trade['pnl']
+                
+                # Day of week analysis
+                day_name = entry_time.strftime('%A')
+                if day_name not in day_performance:
+                    day_performance[day_name] = []
+                day_performance[day_name].append(pnl)
+                
+                # Hour analysis
+                hour = entry_time.hour
+                if hour not in hour_performance:
+                    hour_performance[hour] = []
+                hour_performance[hour].append(pnl)
+        
+        # Calculate averages
+        day_stats = {}
+        for day, pnls in day_performance.items():
+            day_stats[day] = {
+                "avg_pnl": round(np.mean(pnls), 2),
+                "trade_count": len(pnls),
+                "win_rate": round(len([p for p in pnls if p > 0]) / len(pnls) * 100, 1)
+            }
+        
+        hour_stats = {}
+        for hour, pnls in hour_performance.items():
+            hour_stats[str(hour)] = {
+                "avg_pnl": round(np.mean(pnls), 2),
+                "trade_count": len(pnls),
+                "win_rate": round(len([p for p in pnls if p > 0]) / len(pnls) * 100, 1)
+            }
+        
+        # Find best performing times
+        best_day = max(day_stats.items(), key=lambda x: x[1]['avg_pnl'])[0] if day_stats else None
+        best_hour = max(hour_stats.items(), key=lambda x: x[1]['avg_pnl'])[0] if hour_stats else None
+        
+        return {
+            "day_performance": day_stats,
+            "hour_performance": hour_stats,
+            "best_day": best_day,
+            "best_hour": int(best_hour) if best_hour else None
+        }
+
+    def calculate_risk_reward_ratio(self, trades: List[Dict]) -> float:
+        """Calculate average risk/reward ratio"""
+        winners = [t['pnl'] for t in trades if t.get('pnl', 0) > 0]
+        losers = [abs(t['pnl']) for t in trades if t.get('pnl', 0) < 0]
+        
+        if not winners or not losers:
+            return 0.0
+        
+        avg_win = np.mean(winners)
+        avg_loss = np.mean(losers)
+        
+        return round(avg_win / avg_loss, 2) if avg_loss > 0 else 0.0
+
+    def get_playbook_optimization_summary(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        PLAYBOOK OPTIMIZATION ENGINE
+        Analyze all playbooks and return comprehensive performance metrics
+        """
+        # Get all active playbooks for user
+        playbooks = self.db.query(Playbook).filter(
+            and_(Playbook.user_id == user_id, Playbook.status == "active")
+        ).all()
+        
+        optimization_results = []
+        
+        for playbook in playbooks:
+            # Get all trades for this playbook
+            trades_query = self.db.query(Trade).filter(
+                and_(Trade.playbook_id == playbook.id, Trade.user_id == user_id)
+            ).order_by(Trade.entry_time).all()
+            
+            if not trades_query:
+                continue  # Skip playbooks with no trades
+            
+            # Convert to dict for analysis
+            trades = []
+            for trade in trades_query:
+                trades.append({
+                    'id': trade.id,
+                    'symbol': trade.symbol,
+                    'direction': trade.direction,
+                    'entry_time': trade.entry_time,
+                    'exit_time': trade.exit_time,
+                    'entry_price': trade.entry_price,
+                    'exit_price': trade.exit_price,
+                    'pnl': trade.pnl or 0,
+                    'quantity': trade.quantity,
+                    'confidence_score': trade.confidence_score,
+                    'notes': trade.notes
+                })
+            
+            # Filter completed trades (with PnL)
+            completed_trades = [t for t in trades if t['pnl'] is not None]
+            
+            if len(completed_trades) < 5:  # Need minimum trades for meaningful analysis
+                continue
+            
+            # Calculate core metrics
+            total_trades = len(completed_trades)
+            pnl_values = [t['pnl'] for t in completed_trades]
+            winning_trades = [t for t in completed_trades if t['pnl'] > 0]
+            losing_trades = [t for t in completed_trades if t['pnl'] < 0]
+            
+            # Basic performance metrics
+            win_rate = len(winning_trades) / total_trades * 100
+            total_pnl = sum(pnl_values)
+            avg_pnl = total_pnl / total_trades
+            avg_win = np.mean([t['pnl'] for t in winning_trades]) if winning_trades else 0
+            avg_loss = np.mean([t['pnl'] for t in losing_trades]) if losing_trades else 0
+            
+            # Advanced metrics
+            sharpe_ratio = self.calculate_sharpe_ratio(pnl_values)
+            sortino_ratio = self.calculate_sortino_ratio(pnl_values)
+            max_drawdown = self.calculate_max_drawdown(pnl_values)
+            risk_reward_ratio = self.calculate_risk_reward_ratio(completed_trades)
+            
+            # Profit factor
+            gross_profit = sum([t['pnl'] for t in winning_trades])
+            gross_loss = abs(sum([t['pnl'] for t in losing_trades]))
+            profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+            
+            # Confidence analysis
+            confidence_analysis = self.analyze_confidence_trend(completed_trades)
+            
+            # Time-based performance
+            time_analysis = self.analyze_time_performance(completed_trades)
+            
+            # Calculate streaks
+            win_streak = 0
+            loss_streak = 0
+            current_win_streak = 0
+            current_loss_streak = 0
+            max_win_streak = 0
+            max_loss_streak = 0
+            
+            for trade in completed_trades:
+                if trade['pnl'] > 0:
+                    current_win_streak += 1
+                    current_loss_streak = 0
+                    max_win_streak = max(max_win_streak, current_win_streak)
+                else:
+                    current_loss_streak += 1
+                    current_win_streak = 0
+                    max_loss_streak = max(max_loss_streak, current_loss_streak)
+            
+            # Generate recommendation
+            recommendation = self.generate_playbook_recommendation(
+                win_rate, avg_pnl, sharpe_ratio, max_drawdown, total_trades, profit_factor
+            )
+            
+            # Performance score (0-100)
+            performance_score = self.calculate_performance_score(
+                win_rate, sharpe_ratio, profit_factor, max_drawdown, total_trades
+            )
+            
+            optimization_result = {
+                "playbook_id": str(playbook.id),
+                "playbook_name": playbook.name,
+                "total_trades": total_trades,
+                "win_rate": round(win_rate, 2),
+                "total_pnl": round(total_pnl, 2),
+                "avg_pnl": round(avg_pnl, 2),
+                "avg_win": round(avg_win, 2),
+                "avg_loss": round(avg_loss, 2),
+                "sharpe_ratio": sharpe_ratio,
+                "sortino_ratio": sortino_ratio,
+                "max_drawdown": max_drawdown,
+                "profit_factor": round(profit_factor, 2) if profit_factor != float('inf') else 999,
+                "risk_reward_ratio": risk_reward_ratio,
+                "max_win_streak": max_win_streak,
+                "max_loss_streak": max_loss_streak,
+                "confidence_analysis": confidence_analysis,
+                "time_analysis": time_analysis,
+                "recommendation": recommendation,
+                "performance_score": performance_score,
+                "created_at": playbook.created_at.isoformat(),
+                "last_trade_date": max([t['entry_time'] for t in completed_trades]).isoformat()
+            }
+            
+            optimization_results.append(optimization_result)
+        
+        # Sort by performance score (highest first)
+        optimization_results.sort(key=lambda x: x['performance_score'], reverse=True)
+        
+        return optimization_results
+
+    def generate_playbook_recommendation(self, win_rate: float, avg_pnl: float, 
+                                       sharpe_ratio: float, max_drawdown: float, 
+                                       total_trades: int, profit_factor: float) -> Dict[str, str]:
+        """Generate actionable recommendations for a playbook"""
+        
+        if total_trades < 10:
+            return {
+                "action": "gather_more_data",
+                "message": "Need more trades (at least 10) for reliable analysis",
+                "priority": "low"
+            }
+        
+        # High-performing playbook
+        if win_rate >= 60 and sharpe_ratio >= 1.5 and avg_pnl > 0 and profit_factor >= 1.5:
+            return {
+                "action": "focus_and_scale",
+                "message": "Excellent performance! Focus more trades on this strategy and consider increasing position size",
+                "priority": "high"
+            }
+        
+        # Good playbook with room for improvement
+        elif win_rate >= 50 and avg_pnl > 0 and sharpe_ratio >= 1.0:
+            return {
+                "action": "optimize_and_refine",
+                "message": "Good performance. Consider refining entry/exit criteria or risk management",
+                "priority": "medium"
+            }
+        
+        # High drawdown warning
+        elif max_drawdown > abs(avg_pnl * total_trades * 0.3):  # Drawdown > 30% of total profit
+            return {
+                "action": "improve_risk_management",
+                "message": "High drawdown detected. Review position sizing and stop-loss levels",
+                "priority": "high"
+            }
+        
+        # Low win rate but profitable
+        elif win_rate < 40 and avg_pnl > 0:
+            return {
+                "action": "improve_win_rate",
+                "message": "Profitable but low win rate. Consider tighter entry criteria or earlier exits",
+                "priority": "medium"
+            }
+        
+        # Consistently losing
+        elif avg_pnl < 0 or profit_factor < 1.0:
+            return {
+                "action": "consider_retiring",
+                "message": "Consistently unprofitable. Consider retiring or major strategy overhaul",
+                "priority": "high"
+            }
+        
+        # Default
+        else:
+            return {
+                "action": "monitor_closely",
+                "message": "Mixed performance. Continue monitoring and look for improvement opportunities",
+                "priority": "medium"
+            }
+
+    def calculate_performance_score(self, win_rate: float, sharpe_ratio: float, 
+                                  profit_factor: float, max_drawdown: float, 
+                                  total_trades: int) -> int:
+        """Calculate a composite performance score (0-100)"""
+        score = 0
+        
+        # Win rate component (0-25 points)
+        score += min(25, win_rate * 0.4)
+        
+        # Sharpe ratio component (0-25 points)
+        score += min(25, max(0, sharpe_ratio * 12.5))
+        
+        # Profit factor component (0-25 points)
+        if profit_factor >= 999:  # Handle infinity
+            score += 25
+        else:
+            score += min(25, max(0, (profit_factor - 1) * 12.5))
+        
+        # Drawdown penalty (0-25 points, but negative impact)
+        if max_drawdown > 0:
+            # Penalize high drawdowns more severely
+            drawdown_penalty = min(25, max_drawdown / 100 * 25)
+            score += max(0, 25 - drawdown_penalty)
+        else:
+            score += 25
+        
+        # Sample size bonus/penalty
+        if total_trades >= 50:
+            score += 5  # Bonus for large sample
+        elif total_trades < 10:
+            score *= 0.8  # Penalty for small sample
+        
+        return max(0, min(100, int(score)))
+
+    def get_playbook_session_heatmap(self, user_id: str) -> Dict[str, Any]:
+        """Generate heatmap data showing playbook performance by trading session"""
+        playbooks = self.db.query(Playbook).filter(
+            and_(Playbook.user_id == user_id, Playbook.status == "active")
+        ).all()
+        
+        # Define trading sessions (in UTC hours)
+        sessions = {
+            "Sydney": (22, 7),      # 22:00 - 07:00 UTC
+            "Tokyo": (0, 9),        # 00:00 - 09:00 UTC  
+            "London": (8, 17),      # 08:00 - 17:00 UTC
+            "New_York": (13, 22)    # 13:00 - 22:00 UTC
+        }
+        
+        heatmap_data = []
+        
+        for playbook in playbooks:
+            trades = self.db.query(Trade).filter(
+                and_(Trade.playbook_id == playbook.id, Trade.pnl.isnot(None))
+            ).all()
+            
+            if not trades:
+                continue
+            
+            playbook_sessions = {}
+            
+            for session_name, (start_hour, end_hour) in sessions.items():
+                session_trades = []
+                
+                for trade in trades:
+                    hour = trade.entry_time.hour
+                    
+                    # Handle sessions that cross midnight
+                    if start_hour > end_hour:  # Cross midnight
+                        if hour >= start_hour or hour <= end_hour:
+                            session_trades.append(trade.pnl)
+                    else:  # Normal session
+                        if start_hour <= hour <= end_hour:
+                            session_trades.append(trade.pnl)
+                
+                if session_trades:
+                    avg_pnl = sum(session_trades) / len(session_trades)
+                    win_rate = len([p for p in session_trades if p > 0]) / len(session_trades) * 100
+                    
+                    playbook_sessions[session_name] = {
+                        "avg_pnl": round(avg_pnl, 2),
+                        "win_rate": round(win_rate, 1),
+                        "trade_count": len(session_trades),
+                        "total_pnl": round(sum(session_trades), 2)
+                    }
+                else:
+                    playbook_sessions[session_name] = {
+                        "avg_pnl": 0,
+                        "win_rate": 0,
+                        "trade_count": 0,
+                        "total_pnl": 0
+                    }
+            
+            heatmap_data.append({
+                "playbook_id": str(playbook.id),
+                "playbook_name": playbook.name,
+                "sessions": playbook_sessions
+            })
+        
+        return {
+            "heatmap_data": heatmap_data,
+            "sessions": list(sessions.keys()),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+
+    # Keep existing methods...
     def calculate_playbook_stats(self, playbook_id: str) -> Dict[str, Any]:
         """Calculate performance statistics for a playbook"""
         trades = self.db.query(Trade).filter(Trade.playbook_id == playbook_id).all()
@@ -324,150 +772,3 @@ class PlaybookService:
             playbook.updated_at = datetime.utcnow()
         
         self.db.commit()
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
-from typing import List, Optional
-from uuid import UUID
-from datetime import datetime, timedelta
-
-from backend.models.playbook import Playbook, PlaybookStatus
-from backend.models.trade import Trade
-from backend.api.v1.playbooks.schemas import (
-    PlaybookCreate, PlaybookUpdate, PlaybookResponse, 
-    PlaybookPerformance, PlaybookAnalytics
-)
-
-class PlaybookService:
-    def __init__(self, db: Session):
-        self.db = db
-
-    def create_playbook(self, user_id: UUID, playbook_data: PlaybookCreate) -> PlaybookResponse:
-        """Create a new playbook."""
-        playbook = Playbook(
-            user_id=user_id,
-            **playbook_data.model_dump()
-        )
-        self.db.add(playbook)
-        self.db.commit()
-        self.db.refresh(playbook)
-        return PlaybookResponse.model_validate(playbook)
-
-    def get_playbooks(self, user_id: UUID, include_archived: bool = False) -> List[PlaybookResponse]:
-        """Get all playbooks for a user."""
-        query = self.db.query(Playbook).filter(Playbook.user_id == user_id)
-        
-        if not include_archived:
-            query = query.filter(Playbook.status == PlaybookStatus.ACTIVE)
-        
-        playbooks = query.order_by(Playbook.created_at.desc()).all()
-        return [PlaybookResponse.model_validate(p) for p in playbooks]
-
-    def get_playbook(self, user_id: UUID, playbook_id: UUID) -> Optional[PlaybookResponse]:
-        """Get a specific playbook."""
-        playbook = self.db.query(Playbook).filter(
-            and_(Playbook.id == playbook_id, Playbook.user_id == user_id)
-        ).first()
-        
-        if playbook:
-            return PlaybookResponse.model_validate(playbook)
-        return None
-
-    def update_playbook(self, user_id: UUID, playbook_id: UUID, playbook_data: PlaybookUpdate) -> Optional[PlaybookResponse]:
-        """Update a playbook."""
-        playbook = self.db.query(Playbook).filter(
-            and_(Playbook.id == playbook_id, Playbook.user_id == user_id)
-        ).first()
-        
-        if not playbook:
-            return None
-
-        update_data = playbook_data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(playbook, field, value)
-        
-        self.db.commit()
-        self.db.refresh(playbook)
-        return PlaybookResponse.model_validate(playbook)
-
-    def delete_playbook(self, user_id: UUID, playbook_id: UUID) -> bool:
-        """Delete a playbook (soft delete by archiving)."""
-        playbook = self.db.query(Playbook).filter(
-            and_(Playbook.id == playbook_id, Playbook.user_id == user_id)
-        ).first()
-        
-        if not playbook:
-            return False
-
-        playbook.status = PlaybookStatus.ARCHIVED
-        self.db.commit()
-        return True
-
-    def get_playbook_analytics(self, user_id: UUID, days: Optional[int] = None) -> PlaybookAnalytics:
-        """Get performance analytics for all playbooks."""
-        base_query = self.db.query(
-            Playbook.id.label('playbook_id'),
-            Playbook.name.label('playbook_name'),
-            func.count(Trade.id).label('trade_count'),
-            func.sum(Trade.pnl).label('total_pnl'),
-            func.avg(Trade.pnl).label('avg_pnl'),
-            func.sum(func.case((Trade.pnl > 0, 1), else_=0)).label('wins'),
-            func.avg(func.case((Trade.pnl > 0, Trade.pnl), else_=None)).label('avg_win'),
-            func.avg(func.case((Trade.pnl < 0, Trade.pnl), else_=None)).label('avg_loss'),
-            func.avg(
-                func.extract('epoch', Trade.exit_time - Trade.entry_time) / 60
-            ).label('avg_hold_time_minutes')
-        ).join(
-            Trade, Playbook.id == Trade.playbook_id
-        ).filter(
-            Playbook.user_id == user_id,
-            Trade.pnl.isnot(None)
-        )
-
-        if days:
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
-            base_query = base_query.filter(Trade.entry_time >= cutoff_date)
-
-        results = base_query.group_by(Playbook.id, Playbook.name).all()
-
-        playbook_performances = []
-        total_trades = 0
-        total_pnl = 0.0
-
-        for result in results:
-            win_rate = (result.wins / result.trade_count * 100) if result.trade_count > 0 else 0
-            
-            profit_factor = None
-            if result.avg_loss and result.avg_loss < 0:
-                total_wins = result.wins * (result.avg_win or 0)
-                total_losses = abs((result.trade_count - result.wins) * result.avg_loss)
-                if total_losses > 0:
-                    profit_factor = total_wins / total_losses
-
-            performance = PlaybookPerformance(
-                playbook_id=result.playbook_id,
-                playbook_name=result.playbook_name,
-                trade_count=result.trade_count,
-                total_pnl=result.total_pnl or 0,
-                avg_pnl=result.avg_pnl or 0,
-                win_rate=win_rate,
-                avg_win=result.avg_win or 0,
-                avg_loss=result.avg_loss or 0,
-                avg_hold_time_minutes=result.avg_hold_time_minutes,
-                profit_factor=profit_factor
-            )
-            playbook_performances.append(performance)
-            total_trades += result.trade_count
-            total_pnl += result.total_pnl or 0
-
-        summary = {
-            "total_playbooks": len(playbook_performances),
-            "total_trades": total_trades,
-            "total_pnl": total_pnl,
-            "best_performing": max(playbook_performances, key=lambda x: x.total_pnl).playbook_name if playbook_performances else None,
-            "most_active": max(playbook_performances, key=lambda x: x.trade_count).playbook_name if playbook_performances else None
-        }
-
-        return PlaybookAnalytics(
-            playbooks=playbook_performances,
-            summary=summary
-        )

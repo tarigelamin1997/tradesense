@@ -66,6 +66,7 @@ class Trade(Base):
     tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
     mental_entries = relationship("MentalMapEntry", back_populates="trade")
     playbook = relationship("Playbook", back_populates="trades")
+    review = relationship("TradeReview", back_populates="trade", uselist=False)
 
     # Indexes for performance
     __table_args__ = (

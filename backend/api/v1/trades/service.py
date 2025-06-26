@@ -29,6 +29,7 @@ from backend.models.trade_note import TradeNote
 from backend.models.strategy import Strategy
 from backend.services.critique_engine import CritiqueEngine
 from .schemas import TradeCreate, TradeUpdate, TradeResponse
+from backend.services.milestone_engine import MilestoneEngine
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,7 @@ class TradesService:
 
             # Create trade record
             trade = {
+                ```python
                 "id": trade_id,
                 "user_id": user_id,
                 "symbol": trade_data.symbol,

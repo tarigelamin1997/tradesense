@@ -6,19 +6,21 @@ import logging
 import os
 
 # Import routers
-from backend.api.v1.trades.router import router as trades_router
-from backend.api.v1.strategies.router import router as strategies_router
-from backend.api.v1.tags.router import router as tags_router
-from backend.api.v1.notes.router import router as notes_router
-from backend.api.v1.uploads.router import router as uploads_router
-from backend.api.v1.users.router import router as users_router
-from backend.api.v1.auth.router import router as auth_router
 from backend.api.v1.analytics.router import router as analytics_router
-from backend.api.v1.analytics.edge_strength import router as edge_strength_router
-from backend.api.v1.critique.router import router as critique_router
+from backend.api.v1.auth.router import router as auth_router
+from backend.api.v1.users.router import router as users_router
+from backend.api.v1.trades.router import router as trades_router
+from backend.api.v1.uploads.router import router as uploads_router
+from backend.api.v1.tags.router import router as tags_router
+from backend.api.v1.strategies.router import router as strategies_router
+from backend.api.v1.notes.router import router as notes_router
 from backend.api.v1.reflections.router import router as reflections_router
-from backend.api.v1.analytics.heatmap import router as heatmap_router
+from backend.api.v1.critique.router import router as critique_router
 from backend.api.v1.analytics.streaks import router as streaks_router
+from backend.api.v1.analytics.heatmap import router as heatmap_router
+from backend.api.v1.analytics.edge_strength import router as edge_strength_router
+from backend.api.v1.trades.search import router as trade_search_router
+from backend.api.v1.milestones.router import router as milestones_router
 
 # Configure logging
 logging.basicConfig(
@@ -85,6 +87,7 @@ app.include_router(heatmap_router, prefix="/api/v1/analytics", tags=["heatmap"])
 app.include_router(streaks_router, prefix="/api/v1/analytics", tags=["streaks"])
 app.include_router(critique_router, prefix="/api/v1/critique")
 app.include_router(reflections_router, prefix="/api/v1/reflections")
+app.include_router(milestones_router)
 
 if __name__ == "__main__":
     import uvicorn

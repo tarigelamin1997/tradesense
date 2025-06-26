@@ -13,7 +13,7 @@ from backend.api.v1.trades.router import router as trades_router
 from backend.api.v1.uploads.router import router as uploads_router
 from backend.api.v1.tags.router import router as tags_router
 from backend.api.v1.strategies.router import router as strategies_router
-frombackend.api.v1.notes.router import router as notes_router
+from backend.api.v1.notes.router import router as notes_router
 from backend.api.v1.reflections.router import router as reflections_router
 from backend.api.v1.critique.router import router as critique_router
 from backend.api.v1.analytics.streaks import router as streaks_router
@@ -24,7 +24,8 @@ from backend.api.v1.milestones.router import router as milestones_router
 # Assuming these routers exist based on the user story.
 from backend.api.v1.accounts.router import router as accounts_router
 from backend.api.v1.leaderboard.router import router as leaderboard_router
-from backend.api.v1.mental_map.router import router as mental_map_router
+from backend.api.v1.mental_map import router as mental_map_router
+from backend.api.v1.patterns import router as patterns_router
 
 # Configure logging
 logging.basicConfig(
@@ -95,6 +96,7 @@ app.include_router(milestones_router, prefix="/api/v1")
 app.include_router(accounts_router, prefix="/api/v1")
 app.include_router(leaderboard_router, prefix="/api/v1")
 app.include_router(mental_map_router, prefix="/api/v1/mental-map", tags=["mental-map"])
+app.include_router(patterns_router, prefix="/api/v1/patterns", tags=["patterns"])
 
 if __name__ == "__main__":
     import uvicorn

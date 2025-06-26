@@ -1,4 +1,3 @@
-
 import { api } from './api';
 
 export interface AnalyticsSummary {
@@ -56,35 +55,41 @@ interface AnalyticsFilters {
   strategy_filter?: string;
 }
 
-class AnalyticsService {
-  async getSummary(filters: AnalyticsFilters = {}): Promise<AnalyticsSummary> {
+const getPlaybookMetrics = async (playbookName: string, timeRange: string = '6M') => {
+  const response = await api.get(`/analytics/playbooks/${encodeURIComponent(playbookName)}/metrics`, {
+    params: { time_range: timeRange }
+  });
+  return response.data;
+};
+
+export const analyticsService = {
+  getSummary: async (filters: AnalyticsFilters = {}) => {
     const params = new URLSearchParams();
-    
+
     if (filters.start) params.append('start_date', filters.start);
     if (filters.end) params.append('end_date', filters.end);
     if (filters.strategy_filter) params.append('strategy_filter', filters.strategy_filter);
-    
+
     const queryString = params.toString();
     const url = `/analytics/summary${queryString ? `?${queryString}` : ''}`;
-    
+
     const response = await api.get(url);
     return response.data;
-  }
+  },
 
-  async getEmotionImpact(): Promise<any> {
+  getEmotionImpact: async () => {
     const response = await api.get('/analytics/emotion-impact');
     return response.data;
-  }
+  },
 
-  async getStrategyPerformance(): Promise<any> {
+  getStrategyPerformance: async () => {
     const response = await api.get('/analytics/strategy-performance');
     return response.data;
-  }
+  },
 
-  async getConfidenceCorrelation(): Promise<any> {
+  getConfidenceCorrelation: async () => {
     const response = await api.get('/analytics/confidence-correlation');
     return response.data;
-  }
-}
-
-export const analyticsService = new AnalyticsService();
+  },
+  getPlaybookMetrics
+};

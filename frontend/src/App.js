@@ -15,6 +15,7 @@ import { HeatmapPage } from './features/analytics/pages/HeatmapPage';
 import { StreakAnalysisPage } from './features/analytics/pages/StreakAnalysisPage';
 import { TradeSearchPage } from './features/analytics/pages/TradeSearchPage';
 import MilestonePage from './features/analytics/pages/MilestonePage';
+import CrossAccountPage from './features/analytics/pages/CrossAccountPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -69,6 +70,7 @@ function App() {
         <Route path="/analytics/streaks" element={<StreakAnalysisPage />} />
         <Route path="/trade-search" element={<TradeSearchPage />} />
             <Route path="/analytics/milestones" element={<MilestonePage />} />
+        <Route path="/cross-account" element={<CrossAccountPage />} />
         </Routes>
         </div>
       </Router>

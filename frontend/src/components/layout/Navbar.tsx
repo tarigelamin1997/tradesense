@@ -136,6 +136,18 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <ChartBarIcon className="h-4 w-4" />
                   <span>🏆 Progress</span>
                 </Link>
+                <Link
+                  key="/cross-account"
+                  to="/cross-account"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/cross-account'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Cross-Account</span>
+                </Link>
 
             <Button
               variant="ghost"
@@ -274,6 +286,19 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <ChartBarIcon className="h-4 w-4" />
                   <span>🏆 Progress</span>
                 </Link>
+                <Link
+                  key="/cross-account"
+                  to="/cross-account"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/cross-account'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Cross-Account</span>
+                </Link>
             <button
               onClick={() => {
                 handleLogout();
@@ -289,4 +314,3 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
     </nav>
   );
 };
-`

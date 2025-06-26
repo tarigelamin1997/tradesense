@@ -21,6 +21,9 @@ from backend.api.v1.analytics.heatmap import router as heatmap_router
 from backend.api.v1.analytics.edge_strength import router as edge_strength_router
 from backend.api.v1.trades.search import router as trade_search_router
 from backend.api.v1.milestones.router import router as milestones_router
+# Assuming these routers exist based on the user story.
+from backend.api.v1.accounts.router import router as accounts_router
+from backend.api.v1.leaderboard.router import router as leaderboard_router
 
 # Configure logging
 logging.basicConfig(
@@ -87,7 +90,9 @@ app.include_router(heatmap_router, prefix="/api/v1/analytics", tags=["heatmap"])
 app.include_router(streaks_router, prefix="/api/v1/analytics", tags=["streaks"])
 app.include_router(critique_router, prefix="/api/v1/critique")
 app.include_router(reflections_router, prefix="/api/v1/reflections")
-app.include_router(milestones_router)
+app.include_router(milestones_router, prefix="/api/v1")
+app.include_router(accounts_router, prefix="/api/v1")
+app.include_router(leaderboard_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn

@@ -168,3 +168,11 @@ async def execution_quality(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to analyze execution quality")
+
+from .confidence_calibration import router as confidence_router
+from .execution_quality import router as execution_router
+from .market_context import router as market_context_router
+
+router.include_router(confidence_router)
+router.include_router(execution_router)
+router.include_router(market_context_router)

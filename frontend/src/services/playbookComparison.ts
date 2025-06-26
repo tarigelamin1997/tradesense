@@ -1,98 +1,140 @@
 
-import { api } from './api';
+import { apiClient } from './api';
 
-export interface PlaybookComparisonData {
-  playbook_id: string;
+export interface PlaybookMetrics {
   playbook_name: string;
-  description?: string;
   total_trades: number;
   win_rate: number;
   profit_factor: number;
-  expectancy: number;
-  sharpe_ratio: number;
+  average_return: number;
   max_drawdown: number;
+  sharpe_ratio: number;
   total_pnl: number;
-  avg_win: number;
-  avg_loss: number;
-  max_consecutive_wins: number;
-  max_consecutive_losses: number;
-  monthly_performance: Array<{
-    month: string;
-    pnl: number;
-    trades: number;
-  }>;
-  risk_adjusted_return: number;
-  win_rate_rank?: number;
-  profit_factor_rank?: number;
-  expectancy_rank?: number;
-  sharpe_ratio_rank?: number;
-  total_pnl_rank?: number;
+  avg_trade_duration: number;
+  largest_win: number;
+  largest_loss: number;
+  consecutive_wins: number;
+  consecutive_losses: number;
 }
 
-export interface PlaybookComparisonResponse {
-  comparison_data: PlaybookComparisonData[];
-  summary: {
-    total_playbooks: number;
-    date_range: {
-      start: string | null;
-      end: string | null;
-    };
-    best_performer: string | null;
-  };
-}
-
-export interface CorrelationMatrixResponse {
-  correlation_matrix: Record<string, Record<string, number>>;
-  playbook_ids: string[];
-  message?: string;
-}
-
-export interface PerformanceOverTimeData {
-  performance_data: Record<string, {
+export interface ComparisonData {
+  metrics: PlaybookMetrics[];
+  performance_comparison: {
     playbook_name: string;
-    performance: Array<{
-      period: string;
-      pnl: number;
-      cumulative_pnl: number;
-      trade_count: number;
-      avg_pnl: number;
+    monthly_returns: Array<{
+      month: string;
+      return: number;
     }>;
-  }>;
-  period: string;
+  }[];
+  risk_analysis: {
+    playbook_name: string;
+    var_95: number;
+    var_99: number;
+    expected_shortfall: number;
+    volatility: number;
+  }[];
 }
 
-export const playbookComparisonService = {
-  comparePlaybooks: async (
-    playbookIds: string[],
-    startDate?: string,
-    endDate?: string
-  ): Promise<PlaybookComparisonResponse> => {
-    const params = new URLSearchParams();
-    playbookIds.forEach(id => params.append('playbook_ids', id));
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
+export interface PlaybookOptimization {
+  playbook_name: string;
+  current_metrics: PlaybookMetrics;
+  recommendations: {
+    type: 'entry_timing' | 'exit_strategy' | 'risk_management' | 'position_sizing';
+    description: string;
+    potential_improvement: number;
+    confidence: number;
+  }[];
+  suggested_parameters: {
+    parameter: string;
+    current_value: any;
+    suggested_value: any;
+    reasoning: string;
+  }[];
+}
 
-    const response = await api.get(`/api/v1/analytics/playbook_comparison/compare?${params}`);
-    return response.data;
-  },
-
-  getCorrelationMatrix: async (playbookIds: string[]): Promise<CorrelationMatrixResponse> => {
-    const params = new URLSearchParams();
-    playbookIds.forEach(id => params.append('playbook_ids', id));
-
-    const response = await api.get(`/api/v1/analytics/playbook_comparison/correlation-matrix?${params}`);
-    return response.data;
-  },
-
-  getPerformanceOverTime: async (
-    playbookIds: string[],
-    period: 'daily' | 'weekly' | 'monthly' = 'daily'
-  ): Promise<PerformanceOverTimeData> => {
-    const params = new URLSearchParams();
-    playbookIds.forEach(id => params.append('playbook_ids', id));
-    params.append('period', period);
-
-    const response = await api.get(`/api/v1/analytics/playbook_comparison/performance-over-time?${params}`);
-    return response.data;
+class PlaybookComparisonService {
+  async getAvailablePlaybooks(): Promise<string[]> {
+    try {
+      const response = await apiClient.get('/analytics/playbooks/available');
+      return response.data.playbooks || [];
+    } catch (error) {
+      console.error('Failed to fetch available playbooks:', error);
+      return [];
+    }
   }
-};
+
+  async comparePlaybooks(playbookNames: string[]): Promise<ComparisonData> {
+    try {
+      const response = await apiClient.post('/analytics/playbooks/compare', {
+        playbooks: playbookNames
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to compare playbooks:', error);
+      throw error;
+    }
+  }
+
+  async getPlaybookOptimization(playbookName: string): Promise<PlaybookOptimization> {
+    try {
+      const response = await apiClient.get(`/analytics/playbooks/${playbookName}/optimization`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get playbook optimization:', error);
+      throw error;
+    }
+  }
+
+  async getPlaybookPerformanceOverTime(playbookName: string, period: string = '6M'): Promise<{
+    dates: string[];
+    cumulative_returns: number[];
+    drawdown: number[];
+    trade_frequency: number[];
+  }> {
+    try {
+      const response = await apiClient.get(`/analytics/playbooks/${playbookName}/performance`, {
+        params: { period }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get playbook performance over time:', error);
+      throw error;
+    }
+  }
+
+  async getPlaybookRiskMetrics(playbookName: string): Promise<{
+    var_95: number;
+    var_99: number;
+    expected_shortfall: number;
+    volatility: number;
+    beta: number;
+    alpha: number;
+    information_ratio: number;
+    calmar_ratio: number;
+  }> {
+    try {
+      const response = await apiClient.get(`/analytics/playbooks/${playbookName}/risk`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get playbook risk metrics:', error);
+      throw error;
+    }
+  }
+
+  async exportComparison(playbookNames: string[], format: 'pdf' | 'excel' = 'pdf'): Promise<Blob> {
+    try {
+      const response = await apiClient.post('/analytics/playbooks/export', {
+        playbooks: playbookNames,
+        format
+      }, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to export comparison:', error);
+      throw error;
+    }
+  }
+}
+
+export const playbookComparisonService = new PlaybookComparisonService();

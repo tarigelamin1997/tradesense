@@ -1,42 +1,25 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 
 interface AuthWrapperProps {
   children: React.ReactNode;
-  fallback?: React.ReactNode;
 }
 
-const AuthWrapper: React.FC<AuthWrapperProps> = ({ 
-  children, 
-  fallback = <div className="flex items-center justify-center h-screen">
-    <div className="text-lg">Please log in to continue...</div>
-  </div>
-}) => {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
-  const [isInitialized, setIsInitialized] = useState(false);
+export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
+  const { isAuthenticated, loading } = useAuthStore();
 
-  useEffect(() => {
-    const initAuth = async () => {
-      await checkAuth();
-      setIsInitialized(true);
-    };
-    initAuth();
-  }, [checkAuth]);
-
-  if (!isInitialized || isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <>{fallback}</>;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
 };
-
-export default AuthWrapper;

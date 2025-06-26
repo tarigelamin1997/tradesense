@@ -1,33 +1,39 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/auth';
+import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 
-const LoginPage: React.FC = () => {
+export const LoginPage: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { login, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  const { login, isLoading, error, clearError } = useAuthStore();
-  const [credentials, setCredentials] = useState({
-    username: '',
-    password: ''
-  });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-    
-    try {
-      await login(credentials);
-      navigate('/dashboard');
-    } catch (error) {
-      // Error is handled by the store
-    }
-  };
+    setError('');
+    setLoading(true);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCredentials(prev => ({ ...prev, [name]: value }));
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,68 +45,66 @@ const LoginPage: React.FC = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <Link 
-              to="/register" 
-              className="font-medium text-blue-600 hover:text-blue-500"
+            <button
+              onClick={() => navigate('/register')}
+              className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               create a new account
-            </Link>
+            </button>
           </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-          
-          <div className="space-y-4">
-            <Input
-              name="username"
-              type="text"
-              required
-              placeholder="Username"
-              value={credentials.username}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
+        <Card className="p-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
             
-            <Input
-              name="password"
-              type="password"
-              required
-              placeholder="Password"
-              value={credentials.password}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <span className="text-gray-600">Demo: </span>
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-500"
-                onClick={() => setCredentials({ username: 'demo', password: 'demo123' })}
-              >
-                Use demo credentials
-              </button>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="mt-1"
+              />
             </div>
-          </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </Button>
-        </form>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </Button>
+            </div>
+          </form>
+        </Card>
       </div>
     </div>
   );
 };
-
-export default LoginPage;

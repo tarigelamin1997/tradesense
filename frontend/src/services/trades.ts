@@ -1,4 +1,3 @@
-
 import { apiClient } from './api';
 import { Trade, Analytics } from '../types';
 
@@ -11,6 +10,7 @@ export interface TradeCreateRequest {
   strategy_tag?: string;
   confidence_score?: number;
   notes?: string;
+  tags?: string[];
 }
 
 export interface TradeUpdateRequest {
@@ -47,6 +47,25 @@ export interface AnalyticsRequest {
   analysis_type?: string;
 }
 
+export interface Trade {
+  id: string;
+  symbol: string;
+  direction: 'long' | 'short';
+  quantity: number;
+  entryPrice: number;
+  exitPrice?: number;
+  entryTime: string;
+  exitTime?: string;
+  pnl?: number;
+  netPnl?: number;
+  strategyTag?: string;
+  confidenceScore?: number;
+  notes?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 class TradesService {
   async createTrade(tradeData: TradeCreateRequest): Promise<Trade> {
     const response = await apiClient.post<Trade>('/api/v1/trades/', tradeData);
@@ -55,7 +74,7 @@ class TradesService {
 
   async getTrades(params: TradeQueryParams = {}): Promise<PaginatedTradesResponse> {
     const queryParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         queryParams.append(key, value.toString());

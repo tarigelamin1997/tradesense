@@ -45,12 +45,12 @@ class Trade(Base):
     tags = Column(JSON)  # List of strings stored as JSON (legacy)
     strategy_tag = Column(String, index=True)  # Reference to strategy name
     strategy_id = Column(String, index=True)  # Reference to strategy ID
-    
+
     # AI Critique Data
     ai_critique = Column(JSON)  # Stores critique analysis
     critique_generated_at = Column(DateTime)
     critique_confidence = Column(Integer)  # 1-10 confidence score
-    
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -77,7 +77,7 @@ class TradeBase(BaseModel):
     strategy_tag: Optional[str] = Field(None, max_length=50)
     confidence_score: Optional[int] = Field(None, ge=1, le=10)
     notes: Optional[str] = Field(None, max_length=1000)
-    tags: Optional[List[str]] = Field(None, description="Trade tags")
+    tags: Optional[List[str]] = Field(default_factory=list, description="Trade tags for filtering and search")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
 
     @validator('exit_time')

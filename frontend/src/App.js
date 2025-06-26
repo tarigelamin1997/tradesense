@@ -16,6 +16,7 @@ import { StreakAnalysisPage } from './features/analytics/pages/StreakAnalysisPag
 import { TradeSearchPage } from './features/analytics/pages/TradeSearchPage';
 import MilestonePage from './features/analytics/pages/MilestonePage';
 import CrossAccountPage from './features/analytics/pages/CrossAccountPage';
+import { MentalMapPage } from './features/analytics/pages/MentalMapPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -71,6 +72,7 @@ function App() {
         <Route path="/trade-search" element={<TradeSearchPage />} />
             <Route path="/analytics/milestones" element={<MilestonePage />} />
         <Route path="/cross-account" element={<CrossAccountPage />} />
+          <Route path="/mental-map" element={<MentalMapPage />} />
         </Routes>
         </div>
       </Router>

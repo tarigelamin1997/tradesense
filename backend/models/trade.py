@@ -58,6 +58,14 @@ class Trade(Base):
     critique_generated_at = Column(DateTime)
     critique_confidence = Column(Integer)  # 1-10 confidence score
 
+    # Emotional Tracking & Post-Trade Reflection
+    emotional_tags = Column(JSON)  # List of emotional states: ["FOMO", "Fear", "Greed", etc.]
+    reflection_notes = Column(Text)  # Written reflection/lesson learned
+    emotional_score = Column(Integer)  # 1-10 emotional control score
+    executed_plan = Column(Boolean)  # Did trader follow their plan?
+    post_trade_mood = Column(String)  # Overall mood after trade
+    reflection_timestamp = Column(DateTime)  # When reflection was added
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -91,6 +99,13 @@ class TradeBase(BaseModel):
     tags: Optional[List[str]] = Field(default_factory=list, description="Trade tags for filtering and search")
     account_id: Optional[str] = Field(None, description="Trading account ID")
     playbook_id: Optional[str] = Field(None, description="Playbook ID for structured trading setup")
+    
+    # Emotional Tracking Fields
+    emotional_tags: Optional[List[str]] = Field(default_factory=list, description="Emotional states during trade")
+    reflection_notes: Optional[str] = Field(None, max_length=2000, description="Post-trade reflection")
+    emotional_score: Optional[int] = Field(None, ge=1, le=10, description="Emotional control score 1-10")
+    executed_plan: Optional[bool] = Field(None, description="Did trader follow their plan?")
+    post_trade_mood: Optional[str] = Field(None, max_length=50, description="Overall mood after trade")
 
     @validator('exit_time')
     def validate_exit_time(cls, v, values):

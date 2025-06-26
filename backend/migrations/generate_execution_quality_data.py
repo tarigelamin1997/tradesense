@@ -167,3 +167,203 @@ def generate_execution_sample_data():
 
 if __name__ == "__main__":
     generate_execution_sample_data()
+#!/usr/bin/env python3
+
+import sqlite3
+import random
+from datetime import datetime, timedelta
+from typing import List, Dict
+
+def generate_execution_quality_sample_data():
+    """Generate sample execution quality data for existing trades"""
+    try:
+        print("🎯 Generating Execution Quality sample data...")
+        
+        # Connect to database
+        conn = sqlite3.connect('tradesense.db')
+        cursor = conn.cursor()
+        
+        # Check if we have trades to work with
+        cursor.execute("SELECT COUNT(*) FROM trades WHERE exit_price IS NOT NULL AND exit_time IS NOT NULL")
+        completed_trades_count = cursor.fetchone()[0]
+        
+        if completed_trades_count == 0:
+            print("❌ No completed trades found. Please add some trades first.")
+            return False
+        
+        print(f"📊 Found {completed_trades_count} completed trades")
+        
+        # Get all completed trades
+        cursor.execute("""
+            SELECT id, symbol, direction, entry_time, exit_time, entry_price, exit_price, 
+                   pnl, quantity, confidence_score, playbook_id
+            FROM trades 
+            WHERE exit_price IS NOT NULL AND exit_time IS NOT NULL
+        """)
+        trades = cursor.fetchall()
+        
+        # Add execution quality columns if they don't exist
+        try:
+            cursor.execute("ALTER TABLE trades ADD COLUMN entry_score INTEGER")
+            cursor.execute("ALTER TABLE trades ADD COLUMN exit_score INTEGER")
+            cursor.execute("ALTER TABLE trades ADD COLUMN execution_score INTEGER")
+            cursor.execute("ALTER TABLE trades ADD COLUMN execution_grade TEXT")
+            cursor.execute("ALTER TABLE trades ADD COLUMN slippage REAL")
+            cursor.execute("ALTER TABLE trades ADD COLUMN regret_index REAL")
+            cursor.execute("ALTER TABLE trades ADD COLUMN holding_efficiency INTEGER")
+            print("✅ Added execution quality columns to trades table")
+        except sqlite3.OperationalError:
+            print("📋 Execution quality columns already exist")
+        
+        # Generate realistic execution metrics for each trade
+        updates = []
+        for trade in trades:
+            trade_id, symbol, direction, entry_time, exit_time, entry_price, exit_price, pnl, quantity, confidence_score, playbook_id = trade
+            
+            # Calculate realistic execution metrics
+            execution_metrics = generate_realistic_execution_metrics(
+                symbol, direction, entry_price, exit_price, pnl, confidence_score
+            )
+            
+            updates.append((
+                execution_metrics["entry_score"],
+                execution_metrics["exit_score"],
+                execution_metrics["execution_score"],
+                execution_metrics["execution_grade"],
+                execution_metrics["slippage"],
+                execution_metrics["regret_index"],
+                execution_metrics["holding_efficiency"],
+                trade_id
+            ))
+        
+        # Batch update all trades
+        cursor.executemany("""
+            UPDATE trades 
+            SET entry_score = ?, exit_score = ?, execution_score = ?, execution_grade = ?,
+                slippage = ?, regret_index = ?, holding_efficiency = ?
+            WHERE id = ?
+        """, updates)
+        
+        # Generate some MFE/MAE data for trades that don't have it
+        cursor.execute("""
+            SELECT id, pnl, direction 
+            FROM trades 
+            WHERE (max_favorable_excursion IS NULL OR max_adverse_excursion IS NULL)
+            AND exit_price IS NOT NULL
+        """)
+        trades_without_mfe_mae = cursor.fetchall()
+        
+        mfe_mae_updates = []
+        for trade_id, pnl, direction in trades_without_mfe_mae:
+            if pnl is not None:
+                # Generate realistic MFE/MAE
+                if pnl > 0:
+                    # Profitable trade
+                    mfe = pnl * random.uniform(1.1, 2.5)  # MFE typically higher than final profit
+                    mae = pnl * random.uniform(-0.3, -0.05)  # Small adverse move
+                else:
+                    # Losing trade
+                    mfe = abs(pnl) * random.uniform(0.1, 0.8)  # Some favorable move before loss
+                    mae = pnl * random.uniform(1.0, 1.8)  # MAE worse than final loss
+                
+                mfe_mae_updates.append((mfe, mae, trade_id))
+        
+        if mfe_mae_updates:
+            cursor.executemany("""
+                UPDATE trades 
+                SET max_favorable_excursion = ?, max_adverse_excursion = ?
+                WHERE id = ?
+            """, mfe_mae_updates)
+            print(f"✅ Generated MFE/MAE data for {len(mfe_mae_updates)} trades")
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"✅ Updated {len(updates)} trades with execution quality metrics")
+        print("🎯 Execution Quality sample data generation complete!")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Execution quality data generation failed: {e}")
+        return False
+
+def generate_realistic_execution_metrics(symbol: str, direction: str, entry_price: float, 
+                                       exit_price: float, pnl: float, confidence_score: int) -> Dict:
+    """Generate realistic execution quality metrics for a trade"""
+    
+    # Base scores
+    entry_score = random.randint(50, 90)
+    exit_score = random.randint(45, 85)
+    holding_efficiency = random.randint(55, 95)
+    
+    # Adjust based on trade outcome
+    if pnl and pnl > 0:
+        # Profitable trades tend to have better execution
+        entry_score += random.randint(0, 15)
+        exit_score += random.randint(0, 20)
+        holding_efficiency += random.randint(0, 10)
+    else:
+        # Losing trades may have execution issues
+        entry_score -= random.randint(0, 20)
+        exit_score -= random.randint(0, 15)
+        holding_efficiency -= random.randint(0, 15)
+    
+    # Adjust based on confidence
+    if confidence_score:
+        if confidence_score >= 8:
+            # High confidence should correlate with better execution
+            entry_score += random.randint(0, 10)
+        elif confidence_score <= 3:
+            # Low confidence might mean poor execution
+            entry_score -= random.randint(0, 10)
+            exit_score -= random.randint(0, 10)
+    
+    # Ensure scores are within bounds
+    entry_score = max(10, min(100, entry_score))
+    exit_score = max(10, min(100, exit_score))
+    holding_efficiency = max(10, min(100, holding_efficiency))
+    
+    # Generate other metrics
+    slippage = round(random.uniform(0.0001, 0.005), 4)
+    regret_index = round(random.uniform(0.0, 0.8), 3)
+    
+    # Calculate composite execution score
+    execution_score = int((entry_score * 0.25 + exit_score * 0.35 + holding_efficiency * 0.25 + 
+                          (100 - regret_index * 100) * 0.15))
+    execution_score = max(10, min(100, execution_score))
+    
+    # Assign grade
+    if execution_score >= 90:
+        grade = "A+"
+    elif execution_score >= 85:
+        grade = "A"
+    elif execution_score >= 80:
+        grade = "A-"
+    elif execution_score >= 75:
+        grade = "B+"
+    elif execution_score >= 70:
+        grade = "B"
+    elif execution_score >= 65:
+        grade = "B-"
+    elif execution_score >= 60:
+        grade = "C+"
+    elif execution_score >= 55:
+        grade = "C"
+    elif execution_score >= 50:
+        grade = "C-"
+    else:
+        grade = "F"
+    
+    return {
+        "entry_score": entry_score,
+        "exit_score": exit_score,
+        "execution_score": execution_score,
+        "execution_grade": grade,
+        "slippage": slippage,
+        "regret_index": regret_index,
+        "holding_efficiency": holding_efficiency
+    }
+
+if __name__ == "__main__":
+    generate_execution_quality_sample_data()

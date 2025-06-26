@@ -158,5 +158,13 @@ async def execution_quality(
     db: Session = Depends(get_db)
 ):
     """Get execution quality analysis for all user trades"""
-    # Placeholder for execution quality analysis logic
-    return {"message": "Execution quality analysis endpoint"}
+    try:
+        from .execution_quality import ExecutionQualityService
+        execution_service = ExecutionQualityService(db)
+        return execution_service.get_execution_quality_analysis(current_user["user_id"])
+    except ValueError as e:
+        if "No completed trades found" in str(e):
+            raise HTTPException(status_code=404, detail="No completed trades found for execution analysis")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to analyze execution quality")

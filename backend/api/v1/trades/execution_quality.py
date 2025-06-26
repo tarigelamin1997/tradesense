@@ -462,3 +462,320 @@ def get_execution_quality_analysis(user_id: str, db: Session) -> Dict[str, Any]:
     """
     service = ExecutionQualityService()
     return service.analyze_execution_quality(user_id, db)
+from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
+from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta
+import statistics
+from uuid import UUID
+
+from backend.models.trade import Trade
+from backend.models.playbook import Playbook
+
+class ExecutionQualityService:
+    """Service for analyzing trade execution quality"""
+    
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def get_execution_quality_analysis(self, user_id: str) -> Dict[str, Any]:
+        """Get comprehensive execution quality analysis for user"""
+        trades = self.db.query(Trade).filter(
+            Trade.user_id == user_id,
+            Trade.exit_price.isnot(None),
+            Trade.exit_time.isnot(None)
+        ).all()
+        
+        if not trades:
+            raise ValueError("No completed trades found for execution analysis")
+        
+        # Calculate execution metrics for each trade
+        execution_results = []
+        for trade in trades:
+            metrics = self._calculate_trade_execution_metrics(trade)
+            execution_results.append({
+                "trade_id": trade.id,
+                "symbol": trade.symbol,
+                "entry_time": trade.entry_time,
+                "exit_time": trade.exit_time,
+                "pnl": trade.pnl,
+                "direction": trade.direction,
+                "playbook_id": trade.playbook_id,
+                **metrics
+            })
+        
+        # Generate aggregate insights
+        overall_stats = self._calculate_overall_execution_stats(execution_results)
+        playbook_analysis = self._analyze_execution_by_playbook(execution_results)
+        insights = self._generate_execution_insights(execution_results, overall_stats)
+        
+        return {
+            "total_trades_analyzed": len(execution_results),
+            "overall_stats": overall_stats,
+            "trade_execution_data": execution_results,
+            "playbook_analysis": playbook_analysis,
+            "insights": insights,
+            "generated_at": datetime.now().isoformat()
+        }
+    
+    def _calculate_trade_execution_metrics(self, trade: Trade) -> Dict[str, Any]:
+        """Calculate execution quality metrics for a single trade"""
+        
+        # Entry Timing Score (0-100)
+        entry_score = self._calculate_entry_timing_score(trade)
+        
+        # Exit Quality Score (0-100) 
+        exit_score = self._calculate_exit_quality_score(trade)
+        
+        # Slippage Analysis
+        slippage = self._calculate_slippage(trade)
+        
+        # Regret Index (how much the trade moved after exit)
+        regret_index = self._calculate_regret_index(trade)
+        
+        # Holding Efficiency 
+        holding_efficiency = self._calculate_holding_efficiency(trade)
+        
+        # Composite Execution Score
+        execution_score = self._calculate_composite_execution_score(
+            entry_score, exit_score, slippage, regret_index, holding_efficiency
+        )
+        
+        return {
+            "entry_score": entry_score,
+            "exit_score": exit_score,
+            "slippage": slippage,
+            "regret_index": regret_index,
+            "holding_efficiency": holding_efficiency,
+            "execution_score": execution_score,
+            "execution_grade": self._get_execution_grade(execution_score)
+        }
+    
+    def _calculate_entry_timing_score(self, trade: Trade) -> int:
+        """Calculate how well the trader timed their entry (0-100)"""
+        base_score = 70
+        
+        # Use MFE to assess if they entered near the optimal point
+        if trade.max_favorable_excursion and trade.pnl:
+            mfe_ratio = abs(trade.max_favorable_excursion) / abs(trade.pnl) if trade.pnl != 0 else 1
+            
+            # If MFE is much larger than final PnL, they entered well but exited poorly
+            if mfe_ratio > 2:
+                base_score += 15  # Good entry timing
+            elif mfe_ratio < 0.5:
+                base_score -= 20  # Poor entry timing (chased the move)
+        
+        # Consider direction vs outcome
+        if trade.pnl and trade.pnl > 0:
+            base_score += 10  # Successful trade suggests good entry
+        elif trade.pnl and trade.pnl < 0:
+            base_score -= 5   # Loss suggests timing issues
+        
+        return max(0, min(100, base_score))
+    
+    def _calculate_exit_quality_score(self, trade: Trade) -> int:
+        """Calculate how well the trader timed their exit (0-100)"""
+        base_score = 65
+        
+        if trade.max_favorable_excursion and trade.pnl:
+            # Compare final PnL to MFE to see if they captured the move
+            if trade.pnl > 0 and trade.max_favorable_excursion > 0:
+                capture_ratio = trade.pnl / trade.max_favorable_excursion
+                
+                if capture_ratio > 0.8:
+                    base_score += 25  # Excellent exit - captured most of the move
+                elif capture_ratio > 0.5:
+                    base_score += 15  # Good exit
+                elif capture_ratio > 0.2:
+                    base_score += 5   # Mediocre exit
+                else:
+                    base_score -= 15  # Poor exit - left money on table
+            
+            # Check if they cut losses appropriately
+            if trade.pnl < 0 and trade.max_adverse_excursion:
+                loss_ratio = abs(trade.pnl) / abs(trade.max_adverse_excursion) if trade.max_adverse_excursion != 0 else 1
+                if loss_ratio < 1.2:
+                    base_score += 10  # Cut losses near the worst point
+        
+        return max(0, min(100, base_score))
+    
+    def _calculate_slippage(self, trade: Trade) -> float:
+        """Calculate estimated slippage (simplified)"""
+        # In a real implementation, this would compare expected vs actual fill prices
+        # For now, return a placeholder based on trade size and volatility
+        if trade.quantity and trade.entry_price:
+            estimated_slippage = (trade.quantity * 0.01) / trade.entry_price
+            return round(estimated_slippage, 4)
+        return 0.0
+    
+    def _calculate_regret_index(self, trade: Trade) -> float:
+        """Calculate how much the trade moved after exit (0-1 scale)"""
+        # Simplified regret calculation
+        # In practice, you'd need post-exit price data
+        if trade.max_favorable_excursion and trade.pnl and trade.pnl > 0:
+            # If MFE >> PnL, there was likely more upside after exit
+            potential_missed = max(0, trade.max_favorable_excursion - trade.pnl)
+            regret = potential_missed / trade.max_favorable_excursion if trade.max_favorable_excursion != 0 else 0
+            return round(min(1.0, regret), 3)
+        return 0.0
+    
+    def _calculate_holding_efficiency(self, trade: Trade) -> int:
+        """Calculate if holding period was appropriate (0-100)"""
+        if not trade.entry_time or not trade.exit_time:
+            return 50
+        
+        holding_time = trade.exit_time - trade.entry_time
+        holding_hours = holding_time.total_seconds() / 3600
+        
+        base_score = 70
+        
+        # Adjust based on P&L and holding time
+        if trade.pnl and trade.pnl > 0:
+            # Profitable trades
+            if holding_hours < 0.5:
+                base_score += 5   # Quick profits are good
+            elif holding_hours > 24:
+                base_score -= 5   # Very long holds may indicate indecision
+        elif trade.pnl and trade.pnl < 0:
+            # Losing trades
+            if holding_hours < 1:
+                base_score += 15  # Cut losses quickly
+            elif holding_hours > 8:
+                base_score -= 20  # Held losers too long
+        
+        return max(0, min(100, base_score))
+    
+    def _calculate_composite_execution_score(self, entry_score: int, exit_score: int, 
+                                           slippage: float, regret_index: float, 
+                                           holding_efficiency: int) -> int:
+        """Calculate weighted composite execution score"""
+        # Weighted average of components
+        composite = (
+            entry_score * 0.25 +
+            exit_score * 0.35 +
+            holding_efficiency * 0.25 +
+            (100 - regret_index * 100) * 0.15  # Lower regret = higher score
+        )
+        
+        # Adjust for slippage
+        slippage_penalty = min(10, slippage * 1000)  # Cap penalty at 10 points
+        composite -= slippage_penalty
+        
+        return max(0, min(100, int(composite)))
+    
+    def _get_execution_grade(self, score: int) -> str:
+        """Convert execution score to letter grade"""
+        if score >= 90:
+            return "A+"
+        elif score >= 85:
+            return "A"
+        elif score >= 80:
+            return "A-"
+        elif score >= 75:
+            return "B+"
+        elif score >= 70:
+            return "B"
+        elif score >= 65:
+            return "B-"
+        elif score >= 60:
+            return "C+"
+        elif score >= 55:
+            return "C"
+        elif score >= 50:
+            return "C-"
+        else:
+            return "F"
+    
+    def _calculate_overall_execution_stats(self, execution_results: List[Dict]) -> Dict[str, Any]:
+        """Calculate aggregate execution statistics"""
+        if not execution_results:
+            return {}
+        
+        execution_scores = [r["execution_score"] for r in execution_results]
+        entry_scores = [r["entry_score"] for r in execution_results]
+        exit_scores = [r["exit_score"] for r in execution_results]
+        
+        return {
+            "avg_execution_score": round(statistics.mean(execution_scores), 1),
+            "execution_score_std": round(statistics.stdev(execution_scores) if len(execution_scores) > 1 else 0, 1),
+            "avg_entry_score": round(statistics.mean(entry_scores), 1),
+            "avg_exit_score": round(statistics.mean(exit_scores), 1),
+            "excellent_executions": len([s for s in execution_scores if s >= 85]),
+            "poor_executions": len([s for s in execution_scores if s < 60]),
+            "grade_distribution": self._calculate_grade_distribution(execution_scores)
+        }
+    
+    def _calculate_grade_distribution(self, scores: List[int]) -> Dict[str, int]:
+        """Calculate distribution of execution grades"""
+        distribution = {"A+": 0, "A": 0, "A-": 0, "B+": 0, "B": 0, "B-": 0, "C+": 0, "C": 0, "C-": 0, "F": 0}
+        
+        for score in scores:
+            grade = self._get_execution_grade(score)
+            distribution[grade] += 1
+        
+        return distribution
+    
+    def _analyze_execution_by_playbook(self, execution_results: List[Dict]) -> Dict[str, Any]:
+        """Analyze execution quality grouped by playbook"""
+        playbook_stats = {}
+        
+        for result in execution_results:
+            playbook_id = result.get("playbook_id")
+            if not playbook_id:
+                continue
+            
+            if playbook_id not in playbook_stats:
+                playbook_stats[playbook_id] = {
+                    "trades": [],
+                    "total_trades": 0,
+                    "avg_execution_score": 0,
+                    "avg_pnl": 0,
+                    "win_rate": 0
+                }
+            
+            playbook_stats[playbook_id]["trades"].append(result)
+            playbook_stats[playbook_id]["total_trades"] += 1
+        
+        # Calculate stats for each playbook
+        for playbook_id, stats in playbook_stats.items():
+            trades = stats["trades"]
+            execution_scores = [t["execution_score"] for t in trades]
+            pnls = [t["pnl"] for t in trades if t["pnl"] is not None]
+            
+            stats["avg_execution_score"] = round(statistics.mean(execution_scores), 1)
+            stats["avg_pnl"] = round(statistics.mean(pnls), 2) if pnls else 0
+            stats["win_rate"] = round(len([p for p in pnls if p > 0]) / len(pnls) * 100, 1) if pnls else 0
+            
+            # Remove trades list from final output
+            del stats["trades"]
+        
+        return playbook_stats
+    
+    def _generate_execution_insights(self, execution_results: List[Dict], 
+                                   overall_stats: Dict[str, Any]) -> List[str]:
+        """Generate actionable insights about execution quality"""
+        insights = []
+        
+        if overall_stats.get("avg_execution_score", 0) < 65:
+            insights.append("⚠️ Your average execution score is below 65. Focus on improving entry and exit timing.")
+        
+        if overall_stats.get("poor_executions", 0) > len(execution_results) * 0.3:
+            insights.append("🎯 Over 30% of your trades have poor execution scores. Consider reducing trade frequency and focusing on quality setups.")
+        
+        # Analyze entry vs exit performance
+        avg_entry = overall_stats.get("avg_entry_score", 0)
+        avg_exit = overall_stats.get("avg_exit_score", 0)
+        
+        if avg_entry > avg_exit + 10:
+            insights.append("💡 Your entries are stronger than your exits. Work on exit discipline and profit-taking strategies.")
+        elif avg_exit > avg_entry + 10:
+            insights.append("💡 Your exits are stronger than your entries. Focus on better entry timing and setup selection.")
+        
+        # Find best performing combination
+        high_execution_trades = [r for r in execution_results if r["execution_score"] >= 80]
+        if high_execution_trades:
+            win_rate = len([t for t in high_execution_trades if t["pnl"] and t["pnl"] > 0]) / len(high_execution_trades)
+            if win_rate > 0.7:
+                insights.append(f"✅ When your execution score is 80+, your win rate is {win_rate:.1%}. Maintain high execution standards.")
+        
+        return insights

@@ -22,8 +22,8 @@ import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerP
 import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
 import { ReviewAnalyticsPage } from './features/analytics/pages/ReviewAnalyticsPage';
 import ConfidenceCalibrationPage from './features/analytics/pages/ConfidenceCalibrationPage';
-import { ExecutionQualityPage } from './features/analytics/pages/ExecutionQualityPage';
-import { PortfolioSimulatorPage } from './features/portfolio/pages/PortfolioSimulatorPage';
+import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage';
+import PortfolioSimulatorPage from './features/portfolio/pages/PortfolioSimulatorPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();

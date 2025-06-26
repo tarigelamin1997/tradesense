@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { playbooksService, Playbook } from '../../../services/playbooks';
 
 interface PlaybookSelectorProps {
-  selectedPlaybookId?: string;
+  selectedPlaybookId?: string | null;
   onPlaybookChange: (playbookId: string | null) => void;
   className?: string;
 }
@@ -24,11 +24,7 @@ export const PlaybookSelector: React.FC<PlaybookSelectorProps> = ({
   const loadPlaybooks = async () => {
     try {
       setLoading(true);
-      const data = await playbooksService.getPlaybooks({
-        status: 'active',
-        sort_by: 'name',
-        sort_order: 'asc'
-      });
+      const data = await playbooksService.getPlaybooks(false); // Only active playbooks
       setPlaybooks(data);
     } catch (err) {
       console.error('Error loading playbooks:', err);
@@ -65,7 +61,7 @@ export const PlaybookSelector: React.FC<PlaybookSelectorProps> = ({
         <option value="">No playbook selected</option>
         {playbooks.map((playbook) => (
           <option key={playbook.id} value={playbook.id}>
-            {playbook.name} ({playbook.total_trades} trades, {(parseFloat(playbook.win_rate) * 100).toFixed(0)}% win rate)
+            {playbook.name}
           </option>
         ))}
       </select>
@@ -93,13 +89,10 @@ export const PlaybookSelector: React.FC<PlaybookSelectorProps> = ({
               <p><strong>Notes:</strong> {selectedPlaybook.description}</p>
             )}
           </div>
-          <div className="mt-2 flex gap-4 text-xs text-blue-600">
-            <span>Trades: {selectedPlaybook.total_trades}</span>
-            <span>Win Rate: {(parseFloat(selectedPlaybook.win_rate) * 100).toFixed(1)}%</span>
-            <span>Avg P&L: ${parseFloat(selectedPlaybook.avg_pnl).toFixed(2)}</span>
-          </div>
         </div>
       )}
     </div>
   );
 };
+
+export default PlaybookSelector;

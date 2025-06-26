@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { useTradeStore } from '../../../store/trades';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { TradeCreateRequest } from '../../../services/trades';
-import PlaybookSelector from '../../../components/playbooks/PlaybookSelector'; // Assuming path
+import { PlaybookSelector } from './PlaybookSelector';
 
 interface AddTradeFormProps {
   onSuccess?: () => void;
@@ -136,10 +137,11 @@ const AddTradeForm: React.FC<AddTradeFormProps> = ({ onSuccess, onCancel }) => {
         rows={3}
         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-     <PlaybookSelector
-            selectedPlaybookId={formData.playbook_id}
-            onPlaybookChange={(playbookId) => setFormData(prev => ({ ...prev, playbook_id: playbookId }))}
-          />
+
+      <PlaybookSelector
+        selectedPlaybookId={formData.playbook_id}
+        onPlaybookChange={(playbookId) => setFormData(prev => ({ ...prev, playbook_id: playbookId }))}
+      />
 
       <div className="flex space-x-3">
         <Button type="submit" disabled={isLoading}>

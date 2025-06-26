@@ -1,11 +1,15 @@
 
 import React from 'react';
-import { PortfolioSimulator } from '../components/PortfolioSimulator';
+import PortfolioSimulator from '../components/PortfolioSimulator';
 
-export const PortfolioSimulatorPage: React.FC = () => {
+const PortfolioSimulatorPage: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <PortfolioSimulator />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PortfolioSimulator />
+      </div>
     </div>
   );
 };
+
+export default PortfolioSimulatorPage;

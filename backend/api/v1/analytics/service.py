@@ -1,7 +1,7 @@
 
 import logging
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, case
 import pandas as pd
@@ -10,9 +10,11 @@ from collections import defaultdict
 
 from backend.models.trade import Trade
 from backend.models.trade_note import TradeNote
+from backend.models.daily_emotion_reflection import DailyEmotionReflection
 from .schemas import (
     AnalyticsSummaryResponse, AnalyticsFilters, StrategyStats, 
-    EmotionImpact, TriggerAnalysis, ConfidenceAnalysis, EmotionalLeak
+    EmotionImpact, TriggerAnalysis, ConfidenceAnalysis, EmotionalLeak,
+    TimelineResponse, DailyTimelineData
 )
 
 logger = logging.getLogger(__name__)
@@ -365,3 +367,202 @@ class AnalyticsService:
         """Get confidence vs performance correlation analysis"""
         # Implementation for dedicated confidence endpoint
         pass
+    
+    async def get_timeline_analysis(
+        self, 
+        user_id: str, 
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
+    ) -> TimelineResponse:
+        """Generate timeline heatmap data with emotional patterns"""
+        
+        # Default to last 90 days if no dates specified
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=90)
+        
+        # Get trades in date range
+        trades = self.db.query(Trade).filter(
+            Trade.user_id == user_id,
+            func.date(Trade.entry_time) >= start_date,
+            func.date(Trade.entry_time) <= end_date
+        ).all()
+        
+        # Get trade notes for emotional data
+        notes = self.db.query(TradeNote).filter(
+            TradeNote.user_id == user_id,
+            func.date(TradeNote.created_at) >= start_date,
+            func.date(TradeNote.created_at) <= end_date
+        ).all()
+        
+        # Get daily reflections
+        reflections = self.db.query(DailyEmotionReflection).filter(
+            DailyEmotionReflection.user_id == user_id,
+            DailyEmotionReflection.reflection_date >= start_date,
+            DailyEmotionReflection.reflection_date <= end_date
+        ).all()
+        
+        # Group data by date
+        daily_data = self._build_daily_timeline_data(trades, notes, reflections, start_date, end_date)
+        
+        # Calculate summary statistics
+        timeline_stats = self._calculate_timeline_stats(daily_data)
+        
+        return TimelineResponse(
+            timeline_data=daily_data,
+            date_range={"start_date": start_date, "end_date": end_date},
+            total_days=(end_date - start_date).days + 1,
+            trading_days=len([d for d in daily_data.values() if d.trade_count > 0]),
+            **timeline_stats
+        )
+    
+    def _build_daily_timeline_data(
+        self, 
+        trades: List[Trade], 
+        notes: List[TradeNote], 
+        reflections: List[DailyEmotionReflection],
+        start_date: date,
+        end_date: date
+    ) -> Dict[str, DailyTimelineData]:
+        """Build daily timeline data structure"""
+        
+        # Create date range
+        current_date = start_date
+        daily_data = {}
+        
+        while current_date <= end_date:
+            daily_data[current_date.isoformat()] = DailyTimelineData(
+                date=current_date,
+                pnl=0.0,
+                trade_count=0,
+                dominant_emotion=None,
+                emotion_emoji=None,
+                trades=[],
+                mood_score=None,
+                reflection_summary=None
+            )
+            current_date += timedelta(days=1)
+        
+        # Populate with trade data
+        for trade in trades:
+            trade_date = trade.entry_time.date()
+            date_key = trade_date.isoformat()
+            
+            if date_key in daily_data:
+                daily_data[date_key].pnl += trade.pnl or 0
+                daily_data[date_key].trade_count += 1
+                daily_data[date_key].trades.append({
+                    'id': trade.id,
+                    'symbol': trade.symbol,
+                    'pnl': trade.pnl,
+                    'strategy': trade.strategy_tag,
+                    'entry_time': trade.entry_time.isoformat()
+                })
+        
+        # Add emotional data from notes
+        emotion_by_date = defaultdict(list)
+        for note in notes:
+            note_date = note.created_at.date()
+            if note.emotion:
+                emotion_by_date[note_date].append(note.emotion)
+        
+        # Determine dominant emotion for each day
+        for date_str, day_data in daily_data.items():
+            trade_date = datetime.fromisoformat(date_str).date()
+            if trade_date in emotion_by_date:
+                emotions = emotion_by_date[trade_date]
+                if emotions:
+                    # Use most common emotion, or first if tie
+                    emotion_counts = defaultdict(int)
+                    for emotion in emotions:
+                        emotion_counts[emotion] += 1
+                    day_data.dominant_emotion = max(emotion_counts, key=emotion_counts.get)
+                    day_data.emotion_emoji = self._get_emotion_emoji(day_data.dominant_emotion)
+        
+        # Add reflection data
+        for reflection in reflections:
+            date_key = reflection.reflection_date.isoformat()
+            if date_key in daily_data:
+                daily_data[date_key].mood_score = reflection.mood_score
+                daily_data[date_key].reflection_summary = reflection.summary
+                if reflection.dominant_emotion and not daily_data[date_key].dominant_emotion:
+                    daily_data[date_key].dominant_emotion = reflection.dominant_emotion
+                    daily_data[date_key].emotion_emoji = self._get_emotion_emoji(reflection.dominant_emotion)
+        
+        return daily_data
+    
+    def _get_emotion_emoji(self, emotion: str) -> str:
+        """Map emotion to emoji for visual display"""
+        emotion_map = {
+            'confident': '😎',
+            'anxious': '😰',
+            'frustrated': '😤',
+            'calm': '😌',
+            'excited': '🤩',
+            'fearful': '😨',
+            'greedy': '🤑',
+            'disciplined': '🧘',
+            'impulsive': '🤪',
+            'focused': '🎯',
+            'overwhelmed': '😵',
+            'optimistic': '😊',
+            'pessimistic': '😔',
+            'neutral': '😐'
+        }
+        return emotion_map.get(emotion.lower(), '🤔')
+    
+    def _calculate_timeline_stats(self, daily_data: Dict[str, DailyTimelineData]) -> Dict[str, Any]:
+        """Calculate timeline summary statistics"""
+        
+        trading_days = [d for d in daily_data.values() if d.trade_count > 0]
+        
+        if not trading_days:
+            return {
+                'best_day': None,
+                'worst_day': None,
+                'emotional_patterns': {}
+            }
+        
+        # Find best and worst days
+        best_day = max(trading_days, key=lambda x: x.pnl)
+        worst_day = min(trading_days, key=lambda x: x.pnl)
+        
+        # Emotional patterns
+        emotions = [d.dominant_emotion for d in trading_days if d.dominant_emotion]
+        emotion_counts = defaultdict(int)
+        emotion_pnl = defaultdict(float)
+        
+        for day in trading_days:
+            if day.dominant_emotion:
+                emotion_counts[day.dominant_emotion] += 1
+                emotion_pnl[day.dominant_emotion] += day.pnl
+        
+        most_common_emotion = max(emotion_counts, key=emotion_counts.get) if emotion_counts else None
+        
+        # Day of week patterns
+        weekday_pnl = defaultdict(list)
+        for day in trading_days:
+            weekday = day.date.strftime('%A')
+            weekday_pnl[weekday].append(day.pnl)
+        
+        weekday_avg = {
+            day: sum(pnls) / len(pnls) 
+            for day, pnls in weekday_pnl.items()
+        }
+        
+        best_weekday = max(weekday_avg, key=weekday_avg.get) if weekday_avg else None
+        worst_weekday = min(weekday_avg, key=weekday_avg.get) if weekday_avg else None
+        
+        return {
+            'best_day': best_day,
+            'worst_day': worst_day,
+            'emotional_patterns': {
+                'most_common_emotion': most_common_emotion,
+                'emotion_frequency': dict(emotion_counts),
+                'emotion_profitability': {k: round(v, 2) for k, v in emotion_pnl.items()},
+                'best_weekday': best_weekday,
+                'worst_weekday': worst_weekday,
+                'weekday_performance': {k: round(v, 2) for k, v in weekday_avg.items()}
+            }
+        }

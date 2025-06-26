@@ -8,7 +8,8 @@ import DashboardPage from './features/dashboard/pages/DashboardPage';
 import UploadPage from './features/upload/pages/UploadPage';
 import { useAuthStore } from './store/auth';
 import './styles/mobile.css';
-import { AnalyticsPage } from './features/analytics/pages/AnalyticsPage';
+import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
+import { TimelinePage } from './features/analytics/pages/TimelinePage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -57,6 +58,7 @@ function App() {
                 </AuthWrapper>
               }
             />
+          <Route path="/calendar" element={<TimelinePage />} />
 
             {/* Default redirect */}
             <Route 
@@ -81,4 +83,3 @@ function App() {
 }
 
 export default App;
-```The task is to add an analytics route to the existing React application by importing the AnalyticsPage component and configuring a new route for it.

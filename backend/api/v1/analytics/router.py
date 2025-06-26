@@ -2,12 +2,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from backend.core.db.session import get_db
 from backend.core.security import get_current_user
 from .service import AnalyticsService
-from .schemas import AnalyticsSummaryResponse, AnalyticsFilters
+from .schemas import AnalyticsSummaryResponse, AnalyticsFilters, TimelineResponse
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
@@ -71,3 +71,20 @@ async def get_confidence_correlation(
         return await service.get_confidence_performance_correlation(current_user["user_id"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Confidence analysis failed: {str(e)}")
+
+@router.get("/timeline", response_model=TimelineResponse)
+async def get_timeline_analysis(
+    start_date: Optional[date] = Query(None, description="Timeline start date"),
+    end_date: Optional[date] = Query(None, description="Timeline end date"),
+    current_user: dict = Depends(get_current_user),
+    service: AnalyticsService = Depends(get_analytics_service)
+):
+    """Get timeline heatmap data with daily P&L and emotions"""
+    try:
+        return await service.get_timeline_analysis(
+            user_id=current_user["user_id"],
+            start_date=start_date,
+            end_date=end_date
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Timeline analysis failed: {str(e)}")

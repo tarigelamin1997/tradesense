@@ -21,15 +21,59 @@ def generate_execution_sample_data():
         
         print("🎯 Generating execution quality sample data...")
         
-        # Get existing user
+        # Create users table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                hashed_password TEXT NOT NULL,
+                role TEXT DEFAULT 'trader',
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create trades table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS trades (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                quantity REAL NOT NULL,
+                entry_price REAL NOT NULL,
+                exit_price REAL,
+                entry_time TIMESTAMP NOT NULL,
+                exit_time TIMESTAMP,
+                pnl REAL,
+                commission REAL DEFAULT 0.0,
+                net_pnl REAL,
+                max_adverse_excursion REAL,
+                max_favorable_excursion REAL,
+                confidence_score INTEGER,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+        
+        # Get or create a test user
         cursor.execute("SELECT id FROM users LIMIT 1")
         user_result = cursor.fetchone()
         
         if not user_result:
-            print("❌ No users found. Please add a user first.")
-            return
-        
-        user_id = user_result[0]
+            # Create a test user
+            user_id = "test_user_001"
+            cursor.execute("""
+                INSERT INTO users (id, username, email, hashed_password, role)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, "demo_trader", "demo@tradesense.com", "hashed_password_123", "trader"))
+            print("✅ Created demo user")
+        else:
+            user_id = user_result[0]
         
         # Sample symbols and strategies
         symbols = ['AAPL', 'TSLA', 'NVDA', 'GOOGL', 'MSFT', 'SPY', 'QQQ', 'AMZN']
@@ -180,16 +224,56 @@ def generate_execution_quality_sample_data():
         print("🎯 Generating Execution Quality sample data...")
         
         # Connect to database
-        conn = sqlite3.connect('tradesense.db')
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'tradesense.db')
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
+        
+        # Create tables if they don't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                hashed_password TEXT NOT NULL,
+                role TEXT DEFAULT 'trader',
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS trades (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                quantity REAL NOT NULL,
+                entry_price REAL NOT NULL,
+                exit_price REAL,
+                entry_time TIMESTAMP NOT NULL,
+                exit_time TIMESTAMP,
+                pnl REAL,
+                commission REAL DEFAULT 0.0,
+                net_pnl REAL,
+                max_adverse_excursion REAL,
+                max_favorable_excursion REAL,
+                confidence_score INTEGER,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         
         # Check if we have trades to work with
         cursor.execute("SELECT COUNT(*) FROM trades WHERE exit_price IS NOT NULL AND exit_time IS NOT NULL")
         completed_trades_count = cursor.fetchone()[0]
         
         if completed_trades_count == 0:
-            print("❌ No completed trades found. Please add some trades first.")
-            return False
+            print("📝 No completed trades found. Generating sample trades first...")
+            # Call the other function to generate sample trades
+            generate_execution_sample_data()
+            return True
         
         print(f"📊 Found {completed_trades_count} completed trades")
         

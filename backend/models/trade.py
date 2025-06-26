@@ -115,3 +115,7 @@ class TradeResponse(TradeBase):
 
     class Config:
         from_attributes = True
+    # Relationships
+    account = relationship("TradingAccount", back_populates="trades")
+    tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
+    mental_entries = relationship("MentalMapEntry", back_populates="trade")

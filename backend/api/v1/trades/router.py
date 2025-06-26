@@ -150,3 +150,13 @@ async def get_confidence_calibration_by_playbook(
         return calibration_service.get_confidence_by_playbook(current_user["user_id"])
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to calculate playbook confidence calibration")
+
+# Adding the new route for execution quality analysis
+@router.get("/execution-quality")
+async def execution_quality(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get execution quality analysis for all user trades"""
+    # Placeholder for execution quality analysis logic
+    return {"message": "Execution quality analysis endpoint"}

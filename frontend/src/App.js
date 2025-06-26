@@ -21,6 +21,8 @@ import { PatternExplorerPage } from './features/analytics/pages/PatternExplorerP
 import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerPage';
 import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
 import { ReviewAnalyticsPage } from './features/analytics/pages/ReviewAnalyticsPage';
+import ConfidenceCalibrationPage from './features/analytics/pages/ConfidenceCalibrationPage.tsx';
+import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage.tsx';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -81,6 +83,8 @@ function App() {
             <Route path="/playbook-manager" element={<PlaybookManagerPage />} />
             <Route path="/analytics/playbooks" element={<PlaybookAnalyticsPage />} />
             <Route path="/review-analytics" element={<ReviewAnalyticsPage />} />
+            <Route path="/confidence-calibration" element={<ConfidenceCalibrationPage />} />
+            <Route path="/execution-quality" element={<ExecutionQualityPage />} />
 
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

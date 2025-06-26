@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -68,19 +69,21 @@ function App() {
                 </AuthWrapper>
               }
             />
-          <Route path="/timeline" element={<TimelinePage />} />
-          <Route path="/edge-strength" element={<EdgeStrengthPage />} />
+            <Route path="/timeline" element={<TimelinePage />} />
+            <Route path="/edge-strength" element={<EdgeStrengthPage />} />
             <Route path="/heatmap" element={<HeatmapPage />} />
-        <Route path="/analytics/streaks" element={<StreakAnalysisPage />} />
-        <Route path="/trade-search" element={<TradeSearchPage />} />
+            <Route path="/analytics/streaks" element={<StreakAnalysisPage />} />
+            <Route path="/trade-search" element={<TradeSearchPage />} />
             <Route path="/analytics/milestones" element={<MilestonePage />} />
-        <Route path="/cross-account" element={<CrossAccountPage />} />
-          <Route path="/mental-map" element={<MentalMapPage />} />
-          <Route path="/pattern-explorer" element={<PatternExplorerPage />} />
-            <Route path="/patterns" element={<PatternExplorerPage />} />
-            <Route path="/playbooks" element={<PlaybookManagerPage />} />
-            <Route path="/playbook-analytics" element={<PlaybookAnalyticsPage />} />
-        </Routes>
+            <Route path="/cross-account" element={<CrossAccountPage />} />
+            <Route path="/mental-map" element={<MentalMapPage />} />
+            <Route path="/pattern-explorer" element={<PatternExplorerPage />} />
+            <Route path="/playbook-manager" element={<PlaybookManagerPage />} />
+            <Route path="/analytics/playbooks" element={<PlaybookAnalyticsPage />} />
+            
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </div>
       </Router>
     </ErrorBoundary>

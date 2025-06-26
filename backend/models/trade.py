@@ -1,3 +1,4 @@
+
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -50,7 +51,6 @@ class Trade(Base):
     # Metadata
     notes = Column(Text)
     tags = Column(JSON)  # List of strings stored as JSON (legacy)
-    strategy_tag = Column(String, index=True)  # Reference to strategy name
     strategy_id = Column(String, index=True)  # Reference to strategy ID
 
     # AI Critique Data
@@ -64,6 +64,8 @@ class Trade(Base):
     # Relationships
     account = relationship("TradingAccount", back_populates="trades")
     tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
+    mental_entries = relationship("MentalMapEntry", back_populates="trade")
+    playbook = relationship("Playbook", back_populates="trades")
 
     # Indexes for performance
     __table_args__ = (
@@ -86,7 +88,6 @@ class TradeBase(BaseModel):
     confidence_score: Optional[int] = Field(None, ge=1, le=10)
     notes: Optional[str] = Field(None, max_length=1000)
     tags: Optional[List[str]] = Field(default_factory=list, description="Trade tags for filtering and search")
-    strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
     account_id: Optional[str] = Field(None, description="Trading account ID")
     playbook_id: Optional[str] = Field(None, description="Playbook ID for structured trading setup")
 
@@ -105,6 +106,7 @@ class TradeUpdate(BaseModel):
     notes: Optional[str] = Field(None, max_length=1000)
     tags: Optional[List[str]] = Field(None, description="Trade tags")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
+    playbook_id: Optional[str] = Field(None, description="Playbook ID")
 
 class TradeResponse(TradeBase):
     id: str
@@ -121,8 +123,3 @@ class TradeResponse(TradeBase):
 
     class Config:
         from_attributes = True
-    # Relationships
-    account = relationship("TradingAccount", back_populates="trades")
-    tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
-    mental_entries = relationship("MentalMapEntry", back_populates="trade")
-    playbook = relationship("Playbook", back_populates="trades")

@@ -27,7 +27,8 @@ from backend.api.v1.leaderboard.router import router as leaderboard_router
 from backend.api.v1.mental_map import router as mental_map_router
 from backend.api.v1.patterns.router import router as patterns_router
 from backend.api.v1.playbooks.router import router as playbooks_router
-from backend.api.v1.reviews.router import router as reviews_router
+from backend.api.v1.reviews import router as reviews_router
+from backend.api.v1.strategy_lab import router as strategy_lab_router
 
 # Configure logging
 logging.basicConfig(
@@ -100,7 +101,8 @@ app.include_router(leaderboard_router, prefix="/api/v1")
 app.include_router(mental_map_router, prefix="/api/v1/mental-map", tags=["mental-map"])
 app.include_router(patterns_router, prefix="/api/v1/patterns", tags=["patterns"])
 app.include_router(playbooks_router, prefix="/api/v1/playbooks", tags=["playbooks"])
-app.include_router(reviews_router, prefix="/api/v1")
+app.include_router(reviews_router, prefix="/api/v1/reviews", tags=["reviews"])
+app.include_router(strategy_lab_router, prefix="/api/v1/strategy-lab", tags=["strategy-lab"])
 
 if __name__ == "__main__":
     import uvicorn

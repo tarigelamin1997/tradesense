@@ -22,7 +22,8 @@ import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerP
 import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
 import { ReviewAnalyticsPage } from './features/analytics/pages/ReviewAnalyticsPage';
 import ConfidenceCalibrationPage from './features/analytics/pages/ConfidenceCalibrationPage';
-import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage';
+import { ExecutionQualityPage } from './features/analytics/pages/ExecutionQualityPage';
+import { PortfolioSimulatorPage } from './features/portfolio/pages/PortfolioSimulatorPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -85,6 +86,7 @@ function App() {
             <Route path="/review-analytics" element={<ReviewAnalyticsPage />} />
             <Route path="/confidence-calibration" element={<ConfidenceCalibrationPage />} />
             <Route path="/execution-quality" element={<ExecutionQualityPage />} />
+            <Route path="/portfolio-simulator" element={<PortfolioSimulatorPage />} />
 
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

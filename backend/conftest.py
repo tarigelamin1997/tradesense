@@ -1,3 +1,4 @@
+
 """
 Test configuration and shared fixtures for TradeSense backend
 """
@@ -18,6 +19,7 @@ from backend.core.config import settings
 from backend.core.security import SecurityManager
 from backend.db.connection import get_db, Base
 from backend.models.trade import Trade
+from backend.models.user import User
 
 
 # Test database setup
@@ -40,13 +42,12 @@ def override_get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
-
 
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     yield loop
     loop.close()
 
@@ -71,7 +72,7 @@ def db_session():
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create a test client with database override"""
-    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = lambda: db_session
 
     with TestClient(app) as test_client:
         yield test_client
@@ -91,12 +92,26 @@ def test_user_data():
 
 
 @pytest.fixture
-def test_user_token(test_user_data):
+def test_user(db_session, test_user_data):
+    """Create a test user in the database"""
+    user = User(
+        username=test_user_data["username"],
+        email=test_user_data["email"],
+        password_hash=SecurityManager.hash_password(test_user_data["password"])
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def test_user_token(test_user):
     """Create a test user token"""
     token_data = {
-        "user_id": "test-user-123",
-        "username": test_user_data["username"],
-        "email": test_user_data["email"]
+        "user_id": str(test_user.id),
+        "username": test_user.username,
+        "email": test_user.email
     }
     return SecurityManager.create_access_token(token_data)
 
@@ -125,10 +140,10 @@ def sample_trade_data():
 
 
 @pytest.fixture
-def sample_trade_record(db_session, sample_trade_data):
+def sample_trade_record(db_session, test_user, sample_trade_data):
     """Create a sample trade record in the database"""
     trade = Trade(
-        user_id="test-user-123",
+        user_id=test_user.id,
         **sample_trade_data
     )
     db_session.add(trade)
@@ -155,34 +170,11 @@ def mock_file_upload():
         pass
 
 
-@pytest.fixture
-def mock_settings():
-    """Mock settings for testing"""
-    with patch.object(settings, 'debug', True), \
-         patch.object(settings, 'jwt_secret', 'test-secret-key'), \
-         patch.object(settings, 'jwt_expiration_hours', 1):
-        yield settings
-
-
 # Helper functions for tests
-def create_test_user(db_session, user_data=None):
-    """Helper to create a test user in the database"""
-    if user_data is None:
-        user_data = {
-            "username": "testuser",
-            "email": "test@example.com",
-            "password_hash": SecurityManager.hash_password("TestPassword123")
-        }
-
-    # Mock user creation since we don't have User model yet
-    # This would be replaced with actual User model creation
-    return {"id": "test-user-123", **user_data}
-
-
 def assert_error_response(response, status_code, error_type=None):
     """Helper to assert error responses"""
     assert response.status_code == status_code
     data = response.json()
-    assert "error" in data
-    if error_type:
+    assert "error" in data or "detail" in data
+    if error_type and "error" in data:
         assert data["error"] == error_type

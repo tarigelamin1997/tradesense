@@ -55,9 +55,11 @@ jobs:
     - name: Run tests with pytest
       working-directory: ./backend
       run: |
+        export PYTHONPATH=${{ github.workspace }}:${{ github.workspace }}/backend
         pytest --cov=backend --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -v
       env:
-        PYTHONPATH: ${{ github.workspace }}
+        PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
+        DATABASE_URL: sqlite:///./test.db
     
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3

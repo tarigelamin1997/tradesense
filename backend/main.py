@@ -6,14 +6,14 @@ import logging
 import os
 
 # Import routers
-from backend.api.health.router import router as health_router
-from backend.api.v1.auth.router import router as auth_router
 from backend.api.v1.trades.router import router as trades_router
-from backend.api.v1.notes.router import router as notes_router
-from backend.api.v1.tags.router import router as tags_router
 from backend.api.v1.strategies.router import router as strategies_router
+from backend.api.v1.tags.router import router as tags_router
+from backend.api.v1.notes.router import router as notes_router
 from backend.api.v1.uploads.router import router as uploads_router
 from backend.api.v1.users.router import router as users_router
+from backend.api.v1.auth.router import router as auth_router
+from backend.api.v1.analytics.router import router as analytics_router
 
 # Configure logging
 logging.basicConfig(
@@ -52,7 +52,7 @@ app.add_middleware(
 )
 
 # Global exception handler
-@app.exception_handler(Exception)
+@app.exception_handler(Request, Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception: {exc}", exc_info=True)
     return JSONResponse(
@@ -74,6 +74,7 @@ app.include_router(tags_router)
 app.include_router(strategies_router)
 app.include_router(uploads_router)
 app.include_router(users_router)
+app.include_router(analytics_router)
 
 if __name__ == "__main__":
     import uvicorn

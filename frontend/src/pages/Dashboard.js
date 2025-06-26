@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useDataStore } from '../stores/dataStore';
@@ -28,6 +27,8 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { Link } from 'react-router-dom';
+import { analyticsService } from '../services/analytics';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
@@ -43,10 +44,13 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
+  const [quickStats, setQuickStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      loadQuickStats();
     }
   }, [user]);
 
@@ -59,20 +63,31 @@ const Dashboard = () => {
     }
   };
 
+  const loadQuickStats = async () => {
+    try {
+      const data = await analyticsService.getSummary();
+      setQuickStats(data);
+    } catch (error) {
+      console.error('Failed to load quick stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     setSelectedFile(file);
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await uploadData(formData, (progress) => {
         setUploadProgress(progress);
       });
-      
+
       if (response.success) {
         // Automatically analyze uploaded data
         await analyzeData(response.data);
@@ -178,7 +193,7 @@ const Dashboard = () => {
             <CloudArrowUpIcon className="mx-auto h-24 w-24 text-gray-400" />
             <h2 className="mt-4 text-3xl font-bold text-gray-900">Welcome to TradeSense</h2>
             <p className="mt-2 text-lg text-gray-600">Upload your trade data to begin advanced analytics</p>
-            
+
             <div className="mt-8 max-w-md mx-auto">
               <label className="flex justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-gray-400 focus:outline-none">
                 <span className="flex items-center space-x-2">
@@ -221,6 +236,67 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900">Trading Analytics Dashboard</h1>
           <p className="mt-2 text-gray-600">Advanced insights for data-driven trading decisions</p>
         </div>
+
+        {/* Quick Analytics Preview */}
+        {!loading && quickStats && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Quick Insights</h2>
+              <Link 
+                to="/analytics" 
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium"
+              >
+                View Full Analytics →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">Total Trades</h3>
+                <p className="text-2xl font-bold text-gray-900">{quickStats.total_trades}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">Win Rate</h3>
+                <p className="text-2xl font-bold text-gray-900">{quickStats.overall_win_rate?.toFixed(1)}%</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">Total P&L</h3>
+                <p className={`text-2xl font-bold ${quickStats.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${quickStats.total_pnl?.toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">Emotional Cost</h3>
+                <p className="text-2xl font-bold text-red-600">
+                  ${(quickStats.hesitation_cost + Math.abs(quickStats.fomo_impact) + quickStats.revenge_trading_cost)?.toFixed(0)}
+                </p>
+              </div>
+            </div>
+
+            {/* Key Insights */}
+            {quickStats.emotional_leaks?.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+                <h3 className="text-lg font-medium text-red-800 mb-2">🚨 Emotional Leak Alert</h3>
+                <p className="text-red-700">
+                  Your biggest leak: <strong>{quickStats.emotional_leaks[0]?.name}</strong> 
+                  has cost you <strong>${quickStats.emotional_leaks[0]?.cost?.toFixed(0)}</strong> 
+                  across {quickStats.emotional_leaks[0]?.frequency} trades.
+                </p>
+                <p className="text-sm text-red-600 mt-1">{quickStats.emotional_leaks[0]?.description}</p>
+              </div>
+            )}
+
+            {quickStats.most_profitable_emotion && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <h3 className="text-lg font-medium text-green-800 mb-2">✅ Your Best Trading State</h3>
+                <p className="text-green-700">
+                  You perform best when feeling <strong>"{quickStats.most_profitable_emotion}"</strong>. 
+                  Try to cultivate this mindset before trading.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -285,7 +361,7 @@ const Dashboard = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Equity Curve</h3>
               <EquityCurveChart data={analytics?.equity_curve || []} />
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Win Rate Distribution</h3>
               <WinRateGauge winRate={analytics?.win_rate || 0} />
@@ -303,7 +379,7 @@ const Dashboard = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">P&L Distribution</h3>
               <PnLDistribution data={analytics?.pnl_distribution || []} />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
                 <h4 className="text-sm font-medium text-gray-600">Best Day</h4>
@@ -370,7 +446,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Position Sizing Recommendations</h3>
               <div className="space-y-3">

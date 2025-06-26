@@ -5,7 +5,12 @@ from typing import List, Optional
 from backend.core.db.session import get_db
 from backend.core.security import get_current_user
 from .service import TradeService
-from .schemas import TradeCreate, TradeUpdate, TradeResponse
+from .schemas import (
+    TradeCreate, TradeUpdate, TradeResponse, TradeFilters, 
+    TradeListResponse, TradePaginationResponse
+)
+from pydantic import BaseModel
+from uuid import UUID
 
 router = APIRouter(prefix="/api/v1/trades", tags=["trades"])
 
@@ -96,3 +101,25 @@ async def delete_trade(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to delete trade")
+
+class AttachPlaybookRequest(BaseModel):
+    playbook_id: Optional[UUID] = None
+
+@router.put("/{trade_id}/playbook", response_model=TradeResponse)
+async def attach_playbook_to_trade(
+    trade_id: str,
+    request: AttachPlaybookRequest,
+    current_user: dict = Depends(get_current_user),
+    trade_service: TradeService = Depends(get_trade_service)
+):
+    """Attach or detach a playbook from a trade."""
+    try:
+        return trade_service.attach_playbook(
+            trade_id=trade_id,
+            user_id=current_user["user_id"],
+            playbook_id=request.playbook_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to attach/detach playbook")

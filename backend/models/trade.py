@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
 import uuid
+from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
@@ -42,7 +43,7 @@ class Trade(Base):
 
     # Account association
     account_id = Column(String, ForeignKey('trading_accounts.id'), index=True)
-    
+
     # Playbook association
     playbook_id = Column(String, ForeignKey('playbooks.id'), index=True)
 

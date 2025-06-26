@@ -18,8 +18,8 @@ import MilestonePage from './features/analytics/pages/MilestonePage';
 import CrossAccountPage from './features/analytics/pages/CrossAccountPage';
 import { MentalMapPage } from './features/analytics/pages/MentalMapPage';
 import { PatternExplorerPage } from './features/analytics/pages/PatternExplorerPage';
-import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerPage';
-import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
+import PlaybookManagerPage from './features/analytics/pages/PlaybookManagerPage';
+import PlaybookAnalyticsPage from './features/analytics/pages/PlaybookAnalyticsPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -77,8 +77,9 @@ function App() {
         <Route path="/cross-account" element={<CrossAccountPage />} />
           <Route path="/mental-map" element={<MentalMapPage />} />
           <Route path="/pattern-explorer" element={<PatternExplorerPage />} />
-          <Route path="/playbook-manager" element={<PlaybookManagerPage />} />
-          <Route path="/analytics/playbooks" element={<PlaybookAnalyticsPage />} />
+            <Route path="/patterns" element={<PatternExplorerPage />} />
+            <Route path="/playbooks" element={<PlaybookManagerPage />} />
+            <Route path="/playbook-analytics" element={<PlaybookAnalyticsPage />} />
         </Routes>
         </div>
       </Router>

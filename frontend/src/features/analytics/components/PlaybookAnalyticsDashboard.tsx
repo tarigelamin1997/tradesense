@@ -313,3 +313,190 @@ export const PlaybookAnalyticsDashboard: React.FC = () => {
     </div>
   );
 };
+import React, { useState, useEffect } from 'react';
+import { playbooksApi, PlaybookAnalytics, PlaybookPerformance } from '../../../services/playbooks';
+
+const PlaybookAnalyticsDashboard: React.FC = () => {
+  const [analytics, setAnalytics] = useState<PlaybookAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [timeRange]);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      const data = await playbooksApi.getPlaybookAnalytics(timeRange);
+      setAnalytics(data);
+    } catch (err) {
+      setError('Failed to load playbook analytics');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+  };
+
+  const formatPercentage = (value: number) => {
+    return `${value.toFixed(1)}%`;
+  };
+
+  const getPerformanceColor = (pnl: number) => {
+    if (pnl > 0) return 'text-green-600';
+    if (pnl < 0) return 'text-red-600';
+    return 'text-gray-600';
+  };
+
+  const getRecommendation = (playbook: PlaybookPerformance) => {
+    if (playbook.trade_count < 10) return { type: 'info', message: 'Need more data' };
+    if (playbook.win_rate >= 60 && playbook.total_pnl > 0) return { type: 'success', message: '✅ Keep & Scale' };
+    if (playbook.win_rate < 40 || playbook.total_pnl < -500) return { type: 'danger', message: '❌ Consider Cutting' };
+    return { type: 'warning', message: '⚠️ Monitor Closely' };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        {error || 'Failed to load analytics'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">📊 Playbook Analytics</h1>
+          <select
+            value={timeRange || ''}
+            onChange={(e) => setTimeRange(e.target.value ? parseInt(e.target.value) : undefined)}
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All time</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+          </select>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{analytics.summary.total_playbooks}</div>
+            <div className="text-sm text-gray-600">Total Playbooks</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">{analytics.summary.total_trades}</div>
+            <div className="text-sm text-gray-600">Total Trades</div>
+          </div>
+          <div className={`p-4 rounded-lg ${analytics.summary.total_pnl >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+            <div className={`text-2xl font-bold ${analytics.summary.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(analytics.summary.total_pnl)}
+            </div>
+            <div className="text-sm text-gray-600">Total P&L</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="text-lg font-bold text-purple-600">
+              {analytics.summary.best_performing || 'N/A'}
+            </div>
+            <div className="text-sm text-gray-600">Best Performing</div>
+          </div>
+        </div>
+
+        {/* Playbook Performance Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border border-gray-200 px-4 py-3 text-left font-semibold">Playbook</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Trades</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Total P&L</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Avg P&L</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Win Rate</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Avg Win</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Avg Loss</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Profit Factor</th>
+                <th className="border border-gray-200 px-4 py-3 text-center font-semibold">Recommendation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analytics.playbooks
+                .sort((a, b) => b.total_pnl - a.total_pnl)
+                .map((playbook) => {
+                  const recommendation = getRecommendation(playbook);
+                  return (
+                    <tr key={playbook.playbook_id} className="hover:bg-gray-50">
+                      <td className="border border-gray-200 px-4 py-3">
+                        <div className="font-medium">{playbook.playbook_name}</div>
+                        {playbook.avg_hold_time_minutes && (
+                          <div className="text-sm text-gray-500">
+                            Avg Hold: {Math.round(playbook.avg_hold_time_minutes)}min
+                          </div>
+                        )}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3 text-center">{playbook.trade_count}</td>
+                      <td className={`border border-gray-200 px-4 py-3 text-center font-medium ${getPerformanceColor(playbook.total_pnl)}`}>
+                        {formatCurrency(playbook.total_pnl)}
+                      </td>
+                      <td className={`border border-gray-200 px-4 py-3 text-center ${getPerformanceColor(playbook.avg_pnl)}`}>
+                        {formatCurrency(playbook.avg_pnl)}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3 text-center">{formatPercentage(playbook.win_rate)}</td>
+                      <td className="border border-gray-200 px-4 py-3 text-center text-green-600">
+                        {formatCurrency(playbook.avg_win)}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3 text-center text-red-600">
+                        {formatCurrency(playbook.avg_loss)}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3 text-center">
+                        {playbook.profit_factor ? playbook.profit_factor.toFixed(2) : 'N/A'}
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3 text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          recommendation.type === 'success' ? 'bg-green-100 text-green-800' :
+                          recommendation.type === 'danger' ? 'bg-red-100 text-red-800' :
+                          recommendation.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {recommendation.message}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+
+        {analytics.playbooks.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📊</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No playbook data</h3>
+            <p className="text-gray-600">
+              Create playbooks and attach them to trades to see analytics
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PlaybookAnalyticsDashboard;

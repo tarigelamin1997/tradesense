@@ -17,6 +17,7 @@ from backend.api.v1.analytics.router import router as analytics_router
 from backend.api.v1.analytics.edge_strength import router as edge_strength_router
 from backend.api.v1.critique.router import router as critique_router
 from backend.api.v1.reflections.router import router as reflections_router
+from backend.api.v1.analytics.heatmap import router as heatmap_router #Add heatmap router
 
 # Configure logging
 logging.basicConfig(
@@ -79,6 +80,7 @@ app.include_router(uploads_router)
 app.include_router(users_router)
 app.include_router(analytics_router, prefix="/api/v1/analytics")
 app.include_router(edge_strength_router, prefix="/api/v1/analytics")
+app.include_router(heatmap_router, prefix="/api/v1/analytics") #Include heatmap router
 app.include_router(critique_router, prefix="/api/v1/critique")
 app.include_router(reflections_router, prefix="/api/v1/reflections")
 

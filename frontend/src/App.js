@@ -11,6 +11,7 @@ import './styles/mobile.css';
 import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
 import TimelinePage from './features/analytics/pages/TimelinePage';
 import EdgeStrengthPage from './features/analytics/pages/EdgeStrengthPage';
+import HeatmapPage from './features/analytics/pages/HeatmapPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -61,6 +62,7 @@ function App() {
             />
           <Route path="/timeline" element={<TimelinePage />} />
           <Route path="/edge-strength" element={<EdgeStrengthPage />} />
+            <Route path="/heatmap" element={<HeatmapPage />} />
         </Routes>
         </div>
       </Router>

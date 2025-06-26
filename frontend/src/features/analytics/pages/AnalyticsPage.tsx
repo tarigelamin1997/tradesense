@@ -11,6 +11,7 @@ import { EmotionalLeakCard } from '../components/EmotionalLeakCard';
 import { InsightAlert } from '../components/InsightAlert';
 import { StrategyBreakdownTable } from '../components/StrategyBreakdownTable';
 import { ConfidenceHeatmap } from '../components/ConfidenceHeatmap';
+import { Link } from 'react-router-dom';
 
 interface AnalyticsSummary {
   total_trades: number;
@@ -144,6 +145,20 @@ export const AnalyticsPage: React.FC = () => {
             onChange={(e) => setDateFilter(prev => ({...prev, end: e.target.value}))}
             className="px-3 py-2 border border-gray-300 rounded-md"
           />
+        </div>
+        <div className="flex space-x-4">
+          <Link
+            to="/timeline"
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            📅 View Timeline
+          </Link>
+          <Link
+            to="/edge-strength"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            📊 Edge Strength
+          </Link>
         </div>
       </div>
 

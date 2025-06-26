@@ -9,7 +9,8 @@ import UploadPage from './features/upload/pages/UploadPage';
 import { useAuthStore } from './store/auth';
 import './styles/mobile.css';
 import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
-import { TimelinePage } from './features/analytics/pages/TimelinePage';
+import TimelinePage from './features/analytics/pages/TimelinePage';
+import EdgeStrengthPage from './features/analytics/pages/EdgeStrengthPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -58,24 +59,9 @@ function App() {
                 </AuthWrapper>
               }
             />
-          <Route path="/calendar" element={<TimelinePage />} />
-
-            {/* Default redirect */}
-            <Route 
-              path="/" 
-              element={
-                <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-              } 
-            />
-
-            {/* Catch all */}
-            <Route 
-              path="*" 
-              element={
-                <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-              } 
-            />
-          </Routes>
+          <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/edge-strength" element={<EdgeStrengthPage />} />
+        </Routes>
         </div>
       </Router>
     </ErrorBoundary>

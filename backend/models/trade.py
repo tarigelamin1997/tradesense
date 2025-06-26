@@ -42,6 +42,9 @@ class Trade(Base):
 
     # Account association
     account_id = Column(String, ForeignKey('trading_accounts.id'), index=True)
+    
+    # Playbook association
+    playbook_id = Column(String, ForeignKey('playbooks.id'), index=True)
 
     # Metadata
     notes = Column(Text)
@@ -84,6 +87,7 @@ class TradeBase(BaseModel):
     tags: Optional[List[str]] = Field(default_factory=list, description="Trade tags for filtering and search")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
     account_id: Optional[str] = Field(None, description="Trading account ID")
+    playbook_id: Optional[str] = Field(None, description="Playbook ID for structured trading setup")
 
     @validator('exit_time')
     def validate_exit_time(cls, v, values):
@@ -110,6 +114,7 @@ class TradeResponse(TradeBase):
     tags: Optional[List[str]]
     strategy_tag: Optional[str]
     account_id: Optional[str]
+    playbook_id: Optional[str]
     created_at: datetime
     updated_at: datetime
 
@@ -119,3 +124,4 @@ class TradeResponse(TradeBase):
     account = relationship("TradingAccount", back_populates="trades")
     tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
     mental_entries = relationship("MentalMapEntry", back_populates="trade")
+    playbook = relationship("Playbook", back_populates="trades")

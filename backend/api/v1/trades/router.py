@@ -9,6 +9,7 @@ from .schemas import (
     TradeCreate, TradeUpdate, TradeResponse, TradeFilters, 
     TradeListResponse, TradePaginationResponse
 )
+from .confidence_calibration import ConfidenceCalibrationService
 from pydantic import BaseModel
 from uuid import UUID
 
@@ -123,3 +124,29 @@ async def attach_playbook_to_trade(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to attach/detach playbook")
+
+@router.get("/confidence-calibration")
+async def get_confidence_calibration(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get confidence calibration analysis for the current user"""
+    try:
+        calibration_service = ConfidenceCalibrationService(db)
+        return calibration_service.get_confidence_calibration(current_user["user_id"])
+    except Exception as e:
+        if "No trades with confidence scores found" in str(e):
+            raise HTTPException(status_code=404, detail="No trades with confidence scores found")
+        raise HTTPException(status_code=500, detail="Failed to calculate confidence calibration")
+
+@router.get("/confidence-calibration/by-playbook")
+async def get_confidence_calibration_by_playbook(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get confidence calibration analysis grouped by playbook"""
+    try:
+        calibration_service = ConfidenceCalibrationService(db)
+        return calibration_service.get_confidence_by_playbook(current_user["user_id"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to calculate playbook confidence calibration")

@@ -27,6 +27,7 @@ from backend.core.exceptions import NotFoundError, ValidationError, BusinessLogi
 from backend.services.analytics_service import AnalyticsService
 from backend.models.trade_note import TradeNote
 from backend.models.strategy import Strategy
+from backend.services.critique_engine import CritiqueEngine
 from .schemas import TradeCreate, TradeUpdate, TradeResponse
 
 logger = logging.getLogger(__name__)
@@ -60,15 +61,16 @@ class TradesService:
     def __init__(self, db: Session):
         self.analytics_service = AnalyticsService()
         self.db = db
+        self.critique_engine = CritiqueEngine()
         # In production, this would be a database connection
         self._trades_storage = {}
-        
+
         # Import analytics modules
         from ...analytics.performance import calculate_risk_reward_metrics
         from ...analytics.equity import generate_equity_curve
         from ...analytics.streaks import calculate_win_loss_streaks
         from ...analytics.filters import apply_trade_filters
-        
+
         self.calculate_performance = calculate_risk_reward_metrics
         self.calculate_equity = generate_equity_curve
         self.calculate_streaks = calculate_win_loss_streaks
@@ -215,14 +217,14 @@ class TradesService:
     async def get_strategy_performance(self, user_id: str, strategy_id: str) -> Dict[str, Any]:
         """Get performance metrics for a specific strategy"""
         trades = await self.get_trades_by_strategy(user_id, strategy_id)
-        
+
         if not trades:
             return {"total_trades": 0, "total_pnl": 0, "win_rate": 0}
-        
+
         total_pnl = sum(trade.get("pnl", 0) or 0 for trade in trades)
         winning_trades = sum(1 for trade in trades if (trade.get("pnl", 0) or 0) > 0)
         win_rate = (winning_trades / len(trades)) * 100 if trades else 0
-        
+
         return {
             "total_trades": len(trades),
             "total_pnl": total_pnl,
@@ -297,7 +299,7 @@ class TradesService:
                     pnl = (trade_data.exit_price - trade_data.entry_price) * trade_data.size
                 else:  # short
                     pnl = (trade_data.entry_price - trade_data.exit_price) * trade_data.size
-                
+
                 net_pnl = pnl
                 status = "closed"
 
@@ -585,7 +587,7 @@ class TradesService:
                 tags = trade.get("tags", [])
                 if isinstance(tags, str):
                     tags = [t.strip() for t in tags.split(",") if t.strip()]
-                
+
                 if tag.lower() in [t.lower() for t in tags]:
                     tag_trades.append(trade)
 
@@ -636,9 +638,9 @@ class TradesService:
                 tags = trade.get("tags", [])
                 if isinstance(tags, str):
                     tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
-                
+
                 trade_pnl = trade.get("pnl", 0)
-                
+
                 for tag in tags:
                     tag_counts[tag] = tag_counts.get(tag, 0) + 1
                     tag_pnl[tag] = tag_pnl.get(tag, 0) + trade_pnl

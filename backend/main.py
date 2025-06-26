@@ -15,6 +15,8 @@ from backend.api.v1.users.router import router as users_router
 from backend.api.v1.auth.router import router as auth_router
 from backend.api.v1.analytics.router import router as analytics_router
 from backend.api.v1.reflections.router import router as reflections_router
+# Assuming critique_router is defined in backend/api/v1/critique/router.py
+from backend.api.v1.critique.router import router as critique_router
 
 # Configure logging
 logging.basicConfig(
@@ -77,6 +79,7 @@ app.include_router(uploads_router)
 app.include_router(users_router)
 app.include_router(analytics_router)
 app.include_router(reflections_router)
+app.include_router(critique_router)
 
 if __name__ == "__main__":
     import uvicorn

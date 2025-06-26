@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -211,7 +210,7 @@ export const AnalyticsPage: React.FC = () => {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Strategy Performance */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Strategy Performance</h3>

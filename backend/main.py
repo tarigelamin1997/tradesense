@@ -14,6 +14,7 @@ from backend.api.v1.uploads.router import router as uploads_router
 from backend.api.v1.users.router import router as users_router
 from backend.api.v1.auth.router import router as auth_router
 from backend.api.v1.analytics.router import router as analytics_router
+from backend.api.v1.reflections.router import router as reflections_router
 
 # Configure logging
 logging.basicConfig(
@@ -75,6 +76,7 @@ app.include_router(strategies_router)
 app.include_router(uploads_router)
 app.include_router(users_router)
 app.include_router(analytics_router)
+app.include_router(reflections_router)
 
 if __name__ == "__main__":
     import uvicorn

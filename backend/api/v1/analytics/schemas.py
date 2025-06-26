@@ -1,7 +1,7 @@
 
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class AnalyticsFilters(BaseModel):
     start_date: Optional[datetime] = None
@@ -48,6 +48,25 @@ class EmotionalLeak(BaseModel):
     frequency: int
     description: str
     severity: str  # low, medium, high, critical
+
+class DailyTimelineData(BaseModel):
+    date: date
+    pnl: float
+    trade_count: int
+    dominant_emotion: Optional[str]
+    emotion_emoji: Optional[str]
+    trades: List[Dict[str, Any]]
+    mood_score: Optional[int]
+    reflection_summary: Optional[str]
+
+class TimelineResponse(BaseModel):
+    timeline_data: Dict[str, DailyTimelineData]  # date string -> data
+    date_range: Dict[str, date]  # start_date, end_date
+    total_days: int
+    trading_days: int
+    best_day: Optional[DailyTimelineData]
+    worst_day: Optional[DailyTimelineData]
+    emotional_patterns: Dict[str, Any]
 
 class AnalyticsSummaryResponse(BaseModel):
     # Core Performance

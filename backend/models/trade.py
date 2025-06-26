@@ -40,6 +40,9 @@ class Trade(Base):
     max_favorable_excursion = Column(Float)
     confidence_score = Column(Integer)
 
+    # Account association
+    account_id = Column(String, ForeignKey('trading_accounts.id'), index=True)
+
     # Metadata
     notes = Column(Text)
     tags = Column(JSON)  # List of strings stored as JSON (legacy)
@@ -55,6 +58,7 @@ class Trade(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
+    account = relationship("TradingAccount", back_populates="trades")
     tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
 
     # Indexes for performance
@@ -79,6 +83,7 @@ class TradeBase(BaseModel):
     notes: Optional[str] = Field(None, max_length=1000)
     tags: Optional[List[str]] = Field(default_factory=list, description="Trade tags for filtering and search")
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
+    account_id: Optional[str] = Field(None, description="Trading account ID")
 
     @validator('exit_time')
     def validate_exit_time(cls, v, values):
@@ -104,6 +109,7 @@ class TradeResponse(TradeBase):
     net_pnl: Optional[float]
     tags: Optional[List[str]]
     strategy_tag: Optional[str]
+    account_id: Optional[str]
     created_at: datetime
     updated_at: datetime
 

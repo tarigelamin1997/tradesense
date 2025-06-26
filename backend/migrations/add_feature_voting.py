@@ -17,7 +17,7 @@ def run_migration():
         print("🗳️ Adding Feature Voting System...")
         
         # Connect to database
-        conn = sqlite3.connect('backend/tradesense.db')
+        conn = sqlite3.connect('tradesense.db')
         cursor = conn.cursor()
         
         # Create feature_requests table

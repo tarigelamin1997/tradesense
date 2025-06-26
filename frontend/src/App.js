@@ -21,8 +21,8 @@ import { PatternExplorerPage } from './features/analytics/pages/PatternExplorerP
 import { PlaybookManagerPage } from './features/analytics/pages/PlaybookManagerPage';
 import { PlaybookAnalyticsPage } from './features/analytics/pages/PlaybookAnalyticsPage';
 import { ReviewAnalyticsPage } from './features/analytics/pages/ReviewAnalyticsPage';
-import ConfidenceCalibrationPage from './features/analytics/pages/ConfidenceCalibrationPage.tsx';
-import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage.tsx';
+import ConfidenceCalibrationPage from './features/analytics/pages/ConfidenceCalibrationPage';
+import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();

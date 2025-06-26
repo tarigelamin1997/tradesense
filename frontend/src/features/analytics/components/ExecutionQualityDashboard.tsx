@@ -284,3 +284,361 @@ const ExecutionQualityDashboard: React.FC = () => {
 };
 
 export default ExecutionQualityDashboard;
+import React, { useState, useEffect } from 'react';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  ScatterChart,
+  Scatter
+} from 'recharts';
+import { Card } from '../../../components/ui/Card';
+import { executionQualityService, ExecutionQualityResponse } from '../../../services/executionQuality';
+
+const ExecutionQualityDashboard: React.FC = () => {
+  const [executionData, setExecutionData] = useState<ExecutionQualityResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadExecutionData();
+  }, []);
+
+  const loadExecutionData = async () => {
+    try {
+      setLoading(true);
+      const data = await executionQualityService.getExecutionQuality();
+      setExecutionData(data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to load execution quality data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getExecutionOverTimeData = () => {
+    if (!executionData) return [];
+    
+    return executionData.trade_execution_data
+      .sort((a, b) => new Date(a.entry_time).getTime() - new Date(b.entry_time).getTime())
+      .map((trade, index) => ({
+        tradeNumber: index + 1,
+        executionScore: trade.execution_score,
+        entryScore: trade.entry_score,
+        exitScore: trade.exit_score,
+        pnl: trade.pnl,
+        symbol: trade.symbol,
+        date: new Date(trade.entry_time).toLocaleDateString()
+      }));
+  };
+
+  const getGradeDistributionData = () => {
+    if (!executionData?.overall_stats.grade_distribution) return [];
+    
+    const grades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'F'];
+    const colors = ['#10B981', '#059669', '#047857', '#FCD34D', '#F59E0B', '#D97706', '#F97316', '#EA580C', '#DC2626', '#B91C1C'];
+    
+    return grades.map((grade, index) => ({
+      grade,
+      count: executionData.overall_stats.grade_distribution[grade] || 0,
+      fill: colors[index]
+    })).filter(item => item.count > 0);
+  };
+
+  const getExecutionVsPnLData = () => {
+    if (!executionData) return [];
+    
+    return executionData.trade_execution_data.map(trade => ({
+      executionScore: trade.execution_score,
+      pnl: trade.pnl,
+      symbol: trade.symbol,
+      grade: trade.execution_grade
+    }));
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 85) return '#10B981';
+    if (score >= 70) return '#F59E0B';
+    return '#EF4444';
+  };
+
+  if (loading) return <div className="p-6">Loading execution quality analysis...</div>;
+  if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
+  if (!executionData) return <div className="p-6">No execution data available</div>;
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Execution Quality Analysis</h1>
+        <div className="text-sm text-gray-600">
+          {executionData.total_trades_analyzed} trades analyzed
+        </div>
+      </div>
+
+      {/* Overall Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <h3 className="text-sm font-medium text-gray-500">Average Execution Score</h3>
+          <div 
+            className="text-2xl font-bold"
+            style={{ color: getScoreColor(executionData.overall_stats.avg_execution_score) }}
+          >
+            {executionData.overall_stats.avg_execution_score}
+          </div>
+          <div className="text-xs text-gray-400">
+            ±{executionData.overall_stats.execution_score_std} std dev
+          </div>
+        </Card>
+        
+        <Card className="p-4">
+          <h3 className="text-sm font-medium text-gray-500">Entry vs Exit</h3>
+          <div className="flex space-x-2">
+            <div className="text-lg font-semibold">
+              {executionData.overall_stats.avg_entry_score}
+            </div>
+            <div className="text-gray-400">vs</div>
+            <div className="text-lg font-semibold">
+              {executionData.overall_stats.avg_exit_score}
+            </div>
+          </div>
+          <div className="text-xs text-gray-400">Entry vs Exit Score</div>
+        </Card>
+        
+        <Card className="p-4">
+          <h3 className="text-sm font-medium text-gray-500">Excellent Executions</h3>
+          <div className="text-2xl font-bold text-green-600">
+            {executionData.overall_stats.excellent_executions}
+          </div>
+          <div className="text-xs text-gray-400">
+            Score ≥ 85
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="text-sm font-medium text-gray-500">Poor Executions</h3>
+          <div className="text-2xl font-bold text-red-600">
+            {executionData.overall_stats.poor_executions}
+          </div>
+          <div className="text-xs text-gray-400">
+            Score < 60
+          </div>
+        </Card>
+      </div>
+
+      {/* Insights */}
+      {executionData.insights.length > 0 && (
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">🎯 Execution Insights</h2>
+          <div className="space-y-2">
+            {executionData.insights.map((insight, index) => (
+              <div 
+                key={index} 
+                className={`p-3 rounded-lg ${
+                  insight.includes('⚠️') ? 'bg-yellow-50 border-l-4 border-yellow-400' :
+                  insight.includes('✅') ? 'bg-green-50 border-l-4 border-green-400' :
+                  'bg-blue-50 border-l-4 border-blue-400'
+                }`}
+              >
+                {insight}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Execution Score Over Time */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Execution Score Trend</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={getExecutionOverTimeData()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="tradeNumber" 
+                label={{ value: 'Trade Number', position: 'insideBottom', offset: -5 }}
+              />
+              <YAxis 
+                domain={[0, 100]}
+                label={{ value: 'Score', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                formatter={(value, name) => [value, name === 'executionScore' ? 'Execution Score' : name]}
+                labelFormatter={(value) => `Trade #${value}`}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="executionScore" 
+                stroke="#3B82F6" 
+                strokeWidth={2}
+                name="Execution Score"
+                dot={{ r: 3 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Grade Distribution */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Execution Grade Distribution</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={getGradeDistributionData()}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ grade, count }) => `${grade}: ${count}`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="count"
+              >
+                {getGradeDistributionData().map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Execution Score vs PnL */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Execution Score vs P&L</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <ScatterChart data={getExecutionVsPnLData()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="executionScore" 
+                domain={[0, 100]}
+                label={{ value: 'Execution Score', position: 'insideBottom', offset: -5 }}
+              />
+              <YAxis 
+                dataKey="pnl"
+                label={{ value: 'P&L ($)', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                formatter={(value, name) => [
+                  name === 'pnl' ? `$${value}` : value,
+                  name === 'pnl' ? 'P&L' : 'Execution Score'
+                ]}
+              />
+              <Scatter 
+                dataKey="pnl" 
+                fill="#3B82F6"
+                shape="circle"
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Entry vs Exit Scores */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Entry vs Exit Performance</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={getExecutionOverTimeData().slice(-20)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="tradeNumber" />
+              <YAxis domain={[0, 100]} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="entryScore" fill="#10B981" name="Entry Score" />
+              <Bar dataKey="exitScore" fill="#F59E0B" name="Exit Score" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      {/* Detailed Trade Table */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4">Recent Trade Execution Details</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Symbol
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  P&L
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Entry Score
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Exit Score
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Execution Score
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Grade
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {executionData.trade_execution_data.slice(-10).reverse().map((trade, index) => (
+                <tr key={trade.trade_id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {trade.symbol}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(trade.entry_time).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span className={trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      ${trade.pnl}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span style={{ color: getScoreColor(trade.entry_score) }}>
+                      {trade.entry_score}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span style={{ color: getScoreColor(trade.exit_score) }}>
+                      {trade.exit_score}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span style={{ color: getScoreColor(trade.execution_score) }}>
+                      {trade.execution_score}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <span 
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        trade.execution_grade.startsWith('A') ? 'bg-green-100 text-green-800' :
+                        trade.execution_grade.startsWith('B') ? 'bg-yellow-100 text-yellow-800' :
+                        trade.execution_grade.startsWith('C') ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {trade.execution_grade}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default ExecutionQualityDashboard;

@@ -41,3 +41,66 @@ export const executionQualityService = {
     return response.data;
   }
 };
+import { api } from './api';
+
+export interface ExecutionQualityMetrics {
+  entry_score: number;
+  exit_score: number;
+  slippage: number;
+  regret_index: number;
+  holding_efficiency: number;
+  execution_score: number;
+  execution_grade: string;
+}
+
+export interface TradeExecutionData {
+  trade_id: string;
+  symbol: string;
+  entry_time: string;
+  exit_time: string;
+  pnl: number;
+  direction: string;
+  playbook_id?: string;
+  entry_score: number;
+  exit_score: number;
+  slippage: number;
+  regret_index: number;
+  holding_efficiency: number;
+  execution_score: number;
+  execution_grade: string;
+}
+
+export interface OverallExecutionStats {
+  avg_execution_score: number;
+  execution_score_std: number;
+  avg_entry_score: number;
+  avg_exit_score: number;
+  excellent_executions: number;
+  poor_executions: number;
+  grade_distribution: { [grade: string]: number };
+}
+
+export interface PlaybookExecutionStats {
+  [playbook_id: string]: {
+    total_trades: number;
+    avg_execution_score: number;
+    avg_pnl: number;
+    win_rate: number;
+  };
+}
+
+export interface ExecutionQualityResponse {
+  total_trades_analyzed: number;
+  overall_stats: OverallExecutionStats;
+  trade_execution_data: TradeExecutionData[];
+  playbook_analysis: PlaybookExecutionStats;
+  insights: string[];
+  generated_at: string;
+}
+
+export const executionQualityService = {
+  async getExecutionQuality(): Promise<ExecutionQualityResponse> {
+    const response = await api.get('/trades/execution-quality');
+    return response.data;
+  }
+};

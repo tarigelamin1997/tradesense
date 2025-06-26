@@ -11,3 +11,15 @@ const ExecutionQualityPage: React.FC = () => {
 };
 
 export default ExecutionQualityPage;
+import React from 'react';
+import ExecutionQualityDashboard from '../components/ExecutionQualityDashboard';
+
+const ExecutionQualityPage: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ExecutionQualityDashboard />
+    </div>
+  );
+};
+
+export default ExecutionQualityPage;

@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, String, Boolean, DateTime, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -6,6 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional
 from datetime import datetime
 import uuid
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -27,6 +27,10 @@ class User(Base):
         Index('idx_user_email_active', 'email', 'is_active'),
     )
 
+    # Relationships
+    trades = relationship("Trade", back_populates="user")
+    playbooks = relationship("Playbook", back_populates="user")
+
 # Pydantic models for API
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username")
@@ -38,7 +42,7 @@ class UserBase(BaseModel):
         if not v.isalnum():
             raise ValueError('Username must contain only alphanumeric characters')
         return v
-    
+
     @validator('role')
     def validate_role(cls, v):
         if v not in ["admin", "trader"]:
@@ -47,7 +51,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6, description="Password")
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -63,7 +67,7 @@ class UserRead(UserBase):
     is_active: bool = Field(..., description="Whether user is active")
     created_at: datetime = Field(..., description="Account creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-    
+
     class Config:
         from_attributes = True
         schema_extra = {
@@ -82,7 +86,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = Field(None, description="Email address")
     role: Optional[str] = Field(None, description="User role")
     is_active: Optional[bool] = Field(None, description="Whether user is active")
-    
+
     @validator('role')
     def validate_role(cls, v):
         if v is not None and v not in ["admin", "trader"]:

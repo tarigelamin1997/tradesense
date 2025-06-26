@@ -25,8 +25,8 @@ from backend.api.v1.milestones.router import router as milestones_router
 from backend.api.v1.accounts.router import router as accounts_router
 from backend.api.v1.leaderboard.router import router as leaderboard_router
 from backend.api.v1.mental_map import router as mental_map_router
-from backend.api.v1.patterns import router as patterns_router
-from backend.api.v1.playbooks import router as playbooks_router
+from backend.api.v1.patterns.router import router as patterns_router
+from backend.api.v1.playbooks.router import router as playbooks_router
 
 # Configure logging
 logging.basicConfig(

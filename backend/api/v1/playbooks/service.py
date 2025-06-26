@@ -324,3 +324,150 @@ class PlaybookService:
             playbook.updated_at = datetime.utcnow()
         
         self.db.commit()
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, func
+from typing import List, Optional
+from uuid import UUID
+from datetime import datetime, timedelta
+
+from backend.models.playbook import Playbook, PlaybookStatus
+from backend.models.trade import Trade
+from backend.api.v1.playbooks.schemas import (
+    PlaybookCreate, PlaybookUpdate, PlaybookResponse, 
+    PlaybookPerformance, PlaybookAnalytics
+)
+
+class PlaybookService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_playbook(self, user_id: UUID, playbook_data: PlaybookCreate) -> PlaybookResponse:
+        """Create a new playbook."""
+        playbook = Playbook(
+            user_id=user_id,
+            **playbook_data.model_dump()
+        )
+        self.db.add(playbook)
+        self.db.commit()
+        self.db.refresh(playbook)
+        return PlaybookResponse.model_validate(playbook)
+
+    def get_playbooks(self, user_id: UUID, include_archived: bool = False) -> List[PlaybookResponse]:
+        """Get all playbooks for a user."""
+        query = self.db.query(Playbook).filter(Playbook.user_id == user_id)
+        
+        if not include_archived:
+            query = query.filter(Playbook.status == PlaybookStatus.ACTIVE)
+        
+        playbooks = query.order_by(Playbook.created_at.desc()).all()
+        return [PlaybookResponse.model_validate(p) for p in playbooks]
+
+    def get_playbook(self, user_id: UUID, playbook_id: UUID) -> Optional[PlaybookResponse]:
+        """Get a specific playbook."""
+        playbook = self.db.query(Playbook).filter(
+            and_(Playbook.id == playbook_id, Playbook.user_id == user_id)
+        ).first()
+        
+        if playbook:
+            return PlaybookResponse.model_validate(playbook)
+        return None
+
+    def update_playbook(self, user_id: UUID, playbook_id: UUID, playbook_data: PlaybookUpdate) -> Optional[PlaybookResponse]:
+        """Update a playbook."""
+        playbook = self.db.query(Playbook).filter(
+            and_(Playbook.id == playbook_id, Playbook.user_id == user_id)
+        ).first()
+        
+        if not playbook:
+            return None
+
+        update_data = playbook_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(playbook, field, value)
+        
+        self.db.commit()
+        self.db.refresh(playbook)
+        return PlaybookResponse.model_validate(playbook)
+
+    def delete_playbook(self, user_id: UUID, playbook_id: UUID) -> bool:
+        """Delete a playbook (soft delete by archiving)."""
+        playbook = self.db.query(Playbook).filter(
+            and_(Playbook.id == playbook_id, Playbook.user_id == user_id)
+        ).first()
+        
+        if not playbook:
+            return False
+
+        playbook.status = PlaybookStatus.ARCHIVED
+        self.db.commit()
+        return True
+
+    def get_playbook_analytics(self, user_id: UUID, days: Optional[int] = None) -> PlaybookAnalytics:
+        """Get performance analytics for all playbooks."""
+        base_query = self.db.query(
+            Playbook.id.label('playbook_id'),
+            Playbook.name.label('playbook_name'),
+            func.count(Trade.id).label('trade_count'),
+            func.sum(Trade.pnl).label('total_pnl'),
+            func.avg(Trade.pnl).label('avg_pnl'),
+            func.sum(func.case((Trade.pnl > 0, 1), else_=0)).label('wins'),
+            func.avg(func.case((Trade.pnl > 0, Trade.pnl), else_=None)).label('avg_win'),
+            func.avg(func.case((Trade.pnl < 0, Trade.pnl), else_=None)).label('avg_loss'),
+            func.avg(
+                func.extract('epoch', Trade.exit_time - Trade.entry_time) / 60
+            ).label('avg_hold_time_minutes')
+        ).join(
+            Trade, Playbook.id == Trade.playbook_id
+        ).filter(
+            Playbook.user_id == user_id,
+            Trade.pnl.isnot(None)
+        )
+
+        if days:
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            base_query = base_query.filter(Trade.entry_time >= cutoff_date)
+
+        results = base_query.group_by(Playbook.id, Playbook.name).all()
+
+        playbook_performances = []
+        total_trades = 0
+        total_pnl = 0.0
+
+        for result in results:
+            win_rate = (result.wins / result.trade_count * 100) if result.trade_count > 0 else 0
+            
+            profit_factor = None
+            if result.avg_loss and result.avg_loss < 0:
+                total_wins = result.wins * (result.avg_win or 0)
+                total_losses = abs((result.trade_count - result.wins) * result.avg_loss)
+                if total_losses > 0:
+                    profit_factor = total_wins / total_losses
+
+            performance = PlaybookPerformance(
+                playbook_id=result.playbook_id,
+                playbook_name=result.playbook_name,
+                trade_count=result.trade_count,
+                total_pnl=result.total_pnl or 0,
+                avg_pnl=result.avg_pnl or 0,
+                win_rate=win_rate,
+                avg_win=result.avg_win or 0,
+                avg_loss=result.avg_loss or 0,
+                avg_hold_time_minutes=result.avg_hold_time_minutes,
+                profit_factor=profit_factor
+            )
+            playbook_performances.append(performance)
+            total_trades += result.trade_count
+            total_pnl += result.total_pnl or 0
+
+        summary = {
+            "total_playbooks": len(playbook_performances),
+            "total_trades": total_trades,
+            "total_pnl": total_pnl,
+            "best_performing": max(playbook_performances, key=lambda x: x.total_pnl).playbook_name if playbook_performances else None,
+            "most_active": max(playbook_performances, key=lambda x: x.trade_count).playbook_name if playbook_performances else None
+        }
+
+        return PlaybookAnalytics(
+            playbooks=playbook_performances,
+            summary=summary
+        )

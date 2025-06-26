@@ -172,6 +172,30 @@ export const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <ChartBarIcon className="h-4 w-4" />
                   <span>Pattern Explorer</span>
                 </Link>
+                 <Link
+                  key="/playbook-manager"
+                  to="/playbook-manager"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/playbook-manager'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Playbook Manager</span>
+                </Link>
+                <Link
+                  key="/playbook-analytics"
+                  to="/playbook-analytics"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/playbook-analytics'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Playbook Analytics</span>
+                </Link>
 
             <Button
               variant="ghost"

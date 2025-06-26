@@ -106,3 +106,86 @@ export const playbooksService = {
     await api.post('/playbooks/refresh-stats');
   }
 };
+import { api } from './api';
+
+export interface Playbook {
+  id: string;
+  user_id: string;
+  name: string;
+  entry_criteria: string;
+  exit_criteria: string;
+  description?: string;
+  status: 'active' | 'archived';
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PlaybookCreate {
+  name: string;
+  entry_criteria: string;
+  exit_criteria: string;
+  description?: string;
+  status?: 'active' | 'archived';
+}
+
+export interface PlaybookUpdate {
+  name?: string;
+  entry_criteria?: string;
+  exit_criteria?: string;
+  description?: string;
+  status?: 'active' | 'archived';
+}
+
+export interface PlaybookPerformance {
+  playbook_id: string;
+  playbook_name: string;
+  trade_count: number;
+  total_pnl: number;
+  avg_pnl: number;
+  win_rate: number;
+  avg_win: number;
+  avg_loss: number;
+  avg_hold_time_minutes?: number;
+  profit_factor?: number;
+}
+
+export interface PlaybookAnalytics {
+  playbooks: PlaybookPerformance[];
+  summary: {
+    total_playbooks: number;
+    total_trades: number;
+    total_pnl: number;
+    best_performing?: string;
+    most_active?: string;
+  };
+}
+
+export const playbooksApi = {
+  // Create a new playbook
+  createPlaybook: (data: PlaybookCreate): Promise<Playbook> =>
+    api.post('/playbooks', data),
+
+  // Get all playbooks
+  getPlaybooks: (includeArchived = false): Promise<Playbook[]> =>
+    api.get(`/playbooks?include_archived=${includeArchived}`),
+
+  // Get a specific playbook
+  getPlaybook: (id: string): Promise<Playbook> =>
+    api.get(`/playbooks/${id}`),
+
+  // Update a playbook
+  updatePlaybook: (id: string, data: PlaybookUpdate): Promise<Playbook> =>
+    api.put(`/playbooks/${id}`, data),
+
+  // Delete (archive) a playbook
+  deletePlaybook: (id: string): Promise<void> =>
+    api.delete(`/playbooks/${id}`),
+
+  // Get playbook analytics
+  getPlaybookAnalytics: (days?: number): Promise<PlaybookAnalytics> =>
+    api.get(`/playbooks/analytics${days ? `?days=${days}` : ''}`),
+
+  // Attach playbook to trade
+  attachPlaybookToTrade: (tradeId: string, playbookId?: string): Promise<any> =>
+    api.put(`/trades/${tradeId}/playbook`, { playbook_id: playbookId }),
+};

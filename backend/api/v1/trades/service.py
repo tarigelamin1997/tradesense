@@ -89,7 +89,6 @@ class TradesService:
 
             # Create trade record
             trade = {
-                ```python
                 "id": trade_id,
                 "user_id": user_id,
                 "symbol": trade_data.symbol,

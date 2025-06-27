@@ -1,249 +1,202 @@
 
-import { apiRequest, authApi, tradesApi } from '../api';
+import { apiClient } from '../api';
+import { store } from '../../store';
+import { logout } from '../../store/auth';
 
 // Mock fetch
 global.fetch = jest.fn();
-
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+
+// Mock store dispatch
+jest.mock('../../store', () => ({
+  store: {
+    dispatch: jest.fn(),
+    getState: jest.fn(),
+  },
+}));
+
+const mockStore = store as jest.Mocked<typeof store>;
 
 describe('API Service', () => {
   beforeEach(() => {
-    mockFetch.mockClear();
-    localStorage.clear();
+    jest.clearAllMocks();
+    mockStore.getState.mockReturnValue({
+      auth: {
+        token: 'test-token',
+        user: null,
+        refreshToken: null,
+        isAuthenticated: true,
+        loading: false,
+        error: null,
+      },
+    });
   });
 
-  describe('apiRequest', () => {
-    it('should make GET request successfully', async () => {
+  describe('GET requests', () => {
+    it('should make successful GET request', async () => {
       const mockResponse = { data: 'test' };
       mockFetch.mockResolvedValueOnce({
         ok: true,
+        status: 200,
         json: async () => mockResponse,
+        headers: new Headers(),
       } as Response);
 
-      const result = await apiRequest('/test');
-      
+      const result = await apiClient.get('/test');
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
+            'Authorization': 'Bearer test-token',
             'Content-Type': 'application/json',
           }),
         })
       );
+
       expect(result).toEqual(mockResponse);
     });
 
-    it('should include auth token when available', async () => {
-      localStorage.setItem('token', 'mock-token');
+    it('should handle GET request with query parameters', async () => {
+      const mockResponse = { data: 'test' };
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({}),
+        status: 200,
+        json: async () => mockResponse,
       } as Response);
 
-      await apiRequest('/test');
+      await apiClient.get('/test', { params: { page: 1, limit: 10 } });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/test?page=1&limit=10'),
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('POST requests', () => {
+    it('should make successful POST request', async () => {
+      const mockResponse = { id: 1 };
+      const requestData = { name: 'test' };
       
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await apiClient.post('/test', requestData);
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
+          method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer mock-token',
+            'Authorization': 'Bearer test-token',
+            'Content-Type': 'application/json',
           }),
+          body: JSON.stringify(requestData),
         })
       );
+
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('PUT requests', () => {
+    it('should make successful PUT request', async () => {
+      const mockResponse = { id: 1, name: 'updated' };
+      const requestData = { name: 'updated' };
+      
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await apiClient.put('/test/1', requestData);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/test/1'),
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(requestData),
+        })
+      );
+
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('DELETE requests', () => {
+    it('should make successful DELETE request', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        json: async () => ({}),
+      } as Response);
+
+      await apiClient.delete('/test/1');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/test/1'),
+        expect.objectContaining({
+          method: 'DELETE',
+        })
+      );
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle 401 unauthorized and logout user', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Unauthorized' }),
+      } as Response);
+
+      await expect(apiClient.get('/test')).rejects.toThrow('Unauthorized');
+      expect(mockStore.dispatch).toHaveBeenCalledWith(logout());
+    });
+
+    it('should handle 404 not found', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ message: 'Not found' }),
+      } as Response);
+
+      await expect(apiClient.get('/test')).rejects.toThrow('Not found');
     });
 
     it('should handle network errors', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      await expect(apiRequest('/test')).rejects.toThrow('Network error');
+      await expect(apiClient.get('/test')).rejects.toThrow('Network error');
     });
 
-    it('should handle HTTP errors', async () => {
+    it('should handle server errors', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 404,
-        statusText: 'Not Found',
+        status: 500,
+        json: async () => ({ message: 'Internal server error' }),
       } as Response);
 
-      await expect(apiRequest('/test')).rejects.toThrow('HTTP error! status: 404');
+      await expect(apiClient.get('/test')).rejects.toThrow('Internal server error');
     });
   });
 
-  describe('authApi', () => {
-    it('should login successfully', async () => {
-      const mockResponse = { token: 'auth-token', user: { id: '1' } };
+  describe('Request interceptors', () => {
+    it('should add authorization header when token exists', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
-      } as Response);
-
-      const result = await authApi.login('test@example.com', 'password');
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/auth/login'),
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({
-            email: 'test@example.com',
-            password: 'password',
-          }),
-        })
-      );
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should register successfully', async () => {
-      const mockResponse = { token: 'auth-token', user: { id: '1' } };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
-
-      const result = await authApi.register('Test User', 'test@example.com', 'password');
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/auth/register'),
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({
-            name: 'Test User',
-            email: 'test@example.com',
-            password: 'password',
-          }),
-        })
-      );
-      expect(result).toEqual(mockResponse);
-    });
-  });
-
-  describe('tradesApi', () => {
-    beforeEach(() => {
-      localStorage.setItem('token', 'mock-token');
-    });
-
-    it('should fetch trades successfully', async () => {
-      const mockResponse = { trades: [], pagination: {} };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
-
-      const result = await tradesApi.getTrades();
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/trades'),
-        expect.objectContaining({
-          method: 'GET',
-          headers: expect.objectContaining({
-            'Authorization': 'Bearer mock-token',
-          }),
-        })
-      );
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should create trade successfully', async () => {
-      const newTrade = { symbol: 'AAPL', quantity: 100 };
-      const mockResponse = { id: '1', ...newTrade };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
-
-      const result = await tradesApi.createTrade(newTrade);
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/trades'),
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify(newTrade),
-        })
-      );
-      expect(result).toEqual(mockResponse);
-    });
-  });
-});
-import { api } from '../api';
-
-// Mock fetch
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
-describe('API Service', () => {
-  beforeEach(() => {
-    mockFetch.mockClear();
-  });
-
-  describe('GET requests', () => {
-    it('should make successful GET request', async () => {
-      const mockData = { id: 1, name: 'Test' };
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
-
-      const result = await api.get('/test');
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/test',
-        expect.objectContaining({
-          method: 'GET',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-          }),
-        })
-      );
-      expect(result).toEqual(mockData);
-    });
-
-    it('should handle GET request errors', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-      } as Response);
-
-      await expect(api.get('/nonexistent')).rejects.toThrow('HTTP error! status: 404');
-    });
-  });
-
-  describe('POST requests', () => {
-    it('should make successful POST request with data', async () => {
-      const mockData = { id: 1, name: 'Created' };
-      const postData = { name: 'New Item' };
-      
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
-
-      const result = await api.post('/test', postData);
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/test',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-          }),
-          body: JSON.stringify(postData),
-        })
-      );
-      expect(result).toEqual(mockData);
-    });
-  });
-
-  describe('Authentication', () => {
-    it('should include authorization header when token is present', async () => {
-      localStorage.setItem('token', 'test-token');
-      
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
+        status: 200,
         json: async () => ({}),
       } as Response);
 
-      await api.get('/protected');
-      
+      await apiClient.get('/test');
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
@@ -252,8 +205,36 @@ describe('API Service', () => {
           }),
         })
       );
-      
-      localStorage.removeItem('token');
+    });
+
+    it('should not add authorization header when no token', async () => {
+      mockStore.getState.mockReturnValue({
+        auth: {
+          token: null,
+          user: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          loading: false,
+          error: null,
+        },
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      } as Response);
+
+      await apiClient.get('/test');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.not.objectContaining({
+            'Authorization': expect.any(String),
+          }),
+        })
+      );
     });
   });
 });

@@ -1,7 +1,9 @@
+
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
+import { server } from '../services/__tests__/mocks/server';
 
-// Configure testing library
+// Configure React Testing Library
 configure({ testIdAttribute: 'data-testid' });
 
 // Mock IntersectionObserver
@@ -27,16 +29,13 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
 });
-
-// Mock fetch globally
-global.fetch = jest.fn();
 
 // Mock localStorage
 const localStorageMock = {
@@ -48,22 +47,24 @@ const localStorageMock = {
 global.localStorage = localStorageMock;
 
 // Mock sessionStorage
-global.sessionStorage = localStorageMock;
+const sessionStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+global.sessionStorage = sessionStorageMock;
 
-// Suppress console errors in tests unless explicitly needed
-const originalError = console.error;
-beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is deprecated')
-    ) {
-      return;
-    }
-    originalError.call(console, ...args);
-  };
-});
+// Setup MSW server for API mocking
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
-afterAll(() => {
-  console.error = originalError;
+// Reset all mocks after each test
+afterEach(() => {
+  jest.clearAllMocks();
+  localStorageMock.getItem.mockClear();
+  localStorageMock.setItem.mockClear();
+  localStorageMock.removeItem.mockClear();
+  localStorageMock.clear.mockClear();
 });

@@ -1,114 +1,3 @@
-
-import { renderHook, act } from '@testing-library/react';
-import { useTradesStore } from '../trades';
-
-const mockTrades = [
-  {
-    id: '1',
-    symbol: 'AAPL',
-    quantity: 100,
-    price: 150.00,
-    date: '2024-01-01',
-    type: 'buy' as const,
-    profit: 500.00
-  },
-  {
-    id: '2',
-    symbol: 'GOOGL',
-    quantity: 50,
-    price: 2800.00,
-    date: '2024-01-02',
-    type: 'sell' as const,
-    profit: -200.00
-  }
-];
-
-describe('Trades Store', () => {
-  beforeEach(() => {
-    useTradesStore.getState().clearTrades();
-  });
-
-  it('should initialize with empty state', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    expect(result.current.trades).toEqual([]);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.analytics).toBeNull();
-  });
-
-  it('should set trades successfully', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    act(() => {
-      result.current.setTrades(mockTrades);
-    });
-
-    expect(result.current.trades).toEqual(mockTrades);
-    expect(result.current.trades).toHaveLength(2);
-  });
-
-  it('should add single trade', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    act(() => {
-      result.current.addTrade(mockTrades[0]);
-    });
-
-    expect(result.current.trades).toHaveLength(1);
-    expect(result.current.trades[0]).toEqual(mockTrades[0]);
-  });
-
-  it('should set loading state', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    act(() => {
-      result.current.setLoading(true);
-    });
-
-    expect(result.current.isLoading).toBe(true);
-
-    act(() => {
-      result.current.setLoading(false);
-    });
-
-    expect(result.current.isLoading).toBe(false);
-  });
-
-  it('should clear trades', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    // Add some trades first
-    act(() => {
-      result.current.setTrades(mockTrades);
-    });
-
-    expect(result.current.trades).toHaveLength(2);
-
-    // Clear trades
-    act(() => {
-      result.current.clearTrades();
-    });
-
-    expect(result.current.trades).toEqual([]);
-  });
-
-  it('should set analytics data', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    const mockAnalytics = {
-      totalProfit: 300.00,
-      winRate: 0.6,
-      totalTrades: 10,
-      avgProfit: 30.00
-    };
-
-    act(() => {
-      result.current.setAnalytics(mockAnalytics);
-    });
-
-    expect(result.current.analytics).toEqual(mockAnalytics);
-  });
-});
 import { configureStore } from '@reduxjs/toolkit';
 import tradesReducer, { 
   fetchTrades, 
@@ -118,15 +7,29 @@ import tradesReducer, {
   setFilters,
   clearFilters 
 } from '../trades';
+import * as tradesService from '../../services/trades';
 
-const createMockStore = (initialState = {}) => {
-  return configureStore({
-    reducer: {
-      trades: tradesReducer,
-    },
-    preloadedState: {
-      trades: {
-        items: [],
+// Mock the trades service
+jest.mock('../../services/trades');
+const mockedTradesService = tradesService as jest.Mocked<typeof tradesService>;
+
+describe('Trades Store', () => {
+  let store: ReturnType<typeof configureStore>;
+
+  beforeEach(() => {
+    store = configureStore({
+      reducer: {
+        trades: tradesReducer,
+      },
+    });
+    jest.clearAllMocks();
+  });
+
+  describe('initial state', () => {
+    it('should have correct initial state', () => {
+      const state = store.getState().trades;
+      expect(state).toEqual({
+        trades: [],
         loading: false,
         error: null,
         filters: {},
@@ -134,207 +37,153 @@ const createMockStore = (initialState = {}) => {
           page: 1,
           limit: 50,
           total: 0,
-          totalPages: 0,
         },
-        ...initialState,
-      },
-    },
-  });
-};
-
-const mockTrade = {
-  id: '1',
-  symbol: 'AAPL',
-  entry_time: '2024-01-01T10:00:00Z',
-  exit_time: '2024-01-01T11:00:00Z',
-  quantity: 100,
-  entry_price: 150.00,
-  exit_price: 155.00,
-  pnl: 500.00,
-  strategy: 'momentum',
-  confidence_score: 8,
-};
-
-describe('Trades Slice', () => {
-  let store: ReturnType<typeof createMockStore>;
-
-  beforeEach(() => {
-    store = createMockStore();
+      });
+    });
   });
 
-  describe('fetchTrades action', () => {
-    it('should handle fetchTrades.pending', () => {
-      store.dispatch(fetchTrades.pending('', undefined));
-      
+  describe('fetchTrades', () => {
+    it('should fetch trades successfully', async () => {
+      const mockTrades = [
+        {
+          id: 1,
+          symbol: 'AAPL',
+          entry_price: 150.00,
+          exit_price: 155.00,
+          quantity: 100,
+          trade_date: '2024-01-01',
+          profit_loss: 500.00,
+        },
+      ];
+
+      mockedTradesService.getTrades.mockResolvedValue({
+        trades: mockTrades,
+        total: 1,
+        page: 1,
+        limit: 50,
+      });
+
+      await store.dispatch(fetchTrades({ page: 1, limit: 50 }));
+
       const state = store.getState().trades;
-      expect(state.loading).toBe(true);
+      expect(state.trades).toEqual(mockTrades);
+      expect(state.pagination.total).toBe(1);
+      expect(state.loading).toBe(false);
       expect(state.error).toBe(null);
     });
 
-    it('should handle fetchTrades.fulfilled', () => {
-      const mockResponse = {
-        trades: [mockTrade],
-        pagination: {
-          page: 1,
-          limit: 50,
-          total: 1,
-          totalPages: 1,
-        },
-      };
+    it('should handle fetch trades failure', async () => {
+      const mockError = new Error('Failed to fetch trades');
+      mockedTradesService.getTrades.mockRejectedValue(mockError);
 
-      store.dispatch(fetchTrades.fulfilled(mockResponse, '', undefined));
-      
-      const state = store.getState().trades;
-      expect(state.loading).toBe(false);
-      expect(state.items).toEqual([mockTrade]);
-      expect(state.pagination).toEqual(mockResponse.pagination);
-    });
+      await store.dispatch(fetchTrades({ page: 1, limit: 50 }));
 
-    it('should handle fetchTrades.rejected', () => {
-      const error = { message: 'Failed to fetch trades' };
-      store.dispatch(fetchTrades.rejected(error as any, '', undefined));
-      
       const state = store.getState().trades;
+      expect(state.trades).toEqual([]);
       expect(state.loading).toBe(false);
       expect(state.error).toBe('Failed to fetch trades');
     });
   });
 
-  describe('addTrade action', () => {
-    it('should add new trade to state', () => {
-      store.dispatch(addTrade.fulfilled(mockTrade, '', mockTrade));
-      
+  describe('addTrade', () => {
+    it('should add trade successfully', async () => {
+      const newTrade = {
+        symbol: 'TSLA',
+        entry_price: 200.00,
+        exit_price: 210.00,
+        quantity: 50,
+        trade_date: '2024-01-02',
+      };
+
+      const createdTrade = { ...newTrade, id: 2, profit_loss: 500.00 };
+      mockedTradesService.createTrade.mockResolvedValue(createdTrade);
+
+      await store.dispatch(addTrade(newTrade));
+
       const state = store.getState().trades;
-      expect(state.items).toContain(mockTrade);
+      expect(state.trades).toContain(createdTrade);
       expect(state.loading).toBe(false);
+      expect(state.error).toBe(null);
     });
   });
 
-  describe('updateTrade action', () => {
-    it('should update existing trade in state', () => {
-      const initialState = { items: [mockTrade] };
-      store = createMockStore(initialState);
+  describe('updateTrade', () => {
+    it('should update trade successfully', async () => {
+      // First add a trade
+      const initialTrade = {
+        id: 1,
+        symbol: 'AAPL',
+        entry_price: 150.00,
+        exit_price: 155.00,
+        quantity: 100,
+        trade_date: '2024-01-01',
+        profit_loss: 500.00,
+      };
 
-      const updatedTrade = { ...mockTrade, pnl: 600.00 };
-      store.dispatch(updateTrade.fulfilled(updatedTrade, '', { id: '1', data: updatedTrade }));
-      
+      store.dispatch(fetchTrades.fulfilled({
+        trades: [initialTrade],
+        total: 1,
+        page: 1,
+        limit: 50,
+      }, '', { page: 1, limit: 50 }));
+
+      // Update the trade
+      const updatedTrade = { ...initialTrade, exit_price: 160.00, profit_loss: 1000.00 };
+      mockedTradesService.updateTrade.mockResolvedValue(updatedTrade);
+
+      await store.dispatch(updateTrade({ id: 1, updates: { exit_price: 160.00 } }));
+
       const state = store.getState().trades;
-      expect(state.items[0].pnl).toBe(600.00);
+      const trade = state.trades.find(t => t.id === 1);
+      expect(trade?.exit_price).toBe(160.00);
+      expect(trade?.profit_loss).toBe(1000.00);
     });
   });
 
-  describe('deleteTrade action', () => {
-    it('should remove trade from state', () => {
-      const initialState = { items: [mockTrade] };
-      store = createMockStore(initialState);
+  describe('deleteTrade', () => {
+    it('should delete trade successfully', async () => {
+      // First add trades
+      const trades = [
+        { id: 1, symbol: 'AAPL', profit_loss: 500.00 },
+        { id: 2, symbol: 'TSLA', profit_loss: 300.00 },
+      ];
 
-      store.dispatch(deleteTrade.fulfilled('1', '', '1'));
-      
+      store.dispatch(fetchTrades.fulfilled({
+        trades,
+        total: 2,
+        page: 1,
+        limit: 50,
+      }, '', { page: 1, limit: 50 }));
+
+      mockedTradesService.deleteTrade.mockResolvedValue(undefined);
+
+      await store.dispatch(deleteTrade(1));
+
       const state = store.getState().trades;
-      expect(state.items).toHaveLength(0);
+      expect(state.trades).toHaveLength(1);
+      expect(state.trades.find(t => t.id === 1)).toBeUndefined();
     });
   });
 
-  describe('filter actions', () => {
+  describe('filters', () => {
     it('should set filters', () => {
-      const filters = { symbol: 'AAPL', strategy: 'momentum' };
+      const filters = { symbol: 'AAPL', date_from: '2024-01-01' };
+
       store.dispatch(setFilters(filters));
-      
+
       const state = store.getState().trades;
       expect(state.filters).toEqual(filters);
     });
 
     it('should clear filters', () => {
-      const initialState = { filters: { symbol: 'AAPL' } };
-      store = createMockStore(initialState);
+      // Set filters first
+      store.dispatch(setFilters({ symbol: 'AAPL' }));
 
+      // Clear filters
       store.dispatch(clearFilters());
-      
+
       const state = store.getState().trades;
       expect(state.filters).toEqual({});
     });
-  });
-});
-import { configureStore } from '@reduxjs/toolkit';
-import tradesReducer, { 
-  setTrades, 
-  addTrade, 
-  updateTrade, 
-  deleteTrade,
-  setLoading,
-  setError 
-} from '../trades';
-
-describe('trades slice', () => {
-  let store: any;
-
-  beforeEach(() => {
-    store = configureStore({
-      reducer: { trades: tradesReducer },
-    });
-  });
-
-  const mockTrade = {
-    id: '1',
-    symbol: 'AAPL',
-    entry_price: 150.00,
-    exit_price: 155.00,
-    quantity: 100,
-    entry_time: '2024-01-01T10:00:00Z',
-    exit_time: '2024-01-01T15:00:00Z',
-    pnl: 500.00,
-    tags: ['momentum'],
-    playbook: 'breakout',
-  };
-
-  it('should handle initial state', () => {
-    expect(store.getState().trades).toEqual({
-      trades: [],
-      isLoading: false,
-      error: null,
-      totalPnl: 0,
-      winRate: 0,
-    });
-  });
-
-  it('should handle setTrades', () => {
-    const trades = [mockTrade];
-    store.dispatch(setTrades(trades));
-    
-    expect(store.getState().trades.trades).toEqual(trades);
-    expect(store.getState().trades.totalPnl).toBe(500);
-  });
-
-  it('should handle addTrade', () => {
-    store.dispatch(addTrade(mockTrade));
-    
-    expect(store.getState().trades.trades).toHaveLength(1);
-    expect(store.getState().trades.trades[0]).toEqual(mockTrade);
-  });
-
-  it('should handle updateTrade', () => {
-    store.dispatch(addTrade(mockTrade));
-    
-    const updatedTrade = { ...mockTrade, exit_price: 160.00, pnl: 1000.00 };
-    store.dispatch(updateTrade({ id: '1', updates: updatedTrade }));
-    
-    expect(store.getState().trades.trades[0].exit_price).toBe(160.00);
-    expect(store.getState().trades.trades[0].pnl).toBe(1000.00);
-  });
-
-  it('should handle deleteTrade', () => {
-    store.dispatch(addTrade(mockTrade));
-    store.dispatch(deleteTrade('1'));
-    
-    expect(store.getState().trades.trades).toHaveLength(0);
-  });
-
-  it('should calculate win rate correctly', () => {
-    const winningTrade = { ...mockTrade, id: '1', pnl: 500 };
-    const losingTrade = { ...mockTrade, id: '2', pnl: -200 };
-    
-    store.dispatch(setTrades([winningTrade, losingTrade]));
-    
-    expect(store.getState().trades.winRate).toBe(50); // 1 winner out of 2 trades
   });
 });

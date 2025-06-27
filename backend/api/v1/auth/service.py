@@ -1,148 +1,166 @@
 
 """
-Authentication service layer - handles all auth business logic
+Authentication service for user management and JWT handling
 """
-from typing import Dict, Optional, Any
 from datetime import datetime, timedelta
-import logging
+from typing import Optional
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+import secrets
+import uuid
 
-from backend.core.security import SecurityManager
-from backend.core.exceptions import AuthenticationError, ValidationError, BusinessLogicError
-from backend.api.v1.auth.schemas import LoginRequest, RegisterRequest, UserResponse, TokenResponse
+from backend.models.user import User
+from backend.api.v1.auth.schemas import UserRegistration, UserLogin, UserUpdate
 from backend.core.config import settings
 
-logger = logging.getLogger(__name__)
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# JWT settings
+SECRET_KEY = settings.SECRET_KEY if hasattr(settings, 'SECRET_KEY') else "your-secret-key-here"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 class AuthService:
-    """Authentication service handling login, registration, and user management"""
+    def __init__(self, db: Session):
+        self.db = db
     
-    def __init__(self):
-        self.security_manager = SecurityManager()
+    def get_password_hash(self, password: str) -> str:
+        return pwd_context.hash(password)
     
-    async def authenticate_user(self, login_data: LoginRequest) -> TokenResponse:
-        """Authenticate user and return token"""
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        return pwd_context.verify(plain_password, hashed_password)
+    
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        return self.db.query(User).filter(User.email == email).first()
+    
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        return self.db.query(User).filter(User.username == username).first()
+    
+    def get_user_by_id(self, user_id: str) -> Optional[User]:
+        return self.db.query(User).filter(User.id == user_id).first()
+    
+    def create_user(self, user_data: UserRegistration) -> User:
+        """Create a new user"""
+        # Check if user already exists
+        if self.get_user_by_email(user_data.email):
+            raise ValueError("Email already registered")
+        
+        if self.get_user_by_username(user_data.username):
+            raise ValueError("Username already taken")
+        
+        # Create new user
+        hashed_password = self.get_password_hash(user_data.password)
+        verification_token = secrets.token_urlsafe(32)
+        
+        db_user = User(
+            id=str(uuid.uuid4()),
+            email=user_data.email,
+            username=user_data.username,
+            hashed_password=hashed_password,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            trading_experience=user_data.trading_experience,
+            verification_token=verification_token,
+            created_at=datetime.utcnow()
+        )
+        
+        self.db.add(db_user)
+        self.db.commit()
+        self.db.refresh(db_user)
+        
+        return db_user
+    
+    def authenticate_user(self, email: str, password: str) -> Optional[User]:
+        """Authenticate user with email and password"""
+        user = self.get_user_by_email(email)
+        if not user:
+            return None
+        if not self.verify_password(password, user.hashed_password):
+            return None
+        if not user.is_active:
+            return None
+        
+        # Update last login
+        user.last_login = datetime.utcnow()
+        self.db.commit()
+        
+        return user
+    
+    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None):
+        """Create JWT access token"""
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    
+    def verify_token(self, token: str) -> Optional[str]:
+        """Verify JWT token and return user ID"""
         try:
-            # For production, this would query a real database
-            # Using mock authentication for now
-            if login_data.username == "demo" and login_data.password == "demo123":
-                user_data = {
-                    "user_id": "demo_user_001",
-                    "username": login_data.username,
-                    "email": "demo@tradesense.com",
-                    "role": "user"
-                }
-            else:
-                # Mock authentication - in production, verify against database
-                user_data = {
-                    "user_id": f"user_{hash(login_data.username) % 10000}",
-                    "username": login_data.username,
-                    "email": f"{login_data.username}@example.com",
-                    "role": "user"
-                }
-            
-            # Create JWT token
-            token_data = {
-                "user_id": user_data["user_id"],
-                "username": user_data["username"],
-                "email": user_data["email"],
-                "role": user_data["role"]
-            }
-            
-            access_token = self.security_manager.create_access_token(token_data)
-            
-            # Create user response
-            user_response = UserResponse(
-                user_id=user_data["user_id"],
-                username=user_data["username"],
-                email=user_data["email"],
-                role=user_data["role"],
-                created_at=datetime.utcnow(),
-                last_login=datetime.utcnow()
-            )
-            
-            logger.info(f"User {login_data.username} authenticated successfully")
-            
-            return TokenResponse(
-                access_token=access_token,
-                token_type="bearer",
-                expires_in=settings.jwt_expiration_hours * 3600,
-                user=user_response
-            )
-            
-        except Exception as e:
-            logger.error(f"Authentication failed for user {login_data.username}: {str(e)}")
-            raise AuthenticationError("Invalid credentials")
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                return None
+            return user_id
+        except JWTError:
+            return None
     
-    async def register_user(self, register_data: RegisterRequest) -> Dict[str, Any]:
-        """Register a new user"""
-        try:
-            # In production, check if user already exists
-            # Hash password
-            hashed_password = self.security_manager.hash_password(register_data.password)
-            
-            # Create user record (mock for now)
-            user_id = f"user_{hash(register_data.username) % 10000}"
-            
-            logger.info(f"User {register_data.username} registered successfully")
-            
-            return {
-                "user_id": user_id,
-                "username": register_data.username,
-                "email": register_data.email,
-                "message": "Registration successful"
-            }
-            
-        except Exception as e:
-            logger.error(f"Registration failed for user {register_data.username}: {str(e)}")
-            raise BusinessLogicError(f"Registration failed: {str(e)}")
+    def update_user(self, user_id: str, user_data: UserUpdate) -> Optional[User]:
+        """Update user profile"""
+        user = self.get_user_by_id(user_id)
+        if not user:
+            return None
+        
+        update_data = user_data.dict(exclude_unset=True)
+        
+        # Check username uniqueness if being updated
+        if "username" in update_data and update_data["username"] != user.username:
+            existing_user = self.get_user_by_username(update_data["username"])
+            if existing_user:
+                raise ValueError("Username already taken")
+        
+        for field, value in update_data.items():
+            setattr(user, field, value)
+        
+        user.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(user)
+        
+        return user
     
-    async def get_current_user_profile(self, user_data: Dict[str, Any]) -> UserResponse:
-        """Get current user profile"""
-        try:
-            return UserResponse(
-                user_id=user_data["user_id"],
-                username=user_data["username"],
-                email=user_data["email"],
-                role=user_data.get("role", "user"),
-                created_at=datetime.utcnow(),  # In production, get from database
-                last_login=datetime.utcnow()
-            )
-        except Exception as e:
-            logger.error(f"Failed to get user profile: {str(e)}")
-            raise BusinessLogicError("Failed to retrieve user profile")
+    def generate_password_reset_token(self, email: str) -> Optional[str]:
+        """Generate password reset token"""
+        user = self.get_user_by_email(email)
+        if not user:
+            return None
+        
+        reset_token = secrets.token_urlsafe(32)
+        user.reset_password_token = reset_token
+        user.reset_password_expires = datetime.utcnow() + timedelta(hours=1)
+        
+        self.db.commit()
+        return reset_token
     
-    async def refresh_token(self, current_user: Dict[str, Any]) -> TokenResponse:
-        """Refresh user token"""
-        try:
-            # Create new token with updated expiration
-            token_data = {
-                "user_id": current_user["user_id"],
-                "username": current_user["username"],
-                "email": current_user["email"],
-                "role": current_user.get("role", "user")
-            }
-            
-            access_token = self.security_manager.create_access_token(token_data)
-            
-            user_response = UserResponse(
-                user_id=current_user["user_id"],
-                username=current_user["username"],
-                email=current_user["email"],
-                role=current_user.get("role", "user"),
-                created_at=datetime.utcnow(),
-                last_login=datetime.utcnow()
-            )
-            
-            logger.info(f"Token refreshed for user {current_user['username']}")
-            
-            return TokenResponse(
-                access_token=access_token,
-                token_type="bearer",
-                expires_in=settings.jwt_expiration_hours * 3600,
-                user=user_response
-            )
-            
-        except Exception as e:
-            logger.error(f"Token refresh failed: {str(e)}")
-            raise AuthenticationError("Token refresh failed")
+    def reset_password(self, token: str, new_password: str) -> bool:
+        """Reset password using token"""
+        user = self.db.query(User).filter(
+            User.reset_password_token == token,
+            User.reset_password_expires > datetime.utcnow()
+        ).first()
+        
+        if not user:
+            return False
+        
+        user.hashed_password = self.get_password_hash(new_password)
+        user.reset_password_token = None
+        user.reset_password_expires = None
+        user.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        return True

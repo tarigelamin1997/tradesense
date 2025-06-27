@@ -1,11 +1,9 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Index
+from sqlalchemy import Column, String, DateTime, Boolean, Text
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional
 from datetime import datetime
 import uuid
-from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -13,25 +11,37 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    username = Column(String, unique=True, nullable=False, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="trader", index=True)  # "admin" or "trader"
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String, nullable=True)
+    reset_password_token = Column(String, nullable=True)
+    reset_password_expires = Column(DateTime, nullable=True)
+    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Indexes for performance
-    __table_args__ = (
-        Index('idx_user_role_active', 'role', 'is_active'),
-        Index('idx_user_email_active', 'email', 'is_active'),
-    )
+    # Profile fields
+    trading_experience = Column(String, nullable=True)  # beginner, intermediate, advanced
+    preferred_markets = Column(Text, nullable=True)  # JSON string of market preferences
+    timezone = Column(String, default="UTC")
 
     # Relationships
+    portfolios = relationship("Portfolio", back_populates="user")
     trades = relationship("Trade", back_populates="user")
     playbooks = relationship("Playbook", back_populates="user")
 
+    def __repr__(self):
+        return f"<User(id={self.id}, email={self.email}, username={self.username})>"
+
 # Pydantic models for API
+from pydantic import BaseModel, EmailStr, Field, validator
+from typing import Optional
+
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username")
     email: EmailStr = Field(..., description="Email address")

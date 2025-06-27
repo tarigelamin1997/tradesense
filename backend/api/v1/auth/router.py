@@ -1,121 +1,182 @@
 
 """
-Authentication router - handles all auth endpoints
+Authentication API routes
 """
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
-import logging
+from datetime import timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
+from backend.core.db.session import get_db
 from backend.api.v1.auth.schemas import (
-    LoginRequest, 
-    RegisterRequest, 
-    TokenResponse, 
-    UserResponse
+    UserRegistration, UserLogin, UserResponse, Token, 
+    PasswordReset, PasswordResetConfirm, ChangePassword, UserUpdate
 )
-from backend.api.v1.auth.service import AuthService
-from backend.core.security import get_current_active_user
-from backend.core.response import ResponseHandler, APIResponse
-from backend.core.exceptions import TradeSenseException
+from backend.api.v1.auth.service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
+from backend.models.user import User
 
-logger = logging.getLogger(__name__)
+router = APIRouter()
+security = HTTPBearer()
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
-auth_service = AuthService()
-
-
-@router.post("/login", response_model=TokenResponse, summary="User Login")
-async def login(login_data: LoginRequest) -> TokenResponse:
-    """
-    Authenticate user and return access token
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current authenticated user"""
+    auth_service = AuthService(db)
     
-    - **username**: User's username
-    - **password**: User's password
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     
-    Returns JWT token and user information
-    """
+    user_id = auth_service.verify_token(credentials.credentials)
+    if user_id is None:
+        raise credentials_exception
+    
+    user = auth_service.get_user_by_id(user_id)
+    if user is None:
+        raise credentials_exception
+    
+    return user
+
+@router.post("/register", response_model=Token)
+async def register(user_data: UserRegistration, db: Session = Depends(get_db)):
+    """Register a new user"""
+    auth_service = AuthService(db)
+    
     try:
-        return await auth_service.authenticate_user(login_data)
-    except TradeSenseException:
-        raise
-    except Exception as e:
-        logger.error(f"Login endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.post("/register", response_model=APIResponse, summary="User Registration")
-async def register(register_data: RegisterRequest) -> APIResponse:
-    """
-    Register a new user account
-    
-    - **username**: Desired username (alphanumeric only)
-    - **email**: Valid email address
-    - **password**: Password (minimum 6 characters)
-    
-    Returns registration confirmation
-    """
-    try:
-        result = await auth_service.register_user(register_data)
-        return ResponseHandler.success(
-            data=result,
-            message="User registered successfully"
+        user = auth_service.create_user(user_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
-    except TradeSenseException:
-        raise
-    except Exception as e:
-        logger.error(f"Registration endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.get("/me", response_model=UserResponse, summary="Get Current User")
-async def get_current_user(
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
-) -> UserResponse:
-    """
-    Get current authenticated user's profile
     
-    Requires valid JWT token in Authorization header
-    """
-    try:
-        return await auth_service.get_current_user_profile(current_user)
-    except TradeSenseException:
-        raise
-    except Exception as e:
-        logger.error(f"Get current user endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.post("/refresh", response_model=TokenResponse, summary="Refresh Token")
-async def refresh_token(
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
-) -> TokenResponse:
-    """
-    Refresh JWT access token
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth_service.create_access_token(
+        data={"sub": user.id}, expires_delta=access_token_expires
+    )
     
-    Returns new token with extended expiration
-    """
-    try:
-        return await auth_service.refresh_token(current_user)
-    except TradeSenseException:
-        raise
-    except Exception as e:
-        logger.error(f"Token refresh endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": user
+    }
 
-
-@router.post("/logout", response_model=APIResponse, summary="User Logout")
-async def logout(
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
-) -> APIResponse:
-    """
-    Logout user (client-side token invalidation)
+@router.post("/login", response_model=Token)
+async def login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Login user"""
+    auth_service = AuthService(db)
     
-    Note: JWT tokens are stateless, so logout is handled client-side
-    """
-    try:
-        logger.info(f"User {current_user['username']} logged out")
-        return ResponseHandler.success(
-            message="Logged out successfully"
+    user = auth_service.authenticate_user(login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    except Exception as e:
-        logger.error(f"Logout endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth_service.create_access_token(
+        data={"sub": user.id}, expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": user
+    }
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
+
+@router.put("/me", response_model=UserResponse)
+async def update_profile(
+    user_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user profile"""
+    auth_service = AuthService(db)
+    
+    try:
+        updated_user = auth_service.update_user(current_user.id, user_data)
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        return updated_user
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.post("/password-reset")
+async def request_password_reset(
+    reset_data: PasswordReset,
+    db: Session = Depends(get_db)
+):
+    """Request password reset"""
+    auth_service = AuthService(db)
+    
+    token = auth_service.generate_password_reset_token(reset_data.email)
+    if token:
+        # In production, send email with reset link
+        # For now, return success regardless
+        pass
+    
+    return {"message": "If the email exists, a password reset link has been sent"}
+
+@router.post("/password-reset/confirm")
+async def confirm_password_reset(
+    reset_data: PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    """Confirm password reset with token"""
+    auth_service = AuthService(db)
+    
+    success = auth_service.reset_password(reset_data.token, reset_data.new_password)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    return {"message": "Password has been reset successfully"}
+
+@router.post("/change-password")
+async def change_password(
+    password_data: ChangePassword,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Change user password"""
+    auth_service = AuthService(db)
+    
+    # Verify current password
+    if not auth_service.verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    
+    # Update password
+    current_user.hashed_password = auth_service.get_password_hash(password_data.new_password)
+    db.commit()
+    
+    return {"message": "Password changed successfully"}
+
+@router.post("/logout")
+async def logout(current_user: User = Depends(get_current_user)):
+    """Logout user (client should remove token)"""
+    return {"message": "Successfully logged out"}

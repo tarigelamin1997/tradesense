@@ -474,3 +474,178 @@ export const a11y = {
 };
 
 export default a11y;
+/**
+ * Accessibility utilities for TradeSense
+ */
+
+// ARIA label generators
+export const generateAriaLabel = {
+  tradeCard: (trade: any) => 
+    `Trade ${trade.symbol}, entry ${trade.entry_price}, ${trade.pnl > 0 ? 'profit' : 'loss'} ${Math.abs(trade.pnl)}`,
+  
+  metric: (label: string, value: string | number) => 
+    `${label}: ${value}`,
+  
+  button: (action: string, context?: string) => 
+    context ? `${action} ${context}` : action,
+  
+  chart: (type: string, description: string) => 
+    `${type} chart showing ${description}`,
+};
+
+// Focus management
+export const focusManagement = {
+  trapFocus: (element: HTMLElement) => {
+    const focusableElements = element.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    element.addEventListener('keydown', handleTabKey);
+    firstElement?.focus();
+
+    return () => element.removeEventListener('keydown', handleTabKey);
+  },
+
+  announceToScreenReader: (message: string) => {
+    const announcement = document.createElement('div');
+    announcement.setAttribute('aria-live', 'polite');
+    announcement.setAttribute('aria-atomic', 'true');
+    announcement.className = 'sr-only';
+    announcement.textContent = message;
+    
+    document.body.appendChild(announcement);
+    
+    setTimeout(() => {
+      document.body.removeChild(announcement);
+    }, 1000);
+  },
+
+  moveFocusToElement: (selector: string) => {
+    const element = document.querySelector(selector) as HTMLElement;
+    if (element) {
+      element.focus();
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  },
+};
+
+// Keyboard navigation helpers
+export const keyboardNavigation = {
+  handleArrowKeys: (
+    e: KeyboardEvent, 
+    items: HTMLElement[], 
+    currentIndex: number,
+    onIndexChange: (newIndex: number) => void
+  ) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        const nextIndex = Math.min(currentIndex + 1, items.length - 1);
+        onIndexChange(nextIndex);
+        items[nextIndex]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        const prevIndex = Math.max(currentIndex - 1, 0);
+        onIndexChange(prevIndex);
+        items[prevIndex]?.focus();
+        break;
+      case 'Home':
+        e.preventDefault();
+        onIndexChange(0);
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        const lastIndex = items.length - 1;
+        onIndexChange(lastIndex);
+        items[lastIndex]?.focus();
+        break;
+    }
+  },
+};
+
+// Color contrast checker
+export const accessibility = {
+  checkColorContrast: (foreground: string, background: string): boolean => {
+    // Simplified contrast ratio calculation
+    // In a real implementation, you'd use a proper color contrast library
+    const getLuminance = (color: string): number => {
+      // Convert hex to RGB and calculate relative luminance
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16) / 255;
+      const g = parseInt(hex.substr(2, 2), 16) / 255;
+      const b = parseInt(hex.substr(4, 2), 16) / 255;
+      
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+
+    const l1 = getLuminance(foreground);
+    const l2 = getLuminance(background);
+    const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    
+    return ratio >= 4.5; // WCAG AA standard
+  },
+
+  addSkipLink: () => {
+    const skipLink = document.createElement('a');
+    skipLink.href = '#main-content';
+    skipLink.textContent = 'Skip to main content';
+    skipLink.className = 'skip-link';
+    skipLink.style.cssText = `
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: #000;
+      color: #fff;
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 4px;
+      z-index: 1000;
+    `;
+    
+    skipLink.addEventListener('focus', () => {
+      skipLink.style.top = '6px';
+    });
+    
+    skipLink.addEventListener('blur', () => {
+      skipLink.style.top = '-40px';
+    });
+
+    document.body.insertBefore(skipLink, document.body.firstChild);
+  },
+};
+
+// Screen reader utilities
+export const screenReader = {
+  hideFromScreenReader: (element: HTMLElement) => {
+    element.setAttribute('aria-hidden', 'true');
+  },
+
+  showToScreenReader: (element: HTMLElement) => {
+    element.removeAttribute('aria-hidden');
+  },
+
+  setLiveRegion: (element: HTMLElement, politeness: 'polite' | 'assertive' = 'polite') => {
+    element.setAttribute('aria-live', politeness);
+    element.setAttribute('aria-atomic', 'true');
+  },
+};

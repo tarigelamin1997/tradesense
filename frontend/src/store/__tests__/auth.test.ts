@@ -185,3 +185,68 @@ describe('Auth Slice', () => {
     });
   });
 });
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer, { loginStart, loginSuccess, loginFailure, logout } from '../auth';
+
+describe('auth slice', () => {
+  let store: any;
+
+  beforeEach(() => {
+    store = configureStore({
+      reducer: { auth: authReducer },
+    });
+  });
+
+  it('should handle initial state', () => {
+    expect(store.getState().auth).toEqual({
+      user: null,
+      token: null,
+      isLoading: false,
+      error: null,
+    });
+  });
+
+  it('should handle login start', () => {
+    store.dispatch(loginStart());
+    expect(store.getState().auth.isLoading).toBe(true);
+    expect(store.getState().auth.error).toBe(null);
+  });
+
+  it('should handle login success', () => {
+    const mockUser = { id: '1', email: 'test@example.com' };
+    const mockToken = 'mock-token';
+    
+    store.dispatch(loginSuccess({ user: mockUser, token: mockToken }));
+    
+    expect(store.getState().auth.user).toEqual(mockUser);
+    expect(store.getState().auth.token).toBe(mockToken);
+    expect(store.getState().auth.isLoading).toBe(false);
+    expect(store.getState().auth.error).toBe(null);
+  });
+
+  it('should handle login failure', () => {
+    const errorMessage = 'Login failed';
+    
+    store.dispatch(loginFailure(errorMessage));
+    
+    expect(store.getState().auth.error).toBe(errorMessage);
+    expect(store.getState().auth.isLoading).toBe(false);
+    expect(store.getState().auth.user).toBe(null);
+  });
+
+  it('should handle logout', () => {
+    // First login
+    store.dispatch(loginSuccess({ 
+      user: { id: '1', email: 'test@example.com' }, 
+      token: 'mock-token' 
+    }));
+    
+    // Then logout
+    store.dispatch(logout());
+    
+    expect(store.getState().auth.user).toBe(null);
+    expect(store.getState().auth.token).toBe(null);
+    expect(store.getState().auth.isLoading).toBe(false);
+    expect(store.getState().auth.error).toBe(null);
+  });
+});

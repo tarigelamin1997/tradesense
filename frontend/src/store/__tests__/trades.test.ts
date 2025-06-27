@@ -255,3 +255,86 @@ describe('Trades Slice', () => {
     });
   });
 });
+import { configureStore } from '@reduxjs/toolkit';
+import tradesReducer, { 
+  setTrades, 
+  addTrade, 
+  updateTrade, 
+  deleteTrade,
+  setLoading,
+  setError 
+} from '../trades';
+
+describe('trades slice', () => {
+  let store: any;
+
+  beforeEach(() => {
+    store = configureStore({
+      reducer: { trades: tradesReducer },
+    });
+  });
+
+  const mockTrade = {
+    id: '1',
+    symbol: 'AAPL',
+    entry_price: 150.00,
+    exit_price: 155.00,
+    quantity: 100,
+    entry_time: '2024-01-01T10:00:00Z',
+    exit_time: '2024-01-01T15:00:00Z',
+    pnl: 500.00,
+    tags: ['momentum'],
+    playbook: 'breakout',
+  };
+
+  it('should handle initial state', () => {
+    expect(store.getState().trades).toEqual({
+      trades: [],
+      isLoading: false,
+      error: null,
+      totalPnl: 0,
+      winRate: 0,
+    });
+  });
+
+  it('should handle setTrades', () => {
+    const trades = [mockTrade];
+    store.dispatch(setTrades(trades));
+    
+    expect(store.getState().trades.trades).toEqual(trades);
+    expect(store.getState().trades.totalPnl).toBe(500);
+  });
+
+  it('should handle addTrade', () => {
+    store.dispatch(addTrade(mockTrade));
+    
+    expect(store.getState().trades.trades).toHaveLength(1);
+    expect(store.getState().trades.trades[0]).toEqual(mockTrade);
+  });
+
+  it('should handle updateTrade', () => {
+    store.dispatch(addTrade(mockTrade));
+    
+    const updatedTrade = { ...mockTrade, exit_price: 160.00, pnl: 1000.00 };
+    store.dispatch(updateTrade({ id: '1', updates: updatedTrade }));
+    
+    expect(store.getState().trades.trades[0].exit_price).toBe(160.00);
+    expect(store.getState().trades.trades[0].pnl).toBe(1000.00);
+  });
+
+  it('should handle deleteTrade', () => {
+    store.dispatch(addTrade(mockTrade));
+    store.dispatch(deleteTrade('1'));
+    
+    expect(store.getState().trades.trades).toHaveLength(0);
+  });
+
+  it('should calculate win rate correctly', () => {
+    const winningTrade = { ...mockTrade, id: '1', pnl: 500 };
+    const losingTrade = { ...mockTrade, id: '2', pnl: -200 };
+    
+    store.dispatch(setTrades([winningTrade, losingTrade]));
+    
+    expect(store.getState().trades.winRate).toBe(50); // 1 winner out of 2 trades
+  });
+});

@@ -786,3 +786,256 @@ print(f"Win Rate: {analytics['metrics']['win_rate']:.2%}")
 - Initial API release
 - Core trading data management
 - Basic analytics endpoints
+# TradeSense Frontend API Documentation
+
+## Overview
+
+This document provides comprehensive documentation for all service modules in the TradeSense frontend application.
+
+## Authentication Service (`auth.ts`)
+
+### Purpose
+Handles user authentication, token management, and session persistence.
+
+### Methods
+
+#### `login(credentials: LoginCredentials): Promise<AuthResponse>`
+Authenticates a user with email and password.
+
+**Input:**
+```typescript
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+```
+
+**Output:**
+```typescript
+interface AuthResponse {
+  user: User;
+  token: string;
+  expires_in: number;
+}
+```
+
+**Usage Example:**
+```typescript
+import { authService } from '../services/auth';
+
+try {
+  const response = await authService.login({
+    email: 'user@example.com',
+    password: 'securePassword123'
+  });
+  console.log('Login successful:', response.user);
+} catch (error) {
+  console.error('Login failed:', error);
+}
+```
+
+#### `logout(): Promise<void>`
+Logs out the current user and clears stored tokens.
+
+**Usage Example:**
+```typescript
+await authService.logout();
+// User is now logged out, tokens cleared
+```
+
+#### `refreshToken(): Promise<AuthResponse>`
+Refreshes the current user's authentication token.
+
+#### `getCurrentUser(): Promise<User>`
+Retrieves the current authenticated user's information.
+
+---
+
+## Trades Service (`trades.ts`)
+
+### Purpose
+Manages CRUD operations for trading data.
+
+### Methods
+
+#### `getTrades(filters?: TradeFilters): Promise<Trade[]>`
+Retrieves trades with optional filtering.
+
+**Input:**
+```typescript
+interface TradeFilters {
+  symbol?: string;
+  playbook?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minPnl?: number;
+  maxPnl?: number;
+}
+```
+
+**Output:**
+```typescript
+interface Trade {
+  id: string;
+  symbol: string;
+  entry_price: number;
+  exit_price?: number;
+  quantity: number;
+  entry_time: string;
+  exit_time?: string;
+  pnl?: number;
+  tags?: string[];
+  playbook?: string;
+  notes?: string;
+}
+```
+
+**Usage Example:**
+```typescript
+import { tradesService } from '../services/trades';
+
+// Get all trades
+const allTrades = await tradesService.getTrades();
+
+// Get filtered trades
+const appleTrades = await tradesService.getTrades({
+  symbol: 'AAPL',
+  dateFrom: '2024-01-01',
+  dateTo: '2024-01-31'
+});
+```
+
+#### `createTrade(trade: CreateTradeRequest): Promise<Trade>`
+Creates a new trade record.
+
+#### `updateTrade(id: string, updates: Partial<Trade>): Promise<Trade>`
+Updates an existing trade.
+
+#### `deleteTrade(id: string): Promise<void>`
+Deletes a trade record.
+
+---
+
+## Analytics Service (`analytics.ts`)
+
+### Purpose
+Provides trading analytics and performance metrics.
+
+### Methods
+
+#### `getPerformanceMetrics(filters?: AnalyticsFilters): Promise<PerformanceMetrics>`
+Calculates comprehensive performance metrics.
+
+**Output:**
+```typescript
+interface PerformanceMetrics {
+  totalPnl: number;
+  winRate: number;
+  profitFactor: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
+  avgWin: number;
+  avgLoss: number;
+  totalTrades: number;
+}
+```
+
+**Usage Example:**
+```typescript
+import { analyticsService } from '../services/analytics';
+
+const metrics = await analyticsService.getPerformanceMetrics({
+  dateFrom: '2024-01-01',
+  playbook: 'momentum'
+});
+
+console.log(`Win Rate: ${metrics.winRate}%`);
+console.log(`Profit Factor: ${metrics.profitFactor}`);
+```
+
+#### `getStreakAnalysis(): Promise<StreakAnalysis>`
+Analyzes winning and losing streaks.
+
+#### `getPlaybookPerformance(): Promise<PlaybookMetrics[]>`
+Returns performance metrics grouped by playbook/strategy.
+
+---
+
+## Upload Service (`uploads.ts`)
+
+### Purpose
+Handles file uploads and data import operations.
+
+### Methods
+
+#### `uploadFile(file: File, options?: UploadOptions): Promise<UploadResult>`
+Uploads and processes trading data files.
+
+**Input:**
+```typescript
+interface UploadOptions {
+  skipDuplicates?: boolean;
+  validateData?: boolean;
+  mapping?: ColumnMapping;
+}
+```
+
+**Usage Example:**
+```typescript
+import { uploadService } from '../services/uploads';
+
+const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+  try {
+    const result = await uploadService.uploadFile(file, {
+      skipDuplicates: true,
+      validateData: true
+    });
+    console.log(`Imported ${result.tradesCreated} trades`);
+  } catch (error) {
+    console.error('Upload failed:', error);
+  }
+}
+```
+
+---
+
+## Error Handling
+
+All services implement consistent error handling:
+
+```typescript
+try {
+  const result = await service.method();
+  // Handle success
+} catch (error) {
+  if (error.status === 401) {
+    // Handle authentication error
+    redirectToLogin();
+  } else if (error.status === 429) {
+    // Handle rate limiting
+    showRateLimitMessage();
+  } else {
+    // Handle general error
+    showErrorMessage(error.message);
+  }
+}
+```
+
+## Rate Limiting
+
+API calls are automatically rate-limited. The frontend handles rate limit responses gracefully with exponential backoff.
+
+## Caching
+
+Frequently accessed data is cached in Redux store with TTL (Time To Live) mechanisms.
+
+## Testing
+
+All services include comprehensive test coverage. Run tests with:
+
+```bash
+npm test -- --testPathPattern=services
+```

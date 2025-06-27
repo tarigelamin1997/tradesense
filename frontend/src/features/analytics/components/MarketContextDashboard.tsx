@@ -247,3 +247,252 @@ export const MarketContextDashboard: React.FC<MarketContextDashboardProps> = ({
     </div>
   );
 };
+import React, { useState, useEffect } from 'react';
+import { marketContextService, MarketContext, MarketCondition, SectorPerformance, EconomicEvent } from '../../../services/marketContext';
+
+interface MarketContextDashboardProps {
+  symbol?: string;
+  tradeDate?: string;
+}
+
+export const MarketContextDashboard: React.FC<MarketContextDashboardProps> = ({
+  symbol = 'SPY',
+  tradeDate
+}) => {
+  const [marketContext, setMarketContext] = useState<MarketContext | null>(null);
+  const [marketConditions, setMarketConditions] = useState<MarketCondition[]>([]);
+  const [sectorPerformance, setSectorPerformance] = useState<SectorPerformance[]>([]);
+  const [economicEvents, setEconomicEvents] = useState<EconomicEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadMarketData();
+  }, [symbol, tradeDate]);
+
+  const loadMarketData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load all market data
+      const [context, conditions, sectors, events] = await Promise.all([
+        marketContextService.getMarketContext(symbol, tradeDate),
+        marketContextService.getMarketConditions(),
+        marketContextService.getSectorPerformance(),
+        marketContextService.getEconomicEvents()
+      ]);
+
+      setMarketContext(context);
+      setMarketConditions(conditions);
+      setSectorPerformance(sectors);
+      setEconomicEvents(events);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load market data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getConditionColor = (condition: string) => {
+    switch (condition) {
+      case 'bullish': return 'text-green-600 bg-green-100';
+      case 'bearish': return 'text-red-600 bg-red-100';
+      case 'volatile': return 'text-orange-600 bg-orange-100';
+      case 'sideways': return 'text-gray-600 bg-gray-100';
+      default: return 'text-blue-600 bg-blue-100';
+    }
+  };
+
+  const getPerformanceColor = (performance: string) => {
+    switch (performance) {
+      case 'outperforming': return 'text-green-600';
+      case 'underperforming': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow-sm border border-red-200">
+        <div className="text-red-600 text-center">
+          <p className="font-semibold">Error loading market context</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            onClick={loadMarketData}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!marketContext) {
+    return (
+      <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+        <p className="text-gray-500 text-center">No market context available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Market Overview */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Market Context for {marketContext.symbol}
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Market Condition</div>
+            <div className={`mt-1 px-2 py-1 rounded text-sm font-medium inline-block ${getConditionColor(marketContext.market_condition)}`}>
+              {marketContext.market_condition}
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Volatility</div>
+            <div className="mt-1 text-xl font-semibold text-gray-900">
+              {marketContext.volatility.toFixed(2)}%
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Volume Profile</div>
+            <div className="mt-1 text-lg font-medium text-gray-900">
+              {marketContext.volume_profile.replace('_', ' ')}
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Sector</div>
+            <div className="mt-1 text-lg font-medium text-gray-900">
+              {marketContext.sector_performance.sector}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Technical Indicators */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h4 className="text-md font-semibold text-gray-900 mb-4">Technical Indicators</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">RSI</div>
+            <div className="mt-1 text-xl font-semibold text-gray-900">
+              {marketContext.technical_indicators.rsi}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {marketContext.technical_indicators.rsi > 70 ? 'Overbought' : 
+               marketContext.technical_indicators.rsi < 30 ? 'Oversold' : 'Neutral'}
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">MACD Signal</div>
+            <div className={`mt-1 px-2 py-1 rounded text-sm font-medium inline-block ${getConditionColor(marketContext.technical_indicators.macd_signal)}`}>
+              {marketContext.technical_indicators.macd_signal}
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Trend</div>
+            <div className="mt-1 text-lg font-medium text-gray-900">
+              {marketContext.technical_indicators.moving_average_trend}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sector Performance */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h4 className="text-md font-semibold text-gray-900 mb-4">Sector Performance</h4>
+        
+        <div className="space-y-2">
+          {sectorPerformance.map((sector, index) => (
+            <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+              <span className="text-gray-900">{sector.name}</span>
+              <div className="flex items-center space-x-2">
+                <span className={`text-sm font-medium ${getPerformanceColor(sector.performance)}`}>
+                  {sector.performance}
+                </span>
+                <span className="text-sm text-gray-600">{sector.change}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Economic Events */}
+      {economicEvents.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h4 className="text-md font-semibold text-gray-900 mb-4">Economic Events</h4>
+          
+          <div className="space-y-3">
+            {economicEvents.map((event, index) => (
+              <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className={`w-2 h-2 rounded-full mt-2 ${
+                  event.impact === 'high' ? 'bg-red-500' : 
+                  event.impact === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                }`}></div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{event.event}</div>
+                  <div className="text-sm text-gray-600 mt-1">{event.description}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {new Date(event.date).toLocaleDateString()} • {event.impact} impact
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Market Sentiment */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h4 className="text-md font-semibold text-gray-900 mb-4">Market Sentiment</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Fear & Greed Index</div>
+            <div className="mt-1 text-xl font-semibold text-gray-900">
+              {marketContext.market_sentiment.fear_greed_index}
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${marketContext.market_sentiment.fear_greed_index}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Overall Sentiment</div>
+            <div className={`mt-1 px-2 py-1 rounded text-sm font-medium inline-block ${getConditionColor(marketContext.market_sentiment.sentiment_score)}`}>
+              {marketContext.market_sentiment.sentiment_score}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

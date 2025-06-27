@@ -33,6 +33,10 @@ class ConflictError(TradeSenseException):
     """Raised when a resource conflict occurs"""
     pass
 
+class BusinessLogicError(TradeSenseException):
+    """Raised when business logic validation fails"""
+    pass
+
 class DatabaseError(TradeSenseException):
     """Raised when a database operation fails"""
     pass

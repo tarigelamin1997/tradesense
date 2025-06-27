@@ -78,3 +78,110 @@ describe('Auth Store', () => {
     expect(result.current.token).toBe('stored-token');
   });
 });
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer, { login, logout, setToken, clearError } from '../auth';
+
+const createMockStore = (initialState = {}) => {
+  return configureStore({
+    reducer: {
+      auth: authReducer,
+    },
+    preloadedState: {
+      auth: {
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        loading: false,
+        error: null,
+        ...initialState,
+      },
+    },
+  });
+};
+
+describe('Auth Slice', () => {
+  let store: ReturnType<typeof createMockStore>;
+
+  beforeEach(() => {
+    store = createMockStore();
+    localStorage.clear();
+  });
+
+  describe('login action', () => {
+    it('should handle login.pending', () => {
+      store.dispatch(login.pending('', { email: 'test@example.com', password: 'password' }));
+      
+      const state = store.getState().auth;
+      expect(state.loading).toBe(true);
+      expect(state.error).toBe(null);
+    });
+
+    it('should handle login.fulfilled', () => {
+      const mockResponse = {
+        user: { id: '1', email: 'test@example.com', name: 'Test User' },
+        token: 'mock-jwt-token'
+      };
+
+      store.dispatch(login.fulfilled(mockResponse, '', { email: 'test@example.com', password: 'password' }));
+      
+      const state = store.getState().auth;
+      expect(state.loading).toBe(false);
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.user).toEqual(mockResponse.user);
+      expect(state.token).toBe(mockResponse.token);
+      expect(localStorage.setItem).toHaveBeenCalledWith('token', mockResponse.token);
+    });
+
+    it('should handle login.rejected', () => {
+      const error = { message: 'Invalid credentials' };
+      store.dispatch(login.rejected(error as any, '', { email: 'test@example.com', password: 'password' }));
+      
+      const state = store.getState().auth;
+      expect(state.loading).toBe(false);
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.error).toBe('Invalid credentials');
+    });
+  });
+
+  describe('logout action', () => {
+    it('should clear auth state and localStorage', () => {
+      const initialState = {
+        isAuthenticated: true,
+        user: { id: '1', email: 'test@example.com', name: 'Test User' },
+        token: 'mock-token',
+      };
+
+      store = createMockStore(initialState);
+      store.dispatch(logout());
+      
+      const state = store.getState().auth;
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.user).toBe(null);
+      expect(state.token).toBe(null);
+      expect(localStorage.removeItem).toHaveBeenCalledWith('token');
+    });
+  });
+
+  describe('setToken action', () => {
+    it('should update token in state and localStorage', () => {
+      const token = 'new-token';
+      store.dispatch(setToken(token));
+      
+      const state = store.getState().auth;
+      expect(state.token).toBe(token);
+      expect(localStorage.setItem).toHaveBeenCalledWith('token', token);
+    });
+  });
+
+  describe('clearError action', () => {
+    it('should clear error state', () => {
+      const initialState = { error: 'Some error' };
+      store = createMockStore(initialState);
+      
+      store.dispatch(clearError());
+      
+      const state = store.getState().auth;
+      expect(state.error).toBe(null);
+    });
+  });
+});

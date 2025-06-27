@@ -1,13 +1,14 @@
 """
 Trade Note model for storing trader journal entries and trade context
 """
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 import uuid
 
-from backend.core.db.session import Base
+Base = declarative_base()
 
 class TradeNote(Base):
     __tablename__ = "trade_notes"

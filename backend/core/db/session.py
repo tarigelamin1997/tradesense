@@ -1,24 +1,26 @@
+"""
+Database session configuration and Base model
+"""
 
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
 
-# Database URL from environment or default to SQLite
+# Create Base class first
+Base = declarative_base()
+
+# Get database URL from environment or use SQLite default
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tradesense.db")
 
 # Create engine
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
-    echo=False  # Set to True for SQL query logging
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 )
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create Base class
-Base = declarative_base()
 
 # Dependency to get DB session
 def get_db():

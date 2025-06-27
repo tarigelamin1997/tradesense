@@ -8,16 +8,11 @@ const config: StorybookConfig = {
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
     '@storybook/addon-a11y',
-    '@storybook/addon-docs',
-    '@storybook/addon-controls',
     '@storybook/addon-viewport',
   ],
   framework: {
     name: '@storybook/react-vite',
     options: {},
-  },
-  core: {
-    disableTelemetry: true,
   },
   docs: {
     autodocs: 'tag',

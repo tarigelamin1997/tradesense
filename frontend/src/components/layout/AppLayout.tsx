@@ -1,48 +1,30 @@
-
-import React from 'react';
-import { Navbar } from './Navbar';
+import React, { useEffect } from 'react';
+import Navbar from './Navbar';
+import { accessibility } from '../../utils/accessibility';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  useEffect(() => {
+    // Add skip link for accessibility
+    accessibility.addSkipLink();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="py-8">
+      <main 
+        id="main-content" 
+        className="main-content"
+        role="main"
+        aria-label="Main content area"
+      >
         {children}
       </main>
     </div>
   );
 };
-import React, { useState } from 'react';
-import { Navbar } from './Navbar';
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
-export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      
-      <main className="py-4 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
-    </div>
-  );
-};
+export default AppLayout;

@@ -11,33 +11,6 @@ const preview: Preview = {
         date: /Date$/,
       },
     },
-    docs: {
-      toc: true,
-    },
-    viewport: {
-      viewports: {
-        mobile1: {
-          name: 'Small Mobile',
-          styles: { width: '320px', height: '568px' },
-        },
-        mobile2: {
-          name: 'Large Mobile',
-          styles: { width: '414px', height: '896px' },
-        },
-        tablet: {
-          name: 'Tablet',
-          styles: { width: '768px', height: '1024px' },
-        },
-        desktop: {
-          name: 'Desktop',
-          styles: { width: '1024px', height: '768px' },
-        },
-        largeDesktop: {
-          name: 'Large Desktop',
-          styles: { width: '1440px', height: '900px' },
-        },
-      },
-    },
     backgrounds: {
       default: 'light',
       values: [
@@ -46,14 +19,46 @@ const preview: Preview = {
           value: '#ffffff',
         },
         {
-          name: 'gray',
-          value: '#f8fafc',
+          name: 'dark',
+          value: '#1a1a1a',
         },
         {
-          name: 'dark',
-          value: '#1f2937',
+          name: 'gray',
+          value: '#f5f5f5',
         },
       ],
+    },
+    viewport: {
+      viewports: {
+        mobile1: {
+          name: 'Small Mobile',
+          styles: {
+            width: '320px',
+            height: '568px',
+          },
+        },
+        mobile2: {
+          name: 'Large Mobile',
+          styles: {
+            width: '414px',
+            height: '896px',
+          },
+        },
+        tablet: {
+          name: 'Tablet',
+          styles: {
+            width: '768px',
+            height: '1024px',
+          },
+        },
+        desktop: {
+          name: 'Desktop',
+          styles: {
+            width: '1024px',
+            height: '768px',
+          },
+        },
+      },
     },
   },
   globalTypes: {
@@ -64,7 +69,7 @@ const preview: Preview = {
         title: 'Theme',
         icon: 'paintbrush',
         items: ['light', 'dark'],
-        showName: true,
+        dynamicTitle: true,
       },
     },
   },

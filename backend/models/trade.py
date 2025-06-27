@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -50,8 +49,7 @@ class Trade(Base):
 
     # Metadata
     notes = Column(Text)
-    tags = Column(JSON)  # List of strings stored as JSON (legacy)
-    strategy_id = Column(String, index=True)  # Reference to strategy ID
+    market_context = Column(JSON)  # Store market conditions as JSON
 
     # AI Critique Data
     ai_critique = Column(JSON)  # Stores critique analysis
@@ -65,6 +63,8 @@ class Trade(Base):
     executed_plan = Column(Boolean)  # Did trader follow their plan?
     post_trade_mood = Column(String)  # Overall mood after trade
     reflection_timestamp = Column(DateTime)  # When reflection was added
+    tags = Column(JSON)  # List of strings stored as JSON (legacy)
+    strategy_id = Column(String, index=True)  # Reference to strategy ID
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -99,7 +99,7 @@ class TradeBase(BaseModel):
     tags: Optional[List[str]] = Field(default_factory=list, description="Trade tags for filtering and search")
     account_id: Optional[str] = Field(None, description="Trading account ID")
     playbook_id: Optional[str] = Field(None, description="Playbook ID for structured trading setup")
-    
+
     # Emotional Tracking Fields
     emotional_tags: Optional[List[str]] = Field(default_factory=list, description="Emotional states during trade")
     reflection_notes: Optional[str] = Field(None, max_length=2000, description="Post-trade reflection")

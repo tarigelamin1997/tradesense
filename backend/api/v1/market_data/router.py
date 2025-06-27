@@ -1,0 +1,114 @@
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import Dict, List
+from backend.api.deps import get_current_user, get_db
+from backend.models.user import User
+from backend.services.market_data_service import market_data_service
+
+router = APIRouter()
+
+@router.post("/enrich-trades")
+async def enrich_user_trades(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Enrich user's trades with market context data"""
+    try:
+        enriched_count = await market_data_service.enrich_trades_with_market_context(
+            current_user.id
+        )
+        
+        return {
+            "success": True,
+            "enriched_trades": enriched_count,
+            "message": f"Successfully enriched {enriched_count} trades with market context"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to enrich trades: {str(e)}"
+        )
+
+@router.get("/conditions/{symbol}")
+async def get_current_market_conditions(
+    symbol: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get current market conditions for a symbol"""
+    try:
+        from datetime import datetime
+        conditions = await market_data_service.get_market_conditions(
+            symbol, 
+            datetime.now()
+        )
+        
+        return {
+            "symbol": symbol,
+            "conditions": conditions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch market conditions: {str(e)}"
+        )
+
+@router.get("/analytics/by-conditions")
+async def get_performance_by_market_conditions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get trading performance analytics grouped by market conditions"""
+    try:
+        from backend.models.trade import Trade
+        from sqlalchemy import func
+        
+        # Query trades with market context
+        trades = db.query(Trade).filter(
+            Trade.user_id == current_user.id,
+            Trade.market_context.isnot(None)
+        ).all()
+        
+        # Group by market conditions
+        condition_analytics = {}
+        
+        for trade in trades:
+            if not trade.market_context:
+                continue
+                
+            conditions_key = f"{trade.market_context.get('volatility', 'unknown')}_" \
+                           f"{trade.market_context.get('trend', 'unknown')}_" \
+                           f"{trade.market_context.get('volume', 'unknown')}"
+            
+            if conditions_key not in condition_analytics:
+                condition_analytics[conditions_key] = {
+                    "trades": 0,
+                    "wins": 0,
+                    "total_pnl": 0,
+                    "conditions": trade.market_context
+                }
+            
+            condition_analytics[conditions_key]["trades"] += 1
+            if trade.pnl > 0:
+                condition_analytics[conditions_key]["wins"] += 1
+            condition_analytics[conditions_key]["total_pnl"] += trade.pnl
+        
+        # Calculate win rates and average P&L
+        for key, analytics in condition_analytics.items():
+            analytics["win_rate"] = (analytics["wins"] / analytics["trades"]) * 100 if analytics["trades"] > 0 else 0
+            analytics["avg_pnl"] = analytics["total_pnl"] / analytics["trades"] if analytics["trades"] > 0 else 0
+        
+        return {
+            "success": True,
+            "analytics": condition_analytics,
+            "total_analyzed_trades": len(trades)
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to analyze performance by conditions: {str(e)}"
+        )

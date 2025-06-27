@@ -1,4 +1,3 @@
-
 /**
  * Accessibility utility functions
  */
@@ -14,7 +13,7 @@ export const useFocusTrap = (containerRef: React.RefObject<HTMLElement>) => {
     const focusableElements = container.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     const firstElement = focusableElements[0] as HTMLElement;
     const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
@@ -48,9 +47,9 @@ export const announceToScreenReader = (message: string, priority: 'polite' | 'as
   announcement.setAttribute('aria-atomic', 'true');
   announcement.className = 'sr-only';
   announcement.textContent = message;
-  
+
   document.body.appendChild(announcement);
-  
+
   setTimeout(() => {
     document.body.removeChild(announcement);
   }, 1000);
@@ -64,7 +63,7 @@ export const isFocusable = (element: HTMLElement): boolean => {
   if (element.hasAttribute('disabled')) return false;
   if (element.style.display === 'none') return false;
   if (element.style.visibility === 'hidden') return false;
-  
+
   return true;
 };
 
@@ -75,20 +74,20 @@ export const getAccessibleName = (element: HTMLElement): string => {
   // Check aria-label first
   const ariaLabel = element.getAttribute('aria-label');
   if (ariaLabel) return ariaLabel;
-  
+
   // Check aria-labelledby
   const labelledBy = element.getAttribute('aria-labelledby');
   if (labelledBy) {
     const labelElement = document.getElementById(labelledBy);
     if (labelElement) return labelElement.textContent || '';
   }
-  
+
   // Check associated label for form controls
   if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') {
     const label = document.querySelector(`label[for="${element.id}"]`);
     if (label) return label.textContent || '';
   }
-  
+
   // Fall back to text content
   return element.textContent || '';
 };
@@ -104,10 +103,10 @@ export const getContrastRatio = (color1: string, color2: string): number => {
     // Simplified calculation for demo purposes
     return 0.5; // Placeholder
   };
-  
+
   const l1 = getLuminance(color1);
   const l2 = getLuminance(color2);
-  
+
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 };
 
@@ -123,12 +122,11 @@ export const meetsContrastRequirement = (
     AA: { normal: 4.5, large: 3 },
     AAA: { normal: 7, large: 4.5 }
   };
-  
+
   return ratio >= requirements[level][textSize];
 };
 /**
  * Accessibility utilities for TradeSense
- * Provides helpers for keyboard navigation, screen readers, and ARIA attributes
  */
 
 // Focus management
@@ -289,9 +287,9 @@ export const ariaHelpers = {
     const newDescribedBy = existingDescribedBy
       ? `${existingDescribedBy} ${descriptionId}`
       : descriptionId;
-    
+
     element.setAttribute('aria-describedby', newDescribedBy);
-    
+
     return () => {
       const currentDescribedBy = element.getAttribute('aria-describedby');
       if (currentDescribedBy) {
@@ -299,7 +297,7 @@ export const ariaHelpers = {
           .split(' ')
           .filter(id => id !== descriptionId)
           .join(' ');
-        
+
         if (updated) {
           element.setAttribute('aria-describedby', updated);
         } else {
@@ -433,7 +431,7 @@ export const formHelpers = {
     const validateForm = () => {
       const errors: string[] = [];
       const formData = new FormData(formElement);
-      
+
       // Basic validation - extend as needed
       formData.forEach((value, key) => {
         const element = formElement.elements.namedItem(key) as HTMLInputElement;
@@ -482,29 +480,30 @@ export default a11y;
 export const generateAriaLabel = {
   tradeCard: (trade: any) => 
     `Trade ${trade.symbol}, entry ${trade.entry_price}, ${trade.pnl > 0 ? 'profit' : 'loss'} ${Math.abs(trade.pnl)}`,
-  
+
   metric: (label: string, value: string | number) => 
     `${label}: ${value}`,
-  
+
   button: (action: string, context?: string) => 
     context ? `${action} ${context}` : action,
-  
+
   chart: (type: string, description: string) => 
     `${type} chart showing ${description}`,
 };
 
+// Accessibility utilities for TradeSense
+
 // Focus management
-export const focusManagement = {
-  trapFocus: (element: HTMLElement) => {
-    const focusableElements = element.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+export const trapFocus = (element: HTMLElement) => {
+  const focusableElements = element.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
 
-    const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+  const firstElement = focusableElements[0] as HTMLElement;
+  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
+  element.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
           lastElement.focus();
@@ -516,35 +515,105 @@ export const focusManagement = {
           e.preventDefault();
         }
       }
-    };
-
-    element.addEventListener('keydown', handleTabKey);
-    firstElement?.focus();
-
-    return () => element.removeEventListener('keydown', handleTabKey);
-  },
-
-  announceToScreenReader: (message: string) => {
-    const announcement = document.createElement('div');
-    announcement.setAttribute('aria-live', 'polite');
-    announcement.setAttribute('aria-atomic', 'true');
-    announcement.className = 'sr-only';
-    announcement.textContent = message;
-    
-    document.body.appendChild(announcement);
-    
-    setTimeout(() => {
-      document.body.removeChild(announcement);
-    }, 1000);
-  },
-
-  moveFocusToElement: (selector: string) => {
-    const element = document.querySelector(selector) as HTMLElement;
-    if (element) {
-      element.focus();
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  },
+  });
+};
+
+// Announce to screen readers
+export const announceToScreenReader = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+  const announcement = document.createElement('div');
+  announcement.setAttribute('aria-live', priority);
+  announcement.setAttribute('aria-atomic', 'true');
+  announcement.setAttribute('class', 'sr-only');
+  announcement.textContent = message;
+
+  document.body.appendChild(announcement);
+
+  setTimeout(() => {
+    document.body.removeChild(announcement);
+  }, 1000);
+};
+
+// Keyboard navigation helpers
+export const handleEscapeKey = (callback: () => void) => {
+  return (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      callback();
+    }
+  };
+};
+
+export const handleEnterKey = (callback: () => void) => {
+  return (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      callback();
+    }
+  };
+};
+
+// Color contrast checker
+export const checkColorContrast = (foreground: string, background: string): boolean => {
+  // Simplified contrast check (should use a proper library in production)
+  const getLuminance = (color: string): number => {
+    // This is a simplified version - in production use a proper color library
+    const rgb = color.match(/\d+/g);
+    if (!rgb) return 0;
+
+    const [r, g, b] = rgb.map(Number);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  };
+
+  const l1 = getLuminance(foreground);
+  const l2 = getLuminance(background);
+  const contrast = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+
+  return contrast >= 4.5; // WCAG AA standard
+};
+
+// Accessibility audit helper
+export const auditAccessibility = () => {
+  const issues: string[] = [];
+
+  // Check for missing alt text
+  const images = document.querySelectorAll('img:not([alt])');
+  if (images.length > 0) {
+    issues.push(`${images.length} images missing alt text`);
+  }
+
+  // Check for missing form labels
+  const inputs = document.querySelectorAll('input:not([aria-label]):not([aria-labelledby])');
+  const unlabeledInputs = Array.from(inputs).filter(input => {
+    const id = input.getAttribute('id');
+    return !id || !document.querySelector(`label[for="${id}"]`);
+  });
+
+  if (unlabeledInputs.length > 0) {
+    issues.push(`${unlabeledInputs.length} form inputs missing labels`);
+  }
+
+  // Check for insufficient color contrast (simplified)
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach((button, index) => {
+    const style = getComputedStyle(button);
+    const color = style.color;
+    const backgroundColor = style.backgroundColor;
+
+    if (color && backgroundColor && !checkColorContrast(color, backgroundColor)) {
+      issues.push(`Button ${index + 1} may have insufficient color contrast`);
+    }
+  });
+
+  return issues;
+};
+
+// Skip links helper
+export const addSkipLinks = () => {
+  const skipLink = document.createElement('a');
+  skipLink.href = '#main-content';
+  skipLink.textContent = 'Skip to main content';
+  skipLink.className = 'skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded';
+
+  document.body.insertBefore(skipLink, document.body.firstChild);
 };
 
 // Keyboard navigation helpers
@@ -594,14 +663,14 @@ export const accessibility = {
       const r = parseInt(hex.substr(0, 2), 16) / 255;
       const g = parseInt(hex.substr(2, 2), 16) / 255;
       const b = parseInt(hex.substr(4, 2), 16) / 255;
-      
+
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
 
     const l1 = getLuminance(foreground);
     const l2 = getLuminance(background);
     const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-    
+
     return ratio >= 4.5; // WCAG AA standard
   },
 
@@ -621,11 +690,11 @@ export const accessibility = {
       border-radius: 4px;
       z-index: 1000;
     `;
-    
+
     skipLink.addEventListener('focus', () => {
       skipLink.style.top = '6px';
     });
-    
+
     skipLink.addEventListener('blur', () => {
       skipLink.style.top = '-40px';
     });

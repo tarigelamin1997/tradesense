@@ -1,4 +1,3 @@
-
 import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
 
 interface PerformanceMetric {
@@ -20,6 +19,7 @@ class PerformanceMonitor {
   private initWebVitals() {
     getCLS(this.onMetric.bind(this));
     getFID(this.onMetric.bind(this));
+    getFCP(this.onMetric.bind(this));
     getFCP(this.onMetric.bind(this));
     getLCP(this.onMetric.bind(this));
     getTTFB(this.onMetric.bind(this));
@@ -58,7 +58,7 @@ class PerformanceMonitor {
     history.pushState = function(...args) {
       performance.mark('route-change-start');
       originalPushState.apply(history, args);
-      
+
       setTimeout(() => {
         performance.mark('route-change-end');
         performance.measure('route-change', 'route-change-start', 'route-change-end');
@@ -118,7 +118,7 @@ export function withPerformanceTracking<T extends object>(
       return () => {
         performance.mark(endMark);
         performance.measure(measureName, startMark, endMark);
-        
+
         const measure = performance.getEntriesByName(measureName)[0];
         if (measure) {
           performanceMonitor['onMetric']({
@@ -144,3 +144,56 @@ export function analyzeBundleSize() {
     });
   }
 }
+
+// Performance utilities
+export const measurePerformance = (name: string, fn: () => void) => {
+  const start = performance.now();
+  fn();
+  const end = performance.now();
+  console.log(`${name} took ${end - start} milliseconds`);
+};
+
+export const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+// Web Vitals monitoring
+export const reportWebVitals = (onPerfEntry?: (metric: any) => void) => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+// React DevTools profiler
+export const withProfiler = (Component: React.ComponentType<any>, id: string) => {
+  if (process.env.NODE_ENV === 'development') {
+    return React.memo(Component);
+  }
+  return Component;
+};
+
+// Performance observer for custom metrics
+export const observePerformance = () => {
+  if ('PerformanceObserver' in window) {
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        console.log(`Performance entry: ${entry.name} - ${entry.duration}ms`);
+      });
+    });
+    observer.observe({ entryTypes: ['measure', 'navigation'] });
+  }
+};

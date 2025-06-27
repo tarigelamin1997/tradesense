@@ -1,28 +1,50 @@
-
 import '@testing-library/jest-dom';
-import { configure } from '@testing-library/react';
-import { server } from '../services/__tests__/mocks/server';
+import 'jest-axe/extend-expect';
 
-// Configure React Testing Library
-configure({ testIdAttribute: 'data-testid' });
+// Mock environment variables
+process.env.REACT_APP_API_URL = 'http://localhost:8000';
+process.env.NODE_ENV = 'test';
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
+  observe() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
 };
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
+  observe() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
 };
 
-// Mock window.matchMedia
+// Mock PerformanceObserver
+global.PerformanceObserver = class PerformanceObserver {
+  constructor() {}
+  observe() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
+};
+
+// Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
@@ -46,25 +68,77 @@ const localStorageMock = {
 };
 global.localStorage = localStorageMock;
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+// Mock fetch
+global.fetch = jest.fn();
+
+// Mock console methods in tests to avoid noise
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: ReactDOM.render is no longer supported')
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
+
+// Global test utilities
+export const mockApiResponse = (data: any, status = 200) => {
+  return Promise.resolve({
+    ok: status >= 200 && status < 300,
+    status,
+    json: () => Promise.resolve(data),
+    text: () => Promise.resolve(JSON.stringify(data)),
+  });
 };
-global.sessionStorage = sessionStorageMock;
 
-// Setup MSW server for API mocking
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+export const mockApiError = (status = 500, message = 'Server Error') => {
+  return Promise.reject({
+    status,
+    message,
+    response: {
+      status,
+      data: { message }
+    }
+  });
+};
 
-// Reset all mocks after each test
-afterEach(() => {
-  jest.clearAllMocks();
-  localStorageMock.getItem.mockClear();
-  localStorageMock.setItem.mockClear();
-  localStorageMock.removeItem.mockClear();
-  localStorageMock.clear.mockClear();
+// Accessibility testing helpers
+export const axeConfig = {
+  rules: {
+    // Disable color-contrast rule for tests as it's hard to test
+    'color-contrast': { enabled: false },
+  },
+};
+
+// Custom matchers for accessibility
+expect.extend({
+  toBeAccessible: async (received) => {
+    const { axe } = await import('jest-axe');
+    const results = await axe(received, axeConfig);
+
+    if (results.violations.length === 0) {
+      return {
+        pass: true,
+        message: () => 'Expected element to have accessibility violations, but none were found',
+      };
+    }
+
+    return {
+      pass: false,
+      message: () => {
+        const violations = results.violations
+          .map(violation => `${violation.id}: ${violation.description}`)
+          .join('\n');
+        return `Expected element to be accessible, but found violations:\n${violations}`;
+      },
+    };
+  },
 });

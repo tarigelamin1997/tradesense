@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { performanceMonitor } from '../utils/performance';
 
@@ -84,7 +83,7 @@ export const DevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
           ×
         </button>
       </div>
-      
+
       <div className="flex border-b border-gray-200">
         {(['performance', 'network', 'store'] as const).map((tab) => (
           <button

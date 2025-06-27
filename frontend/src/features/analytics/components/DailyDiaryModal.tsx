@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { DailyTimelineData, DailyReflection, timelineService } from '../../../services/timeline';
+import { MarkdownEditor } from '../../../components/journal/MarkdownEditor';
 
 interface DailyDiaryModalProps {
   isOpen: boolean;
@@ -196,15 +196,14 @@ export const DailyDiaryModal: React.FC<DailyDiaryModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Daily Reflection
             </label>
-            <textarea
+            <MarkdownEditor
               value={reflection.summary || ''}
-              onChange={(e) => setReflection({
+              onChange={(value) => setReflection({
                 ...reflection,
-                summary: e.target.value
+                summary: value
               })}
               placeholder="What went well today? What would you do differently? Any insights about your trading decisions?"
-              rows={4}
-              className="w-full p-3 border border-gray-300 rounded-md resize-none"
+              height="200px"
             />
           </div>
 

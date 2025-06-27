@@ -29,6 +29,9 @@ from backend.api.v1.patterns.router import router as patterns_router
 from backend.api.v1.playbooks.router import router as playbooks_router
 from backend.api.v1.reviews import router as reviews_router
 from backend.api.v1.strategy_lab import router as strategy_lab_router
+from backend.api.v1.features.router import router as features_router
+from backend.api.v1.milestones.router import router as milestones_router
+from backend.api.v1.journal.router import router as journal_router
 
 # Configure logging
 logging.basicConfig(
@@ -103,6 +106,9 @@ app.include_router(patterns_router, prefix="/api/v1/patterns", tags=["patterns"]
 app.include_router(playbooks_router, prefix="/api/v1/playbooks", tags=["playbooks"])
 app.include_router(reviews_router, prefix="/api/v1/reviews", tags=["reviews"])
 app.include_router(strategy_lab_router, prefix="/api/v1/strategy-lab", tags=["strategy-lab"])
+app.include_router(features_router, prefix="/api/v1")
+app.include_router(milestones_router, prefix="/api/v1")
+app.include_router(journal_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn

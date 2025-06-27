@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import emotionsService from '../../../services/emotions';
 
@@ -43,7 +42,7 @@ const PostTradeReflectionModal: React.FC<PostTradeReflectionModalProps> = ({
 
     if (isOpen) {
       loadEmotionalStates();
-      
+
       // Pre-populate with existing data
       if (existingReflection) {
         setSelectedEmotions(existingReflection.emotional_tags || []);
@@ -79,7 +78,7 @@ const PostTradeReflectionModal: React.FC<PostTradeReflectionModalProps> = ({
         executed_plan: executedPlan!,
         post_trade_mood: postTradeMood
       });
-      
+
       onClose();
       // Refresh trade data if needed
     } catch (error) {

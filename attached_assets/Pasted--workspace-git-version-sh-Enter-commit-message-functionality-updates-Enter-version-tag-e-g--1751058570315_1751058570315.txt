@@ -1,0 +1,22 @@
+~/workspace$ ./git-version.sh 
+Enter commit message: functionality updates
+Enter version tag (e.g. v1.2.0): v2.5.2
+Enter version description: integration & functionality
+[full-stack/refactor-project 15840b3] functionality updates
+ 3 files changed, 46 insertions(+), 938 deletions(-)
+Enumerating objects: 458, done.
+Counting objects: 100% (441/441), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (321/321), done.
+Writing objects:  69% (228/329), 1.20 MiB | 2.39 MiWriting objects:  70% (231/329), 1.20 MiB | 2.39 MiWriting objects:  71% (234/329), 1.20 MiB | 2.39 MiWriting objects:  72% (237/329), 1.20 MiB | 2.39 MiWriting objects:  73% (241/329), 1.20 MiB | 2.39 MiWriting objects:  74% (244/329), 1.20 MiB | 2.39 MiWriting objects:  75% (247/329), 1.20 MiB | 2.39 MiWriting objects:  76% (251/329), 1.20 MiB | 2.39 MiWriting objects:  77% (254/329), 1.20 MiB | 2.39 MiWriting objects:  78% (257/329), 1.20 MiB | 2.39 MiWriting objects:  79% (260/329), 1.20 MiB | 2.39 MiWriting objects:  80% (264/329), 1.20 MiB | 2.39 MiWriting objects:  81% (267/329), 1.20 MiB | 2.39 MiWriting objects:  82% (270/329), 1.20 MiB | 2.39 MiWriting objects:  83% (274/329), 1.20 MiB | 2.39 MiWriting objects:  84% (277/329), 1.20 MiB | 2.39 MiWriting objects:  85% (280/329), 1.20 MiB | 2.39 MiWriting objects:  86% (283/329), 1.20 MiB | 2.39 MiWriting objects:  87% (287/329), 1.20 MiB | 2.39 MiWriting objects:  88% (290/329), 1.20 MiB | 2.39 MiWriting objects:  89% (293/329), 1.20 MiB | 2.39 MiWriting objects:  90% (297/329), 1.20 MiB | 2.39 MiWriting objects:  91% (300/329), 1.20 MiB | 2.39 MiWriting objects:  92% (303/329), 1.20 MiB | 2.39 MiWriting objects:  93% (306/329), 1.20 MiB | 2.39 MiWriting objects:  94% (310/329), 1.20 MiB | 2.39 MiWriting objects:  95% (313/329), 1.20 MiB | 2.39 MiWriting objects:  96% (316/329), 1.20 MiB | 2.39 MiWriting objects:  97% (320/329), 1.20 MiB | 2.39 MiWriting objects:  98% (323/329), 1.20 MiB | 2.39 MiWriting objects:  99% (326/329), 1.20 MiB | 2.39 MiWriting objects: 100% (329/329), 1.20 MiB | 2.39 MiWriting objects: 100% (329/329), 2.32 MiB | 2.74 MiB/s, done.
+Total 329 (delta 203), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (203/203), completed with 43 local objects.
+To https://github.com/tarigelamin1997/tradesense
+   358a910..15840b3  full-stack/refactor-project -> full-stack/refactor-project
+Enumerating objects: 1, done.
+Counting objects: 100% (1/1), done.
+Writing objects: 100% (1/1), 178 bytes | 178.00 KiB/s, done.
+Total 1 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To https://github.com/tarigelamin1997/tradesense
+ * [new tag]         v2.5.2 -> v2.5.2
+~/workspace$ 

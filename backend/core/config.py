@@ -1,42 +1,28 @@
-
 """
-Configuration settings for TradeSense backend
+Core configuration for TradeSense backend
 """
-import os
+from pydantic_settings import BaseSettings
 from typing import Optional
 
-class Settings:
-    # Application
-    APP_NAME: str = "TradeSense"
-    VERSION: str = "1.0.0"
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
-    
-    # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    
+class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./tradesense.db")
-    
-    # CORS
-    CORS_ORIGINS: list = [
-        "http://localhost:3000",
-        "http://localhost:5000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5000",
-        "*"  # Allow all for development
-    ]
-    
-    # JWT
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
-    
-    # Email (for password reset)
-    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST")
-    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER: Optional[str] = os.getenv("SMTP_USER")
-    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD")
-    
-    # File uploads
-    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    database_url: str = "sqlite:///./tradesense.db"
+
+    # Security
+    secret_key: str = "your-secret-key-here"
+    access_token_expire_minutes: int = 30
+
+    # API
+    api_title: str = "TradeSense API"
+    api_version: str = "1.0.0"
+    debug: bool = True
+
+    # Market Data APIs
+    alpha_vantage_api_key: str = "demo"  # Replace with real API key
+    market_data_timeout: int = 10
+    market_data_cache_minutes: int = 15
+
+    class Config:
+        env_file = ".env"
 
 settings = Settings()

@@ -51,14 +51,89 @@ class MarketContextService:
             return self._get_default_context()
     
     async def _fetch_market_data(self, symbol: str, trade_date: datetime) -> Dict[str, Any]:
-        """Fetch market data from external API (simulated)"""
-        # This would integrate with real market data APIs like:
-        # - Alpha Vantage
-        # - IEX Cloud  
-        # - Yahoo Finance
-        # - Polygon.io
-        
-        # Simulated market context based on symbol patterns
+        """Fetch market data from external API"""
+        try:
+            # Use Alpha Vantage API key from configuration
+            from backend.core.config import settings
+            api_key = settings.alpha_vantage_api_key
+            
+            async with aiohttp.ClientSession() as session:
+                # Get daily data
+                daily_url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={api_key}"
+                
+                # Get technical indicators
+                rsi_url = f"https://www.alphavantage.co/query?function=RSI&symbol={symbol}&interval=daily&time_period=14&series_type=close&apikey={api_key}"
+                
+                # Fetch data with timeout
+                async with session.get(daily_url, timeout=10) as response:
+                    daily_data = await response.json()
+                    
+                async with session.get(rsi_url, timeout=10) as response:
+                    rsi_data = await response.json()
+                
+                # Process real data
+                context = self._process_market_data(symbol, trade_date, daily_data, rsi_data)
+                return context
+                
+        except Exception as e:
+            logger.warning(f"Failed to fetch real market data for {symbol}: {e}")
+            # Fall back to simulated data
+            return self._get_simulated_market_data(symbol, trade_date)
+    
+    def _process_market_data(self, symbol: str, trade_date: datetime, daily_data: dict, rsi_data: dict) -> Dict[str, Any]:
+        """Process real market data from API"""
+        try:
+            # Extract time series data
+            time_series = daily_data.get('Time Series (Daily)', {})
+            
+            # Get the closest date to trade_date
+            trade_date_str = trade_date.strftime('%Y-%m-%d')
+            closest_date = self._find_closest_date(trade_date_str, list(time_series.keys()))
+            
+            if closest_date and closest_date in time_series:
+                day_data = time_series[closest_date]
+                
+                # Calculate volatility from high/low
+                high = float(day_data['2. high'])
+                low = float(day_data['1. open'])
+                volatility = ((high - low) / low) * 100 if low > 0 else 0
+                
+                # Get RSI
+                rsi_series = rsi_data.get('Technical Analysis: RSI', {})
+                rsi_value = 50.0  # Default
+                if closest_date in rsi_series:
+                    rsi_value = float(rsi_series[closest_date]['RSI'])
+                
+                # Determine market condition based on real data
+                volume = int(day_data['5. volume'])
+                market_condition = self._determine_market_condition(high, low, volume, rsi_value)
+                
+                return {
+                    'symbol': symbol,
+                    'date': trade_date.isoformat(),
+                    'market_condition': market_condition,
+                    'volatility': round(volatility, 2),
+                    'volume_profile': self._classify_volume(volume),
+                    'sector_performance': self._get_sector_context(symbol),
+                    'economic_events': self._get_economic_events(trade_date),
+                    'technical_indicators': {
+                        'rsi': round(rsi_value, 2),
+                        'high': high,
+                        'low': low,
+                        'volume': volume,
+                        'volatility_percent': round(volatility, 2)
+                    },
+                    'market_sentiment': self._analyze_sentiment(rsi_value, volatility)
+                }
+            else:
+                raise ValueError("No data available for date")
+                
+        except Exception as e:
+            logger.error(f"Error processing market data: {e}")
+            return self._get_simulated_market_data(symbol, trade_date)
+    
+    def _get_simulated_market_data(self, symbol: str, trade_date: datetime) -> Dict[str, Any]:
+        """Get simulated market data as fallback"""
         context = {
             'symbol': symbol,
             'date': trade_date.isoformat(),
@@ -70,8 +145,55 @@ class MarketContextService:
             'technical_indicators': self._get_technical_indicators(symbol),
             'market_sentiment': self._get_market_sentiment(symbol)
         }
-        
         return context
+    
+    def _find_closest_date(self, target_date: str, available_dates: list) -> str:
+        """Find the closest available date to target date"""
+        from datetime import datetime
+        
+        target = datetime.strptime(target_date, '%Y-%m-%d')
+        available = [datetime.strptime(d, '%Y-%m-%d') for d in available_dates]
+        
+        closest = min(available, key=lambda x: abs((x - target).days))
+        return closest.strftime('%Y-%m-%d')
+    
+    def _determine_market_condition(self, high: float, low: float, volume: int, rsi: float) -> str:
+        """Determine market condition from real data"""
+        volatility = ((high - low) / low) * 100 if low > 0 else 0
+        
+        if rsi > 70:
+            return MarketCondition.BULLISH.value
+        elif rsi < 30:
+            return MarketCondition.BEARISH.value
+        elif volatility > 5:
+            return MarketCondition.VOLATILE.value
+        else:
+            return MarketCondition.SIDEWAYS.value
+    
+    def _classify_volume(self, volume: int) -> str:
+        """Classify volume levels"""
+        if volume > 1000000:
+            return MarketCondition.HIGH_VOLUME.value
+        elif volume < 100000:
+            return MarketCondition.LOW_VOLUME.value
+        else:
+            return "normal_volume"
+    
+    def _analyze_sentiment(self, rsi: float, volatility: float) -> Dict[str, Any]:
+        """Analyze market sentiment from real indicators"""
+        if rsi > 70:
+            sentiment = "bullish"
+        elif rsi < 30:
+            sentiment = "bearish"
+        else:
+            sentiment = "neutral"
+            
+        return {
+            'sentiment_score': sentiment,
+            'rsi_level': rsi,
+            'volatility_level': volatility,
+            'fear_greed_index': min(100, max(0, int(rsi + (volatility * 2))))
+        }
     
     def _analyze_market_condition(self, symbol: str) -> str:
         """Analyze overall market condition"""

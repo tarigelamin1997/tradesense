@@ -1,46 +1,42 @@
+
 """
-Application configuration settings
+Configuration settings for TradeSense backend
 """
 import os
 from typing import Optional
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
 
-class Settings(BaseSettings):
-    # App settings
-    app_name: str = "TradeSense API"
-    version: str = "1.0.0"
-    debug: bool = False
-
+class Settings:
+    # Application
+    APP_NAME: str = "TradeSense"
+    VERSION: str = "1.0.0"
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    
     # Security
-    secret_key: str = "your-secret-key-here-change-in-production"
-    jwt_algorithm: str = "HS256"
-    jwt_expiration_hours: int = 24
-
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    
     # Database
-    database_url: str = "sqlite:///./tradesense.db"
-
-    # API
-    api_prefix: str = "/api"
-    allowed_origins: list = ["http://localhost:3000", "http://0.0.0.0:3000", "http://127.0.0.1:3000"]
-
-    # Logging
-    log_level: str = "INFO"
-    log_file: str = "logs/tradesense.log"
-
-    # File upload
-    max_file_size: int = 10 * 1024 * 1024  # 10MB
-    allowed_file_types: list = [".csv", ".xlsx", ".xls"]
-
-    @field_validator('allowed_origins')
-    @classmethod
-    def validate_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
-        return v
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./tradesense.db")
+    
+    # CORS
+    CORS_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://localhost:5000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5000",
+        "*"  # Allow all for development
+    ]
+    
+    # JWT
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    
+    # Email (for password reset)
+    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: Optional[str] = os.getenv("SMTP_USER")
+    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD")
+    
+    # File uploads
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
 
 settings = Settings()

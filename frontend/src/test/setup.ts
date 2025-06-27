@@ -34,10 +34,33 @@ global.IntersectionObserver = class IntersectionObserver {
   }
 };
 
-// Setup fetch mock
-global.fetch = jest.fn();
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor() {}
+  observe() {
+    return null;
+  }
+  disconnect() {
+    return null;
+  }
+  unobserve() {
+    return null;
+  }
+};
 
-// Mock console methods to reduce noise in tests
+// Mock localStorage
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+global.localStorage = localStorageMock;
+
+// Mock sessionStorage
+global.sessionStorage = localStorageMock;
+
+// Suppress console errors in tests unless explicitly needed
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {

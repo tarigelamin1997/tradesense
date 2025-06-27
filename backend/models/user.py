@@ -63,7 +63,7 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=6, description="Password")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "username": "trader123",
                 "email": "trader@example.com",
@@ -80,7 +80,7 @@ class UserRead(UserBase):
 
     class Config:
         from_attributes = True
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "user_123",
                 "username": "trader123",

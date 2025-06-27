@@ -1,4 +1,3 @@
-
 # API Services Documentation
 
 ## Overview
@@ -788,6 +787,116 @@ print(f"Win Rate: {analytics['metrics']['win_rate']:.2%}")
 - Basic analytics endpoints
 # TradeSense Frontend API Documentation
 
+## Authentication Service (`src/services/auth.ts`)
+
+### `authService.login(credentials)`
+- **Purpose**: Authenticate user with email/password
+- **Input**: `{ email: string, password: string }`
+- **Output**: `{ token: string, user: User }`
+- **Example**:
+```typescript
+const result = await authService.login({
+  email: "trader@example.com",
+  password: "securepassword"
+});
+```
+
+### `authService.register(userData)`
+- **Purpose**: Create new user account
+- **Input**: `{ email: string, password: string, name: string }`
+- **Output**: `{ token: string, user: User }`
+- **Example**:
+```typescript
+const result = await authService.register({
+  email: "newtrader@example.com",
+  password: "securepassword",
+  name: "John Trader"
+});
+```
+
+### `authService.refreshToken()`
+- **Purpose**: Refresh authentication token
+- **Input**: None (uses stored refresh token)
+- **Output**: `{ token: string }`
+- **Example**:
+```typescript
+const result = await authService.refreshToken();
+```
+
+## Trades Service (`src/services/trades.ts`)
+
+### `tradesService.getTrades(filters)`
+- **Purpose**: Fetch trades with optional filtering
+- **Input**: `{ symbol?: string, dateRange?: [Date, Date], playbook?: string }`
+- **Output**: `Trade[]`
+- **Example**:
+```typescript
+const trades = await tradesService.getTrades({
+  symbol: "AAPL",
+  dateRange: [new Date('2024-01-01'), new Date('2024-12-31')]
+});
+```
+
+### `tradesService.createTrade(tradeData)`
+- **Purpose**: Create new trade entry
+- **Input**: `{ symbol: string, quantity: number, entry_price: number, ... }`
+- **Output**: `Trade`
+- **Example**:
+```typescript
+const trade = await tradesService.createTrade({
+  symbol: "TSLA",
+  quantity: 100,
+  entry_price: 250.50,
+  entry_time: new Date(),
+  playbook: "momentum",
+  confidence: 8
+});
+```
+
+## Analytics Service (`src/services/analytics.ts`)
+
+### `analyticsService.getPerformanceMetrics()`
+- **Purpose**: Get overall performance statistics
+- **Input**: None
+- **Output**: `{ winRate: number, totalPnL: number, sharpeRatio: number }`
+- **Example**:
+```typescript
+const metrics = await analyticsService.getPerformanceMetrics();
+console.log(`Win Rate: ${metrics.winRate}%`);
+```
+
+### `analyticsService.getEquityCurve()`
+- **Purpose**: Get equity curve data for charting
+- **Input**: None
+- **Output**: `{ dates: Date[], values: number[] }`
+- **Example**:
+```typescript
+const equityCurve = await analyticsService.getEquityCurve();
+// Use with charting library
+```
+
+## Error Handling
+
+All API calls return promises that may reject with error objects:
+
+```typescript
+try {
+  const result = await authService.login(credentials);
+} catch (error) {
+  if (error.status === 401) {
+    // Handle authentication error
+  } else if (error.status >= 500) {
+    // Handle server error
+  }
+}
+```
+
+## Rate Limiting
+
+API calls are automatically rate-limited on the frontend:
+- Authentication: 5 calls per minute
+- Data fetching: 100 calls per minute
+- Trade operations: 50 calls per minute
 ## Overview
 
 This document provides comprehensive documentation for all service modules in the TradeSense frontend application.
@@ -1038,4 +1147,3 @@ All services include comprehensive test coverage. Run tests with:
 
 ```bash
 npm test -- --testPathPattern=services
-```

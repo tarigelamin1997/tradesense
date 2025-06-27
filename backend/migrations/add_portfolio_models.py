@@ -15,7 +15,7 @@ if backend_dir not in sys.path:
 from backend.models.user import User
 from backend.models.trade_note import TradeNote
 from backend.models.portfolio import Portfolio, EquitySnapshot
-from core.db.session import engine
+from backend.core.db.session import engine
 
 def add_portfolio_tables():
     """Add portfolio-related tables to the database"""

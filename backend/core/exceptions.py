@@ -1,62 +1,50 @@
-
 """
-Custom exception classes for TradeSense backend
+Custom Exception Classes
+
+Custom exceptions for the TradeSense application.
 """
 from typing import Any, Dict, Optional
 
-
 class TradeSenseException(Exception):
-    """Base exception for TradeSense application"""
-    
-    def __init__(
-        self, 
-        message: str, 
-        status_code: int = 500,
-        details: Optional[Dict[str, Any]] = None
-    ):
+    """Base exception class for TradeSense application"""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         self.message = message
-        self.status_code = status_code
         self.details = details or {}
         super().__init__(self.message)
 
+class ValidationError(TradeSenseException):
+    """Raised when data validation fails"""
+    pass
 
 class AuthenticationError(TradeSenseException):
-    """Authentication related errors"""
-    
-    def __init__(self, message: str = "Authentication failed", details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=401, details=details)
-
+    """Raised when authentication fails"""
+    pass
 
 class AuthorizationError(TradeSenseException):
-    """Authorization related errors"""
-    
-    def __init__(self, message: str = "Access denied", details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=403, details=details)
-
-
-class ValidationError(TradeSenseException):
-    """Data validation errors"""
-    
-    def __init__(self, message: str = "Validation failed", details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=422, details=details)
-
+    """Raised when authorization fails"""
+    pass
 
 class NotFoundError(TradeSenseException):
-    """Resource not found errors"""
-    
-    def __init__(self, message: str = "Resource not found", details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=404, details=details)
+    """Raised when a requested resource is not found"""
+    pass
 
+class ConflictError(TradeSenseException):
+    """Raised when a resource conflict occurs"""
+    pass
 
-class BusinessLogicError(TradeSenseException):
-    """Business logic related errors"""
-    
-    def __init__(self, message: str = "Business logic error", details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=400, details=details)
-
+class DatabaseError(TradeSenseException):
+    """Raised when a database operation fails"""
+    pass
 
 class ExternalServiceError(TradeSenseException):
-    """External service integration errors"""
-    
-    def __init__(self, message: str = "External service error", details: Optional[Dict[str, Any]] = None):
-        super().__init__(message, status_code=502, details=details)
+    """Raised when an external service call fails"""
+    pass
+
+class RateLimitError(TradeSenseException):
+    """Raised when rate limit is exceeded"""
+    pass
+
+class ConfigurationError(TradeSenseException):
+    """Raised when configuration is invalid"""
+    pass

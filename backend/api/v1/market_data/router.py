@@ -112,3 +112,78 @@ async def get_performance_by_market_conditions(
             status_code=500,
             detail=f"Failed to analyze performance by conditions: {str(e)}"
         )
+"""
+Market Data API Router
+Provides real-time market data endpoints
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Dict, Any
+from backend.services.real_time_market_service import real_time_market_service
+from backend.api.deps import get_current_user
+
+router = APIRouter()
+
+@router.get("/quote/{symbol}")
+async def get_live_quote(
+    symbol: str,
+    current_user = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get live quote for a symbol"""
+    try:
+        quote = await real_time_market_service.get_live_quote(symbol.upper())
+        return {"success": True, "data": quote}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/sentiment/{symbol}")
+async def get_market_sentiment(
+    symbol: str,
+    current_user = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get market sentiment for a symbol"""
+    try:
+        sentiment = await real_time_market_service.get_market_sentiment(symbol.upper())
+        return {"success": True, "data": sentiment}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/regime")
+async def get_market_regime(
+    current_user = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get current market regime"""
+    try:
+        regime = await real_time_market_service.get_market_regime()
+        return {"success": True, "data": regime}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/enhance-trade")
+async def enhance_trade_with_context(
+    trade_data: Dict[str, Any],
+    current_user = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Enhance trade data with real-time market context"""
+    try:
+        enhanced_trade = await real_time_market_service.enhance_trade_with_market_context(trade_data)
+        return {"success": True, "data": enhanced_trade}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/watchlist")
+async def get_watchlist_quotes(
+    symbols: str,  # Comma-separated symbols
+    current_user = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get quotes for multiple symbols"""
+    try:
+        symbol_list = [s.strip().upper() for s in symbols.split(",")]
+        quotes = []
+        
+        for symbol in symbol_list:
+            quote = await real_time_market_service.get_live_quote(symbol)
+            quotes.append(quote)
+        
+        return {"success": True, "data": quotes}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

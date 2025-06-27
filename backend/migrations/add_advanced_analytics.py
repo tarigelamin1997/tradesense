@@ -6,11 +6,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from backend.core.db.session import engine
-
-Base = declarative_base()
+from backend.core.db.session import engine, Base
 
 class MarketRegime(Base):
     __tablename__ = 'market_regimes'
@@ -27,8 +24,8 @@ class ExecutionQualityMetric(Base):
     __tablename__ = 'execution_quality_metrics'
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
-    trade_id = Column(Integer, ForeignKey('trades.id'), nullable=False, index=True)
+    user_id = Column(String, nullable=False, index=True)  # Remove FK constraint for now
+    trade_id = Column(String, nullable=False, index=True)  # Remove FK constraint for now
     entry_slippage = Column(Float)  # Difference between intended and actual entry price
     exit_slippage = Column(Float)   # Difference between intended and actual exit price
     hold_time_efficiency = Column(Float)  # How optimal was the hold time

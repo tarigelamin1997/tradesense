@@ -31,11 +31,19 @@ class MarketEvent:
     timestamp: datetime
     affected_symbols: List[str]
 
+import pandas as pd
+from cachetools import TTLCache
+
 class RealTimeMarketService:
     """Real-time market data service for TradeSense."""
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
+        self.active_subscriptions = set()
+        self.market_data_cache = TTLCache(maxsize=1000, ttl=30)  # 30-second cache
+        self.websocket_connections = {}
+        self.economic_calendar_cache = TTLCache(maxsize=100, ttl=3600)  # 1-hour cache
+        self.sentiment_cache = TTLCache(maxsize=500, ttl=300)  # 5-minute cache
         self.cache: Dict[str, Any] = {}
         self.cache_ttl = 60  # 1 minute cache
         self.subscribers = {}
@@ -360,6 +368,37 @@ class RealTimeMarketService:
         """Get current market data for a symbol"""
         return self.market_data.get(symbol)
 
+    async def get_live_quotes(self, symbols: List[str]) -> Dict[str, Any]:
+        """Get live market quotes for given symbols"""
+        quotes = {}
+        for symbol in symbols:
+            # Check cache first
+            cache_key = f"quote_{symbol}"
+            if cache_key in self.market_data_cache:
+                quotes[symbol] = self.market_data_cache[cache_key]
+                continue
+
+            # Simulate real-time data with market regime context
+            base_price = 150.0 + hash(symbol) % 50
+            regime = await self.detect_market_regime(symbol)
+            volatility_multiplier = 1.5 if regime == "high_volatility" else 1.0
+
+            quote_data = {
+                "price": base_price,
+                "change": ((hash(symbol) % 10) - 5) * volatility_multiplier,
+                "change_percent": (((hash(symbol) % 10) - 5) * volatility_multiplier) / base_price * 100,
+                "volume": 1000000 + hash(symbol) % 500000,
+                "timestamp": datetime.now().isoformat(),
+                "market_regime": regime,
+                "volatility": self._calculate_volatility(symbol),
+                "support_resistance": await self._get_support_resistance(symbol)
+            }
+
+            quotes[symbol] = quote_data
+            self.market_data_cache[cache_key] = quote_data
+
+        return quotes
+
     async def get_market_data(self, symbols: List[str]) -> Dict[str, MarketData]:
         """Get real-time market data for symbols"""
         cache_key = f"market_data_{','.join(sorted(symbols))}"
@@ -395,6 +434,38 @@ class RealTimeMarketService:
         except Exception as e:
             logger.error(f"Error fetching market data: {e}")
             return {}
+
+    async def detect_market_regime(self, symbol: str) -> str:
+        """Detect current market regime for symbol"""
+        cache_key = f"regime_{symbol}"
+        if cache_key in self.market_data_cache:
+            return self.market_data_cache[cache_key]
+
+        # Simulate regime detection based on volatility and trend
+        volatility = self._calculate_volatility(symbol)
+
+        if volatility > 0.25:
+            regime = "high_volatility"
+        elif volatility < 0.1:
+            regime = "low_volatility" 
+        else:
+            regime = "normal"
+
+        self.market_data_cache[cache_key] = regime
+        return regime
+
+    def _calculate_volatility(self, symbol: str) -> float:
+        """Calculate historical volatility for symbol"""
+        # Simulate volatility calculation
+        return 0.05 + (hash(symbol) % 20) / 100
+
+    async def _get_support_resistance(self, symbol: str) -> Dict[str, float]:
+        """Get support and resistance levels"""
+        base_price = 150.0 + hash(symbol) % 50
+        return {
+            "support": base_price * 0.95,
+            "resistance": base_price * 1.05
+        }
 
     async def get_market_sentiment(self) -> MarketSentiment:
         """Get overall market sentiment indicators"""
@@ -947,3 +1018,118 @@ class MarketSentiment:
     trending_symbols: List[str]
     sector_performance: Dict[str, float]
     market_regime: str
+
+    async def get_economic_calendar(self, days_ahead: int = 7) -> List[Dict[str, Any]]:
+        """Get upcoming economic events"""
+        cache_key = f"calendar_{days_ahead}"
+        if cache_key in self.economic_calendar_cache:
+            return self.economic_calendar_cache[cache_key]
+
+        # Simulate economic calendar data
+        events = []
+        base_date = datetime.now()
+
+        economic_events = [
+            {"name": "Fed Interest Rate Decision", "impact": "high", "currency": "USD"},
+            {"name": "Non-Farm Payrolls", "impact": "high", "currency": "USD"},
+            {"name": "CPI Inflation", "impact": "medium", "currency": "USD"},
+            {"name": "GDP Growth Rate", "impact": "medium", "currency": "USD"},
+            {"name": "Unemployment Rate", "impact": "medium", "currency": "USD"},
+            {"name": "Retail Sales", "impact": "low", "currency": "USD"},
+            {"name": "ECB Rate Decision", "impact": "high", "currency": "EUR"},
+            {"name": "BOJ Policy Meeting", "impact": "high", "currency": "JPY"}
+        ]
+
+        for i in range(days_ahead):
+            event_date = base_date + timedelta(days=i)
+            if i < len(economic_events):
+                event = economic_events[i].copy()
+                event.update({
+                    "date": event_date.isoformat(),
+                    "time": "14:00",
+                    "forecast": "TBD",
+                    "previous": "N/A"
+                })
+                events.append(event)
+
+        self.economic_calendar_cache[cache_key] = events
+        return events
+
+    async def get_market_sentiment(self, symbol: str) -> Dict[str, Any]:
+        """Get comprehensive market sentiment analysis"""
+        cache_key = f"sentiment_{symbol}"
+        if cache_key in self.sentiment_cache:
+            return self.sentiment_cache[cache_key]
+
+        # Simulate comprehensive sentiment analysis
+        sentiment_score = (hash(symbol) % 200 - 100) / 100  # -1 to 1
+
+        if sentiment_score > 0.3:
+            sentiment_label = "bullish"
+        elif sentiment_score < -0.3:
+            sentiment_label = "bearish"
+        else:
+            sentiment_label = "neutral"
+
+        sentiment_data = {
+            "sentiment_score": sentiment_score,
+            "sentiment_label": sentiment_label,
+            "confidence": 0.7 + (abs(sentiment_score) * 0.3),
+            "news_count": 5 + hash(symbol) % 20,
+            "social_media_mentions": 100 + hash(symbol) % 500,
+            "analyst_ratings": {
+                "buy": 8 + hash(symbol) % 5,
+                "hold": 10 + hash(symbol) % 3,
+                "sell": 2 + hash(symbol) % 3
+            },
+            "fear_greed_index": 50 + (sentiment_score * 30),
+            "institutional_flow": "inflow" if sentiment_score > 0 else "outflow"
+        }
+
+        self.sentiment_cache[cache_key] = sentiment_data
+        return sentiment_data
+
+    async def get_market_context_for_trade(self, symbol: str, entry_time: datetime) -> Dict[str, Any]:
+        """Get comprehensive market context for a trade"""
+        return {
+            "live_quote": (await self.get_live_quotes([symbol]))[symbol],
+            "sentiment": await self.get_market_sentiment(symbol),
+            "regime": await self.detect_market_regime(symbol),
+            "economic_events": await self.get_economic_calendar(3),
+            "market_hours": self._get_market_hours(),
+            "context_score": self._calculate_context_score(symbol)
+        }
+
+    def _get_market_hours(self) -> Dict[str, Any]:
+        """Get current market session information"""
+        now = datetime.now()
+        hour = now.hour
+
+        if 9 <= hour < 16:
+            session = "us_regular"
+        elif 16 <= hour < 20:
+            session = "us_after_hours"
+        elif 4 <= hour < 9:
+            session = "us_pre_market"
+        else:
+            session = "closed"
+
+        return {
+            "current_session": session,
+            "is_active": session in ["us_regular", "us_after_hours", "us_pre_market"],
+            "next_open": "09:30 EST" if session == "closed" else None
+        }
+
+    def _calculate_context_score(self, symbol: str) -> float:
+        """Calculate overall market context favorability score"""
+        # Combine multiple factors for context score
+        volatility = self._calculate_volatility(symbol)
+
+        # Lower volatility = better context for most strategies
+        volatility_score = max(0, 1 - volatility * 2)
+
+        # Simulate other factors
+        liquidity_score = 0.8 + (hash(symbol) % 20) / 100
+        trend_strength = 0.6 + (hash(symbol) % 40) / 100
+
+        return (volatility_score + liquidity_score + trend_strength) / 3

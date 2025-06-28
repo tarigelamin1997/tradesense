@@ -1,23 +1,40 @@
 import '@testing-library/jest-dom';
-import 'jest-axe/extend-expect';
+import { configure } from '@testing-library/react';
+import { server } from './mocks/server';
+
+// Configure testing library
+configure({ testIdAttribute: 'data-testid' });
+
+// Mock API server
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock IntersectionObserver
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn()
+}));
 
 // Mock environment variables
 process.env.REACT_APP_API_URL = 'http://localhost:8000';
 process.env.NODE_ENV = 'test';
-
-// Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  observe() {
-    return null;
-  }
-  disconnect() {
-    return null;
-  }
-  unobserve() {
-    return null;
-  }
-};
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -43,21 +60,6 @@ global.PerformanceObserver = class PerformanceObserver {
     return null;
   }
 };
-
-// Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
 
 // Mock localStorage
 const localStorageMock = {

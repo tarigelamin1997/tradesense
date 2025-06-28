@@ -1,4 +1,3 @@
-
 import type { Preview } from '@storybook/react';
 import '../src/styles/mobile.css';
 
@@ -11,55 +10,34 @@ const preview: Preview = {
         date: /Date$/,
       },
     },
-    backgrounds: {
-      default: 'light',
-      values: [
-        {
-          name: 'light',
-          value: '#ffffff',
-        },
-        {
-          name: 'dark',
-          value: '#1a1a1a',
-        },
-        {
-          name: 'gray',
-          value: '#f5f5f5',
-        },
-      ],
+    docs: {
+      toc: true
     },
     viewport: {
       viewports: {
-        mobile1: {
-          name: 'Small Mobile',
+        mobile: {
+          name: 'Mobile',
           styles: {
-            width: '320px',
-            height: '568px',
-          },
-        },
-        mobile2: {
-          name: 'Large Mobile',
-          styles: {
-            width: '414px',
-            height: '896px',
-          },
+            width: '375px',
+            height: '667px'
+          }
         },
         tablet: {
           name: 'Tablet',
           styles: {
             width: '768px',
-            height: '1024px',
-          },
+            height: '1024px'
+          }
         },
         desktop: {
           name: 'Desktop',
           styles: {
-            width: '1024px',
-            height: '768px',
-          },
-        },
-      },
-    },
+            width: '1200px',
+            height: '800px'
+          }
+        }
+      }
+    }
   },
   globalTypes: {
     theme: {
@@ -67,12 +45,12 @@ const preview: Preview = {
       defaultValue: 'light',
       toolbar: {
         title: 'Theme',
-        icon: 'paintbrush',
+        icon: 'circlehollow',
         items: ['light', 'dark'],
-        dynamicTitle: true,
-      },
-    },
-  },
+        dynamicTitle: true
+      }
+    }
+  }
 };
 
 export default preview;

@@ -211,7 +211,7 @@ def _calculate_streak_distribution(streaks: List[int]) -> Dict[str, int]:
     return distribution
 
 
-def _calculate_streak_consistency(streak_data: Dict[str, Any]]) -> float:
+def _calculate_streak_consistency(streak_data: Dict[str, Any]) -> float:
     """
     Calculate how consistent streak lengths are (lower variance = more consistent)
 

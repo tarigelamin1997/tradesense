@@ -1,5 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Bold, Italic, List, Link, Image, Eye, Edit } from 'lucide-react';
+
+import React, { useState, useRef, useCallback } from 'react';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 
 interface MarkdownEditorProps {
   value: string;
@@ -11,10 +13,11 @@ interface MarkdownEditorProps {
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   value,
   onChange,
-  placeholder = "Write your trade notes...",
-  height = "300px"
+  placeholder = "Start writing your trading notes...",
+  height = "400px"
 }) => {
   const [isPreview, setIsPreview] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertText = useCallback((before: string, after: string = '') => {
@@ -24,13 +27,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = value.substring(start, end);
-
-    const newText = value.substring(0, start) + 
-                   before + selectedText + after + 
-                   value.substring(end);
-
-    onChange(newText);
-
+    
+    const newValue = 
+      value.substring(0, start) + 
+      before + selectedText + after + 
+      value.substring(end);
+    
+    onChange(newValue);
+    
     // Restore cursor position
     setTimeout(() => {
       textarea.focus();
@@ -41,117 +45,168 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, 0);
   }, [value, onChange]);
 
-  const formatText = (type: string) => {
-    switch (type) {
-      case 'bold':
-        insertText('**', '**');
-        break;
-      case 'italic':
-        insertText('*', '*');
-        break;
-      case 'list':
-        insertText('\n- ');
-        break;
-      case 'link':
-        insertText('[', '](url)');
-        break;
-      case 'image':
-        insertText('![alt text](', ')');
-        break;
+  const formatActions = [
+    {
+      icon: '**B**',
+      title: 'Bold',
+      action: () => insertText('**', '**')
+    },
+    {
+      icon: '*I*',
+      title: 'Italic',
+      action: () => insertText('*', '*')
+    },
+    {
+      icon: '# H',
+      title: 'Heading',
+      action: () => insertText('## ')
+    },
+    {
+      icon: '• L',
+      title: 'List',
+      action: () => insertText('- ')
+    },
+    {
+      icon: '[L]',
+      title: 'Link',
+      action: () => insertText('[', '](url)')
+    },
+    {
+      icon: '```',
+      title: 'Code',
+      action: () => insertText('```\n', '\n```')
+    },
+    {
+      icon: '| T',
+      title: 'Table',
+      action: () => insertText(
+        '| Column 1 | Column 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n'
+      )
+    },
+    {
+      icon: '📊',
+      title: 'Trade Template',
+      action: () => insertText(`
+## Trade Analysis
+
+**Setup:** 
+**Entry:** 
+**Exit:** 
+**Result:** 
+**Lessons:** 
+`)
     }
-  };
+  ];
 
-  const renderMarkdown = (text: string) => {
+  const renderMarkdown = (text: string): string => {
+    // Simple markdown to HTML converter
     let html = text
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       // Bold
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
       // Italic
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
       // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">$1</a>')
-      // Images
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto my-2" />')
+      .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2" target="_blank">$1</a>')
       // Lists
-      .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
+      .replace(/^\s*\* (.*)$/gim, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      .replace(/^\s*\- (.*)$/gim, '<li>$1</li>')
+      // Code blocks
+      .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
+      // Inline code
+      .replace(/`([^`]*)`/gim, '<code>$1</code>')
       // Line breaks
-      .replace(/\n/g, '<br />');
+      .replace(/\n/gim, '<br>');
 
-    // Wrap lists
-    html = html.replace(/((<li class="ml-4">.*?<\/li>)+)/g, '<ul class="list-disc pl-4 my-2">$1</ul>');
-
-    return { __html: html };
+    return html;
   };
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Toolbar */}
-      <div className="bg-gray-50 border-b px-3 py-2 flex items-center gap-2">
-        <button
-          onClick={() => formatText('bold')}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="Bold"
-        >
-          <Bold size={16} />
-        </button>
-        <button
-          onClick={() => formatText('italic')}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="Italic"
-        >
-          <Italic size={16} />
-        </button>
-        <button
-          onClick={() => formatText('list')}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="List"
-        >
-          <List size={16} />
-        </button>
-        <button
-          onClick={() => formatText('link')}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="Link"
-        >
-          <Link size={16} />
-        </button>
-        <button
-          onClick={() => formatText('image')}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="Image"
-        >
-          <Image size={16} />
-        </button>
-
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => setIsPreview(!isPreview)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
-              isPreview ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
-            }`}
-          >
-            {isPreview ? <Edit size={14} /> : <Eye size={14} />}
-            {isPreview ? 'Edit' : 'Preview'}
-          </button>
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-1">
+            {formatActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={action.action}
+                title={action.title}
+                className="px-2 py-1 text-sm font-mono border border-gray-300 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {action.icon}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex rounded-lg bg-gray-200 p-1">
+            <button
+              onClick={() => setSelectedTab('write')}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                selectedTab === 'write'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Write
+            </button>
+            <button
+              onClick={() => setSelectedTab('preview')}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                selectedTab === 'preview'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Preview
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Editor/Preview */}
+      {/* Editor Content */}
       <div style={{ height }}>
-        {isPreview ? (
-          <div 
-            className="p-3 h-full overflow-y-auto prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={renderMarkdown(value)}
-          />
-        ) : (
+        {selectedTab === 'write' ? (
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full h-full p-3 border-none outline-none resize-none font-mono text-sm"
+            className="w-full h-full p-4 border-none resize-none focus:outline-none font-mono text-sm"
+            style={{ minHeight: height }}
           />
+        ) : (
+          <div className="h-full overflow-auto">
+            <div
+              className="p-4 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: renderMarkdown(value) || '<p class="text-gray-500">Nothing to preview</p>'
+              }}
+            />
+          </div>
         )}
       </div>
-    </div>
+
+      {/* Footer with tips */}
+      <div className="border-t border-gray-200 bg-gray-50 px-4 py-2">
+        <div className="flex items-center justify-between text-xs text-gray-600">
+          <div className="flex items-center space-x-4">
+            <span>**bold** *italic* `code`</span>
+            <span>## heading</span>
+            <span>- list</span>
+            <span>[link](url)</span>
+          </div>
+          <div className="text-right">
+            <span>{value.length} characters</span>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 };
+
+export default MarkdownEditor;

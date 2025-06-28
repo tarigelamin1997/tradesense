@@ -399,7 +399,7 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && python -m pip install --user --break-system-packages --no-cache-dir fastapi uvicorn python-multipart sqlalchemy psycopg2-binary python-jose[cryptography] passlib[bcrypt] python-dateutil && python main.py"
+args = "cd app && python main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -628,4 +628,21 @@ args = "echo \"🚀 Starting TradeSense Backend API...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app/main.py"
+args = "cd app && python main.py"
+
+[[workflows.workflow]]
+name = "Run Tests"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧪 Running backend tests...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pytest tests/ -v"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Tests completed!\""

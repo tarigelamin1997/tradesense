@@ -1,128 +1,114 @@
-
 import { api } from './api';
 
-export interface MarketData {
+export interface MarketQuote {
   symbol: string;
   price: number;
-  change_percent?: number;
-  volume?: number;
-  timestamp: string;
-  market_open: boolean;
-}
-
-export interface MarketSentiment {
-  symbol: string;
-  sentiment_score: number;
-  fear_greed_index: number;
-  volatility_index: number;
-  news_sentiment: number;
-  timestamp: string;
-}
-
-export interface TradeContext {
-  current_price?: number;
-  price_change_percent?: number;
-  sentiment_score: number;
-  fear_greed_index: number;
-  volatility_index: number;
-  market_hours: boolean;
-  session_type: string;
-}
-
-export interface TrendingSymbol {
-  symbol: string;
+  change: number;
+  changePercent: number;
   volume: number;
-  change_percent: number;
+  timestamp: number;
+}
+
+export interface MarketRegime {
+  regime: 'bull_trending' | 'bear_trending' | 'sideways_choppy' | 'high_volatility' | 'low_volatility';
+  confidence: number;
+  duration_days: number;
+  key_indicators: Record<string, number>;
+  recommended_strategies: string[];
+  risk_level: 'Low' | 'Medium' | 'High';
 }
 
 class MarketDataService {
-  async getCurrentPrice(symbol: string): Promise<MarketData | null> {
-    try {
-      const response = await api.get(`/market-data/current-price/${symbol}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching price for ${symbol}:`, error);
-      return null;
-    }
-  }
+  private ws: WebSocket | null = null;
+  private subscribers: Map<string, Set<(data: MarketQuote) => void>> = new Map();
 
-  async getMarketSentiment(symbol: string): Promise<MarketSentiment | null> {
-    try {
-      const response = await api.get(`/market-data/sentiment/${symbol}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching sentiment for ${symbol}:`, error);
-      return null;
-    }
-  }
+  // Real-time WebSocket connection
+  connectToRealTimeData() {
+    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/api/v1/market-data/ws/market-data`;
 
-  async getTradeContext(symbol: string, entryTime?: string): Promise<TradeContext | null> {
-    try {
-      const params = entryTime ? { entry_time: entryTime } : {};
-      const response = await api.get(`/market-data/trade-context/${symbol}`, { params });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching trade context for ${symbol}:`, error);
-      return null;
-    }
-  }
+    this.ws = new WebSocket(wsUrl);
 
-  async subscribeToSymbol(symbol: string): Promise<boolean> {
-    try {
-      await api.post(`/market-data/subscribe/${symbol}`);
-      return true;
-    } catch (error) {
-      console.error(`Error subscribing to ${symbol}:`, error);
-      return false;
-    }
-  }
-
-  async unsubscribeFromSymbol(symbol: string): Promise<boolean> {
-    try {
-      await api.delete(`/market-data/unsubscribe/${symbol}`);
-      return true;
-    } catch (error) {
-      console.error(`Error unsubscribing from ${symbol}:`, error);
-      return false;
-    }
-  }
-
-  async getMarketStatus(): Promise<any> {
-    try {
-      const response = await api.get('/market-data/market-status');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching market status:', error);
-      return null;
-    }
-  }
-
-  async getTrendingSymbols(limit: number = 10): Promise<TrendingSymbol[]> {
-    try {
-      const response = await api.get('/market-data/symbols/trending', {
-        params: { limit }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching trending symbols:', error);
-      return [];
-    }
-  }
-
-  // Real-time WebSocket connection helper
-  createWebSocketConnection(userId: string, onMessage: (data: any) => void): WebSocket {
-    const ws = new WebSocket(`ws://localhost:5000/api/v1/market-data/ws/${userId}`);
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      onMessage(data);
+    this.ws.onopen = () => {
+      console.log('Connected to real-time market data');
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    this.ws.onmessage = (event) => {
+      const data: MarketQuote = JSON.parse(event.data);
+      this.notifySubscribers(data.symbol, data);
     };
 
-    return ws;
+    this.ws.onclose = () => {
+      console.log('Disconnected from market data');
+      // Attempt to reconnect after 5 seconds
+      setTimeout(() => this.connectToRealTimeData(), 5000);
+    };
+  }
+
+  // Subscribe to real-time updates for a symbol
+  subscribeToSymbol(symbol: string, callback: (data: MarketQuote) => void) {
+    if (!this.subscribers.has(symbol)) {
+      this.subscribers.set(symbol, new Set());
+    }
+
+    this.subscribers.get(symbol)!.add(callback);
+
+    // Send subscription message
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({
+        type: 'subscribe',
+        symbol: symbol
+      }));
+    }
+  }
+
+  // Unsubscribe from symbol updates
+  unsubscribeFromSymbol(symbol: string, callback: (data: MarketQuote) => void) {
+    const symbolSubscribers = this.subscribers.get(symbol);
+    if (symbolSubscribers) {
+      symbolSubscribers.delete(callback);
+      if (symbolSubscribers.size === 0) {
+        this.subscribers.delete(symbol);
+      }
+    }
+  }
+
+  private notifySubscribers(symbol: string, data: MarketQuote) {
+    const symbolSubscribers = this.subscribers.get(symbol);
+    if (symbolSubscribers) {
+      symbolSubscribers.forEach(callback => callback(data));
+    }
+  }
+
+  // Get current market regime analysis
+  async getMarketRegime(): Promise<MarketRegime> {
+    const response = await api.get('/market-data/regime-analysis');
+    return response.data;
+  }
+
+  // Get live quote for a symbol
+  async getLiveQuote(symbol: string): Promise<MarketQuote> {
+    const response = await api.get(`/market-data/symbols/${symbol}/live`);
+    return response.data;
+  }
+
+  // Get market hours and status
+  async getMarketHours() {
+    const response = await api.get('/market-data/market-hours');
+    return response.data;
+  }
+
+  // Get trending symbols
+  async getTrendingSymbols() {
+    const response = await api.get('/market-data/trending');
+    return response.data;
+  }
+
+  // Disconnect WebSocket
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
   }
 }
 

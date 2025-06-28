@@ -1,0 +1,62 @@
+🚨 PHASE: PRODUCTION TRANSITION — FRONTEND CONNECTION & SYSTEM FINALIZATION
+
+The backend of TradeSense has now been refactored using FastAPI and is mostly complete.
+
+✅ The project includes a UI that was built during the development process. This UI is already present in the codebase and must be retained — do not replace it or rebuild it from scratch.
+
+❌ However, the current app only shows a white screen when run. It’s non-functional and likely due to broken integration, missing imports, or frontend/backend disconnects.
+
+---
+
+### 🔧 TASK: FIX AND CONNECT THE EXISTING FRONTEND
+
+1. **Diagnose and fix** why the current UI is not loading (white screen)
+   - Likely issues: missing entry point, JS errors, unmounted components, broken `index.html`, or missing imports
+2. Connect the existing UI to the backend:
+   - `POST /api/auth/login` → login form
+   - `POST /api/auth/register` → registration form
+   - `GET /api/analytics/dashboard` → show KPIs/metrics
+   - `POST /api/journal/entries` → trade entry form
+   - `GET /api/journal/entries` → display trade logs
+3. Ensure **token-based authentication** is supported (JWT stored in localStorage or sessionStorage)
+4. Fix all forms, buttons, charts, and pages that were already created — make them functional with API calls
+5. Display backend feedback (success/failures) via visible alerts or UI notifications
+
+---
+
+### 🧪 ADD BASIC TESTS & CI
+
+1. Add Pytest-based tests in `/tests/` folder:
+   - Auth flow
+   - Journaling
+   - Analytics
+2. Add a simple **GitHub Actions workflow**:
+   - Trigger on `main` branch push
+   - Run `pytest`
+   - Report output in CI logs
+
+---
+
+### 🐳 DOCKER & DEPLOYMENT
+
+1. Use the existing `Dockerfile`, or improve it:
+   - Make sure Uvicorn starts the app
+   - Serve the UI correctly (e.g. from `static/` or `templates/` if using a templated system)
+2. Add a `docker-compose.yml` for:
+   - FastAPI backend
+   - SQLite (optional volume)
+3. Add `.env` support for sensitive configs
+
+---
+
+### ✅ FINAL READINESS CHECKLIST
+
+- Fix the white screen
+- Connect existing UI to backend
+- Ensure all forms, charts, and views are functional
+- Support JWT-based login and token handling
+- Test API functionality manually or via `/docs`
+- Add feedback handling (alerts/toasts)
+- Ready the app for user testing and public deployment
+
+This is a full system delivery task. Do not build a new UI — make the existing one work.

@@ -45,7 +45,7 @@ localPort = 8000
 externalPort = 8000
 
 [workflows]
-runButton = "Frontend Only"
+runButton = "Full Stack App"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"

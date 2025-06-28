@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.v1.auth.router import router as auth_router
 from backend.api.v1.trades.router import router as trades_router

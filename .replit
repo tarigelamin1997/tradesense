@@ -31,7 +31,7 @@ LANG = "C"
 REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
 
 [workflows]
-runButton = "Full Stack Development"
+runButton = "Backend API"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -616,3 +616,16 @@ args = "echo \"  • Monitoring: python monitoring/real_time_monitor.py\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"  • Dashboard: streamlit run monitoring/dashboard.py --server.port=5001\""
+
+[[workflows.workflow]]
+name = "Backend API"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Starting TradeSense Backend API...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app/main.py"

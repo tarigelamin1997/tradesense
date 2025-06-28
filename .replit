@@ -637,11 +637,11 @@ args = "python app/main.py"
 [[workflows.workflow]]
 name = "Full Stack App"
 author = 43683701
-mode = "parallel"
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && python app/main.py"
+args = "cd backend && python app/main.py &"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

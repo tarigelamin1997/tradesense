@@ -94,9 +94,14 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def root():
+        # Redirect to frontend UI if accessed via browser
+        from fastapi.responses import RedirectResponse
+        from fastapi import Request
+        
         return {
             "message": "TradeSense API v2.0 - Advanced Trade Intelligence",
             "status": "operational",
+            "frontend_url": "Port 3000 for React UI",
             "features": [
                 "Trade Analytics", "Portfolio Simulation", "Feature Voting",
                 "AI Trade Intelligence", "Market Regime Analysis", "Risk Assessment"

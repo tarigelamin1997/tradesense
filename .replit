@@ -1,11 +1,6 @@
-
 modules = ["nodejs-20", "python-3.11"]
 
-run = """
-cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-cd frontend && npm install --legacy-peer-deps && npm run dev
-"""
-
+run = "cd backend && python app/main.py & cd frontend && npm install --legacy-peer-deps && npm run dev"
 entrypoint = "frontend/index.html"
 language = "nodejs"
 

@@ -1,235 +1,203 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from typing import List, Dict, Optional
-from datetime import datetime
+from typing import List, Dict, Any, Optional
 import json
 import asyncio
+from datetime import datetime
+
 from backend.services.real_time_market_service import market_service, MarketData, MarketSentiment
 from backend.api.deps import get_current_user
 from backend.models.user import User
-from backend.services.real_time_feeds import market_feed
-from backend.services.market_data_service import MarketDataService
 
-router = APIRouter()
+router = APIRouter(prefix="/market-data", tags=["market-data"])
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        self.user_subscriptions: Dict[str, List[str]] = {}  # user_id -> symbols
+        self.user_connections: Dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
         self.active_connections.append(websocket)
-        self.user_subscriptions[user_id] = []
+        self.user_connections[user_id] = websocket
 
     def disconnect(self, websocket: WebSocket, user_id: str):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-        if user_id in self.user_subscriptions:
-            del self.user_subscriptions[user_id]
+        if user_id in self.user_connections:
+            del self.user_connections[user_id]
 
-    async def send_to_user(self, user_id: str, data: dict):
-        # Find websocket for user and send data
-        # Simplified implementation
-        for connection in self.active_connections:
+    async def send_personal_message(self, message: str, user_id: str):
+        if user_id in self.user_connections:
             try:
-                await connection.send_text(json.dumps(data))
+                await self.user_connections[user_id].send_text(message)
             except:
-                pass
-
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
+                # Connection closed, clean up
+                self.disconnect(self.user_connections[user_id], user_id)
 
     async def broadcast(self, message: str):
+        disconnected = []
         for connection in self.active_connections:
-            await connection.send_text(message)
+            try:
+                await connection.send_text(message)
+            except:
+                disconnected.append(connection)
+
+        # Clean up disconnected connections
+        for conn in disconnected:
+            if conn in self.active_connections:
+                self.active_connections.remove(conn)
 
 manager = ConnectionManager()
 
-@router.get("/current-price/{symbol}")
-async def get_current_price(
+@router.get("/symbols/{symbol}/current")
+async def get_current_market_data(
     symbol: str,
     current_user: User = Depends(get_current_user)
-) -> Dict:
-    """Get current market price for symbol"""
-    price = market_service.get_current_price(symbol)
-    if price is None:
-        # Trigger a fetch if not in cache
-        await market_service._fetch_market_data_batch()
-        price = market_service.get_current_price(symbol)
+) -> Dict[str, Any]:
+    """Get current market data for a symbol"""
+    market_data = await market_service.get_current_price(symbol.upper())
+    sentiment = await market_service.get_market_sentiment(symbol.upper())
+
+    if not market_data:
+        raise HTTPException(status_code=404, detail="Market data not available for symbol")
 
     return {
-        "symbol": symbol,
-        "price": price,
-        "timestamp": datetime.now().isoformat(),
-        "market_open": market_service._is_market_hours()
+        "symbol": market_data.symbol,
+        "price": market_data.price,
+        "change": market_data.change,
+        "change_percent": market_data.change_percent,
+        "volume": market_data.volume,
+        "bid": market_data.bid,
+        "ask": market_data.ask,
+        "high": market_data.high,
+        "low": market_data.low,
+        "timestamp": market_data.timestamp.isoformat(),
+        "sentiment": {
+            "score": sentiment.sentiment_score if sentiment else 0,
+            "volatility": sentiment.volatility if sentiment else 0,
+            "momentum": sentiment.momentum if sentiment else 0,
+            "trend": sentiment.trend_direction if sentiment else "neutral"
+        } if sentiment else None
     }
 
-@router.get("/sentiment/{symbol}")
-async def get_market_sentiment(
-    symbol: str,
-    current_user: User = Depends(get_current_user)
-) -> MarketSentiment:
-    """Get current market sentiment for symbol"""
-    sentiment = await market_service.fetch_market_sentiment(symbol)
-    return sentiment
-
-@router.get("/trade-context/{symbol}")
+@router.get("/symbols/{symbol}/context")
 async def get_trade_context(
     symbol: str,
-    entry_time: Optional[str] = None,
+    entry_price: float,
     current_user: User = Depends(get_current_user)
-) -> Dict:
-    """Get market context for trade analysis"""
-    if entry_time:
-        entry_dt = datetime.fromisoformat(entry_time)
-    else:
-        entry_dt = datetime.now()
-
-    context = await market_service.get_trade_context(symbol, entry_dt)
+) -> Dict[str, Any]:
+    """Analyze market context for a specific trade"""
+    context = await market_service.analyze_trade_context(symbol.upper(), entry_price)
     return context
 
-@router.post("/subscribe/{symbol}")
-async def subscribe_to_symbol(
-    symbol: str,
+@router.get("/portfolio/context")
+async def get_portfolio_context(
     current_user: User = Depends(get_current_user)
-) -> Dict:
-    """Subscribe to real-time updates for a symbol"""
+) -> Dict[str, Any]:
+    """Get real-time context for user's portfolio"""
+    context = await market_service.get_portfolio_context(current_user.id)
+    return context
 
-    async def user_callback(data: MarketData):
-        await manager.send_to_user(current_user.id, {
-            "type": "market_update",
-            "symbol": data.symbol,
-            "price": data.price,
-            "volume": data.volume,
-            "change_percent": data.change_percent,
-            "timestamp": data.timestamp.isoformat()
-        })
-
-    market_service.subscribe_to_symbol(symbol, user_callback)
-
-    return {
-        "message": f"Subscribed to {symbol}",
-        "symbol": symbol,
-        "user_id": current_user.id
-    }
-
-@router.delete("/unsubscribe/{symbol}")
-async def unsubscribe_from_symbol(
-    symbol: str,
+@router.get("/watchlist")
+async def get_watchlist_data(
+    symbols: str,  # Comma-separated symbols
     current_user: User = Depends(get_current_user)
-) -> Dict:
-    """Unsubscribe from symbol updates"""
-    # Note: In production, track callbacks per user
-    return {
-        "message": f"Unsubscribed from {symbol}",
-        "symbol": symbol
-    }
+) -> List[Dict[str, Any]]:
+    """Get market data for a watchlist of symbols"""
+    symbol_list = [s.strip().upper() for s in symbols.split(",")]
+    results = []
 
-@router.get("/market-status")
-async def get_market_status(
-    current_user: User = Depends(get_current_user)
-) -> Dict:
-    """Get current market status"""
-    return {
-        "market_open": market_service._is_market_hours(),
-        "session_type": market_service._get_market_session(),
-        "timestamp": datetime.now().isoformat(),
-        "active_symbols": list(market_service.active_subscriptions.keys()),
-        "total_subscriptions": len(market_service.active_subscriptions)
-    }
+    for symbol in symbol_list:
+        market_data = await market_service.get_current_price(symbol)
+        sentiment = await market_service.get_market_sentiment(symbol)
+
+        if market_data:
+            results.append({
+                "symbol": symbol,
+                "price": market_data.price,
+                "change": market_data.change,
+                "change_percent": market_data.change_percent,
+                "volume": market_data.volume,
+                "sentiment_score": sentiment.sentiment_score if sentiment else 0,
+                "trend": sentiment.trend_direction if sentiment else "neutral"
+            })
+
+    return results
 
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):
     """WebSocket endpoint for real-time market data"""
     await manager.connect(websocket, user_id)
+
+    # Subscribe to market updates
+    async def market_update_callback(market_data: MarketData, sentiment: MarketSentiment):
+        message = {
+            "type": "market_update",
+            "data": {
+                "symbol": market_data.symbol,
+                "price": market_data.price,
+                "change": market_data.change,
+                "change_percent": market_data.change_percent,
+                "volume": market_data.volume,
+                "timestamp": market_data.timestamp.isoformat(),
+                "sentiment": {
+                    "score": sentiment.sentiment_score,
+                    "volatility": sentiment.volatility,
+                    "momentum": sentiment.momentum,
+                    "trend": sentiment.trend_direction
+                }
+            }
+        }
+        await manager.send_personal_message(json.dumps(message), user_id)
+
     try:
         while True:
-            # Keep connection alive and handle client messages
+            # Listen for client messages (symbol subscriptions)
             data = await websocket.receive_text()
             message = json.loads(data)
 
-            if message.get("action") == "subscribe":
-                symbol = message.get("symbol")
-                if symbol:
-                    # Subscribe to symbol for this user
-                    async def ws_callback(market_data: MarketData):
-                        await websocket.send_text(json.dumps({
-                            "type": "market_update",
-                            "symbol": market_data.symbol,
-                            "price": market_data.price,
-                            "volume": market_data.volume,
-                            "timestamp": market_data.timestamp.isoformat()
-                        }))
+            if message["type"] == "subscribe":
+                symbol = message["symbol"].upper()
+                market_service.subscribe_to_symbol(symbol, market_update_callback)
 
-                    market_service.subscribe_to_symbol(symbol, ws_callback)
-                    manager.user_subscriptions[user_id].append(symbol)
+                # Send current data immediately
+                current_data = await market_service.get_current_price(symbol)
+                current_sentiment = await market_service.get_market_sentiment(symbol)
 
-            elif message.get("action") == "unsubscribe":
-                symbol = message.get("symbol")
-                if symbol and symbol in manager.user_subscriptions.get(user_id, []):
-                    manager.user_subscriptions[user_id].remove(symbol)
+                if current_data and current_sentiment:
+                    await market_update_callback(current_data, current_sentiment)
+
+            elif message["type"] == "unsubscribe":
+                symbol = message["symbol"].upper()
+                market_service.unsubscribe_from_symbol(symbol, market_update_callback)
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
-
-@router.get("/symbols/trending")
-async def get_trending_symbols(
-    limit: int = 10,
-    current_user: User = Depends(get_current_user)
-) -> List[Dict]:
-    """Get trending symbols based on activity"""
-    # Mock data for trending symbols
-    trending = [
-        {"symbol": "AAPL", "volume": 25000000, "change_percent": 2.1},
-        {"symbol": "TSLA", "volume": 18000000, "change_percent": -1.5},
-        {"symbol": "MSFT", "volume": 15000000, "change_percent": 0.8},
-        {"symbol": "NVDA", "volume": 22000000, "change_percent": 3.2},
-        {"symbol": "AMD", "volume": 12000000, "change_percent": 1.9},
-        {"symbol": "GOOGL", "volume": 8000000, "change_percent": -0.3},
-        {"symbol": "AMZN", "volume": 11000000, "change_percent": 1.1},
-        {"symbol": "META", "volume": 9000000, "change_percent": 2.7},
-        {"symbol": "SPY", "volume": 45000000, "change_percent": 0.6},
-        {"symbol": "QQQ", "volume": 35000000, "change_percent": 1.2}
-    ]
-
-    return trending[:limit]
-
-@router.websocket("/ws/market-data")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            message_data = json.loads(data)
-
-            if message_data.get('type') == 'subscribe':
-                symbol = message_data.get('symbol')
-
-                # Subscribe to market feed for this symbol
-                async def market_callback(update):
-                    await manager.send_personal_message(
-                        json.dumps(update), websocket
-                    )
-
-                market_feed.subscribe_to_symbol(symbol, market_callback)
-
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-
-@router.get("/symbols/{symbol}/live")
-async def get_live_data(symbol: str):
-    """Get current live market data for a symbol"""
-    service = MarketDataService()
-    return await service.get_live_quote(symbol)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        manager.disconnect(websocket, user_id)
 
 @router.get("/market-hours")
-async def get_market_hours():
+async def get_market_hours() -> Dict[str, Any]:
     """Get current market hours and status"""
-    service = MarketDataService()
-    return await service.get_market_status()
+    now = datetime.now()
 
-@router.get("/trending")
-async def get_trending_symbols():
-    """Get trending/most active symbols"""
-    service = MarketDataService()
-    return await service.get_trending_symbols()
+    # Simplified market hours (US Eastern Time)
+    market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+
+    is_open = market_open <= now <= market_close and now.weekday() < 5
+
+    return {
+        "is_open": is_open,
+        "market_open": market_open.isoformat(),
+        "market_close": market_close.isoformat(),
+        "current_time": now.isoformat(),
+        "session": "regular" if is_open else "closed"
+    }
+
+# Initialize market service on startup
+@router.on_event("startup")
+async def startup_event():
+    """Start the market data feed when the API starts"""
+    asyncio.create_task(market_service.start_market_feed())

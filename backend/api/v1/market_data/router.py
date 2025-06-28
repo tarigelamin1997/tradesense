@@ -6,6 +6,8 @@ import asyncio
 from backend.services.real_time_market_service import market_service, MarketData, MarketSentiment
 from backend.api.deps import get_current_user
 from backend.models.user import User
+from backend.services.real_time_feeds import market_feed
+from backend.services.market_data_service import MarketDataService
 
 router = APIRouter()
 
@@ -33,6 +35,13 @@ class ConnectionManager:
                 await connection.send_text(json.dumps(data))
             except:
                 pass
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
 
 manager = ConnectionManager()
 
@@ -184,3 +193,43 @@ async def get_trending_symbols(
     ]
 
     return trending[:limit]
+
+@router.websocket("/ws/market-data")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+
+            if message_data.get('type') == 'subscribe':
+                symbol = message_data.get('symbol')
+
+                # Subscribe to market feed for this symbol
+                async def market_callback(update):
+                    await manager.send_personal_message(
+                        json.dumps(update), websocket
+                    )
+
+                market_feed.subscribe_to_symbol(symbol, market_callback)
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+@router.get("/symbols/{symbol}/live")
+async def get_live_data(symbol: str):
+    """Get current live market data for a symbol"""
+    service = MarketDataService()
+    return await service.get_live_quote(symbol)
+
+@router.get("/market-hours")
+async def get_market_hours():
+    """Get current market hours and status"""
+    service = MarketDataService()
+    return await service.get_market_status()
+
+@router.get("/trending")
+async def get_trending_symbols():
+    """Get trending/most active symbols"""
+    service = MarketDataService()
+    return await service.get_trending_symbols()

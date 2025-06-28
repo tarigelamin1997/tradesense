@@ -1,87 +1,129 @@
+
 import { api } from './api';
 
-export interface MarketQuote {
+export interface MarketData {
   symbol: string;
   price: number;
-  change: number;
-  change_percent: number;
-  volume: number;
+  change_percent?: number;
+  volume?: number;
   timestamp: string;
-  source: string;
+  market_open: boolean;
 }
 
 export interface MarketSentiment {
   symbol: string;
   sentiment_score: number;
-  sentiment_label: string;
-  news_count: number;
-  volatility: number;
-  rsi: number;
-  ma_signal: string;
+  fear_greed_index: number;
+  volatility_index: number;
+  news_sentiment: number;
   timestamp: string;
 }
 
-export interface MarketContext {
+export interface TradeContext {
+  current_price?: number;
+  price_change_percent?: number;
+  sentiment_score: number;
+  fear_greed_index: number;
+  volatility_index: number;
+  market_hours: boolean;
+  session_type: string;
+}
+
+export interface TrendingSymbol {
   symbol: string;
-  timestamp: string;
-  context: {
-    market_price?: number;
-    market_change?: number;
-    market_volume?: number;
-    sentiment_score?: number;
-    volatility?: number;
-    rsi?: number;
-    ma_signal?: string;
-  };
+  volume: number;
+  change_percent: number;
 }
 
-export const marketDataService = {
-  async getQuote(symbol: string, apiKey?: string): Promise<MarketQuote> {
-    const params = new URLSearchParams();
-    if (apiKey) params.append('api_key', apiKey);
-
-    const response = await api.get(`/market-data/quote/${symbol}?${params}`);
-    return response.data;
-  },
-
-  async getBatchQuotes(symbols: string, apiKey?: string): Promise<{ quotes: MarketQuote[] }> {
-    const params = new URLSearchParams({ symbols });
-    if (apiKey) params.append('api_key', apiKey);
-
-    const response = await api.get(`/market-data/quotes/batch?${params}`);
-    return response.data;
-  },
-
-  async getMarketSentiment(symbol: string): Promise<MarketSentiment> {
-    const response = await api.get(`/market-data/sentiment/${symbol}`);
-    return response.data;
-  },
-
-  async getWatchlist(): Promise<{ watchlist: MarketQuote[] }> {
-    const response = await api.get('/market-data/watchlist');
-    return response.data;
-  },
-
-  async addToWatchlist(symbol: string): Promise<{ message: string }> {
-    const response = await api.post(`/market-data/watchlist/${symbol}`);
-    return response.data;
-  },
-
-  async removeFromWatchlist(symbol: string): Promise<{ message: string }> {
-    const response = await api.delete(`/market-data/watchlist/${symbol}`);
-    return response.data;
-  },
-
-  async getMarketContext(symbol: string, timestamp?: string): Promise<MarketContext> {
-    const params = new URLSearchParams();
-    if (timestamp) params.append('timestamp', timestamp);
-
-    const response = await api.get(`/market-data/context/${symbol}?${params}`);
-    return response.data;
-  },
-
-  async getHealthStatus(): Promise<{ status: string; message: string; timestamp: string }> {
-    const response = await api.get('/market-data/health');
-    return response.data;
+class MarketDataService {
+  async getCurrentPrice(symbol: string): Promise<MarketData | null> {
+    try {
+      const response = await api.get(`/market-data/current-price/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching price for ${symbol}:`, error);
+      return null;
+    }
   }
-};
+
+  async getMarketSentiment(symbol: string): Promise<MarketSentiment | null> {
+    try {
+      const response = await api.get(`/market-data/sentiment/${symbol}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching sentiment for ${symbol}:`, error);
+      return null;
+    }
+  }
+
+  async getTradeContext(symbol: string, entryTime?: string): Promise<TradeContext | null> {
+    try {
+      const params = entryTime ? { entry_time: entryTime } : {};
+      const response = await api.get(`/market-data/trade-context/${symbol}`, { params });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching trade context for ${symbol}:`, error);
+      return null;
+    }
+  }
+
+  async subscribeToSymbol(symbol: string): Promise<boolean> {
+    try {
+      await api.post(`/market-data/subscribe/${symbol}`);
+      return true;
+    } catch (error) {
+      console.error(`Error subscribing to ${symbol}:`, error);
+      return false;
+    }
+  }
+
+  async unsubscribeFromSymbol(symbol: string): Promise<boolean> {
+    try {
+      await api.delete(`/market-data/unsubscribe/${symbol}`);
+      return true;
+    } catch (error) {
+      console.error(`Error unsubscribing from ${symbol}:`, error);
+      return false;
+    }
+  }
+
+  async getMarketStatus(): Promise<any> {
+    try {
+      const response = await api.get('/market-data/market-status');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching market status:', error);
+      return null;
+    }
+  }
+
+  async getTrendingSymbols(limit: number = 10): Promise<TrendingSymbol[]> {
+    try {
+      const response = await api.get('/market-data/symbols/trending', {
+        params: { limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching trending symbols:', error);
+      return [];
+    }
+  }
+
+  // Real-time WebSocket connection helper
+  createWebSocketConnection(userId: string, onMessage: (data: any) => void): WebSocket {
+    const ws = new WebSocket(`ws://localhost:5000/api/v1/market-data/ws/${userId}`);
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      onMessage(data);
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    return ws;
+  }
+}
+
+export const marketDataService = new MarketDataService();

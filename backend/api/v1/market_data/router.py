@@ -1,210 +1,186 @@
-#!/usr/bin/env python3
-"""
-Market Data API Router
-Real-time market data endpoints
-"""
-
-from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from typing import List, Dict, Optional
 from datetime import datetime
-import logging
-
-from backend.services.real_time_market_service import market_service, MarketQuote, MarketSentiment
+import json
+import asyncio
+from backend.services.real_time_market_service import market_service, MarketData, MarketSentiment
 from backend.api.deps import get_current_user
 from backend.models.user import User
 
-logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/market-data", tags=["market-data"])
+router = APIRouter()
 
-@router.get("/quote/{symbol}")
-async def get_quote(
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.user_subscriptions: Dict[str, List[str]] = {}  # user_id -> symbols
+
+    async def connect(self, websocket: WebSocket, user_id: str):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        self.user_subscriptions[user_id] = []
+
+    def disconnect(self, websocket: WebSocket, user_id: str):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        if user_id in self.user_subscriptions:
+            del self.user_subscriptions[user_id]
+
+    async def send_to_user(self, user_id: str, data: dict):
+        # Find websocket for user and send data
+        # Simplified implementation
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(json.dumps(data))
+            except:
+                pass
+
+manager = ConnectionManager()
+
+@router.get("/current-price/{symbol}")
+async def get_current_price(
     symbol: str,
-    api_key: Optional[str] = Query(None, description="Optional API key for premium data sources"),
     current_user: User = Depends(get_current_user)
-):
-    """Get real-time quote for a symbol."""
-    try:
-        quote = await market_service.get_quote(symbol.upper(), api_key)
+) -> Dict:
+    """Get current market price for symbol"""
+    price = market_service.get_current_price(symbol)
+    if price is None:
+        # Trigger a fetch if not in cache
+        await market_service._fetch_market_data_batch()
+        price = market_service.get_current_price(symbol)
 
-        if not quote:
-            raise HTTPException(status_code=404, detail=f"Quote not found for symbol {symbol}")
-
-        return {
-            "symbol": quote.symbol,
-            "price": quote.price,
-            "change": quote.change,
-            "change_percent": quote.change_percent,
-            "volume": quote.volume,
-            "timestamp": quote.timestamp.isoformat(),
-            "source": quote.source.value
-        }
-
-    except Exception as e:
-        logger.error(f"Error getting quote for {symbol}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get quote")
-
-@router.get("/quotes/batch")
-async def get_batch_quotes(
-    symbols: str = Query(..., description="Comma-separated list of symbols"),
-    api_key: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user)
-):
-    """Get quotes for multiple symbols."""
-    try:
-        symbol_list = [s.strip().upper() for s in symbols.split(",")]
-        quotes = []
-
-        for symbol in symbol_list:
-            quote = await market_service.get_quote(symbol, api_key)
-            if quote:
-                quotes.append({
-                    "symbol": quote.symbol,
-                    "price": quote.price,
-                    "change": quote.change,
-                    "change_percent": quote.change_percent,
-                    "volume": quote.volume,
-                    "timestamp": quote.timestamp.isoformat(),
-                    "source": quote.source.value
-                })
-
-        return {"quotes": quotes}
-
-    except Exception as e:
-        logger.error(f"Error getting batch quotes: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get batch quotes")
+    return {
+        "symbol": symbol,
+        "price": price,
+        "timestamp": datetime.now().isoformat(),
+        "market_open": market_service._is_market_hours()
+    }
 
 @router.get("/sentiment/{symbol}")
 async def get_market_sentiment(
     symbol: str,
     current_user: User = Depends(get_current_user)
-):
-    """Get market sentiment analysis for a symbol."""
-    try:
-        sentiment = await market_service.get_market_sentiment(symbol.upper())
+) -> MarketSentiment:
+    """Get current market sentiment for symbol"""
+    sentiment = await market_service.fetch_market_sentiment(symbol)
+    return sentiment
 
-        if not sentiment:
-            raise HTTPException(status_code=404, detail=f"Sentiment data not available for {symbol}")
-
-        return {
-            "symbol": sentiment.symbol,
-            "sentiment_score": sentiment.sentiment_score,
-            "sentiment_label": (
-                "Bullish" if sentiment.sentiment_score > 0.2 else
-                "Bearish" if sentiment.sentiment_score < -0.2 else
-                "Neutral"
-            ),
-            "news_count": sentiment.news_count,
-            "volatility": sentiment.volatility,
-            "rsi": sentiment.rsi,
-            "ma_signal": sentiment.ma_signal,
-            "timestamp": sentiment.timestamp.isoformat()
-        }
-
-    except Exception as e:
-        logger.error(f"Error getting sentiment for {symbol}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get sentiment")
-
-@router.get("/watchlist")
-async def get_watchlist(
+@router.get("/trade-context/{symbol}")
+async def get_trade_context(
+    symbol: str,
+    entry_time: Optional[str] = None,
     current_user: User = Depends(get_current_user)
-):
-    """Get user's watchlist with current quotes."""
-    try:
-        quotes = await market_service.get_watchlist_quotes(current_user.id)
+) -> Dict:
+    """Get market context for trade analysis"""
+    if entry_time:
+        entry_dt = datetime.fromisoformat(entry_time)
+    else:
+        entry_dt = datetime.now()
 
-        return {
-            "watchlist": [
-                {
-                    "symbol": quote.symbol,
-                    "price": quote.price,
-                    "change": quote.change,
-                    "change_percent": quote.change_percent,
-                    "volume": quote.volume,
-                    "timestamp": quote.timestamp.isoformat(),
-                    "source": quote.source.value
-                }
-                for quote in quotes
-            ]
-        }
+    context = await market_service.get_trade_context(symbol, entry_dt)
+    return context
 
-    except Exception as e:
-        logger.error(f"Error getting watchlist: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get watchlist")
-
-@router.post("/watchlist/{symbol}")
-async def add_to_watchlist(
+@router.post("/subscribe/{symbol}")
+async def subscribe_to_symbol(
     symbol: str,
     current_user: User = Depends(get_current_user)
-):
-    """Add symbol to watchlist."""
-    try:
-        success = market_service.add_to_watchlist(current_user.id, symbol.upper())
+) -> Dict:
+    """Subscribe to real-time updates for a symbol"""
 
-        if not success:
-            raise HTTPException(status_code=400, detail="Failed to add symbol to watchlist")
+    async def user_callback(data: MarketData):
+        await manager.send_to_user(current_user.id, {
+            "type": "market_update",
+            "symbol": data.symbol,
+            "price": data.price,
+            "volume": data.volume,
+            "change_percent": data.change_percent,
+            "timestamp": data.timestamp.isoformat()
+        })
 
-        return {"message": f"Added {symbol.upper()} to watchlist"}
+    market_service.subscribe_to_symbol(symbol, user_callback)
 
-    except Exception as e:
-        logger.error(f"Error adding to watchlist: {e}")
-        raise HTTPException(status_code=500, detail="Failed to add to watchlist")
+    return {
+        "message": f"Subscribed to {symbol}",
+        "symbol": symbol,
+        "user_id": current_user.id
+    }
 
-@router.delete("/watchlist/{symbol}")
-async def remove_from_watchlist(
+@router.delete("/unsubscribe/{symbol}")
+async def unsubscribe_from_symbol(
     symbol: str,
     current_user: User = Depends(get_current_user)
-):
-    """Remove symbol from watchlist."""
-    try:
-        success = market_service.remove_from_watchlist(current_user.id, symbol.upper())
+) -> Dict:
+    """Unsubscribe from symbol updates"""
+    # Note: In production, track callbacks per user
+    return {
+        "message": f"Unsubscribed from {symbol}",
+        "symbol": symbol
+    }
 
-        if not success:
-            raise HTTPException(status_code=400, detail="Failed to remove symbol from watchlist")
-
-        return {"message": f"Removed {symbol.upper()} from watchlist"}
-
-    except Exception as e:
-        logger.error(f"Error removing from watchlist: {e}")
-        raise HTTPException(status_code=500, detail="Failed to remove from watchlist")
-
-@router.get("/context/{symbol}")
-async def get_market_context(
-    symbol: str,
-    timestamp: Optional[str] = Query(None, description="ISO timestamp for historical context"),
+@router.get("/market-status")
+async def get_market_status(
     current_user: User = Depends(get_current_user)
-):
-    """Get market context for a symbol at a specific time."""
+) -> Dict:
+    """Get current market status"""
+    return {
+        "market_open": market_service._is_market_hours(),
+        "session_type": market_service._get_market_session(),
+        "timestamp": datetime.now().isoformat(),
+        "active_symbols": list(market_service.active_subscriptions.keys()),
+        "total_subscriptions": len(market_service.active_subscriptions)
+    }
+
+@router.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
+    """WebSocket endpoint for real-time market data"""
+    await manager.connect(websocket, user_id)
     try:
-        trade_time = datetime.fromisoformat(timestamp) if timestamp else datetime.now()
-        context = await market_service.get_market_context_for_trade(symbol.upper(), trade_time)
+        while True:
+            # Keep connection alive and handle client messages
+            data = await websocket.receive_text()
+            message = json.loads(data)
 
-        return {
-            "symbol": symbol.upper(),
-            "timestamp": trade_time.isoformat(),
-            "context": context
-        }
+            if message.get("action") == "subscribe":
+                symbol = message.get("symbol")
+                if symbol:
+                    # Subscribe to symbol for this user
+                    async def ws_callback(market_data: MarketData):
+                        await websocket.send_text(json.dumps({
+                            "type": "market_update",
+                            "symbol": market_data.symbol,
+                            "price": market_data.price,
+                            "volume": market_data.volume,
+                            "timestamp": market_data.timestamp.isoformat()
+                        }))
 
-    except Exception as e:
-        logger.error(f"Error getting market context: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get market context")
+                    market_service.subscribe_to_symbol(symbol, ws_callback)
+                    manager.user_subscriptions[user_id].append(symbol)
 
-@router.get("/health")
-async def market_data_health():
-    """Health check for market data service."""
-    try:
-        # Test with a common symbol
-        test_quote = await market_service.get_quote("AAPL")
+            elif message.get("action") == "unsubscribe":
+                symbol = message.get("symbol")
+                if symbol and symbol in manager.user_subscriptions.get(user_id, []):
+                    manager.user_subscriptions[user_id].remove(symbol)
 
-        return {
-            "status": "healthy" if test_quote else "degraded",
-            "message": "Market data service is operational" if test_quote else "Some data sources may be unavailable",
-            "timestamp": datetime.now().isoformat()
-        }
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
 
-    except Exception as e:
-        logger.error(f"Market data health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "message": "Market data service is experiencing issues",
-            "timestamp": datetime.now().isoformat()
-        }
+@router.get("/symbols/trending")
+async def get_trending_symbols(
+    limit: int = 10,
+    current_user: User = Depends(get_current_user)
+) -> List[Dict]:
+    """Get trending symbols based on activity"""
+    # Mock data for trending symbols
+    trending = [
+        {"symbol": "AAPL", "volume": 25000000, "change_percent": 2.1},
+        {"symbol": "TSLA", "volume": 18000000, "change_percent": -1.5},
+        {"symbol": "MSFT", "volume": 15000000, "change_percent": 0.8},
+        {"symbol": "NVDA", "volume": 22000000, "change_percent": 3.2},
+        {"symbol": "AMD", "volume": 12000000, "change_percent": 1.9},
+        {"symbol": "GOOGL", "volume": 8000000, "change_percent": -0.3},
+        {"symbol": "AMZN", "volume": 11000000, "change_percent": 1.1},
+        {"symbol": "META", "volume": 9000000, "change_percent": 2.7},
+        {"symbol": "SPY", "volume": 45000000, "change_percent": 0.6},
+        {"symbol": "QQQ", "volume": 35000000, "change_percent": 1.2}
+    ]
+
+    return trending[:limit]

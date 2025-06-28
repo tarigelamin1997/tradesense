@@ -17,6 +17,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+from contextlib import asynccontextmanager
 
 # Import routers
 from app.routers import auth, analytics, scheduler, journaling, admin, exports
@@ -34,13 +35,49 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application lifespan events."""
+    # Startup
+    logger.info("🚀 TradeSense Backend Starting...")
+
+    # Verify critical services
+    try:
+        from app.services.email_service import EmailService
+        from app.services.database_service import DatabaseService  
+        from app.services.auth_service import AuthService
+        logger.info("✅ All critical services imported successfully")
+        logger.info("✅ EmailService: Available")
+        logger.info("✅ DatabaseService: Available") 
+        logger.info("✅ AuthService: Available")
+    except Exception as e:
+        logger.error(f"❌ Critical service import failed: {e}")
+        raise
+
+    # Initialize database
+    try:
+        from app.services.database_service import DatabaseService
+        db_service = DatabaseService()
+        db_service.init_database()
+        logger.info("✅ Database connection established")
+    except Exception as e:
+        logger.error(f"❌ Database startup error: {e}")
+
+    logger.info("🎯 TradeSense Backend fully operational!")
+
+    yield
+
+    # Shutdown
+    logger.info("🔄 TradeSense Backend shutting down...")
+
 # Create FastAPI app
 app = FastAPI(
     title="TradeSense Backend API",
     description="Production-ready backend for TradeSense trading analytics platform",
     version="2.5.9",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
+    lifespan=lifespan
 )
 
 # CORS middleware for frontend integration
@@ -51,33 +88,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Startup event to verify all modules
-@app.on_event("startup")
-async def startup_event():
-    """Verify all critical modules are loaded"""
-    logger.info("🚀 TradeSense Backend Starting...")
-
-    # Verify critical services
-    try:
-        from app.services.email_service import EmailService
-        from app.services.database_service import DatabaseService
-        from app.services.auth_service import AuthService
-
-        logger.info("✅ All critical services imported successfully")
-        logger.info("✅ EmailService: Available")
-        logger.info("✅ DatabaseService: Available")
-        logger.info("✅ AuthService: Available")
-
-        # Initialize database
-        db_service = DatabaseService()
-        logger.info("✅ Database connection established")
-
-        logger.info("🎯 TradeSense Backend fully operational!")
-
-    except Exception as e:
-        logger.error(f"❌ Startup failed: {e}")
-        raise
 
 # Include all routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

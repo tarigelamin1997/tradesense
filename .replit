@@ -22,6 +22,10 @@ externalPort = 3001
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 8000
+externalPort = 8000
+
 [env]
 PYTHONUNBUFFERED = "1"
 PYTHONPATH = "/home/runner/${REPL_SLUG}"
@@ -31,7 +35,7 @@ LANG = "C"
 REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
 
 [workflows]
-runButton = "Production Launch Test"
+runButton = "Full Stack App"
 
 [[workflows.workflow]]
 name = "Complete App Recovery"
@@ -631,194 +635,14 @@ task = "shell.exec"
 args = "python app/main.py"
 
 [[workflows.workflow]]
-name = "Production Launch Test"
+name = "Full Stack App"
 author = 43683701
-mode = "sequential"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🚀 TradeSense Production Launch Test\""
+args = "cd backend && python app/main.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"=======================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"📋 Phase 1: Backend Health Check\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -c \""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "try:"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    from app.services.email_service import EmailService"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    from app.services.database_service import DatabaseService  "
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    from app.services.auth_service import AuthService"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    print('✅ All backend services importable')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    "
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    # Test database"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    db = DatabaseService()"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    print('✅ Database connection works')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    "
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    # Test email service"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    email = EmailService()"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    print('✅ Email service initialized')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    "
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    print('🎯 Backend: READY FOR LAUNCH')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "except Exception as e:"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    print(f'❌ Backend Error: {e}')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "    exit(1)"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"📋 Phase 2: Start Backend Server\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "timeout 10s python app/main.py &"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "BACKEND_PID=$!"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "sleep 5"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"📋 Phase 3: Test API Endpoints\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "curl -s -f http://0.0.0.0:8000/api/health && echo \"✅ Health endpoint works\" || echo \"❌ Health endpoint failed\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "curl -s -f http://0.0.0.0:8000/ && echo \"✅ Root endpoint works\" || echo \"❌ Root endpoint failed\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"📋 Phase 4: Frontend Test\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run build > /dev/null 2>&1 && echo \"✅ Frontend builds successfully\" || echo \"⚠️ Frontend build issues\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🎯 LAUNCH STATUS:\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"   Backend: ✅ OPERATIONAL\"  "
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"   Frontend: ✅ READY\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"   Database: ✅ CONNECTED\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"   Email: ✅ CONFIGURED\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🚀 TradeSense is ready for production launch!\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "kill $BACKEND_PID > /dev/null 2>&1 || true"
+args = "cd frontend && npm install --legacy-peer-deps && npm run dev"

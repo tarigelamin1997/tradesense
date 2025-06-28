@@ -59,11 +59,31 @@ const MilestoneDashboard: React.FC<MilestoneDashboardProps> = ({ className = '' 
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">🏆 Progress & Achievements</h2>
-        <div className="text-sm text-gray-600">
-          Level {progress.level} • {progress.total_xp} XP
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">🏆 Trader Profile</h2>
+            <p className="text-blue-100">Track your journey to trading mastery</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold">Level {progress.level}</div>
+            <div className="text-blue-100">{progress.total_xp.toLocaleString()} XP</div>
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span>Progress to Level {progress.level + 1}</span>
+            <span>{progress.level_progress.toFixed(1)}%</span>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-2">
+            <div 
+              className="bg-white rounded-full h-2 transition-all duration-300"
+              style={{ width: `${progress.level_progress}%` }}
+            ></div>
+          </div>
         </div>
       </div>
 

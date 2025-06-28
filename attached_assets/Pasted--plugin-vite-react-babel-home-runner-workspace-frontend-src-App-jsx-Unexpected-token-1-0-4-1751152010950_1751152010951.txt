@@ -1,0 +1,50 @@
+[plugin:vite:react-babel] /home/runner/workspace/frontend/src/App.jsx: Unexpected token (1:0)
+
+  4 | import os
+/home/runner/workspace/frontend/src/App.jsx:1:0
+1  |  # /app/services/email_service.py
+   |  ^
+2  |  import smtplib
+3  |  from email.mime.text import MIMEText
+    at constructor (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:363:19)
+    at JSXParserMixin.raise (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:6612:19)
+    at JSXParserMixin.unexpected (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:6632:16)
+    at JSXParserMixin.parseExprAtom (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:11337:16)
+    at JSXParserMixin.parseExprAtom (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:4779:20)
+    at JSXParserMixin.parseExprSubscripts (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:11026:23)
+    at JSXParserMixin.parseUpdate (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:11011:21)
+    at JSXParserMixin.parseMaybeUnary (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10991:23)
+    at JSXParserMixin.parseMaybeUnaryOrPrivate (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10844:61)
+    at JSXParserMixin.parseExprOps (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10849:23)
+    at JSXParserMixin.parseMaybeConditional (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10826:23)
+    at JSXParserMixin.parseMaybeAssign (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10779:21)
+    at JSXParserMixin.parseExpressionBase (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10732:23)
+    at /home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10728:39
+    at JSXParserMixin.allowInAnd (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:12370:16)
+    at JSXParserMixin.parseExpression (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:10728:17)
+    at JSXParserMixin.parseStatementContent (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:12828:23)
+    at JSXParserMixin.parseStatementLike (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:12699:17)
+    at JSXParserMixin.parseModuleItem (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:12676:17)
+    at JSXParserMixin.parseBlockOrModuleBlockBody (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:13249:36)
+    at JSXParserMixin.parseBlockBody (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:13242:10)
+    at JSXParserMixin.parseProgram (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:12555:10)
+    at JSXParserMixin.parseTopLevel (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:12545:25)
+    at JSXParserMixin.parse (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:14423:10)
+    at parse (/home/runner/workspace/frontend/node_modules/@babel/parser/lib/index.js:14457:38)
+    at parser (/home/runner/workspace/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+    at parser.next (<anonymous>)
+    at normalizeFile (/home/runner/workspace/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+    at normalizeFile.next (<anonymous>)
+    at run (/home/runner/workspace/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+    at run.next (<anonymous>)
+    at transform (/home/runner/workspace/frontend/node_modules/@babel/core/lib/transform.js:22:33)
+    at transform.next (<anonymous>)
+    at step (/home/runner/workspace/frontend/node_modules/gensync/index.js:261:32)
+    at /home/runner/workspace/frontend/node_modules/gensync/index.js:273:13
+    at async.call.result.err.err (/home/runner/workspace/frontend/node_modules/gensync/index.js:223:11)
+    at /home/runner/workspace/frontend/node_modules/gensync/index.js:189:28
+    at /home/runner/workspace/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+    at /home/runner/workspace/frontend/node_modules/gensync/index.js:113:33
+    at step (/home/runner/workspace/frontend/node_modules/gensync/index.js:287:14)
+    at /home/runner/workspace/frontend/node_modules/gensync/index.js:273:13
+    at async.call.result.err.err (/home/runner/workspace/frontend/node_modules/gensync/index.js:223:11

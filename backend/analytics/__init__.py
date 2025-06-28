@@ -35,7 +35,8 @@ from .streaks import (
     calculate_win_loss_streaks,
     calculate_max_consecutive_wins,
     calculate_max_consecutive_losses,
-    analyze_streak_patterns
+    analyze_streak_patterns,
+    calculate_average_duration
 )
 
 from .filters import (

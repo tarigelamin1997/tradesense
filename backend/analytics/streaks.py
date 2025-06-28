@@ -8,6 +8,7 @@ Contains functions for analyzing winning and losing streaks:
 """
 
 from typing import List, Dict, Any, Tuple
+import pandas as pd
 
 
 def calculate_win_loss_streaks(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -295,34 +296,33 @@ def calculate_streak_statistics(trades_df, streak_column='streak_id'):
         'loss_streak_avg': streak_stats[streak_stats[('pnl', 'sum')] < 0][('trade_id', 'count')].mean() or 0
     }
 
-def calculate_average_duration(trades_df):
-    """Calculate average trade duration from trades dataframe."""
+def analyze_streak_patterns(trades_df):
+    """Analyze patterns in win/loss streaks."""
     if trades_df.empty:
-        return 0
+        return {}
 
-    # Convert entry_time and exit_time to datetime if they're strings
-    if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
-        try:
-            from datetime import datetime
-            import pandas as pd
+    streaks = calculate_win_loss_streaks(trades_df)
 
-            # Handle different datetime formats
-            entry_times = pd.to_datetime(trades_df['entry_time'], errors='coerce')
-            exit_times = pd.to_datetime(trades_df['exit_time'], errors='coerce')
+    return {
+        'total_streaks': len(streaks),
+        'avg_win_streak': streaks[streaks['type'] == 'win']['length'].mean() if len(streaks[streaks['type'] == 'win']) > 0 else 0,
+        'avg_loss_streak': streaks[streaks['type'] == 'loss']['length'].mean() if len(streaks[streaks['type'] == 'loss']) > 0 else 0,
+        'longest_win_streak': streaks[streaks['type'] == 'win']['length'].max() if len(streaks[streaks['type'] == 'win']) > 0 else 0,
+        'longest_loss_streak': streaks[streaks['type'] == 'loss']['length'].max() if len(streaks[streaks['type'] == 'loss']) > 0 else 0
+    }
 
-            # Calculate duration in hours
-            durations = (exit_times - entry_times).dt.total_seconds() / 3600
+def calculate_average_duration(trades_df):
+    """Calculate average trade duration by streak type."""
+    if trades_df.empty or 'entry_time' not in trades_df.columns or 'exit_time' not in trades_df.columns:
+        return {'avg_duration_hours': 0}
 
-            # Filter out invalid durations
-            valid_durations = durations.dropna()
+    # Calculate duration for each trade
+    trades_df['duration'] = pd.to_datetime(trades_df['exit_time']) - pd.to_datetime(trades_df['entry_time'])
+    duration_hours = trades_df['duration'].dt.total_seconds() / 3600
 
-            if len(valid_durations) > 0:
-                return float(valid_durations.mean())
-            else:
-                return 0
-
-        except Exception as e:
-            print(f"Error calculating duration: {e}")
-            return 0
-
-    return 0
+    return {
+        'avg_duration_hours': duration_hours.mean(),
+        'min_duration_hours': duration_hours.min(),
+        'max_duration_hours': duration_hours.max(),
+        'median_duration_hours': duration_hours.median()
+    }

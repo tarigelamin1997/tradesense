@@ -1,51 +1,56 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Bold, Italic, Link, List, Code, Eye, EyeOff, Save, Upload } from 'lucide-react';
 
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onSave?: (content: string) => void;
   placeholder?: string;
   height?: string;
-  enablePreview?: boolean;
-  enableImageUpload?: boolean;
-}
-
-interface ToolbarButton {
-  icon: string;
-  label: string;
-  action: () => void;
-  shortcut?: string;
+  autoSave?: boolean;
+  readOnly?: boolean;
 }
 
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   value,
   onChange,
-  placeholder = "Start writing your trading notes...",
+  onSave,
+  placeholder = "Write your trading notes in markdown...",
   height = "400px",
-  enablePreview = true,
-  enableImageUpload = true
+  autoSave = true,
+  readOnly = false
 }) => {
-  const [isPreview, setIsPreview] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write');
+  const [showPreview, setShowPreview] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showTemplates, setShowTemplates] = useState(false);
 
-  const insertText = useCallback((before: string, after: string = '', placeholder: string = '') => {
+  // Auto-save functionality
+  useEffect(() => {
+    if (!autoSave || !onSave) return;
+
+    const autoSaveTimer = setTimeout(() => {
+      setIsAutoSaving(true);
+      onSave(value);
+      setTimeout(() => setIsAutoSaving(false), 1000);
+    }, 2000);
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [value, autoSave, onSave]);
+
+  const insertText = useCallback((before: string, after: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end) || placeholder;
+    const selectedText = value.substring(start, end);
 
-    const newValue =
-      value.substring(0, start) +
-      before + selectedText + after +
-      value.substring(end);
+    const newText = value.substring(0, start) + 
+                   before + selectedText + after + 
+                   value.substring(end);
 
-    onChange(newValue);
+    onChange(newText);
 
     // Restore cursor position
     setTimeout(() => {
@@ -57,307 +62,165 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, 0);
   }, [value, onChange]);
 
-  const formatActions = [
-    {
-      icon: '**B**',
-      title: 'Bold',
-      action: () => insertText('**', '**')
-    },
-    {
-      icon: '*I*',
-      title: 'Italic',
-      action: () => insertText('*', '*')
-    },
-    {
-      icon: '# H',
-      title: 'Heading',
-      action: () => insertText('## ')
-    },
-    {
-      icon: '• L',
-      title: 'List',
-      action: () => insertText('- ')
-    },
-    {
-      icon: '[L]',
-      title: 'Link',
-      action: () => insertText('[', '](url)')
-    },
-    {
-      icon: '```',
-      title: 'Code',
-      action: () => insertText('```\n', '\n```')
-    },
-    {
-      icon: '| T',
-      title: 'Table',
-      action: () => insertText(
-        '| Column 1 | Column 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n'
-      )
-    },
-    {
-      icon: '📊',
-      title: 'Trade Template',
-      action: () => insertText(`
-## Trade Analysis
+  const formatBold = () => insertText('**', '**');
+  const formatItalic = () => insertText('*', '*');
+  const formatCode = () => insertText('`', '`');
+  const formatList = () => insertText('\n- ');
+  const formatLink = () => insertText('[', '](url)');
 
-**Setup:** 
-**Entry:** 
-**Exit:** 
-**Result:** 
-**Lessons:** 
-`)
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // In a real app, you'd upload to a server
+      const imageUrl = URL.createObjectURL(file);
+      insertText(`![${file.name}](${imageUrl})`);
     }
-  ];
-
-  const renderMarkdown = (text: string): string => {
-    // Simple markdown to HTML converter
-    let html = text
-      // Headers
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      // Bold
-      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-      // Italic
-      .replace(/\*(.*)\*/gim, '<em>$1</em>')
-      // Links
-      .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2" target="_blank">$1</a>')
-      // Lists
-      .replace(/^\s*\* (.*)$/gim, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-      .replace(/^\s*\- (.*)$/gim, '<li>$1</li>')
-      // Code blocks
-      .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
-      // Inline code
-      .replace(/`([^`]*)`/gim, '<code>$1</code>')
-      // Line breaks
-      .replace(/\n/gim, '<br>');
-
-    return html;
   };
 
-    const templates = [
-    {
-      name: 'Trade Review',
-      content: `# Trade Review - [Date]
-
-## Trade Setup
-- **Symbol**: 
-- **Entry**: $
-- **Exit**: $
-- **Size**: 
-- **Strategy**: 
-
-## What Went Well
-- 
-
-## What Could Improve
-- 
-
-## Key Learnings
-- 
-
-## Emotional State
-**Before Trade**: 
-**During Trade**: 
-**After Trade**: 
-
-## Next Actions
-- `
-    },
-    {
-      name: 'Daily Journal',
-      content: `# Daily Trading Journal - [Date]
-
-## Market Overview
-- **Market Sentiment**: 
-- **Key Economic Events**: 
-- **Sector Performance**: 
-
-## Today's Trades
-### Trade 1: [Symbol]
-- **Setup**: 
-- **Execution**: 
-- **Result**: 
-
-## Lessons Learned
-- 
-
-## Tomorrow's Plan
-- **Watchlist**: 
-- **Strategies to Focus**: 
-- **Risk Management**: 
-
-## Mood & Psychology
-**Morning**: 
-**End of Day**: `
-    },
-    {
-      name: 'Weekly Review',
-      content: `# Weekly Trading Review
-
-## Performance Summary
-- **Total P&L**: $
-- **Win Rate**: %
-- **Best Trade**: 
-- **Worst Trade**: 
-
-## Strategy Performance
-| Strategy | Trades | Win Rate | P&L |
-|----------|--------|----------|-----|
-|          |        |          |     |
-
-## Key Insights
-1. 
-2. 
-3. 
-
-## Areas for Improvement
-- 
-
-## Goals for Next Week
-- `
-    }
-  ];
-
-    const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      // In a real implementation, you'd upload to a server
-      // For now, we'll simulate with a placeholder
-      const imageUrl = `![${file.name}](image-placeholder-${file.name})`;
-      insertText(imageUrl, '', '');
-    }
-  }, [insertText]);
+  const renderMarkdown = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 underline">$1</a>')
+      .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
+      .replace(/\n/g, '<br>');
+  };
 
   return (
-    <Card className="overflow-hidden">
+    <div className="border border-gray-300 rounded-lg overflow-hidden">
       {/* Toolbar */}
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1">
-            {formatActions.map((action, index) => (
-              <button
-                key={index}
-                onClick={action.action}
-                title={action.title}
-                className="px-2 py-1 text-sm font-mono border border-gray-300 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {action.icon}
-              </button>
-            ))}
-          </div>
+      <div className="bg-gray-50 border-b border-gray-200 p-3 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={formatBold}
+            className="p-2 hover:bg-gray-200 rounded"
+            title="Bold (Ctrl+B)"
+            disabled={readOnly}
+          >
+            <Bold size={16} />
+          </button>
+          <button
+            onClick={formatItalic}
+            className="p-2 hover:bg-gray-200 rounded"
+            title="Italic (Ctrl+I)"
+            disabled={readOnly}
+          >
+            <Italic size={16} />
+          </button>
+          <button
+            onClick={formatCode}
+            className="p-2 hover:bg-gray-200 rounded"
+            title="Code"
+            disabled={readOnly}
+          >
+            <Code size={16} />
+          </button>
+          <button
+            onClick={formatList}
+            className="p-2 hover:bg-gray-200 rounded"
+            title="List"
+            disabled={readOnly}
+          >
+            <List size={16} />
+          </button>
+          <button
+            onClick={formatLink}
+            className="p-2 hover:bg-gray-200 rounded"
+            title="Link"
+            disabled={readOnly}
+          >
+            <Link size={16} />
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 hover:bg-gray-200 rounded"
+            title="Upload Image"
+            disabled={readOnly}
+          >
+            <Upload size={16} />
+          </button>
+        </div>
 
-          <div className="flex rounded-lg bg-gray-200 p-1">
+        <div className="flex items-center space-x-2">
+          {isAutoSaving && (
+            <span className="text-sm text-gray-500">Saving...</span>
+          )}
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="p-2 hover:bg-gray-200 rounded flex items-center"
+            title={showPreview ? "Hide Preview" : "Show Preview"}
+          >
+            {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+            <span className="ml-1 text-sm">
+              {showPreview ? "Edit" : "Preview"}
+            </span>
+          </button>
+          {onSave && (
             <button
-              onClick={() => setSelectedTab('write')}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                selectedTab === 'write'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              onClick={() => onSave(value)}
+              className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
             >
-              Write
+              <Save size={16} className="mr-1" />
+              Save
             </button>
-            <button
-              onClick={() => setSelectedTab('preview')}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                selectedTab === 'preview'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Editor Content */}
-      <div style={{ height }}>
-        {selectedTab === 'write' ? (
+      {/* Editor/Preview Area */}
+      <div className="flex" style={{ height }}>
+        {/* Editor */}
+        {!showPreview && (
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full h-full p-4 border-none resize-none focus:outline-none font-mono text-sm"
-            style={{ minHeight: height }}
+            className="w-full p-4 resize-none focus:outline-none font-mono text-sm leading-relaxed"
+            readOnly={readOnly}
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'b') {
+                  e.preventDefault();
+                  formatBold();
+                } else if (e.key === 'i') {
+                  e.preventDefault();
+                  formatItalic();
+                }
+              }
+            }}
           />
-        ) : (
-          <div className="h-full overflow-auto">
+        )}
+
+        {/* Preview */}
+        {showPreview && (
+          <div className="w-full p-4 overflow-y-auto bg-white">
             <div
-              className="p-4 prose prose-sm max-w-none"
+              className="prose max-w-none"
               dangerouslySetInnerHTML={{
-                __html: renderMarkdown(value) || '<p class="text-gray-500">Nothing to preview</p>'
+                __html: renderMarkdown(value) || '<p class="text-gray-400">Nothing to preview...</p>'
               }}
             />
           </div>
         )}
       </div>
 
-            {/* Templates dropdown */}
-        {showTemplates && (
-          <div className="absolute z-10 mt-2 w-64 bg-white border rounded-lg shadow-lg">
-            <div className="p-2">
-              <div className="text-sm font-medium text-gray-700 mb-2">Choose a template:</div>
-              {templates.map((template, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    onChange(template.content);
-                    setShowTemplates(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
-                >
-                  {template.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
 
-            {enableImageUpload && (
-              <>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1 text-sm border rounded hover:bg-gray-100 flex items-center gap-1"
-                >
-                  🖼️ Image
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </>
-            )}
-
-            <button
-              onClick={() => setShowTemplates(!showTemplates)}
-              className="px-3 py-1 text-sm border rounded hover:bg-gray-100"
-            >
-              📋 Templates
-            </button>
-
-      {/* Footer with tips */}
-      <div className="border-t border-gray-200 bg-gray-50 px-4 py-2">
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <div className="flex items-center space-x-4">
-            <span>**bold** *italic* `code`</span>
-            <span>## heading</span>
-            <span>- list</span>
-            <span>[link](url)</span>
-          </div>
-          <div className="text-right">
-            <span>{value.length} characters</span>
-          </div>
-        </div>
+      {/* Status bar */}
+      <div className="bg-gray-50 border-t border-gray-200 px-4 py-2 text-xs text-gray-500 flex justify-between">
+        <span>{value.length} characters</span>
+        <span>Markdown supported</span>
       </div>
-    </Card>
+    </div>
   );
 };
 

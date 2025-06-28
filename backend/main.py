@@ -92,12 +92,13 @@ def create_app() -> FastAPI:
     app.include_router(market_data_router, prefix="/api/v1/market-data", tags=["market-data"])
     app.include_router(portfolio_router, prefix="/api/v1")
 
-    @app.get("/")
-    async def root():
-        # Redirect to frontend UI if accessed via browser
+    @app.get("/", include_in_schema=False)
+    async def redirect_to_frontend():
         from fastapi.responses import RedirectResponse
-        from fastapi import Request
-        
+        return RedirectResponse(url="http://0.0.0.0:3000")
+
+    @app.get("/api", include_in_schema=False)  
+    async def api_root():
         return {
             "message": "TradeSense API v2.0 - Advanced Trade Intelligence",
             "status": "operational",

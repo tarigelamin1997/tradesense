@@ -1,7 +1,22 @@
+
 modules = ["nodejs-20", "python-3.11"]
 
-[run]
-command = "streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headless=true --server.enableWebsocketCompression=false"
+run = """
+cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+cd frontend && npm install --legacy-peer-deps && npm run dev -- --host 0.0.0.0 --port 3000
+"""
+
+[env]
+PORT = "3000"
+PYTHONUNBUFFERED = "1"
+PYTHONPATH = "/home/runner/${REPL_SLUG}"
+PIP_DISABLE_PIP_VERSION_CHECK = "1"
+LC_ALL = "C"
+LANG = "C"
+REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
+
+[interpreter]
+enabled = true
 
 [nix]
 channel = "stable-24_05"
@@ -25,14 +40,6 @@ externalPort = 80
 [[ports]]
 localPort = 8000
 externalPort = 8000
-
-[env]
-PYTHONUNBUFFERED = "1"
-PYTHONPATH = "/home/runner/${REPL_SLUG}"
-PIP_DISABLE_PIP_VERSION_CHECK = "1"
-LC_ALL = "C"
-LANG = "C"
-REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
 
 [workflows]
 runButton = "Full Stack App"

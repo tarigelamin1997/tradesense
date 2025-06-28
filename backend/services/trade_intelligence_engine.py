@@ -18,437 +18,479 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 class TradeIntelligenceEngine:
-    """Advanced AI-powered trade analysis and prediction engine"""
+    """Advanced AI-powered trade analysis and recommendation engine"""
     
     def __init__(self):
-        self.db = SessionLocal()
-        self.model_weights = self._initialize_model_weights()
-        self.risk_thresholds = {
-            'low': 0.3,
-            'medium': 0.6,
-            'high': 0.8
+        self.market_regimes = {
+            'bull': {'momentum_weight': 0.8, 'mean_reversion_weight': 0.2},
+            'bear': {'momentum_weight': 0.3, 'mean_reversion_weight': 0.7},
+            'sideways': {'momentum_weight': 0.4, 'mean_reversion_weight': 0.6}
         }
     
-    def _initialize_model_weights(self) -> Dict[str, float]:
-        """Initialize ML model weights for trade scoring"""
-        return {
-            'market_regime_alignment': 0.25,
-            'historical_performance': 0.20,
-            'execution_timing': 0.15,
-            'position_sizing': 0.15,
-            'strategy_consistency': 0.15,
-            'emotional_state': 0.10
-        }
-    
-    def score_trade_pre_execution(self, user_id: str, trade_data: Dict) -> Dict[str, Any]:
-        """Score a trade before execution to predict success probability"""
+    def analyze_trade_quality(self, trade_data: Dict) -> Dict[str, Any]:
+        """Comprehensive trade quality analysis"""
         try:
-            score_components = {}
+            # Extract trade metrics
+            entry_price = trade_data.get('entry_price', 0)
+            exit_price = trade_data.get('exit_price', 0)
+            quantity = trade_data.get('quantity', 0)
+            symbol = trade_data.get('symbol', '')
+            strategy = trade_data.get('strategy', 'unknown')
+            confidence = trade_data.get('confidence_level', 5)
             
-            # 1. Market Regime Analysis
-            market_score = self._analyze_market_regime_fit(trade_data)
-            score_components['market_regime'] = market_score
+            # Calculate basic metrics
+            pnl = (exit_price - entry_price) * quantity
+            pnl_percentage = ((exit_price - entry_price) / entry_price) * 100 if entry_price > 0 else 0
             
-            # 2. Historical Performance in Similar Conditions
-            historical_score = self._analyze_historical_performance(user_id, trade_data)
-            score_components['historical_performance'] = historical_score
+            # Risk-reward analysis
+            risk_reward_ratio = self._calculate_risk_reward(trade_data)
             
-            # 3. Execution Timing Quality
-            timing_score = self._analyze_execution_timing(trade_data)
-            score_components['execution_timing'] = timing_score
+            # Execution quality score
+            execution_score = self._analyze_execution_quality(trade_data)
             
-            # 4. Position Sizing Appropriateness
-            sizing_score = self._analyze_position_sizing(user_id, trade_data)
-            score_components['position_sizing'] = sizing_score
+            # Market timing analysis
+            timing_score = self._analyze_market_timing(trade_data)
             
-            # 5. Strategy Consistency
-            consistency_score = self._analyze_strategy_consistency(user_id, trade_data)
-            score_components['strategy_consistency'] = consistency_score
+            # Strategy alignment score
+            strategy_score = self._analyze_strategy_alignment(trade_data)
             
-            # 6. Emotional State Factor
-            emotional_score = self._analyze_emotional_state(user_id, trade_data)
-            score_components['emotional_state'] = emotional_score
-            
-            # Calculate weighted final score
-            final_score = sum(
-                score_components[component] * self.model_weights[component.replace('_', '_')]
-                for component in score_components
+            # Overall trade score (0-100)
+            overall_score = self._calculate_overall_score(
+                execution_score, timing_score, strategy_score, pnl_percentage
             )
             
-            # Generate risk assessment
-            risk_level = self._determine_risk_level(final_score, score_components)
-            
-            # Generate recommendations
-            recommendations = self._generate_trade_recommendations(score_components, trade_data)
+            # Generate insights and recommendations
+            insights = self._generate_trade_insights(trade_data, overall_score)
             
             return {
-                'overall_score': round(final_score * 100, 1),
-                'risk_level': risk_level,
-                'score_components': score_components,
-                'recommendations': recommendations,
-                'confidence_interval': self._calculate_confidence_interval(score_components),
-                'expected_outcome': self._predict_trade_outcome(final_score, trade_data)
+                'overall_score': overall_score,
+                'pnl': pnl,
+                'pnl_percentage': pnl_percentage,
+                'risk_reward_ratio': risk_reward_ratio,
+                'execution_score': execution_score,
+                'timing_score': timing_score,
+                'strategy_score': strategy_score,
+                'insights': insights,
+                'recommendations': self._generate_recommendations(trade_data, overall_score),
+                'market_context': self._get_market_context_at_trade_time(trade_data)
             }
             
         except Exception as e:
-            logger.error(f"Error scoring trade: {str(e)}")
-            return self._fallback_score()
+            logger.error(f"Error analyzing trade quality: {e}")
+            return {'error': str(e)}
     
-    def _analyze_market_regime_fit(self, trade_data: Dict) -> float:
-        """Analyze how well the trade fits current market regime"""
+    def get_real_time_trade_score(self, trade_setup: Dict) -> Dict[str, Any]:
+        """Real-time scoring of potential trade setups"""
         try:
-            # Get current market regime (mock implementation)
+            symbol = trade_setup.get('symbol', '')
+            strategy = trade_setup.get('strategy', '')
+            entry_price = trade_setup.get('entry_price', 0)
+            stop_loss = trade_setup.get('stop_loss', 0)
+            take_profit = trade_setup.get('take_profit', 0)
+            
+            # Market regime analysis
             current_regime = self._get_current_market_regime()
             
-            strategy = trade_data.get('strategy', '').lower()
-            trade_type = trade_data.get('side', '').lower()
+            # Strategy-regime compatibility
+            regime_compatibility = self._assess_strategy_regime_fit(strategy, current_regime)
             
-            # Strategy-regime alignment scoring
-            regime_alignment = {
-                'bull': {
-                    'momentum': 0.9, 'breakout': 0.8, 'trend_following': 0.85,
-                    'mean_reversion': 0.3, 'contrarian': 0.2
-                },
-                'bear': {
-                    'momentum': 0.7, 'breakout': 0.6, 'trend_following': 0.7,
-                    'mean_reversion': 0.8, 'contrarian': 0.9
-                },
-                'sideways': {
-                    'momentum': 0.4, 'breakout': 0.3, 'trend_following': 0.3,
-                    'mean_reversion': 0.9, 'range_trading': 0.95
-                }
+            # Risk assessment
+            risk_assessment = self._assess_trade_risk(trade_setup)
+            
+            # Probability calculation
+            win_probability = self._calculate_win_probability(trade_setup)
+            
+            # Expected value calculation
+            expected_value = self._calculate_expected_value(trade_setup, win_probability)
+            
+            # Real-time score (0-100)
+            real_time_score = self._calculate_real_time_score(
+                regime_compatibility, risk_assessment, win_probability, expected_value
+            )
+            
+            return {
+                'real_time_score': real_time_score,
+                'win_probability': win_probability,
+                'expected_value': expected_value,
+                'risk_level': risk_assessment['risk_level'],
+                'market_regime': current_regime,
+                'regime_compatibility': regime_compatibility,
+                'recommendations': self._generate_setup_recommendations(trade_setup, real_time_score),
+                'alerts': self._generate_trade_alerts(trade_setup, real_time_score)
             }
             
-            regime = current_regime.get('type', 'sideways')
-            base_score = regime_alignment.get(regime, {}).get(strategy, 0.5)
-            
-            # Adjust for volatility
-            volatility_adjustment = self._get_volatility_adjustment(current_regime, trade_data)
-            
-            return min(1.0, base_score + volatility_adjustment)
-            
         except Exception as e:
-            logger.error(f"Error analyzing market regime fit: {str(e)}")
-            return 0.5
+            logger.error(f"Error calculating real-time trade score: {e}")
+            return {'error': str(e)}
     
-    def _analyze_historical_performance(self, user_id: str, trade_data: Dict) -> float:
-        """Analyze user's historical performance in similar setups"""
+    def analyze_trading_patterns(self, user_id: int, days: int = 30) -> Dict[str, Any]:
+        """Analyze user's trading patterns and behavioral insights"""
         try:
-            # Get similar historical trades
-            similar_trades = self._find_similar_trades(user_id, trade_data)
+            # Get recent trades
+            db = SessionLocal()
+            trades = db.query(Trade).filter(
+                Trade.user_id == user_id,
+                Trade.entry_time >= datetime.now() - timedelta(days=days)
+            ).all()
+            db.close()
             
-            if not similar_trades:
-                return 0.5  # Neutral score for no history
+            if not trades:
+                return {'error': 'No trades found for analysis'}
             
-            # Calculate win rate and average return
-            wins = sum(1 for trade in similar_trades if trade.pnl > 0)
-            win_rate = wins / len(similar_trades)
+            # Convert to DataFrame for analysis
+            trade_data = []
+            for trade in trades:
+                trade_data.append({
+                    'entry_time': trade.entry_time,
+                    'exit_time': trade.exit_time,
+                    'symbol': trade.symbol,
+                    'strategy': trade.strategy,
+                    'pnl': trade.pnl,
+                    'confidence_level': trade.confidence_level,
+                    'emotional_state': trade.emotional_state
+                })
             
-            avg_return = sum(trade.pnl for trade in similar_trades) / len(similar_trades)
-            avg_return_pct = avg_return / (sum(abs(trade.pnl) for trade in similar_trades) / len(similar_trades))
+            df = pd.DataFrame(trade_data)
             
-            # Weight recent performance more heavily
-            recent_trades = [t for t in similar_trades if t.entry_time > datetime.now() - timedelta(days=90)]
-            if recent_trades:
-                recent_win_rate = sum(1 for t in recent_trades if t.pnl > 0) / len(recent_trades)
-                win_rate = (win_rate * 0.4) + (recent_win_rate * 0.6)
+            # Pattern analysis
+            patterns = {
+                'time_patterns': self._analyze_time_patterns(df),
+                'strategy_performance': self._analyze_strategy_performance(df),
+                'emotional_patterns': self._analyze_emotional_patterns(df),
+                'streak_patterns': self._analyze_streak_patterns(df),
+                'confidence_calibration': self._analyze_confidence_calibration(df)
+            }
             
-            # Combine win rate and profitability
-            performance_score = (win_rate * 0.6) + (min(1.0, max(0.0, avg_return_pct + 0.5)) * 0.4)
+            # Generate insights
+            insights = self._generate_pattern_insights(patterns)
             
-            return performance_score
+            # Performance predictions
+            predictions = self._generate_performance_predictions(patterns)
             
-        except Exception as e:
-            logger.error(f"Error analyzing historical performance: {str(e)}")
-            return 0.5
-    
-    def _analyze_execution_timing(self, trade_data: Dict) -> float:
-        """Analyze the timing quality of the trade execution"""
-        try:
-            current_time = datetime.now()
-            market_open = current_time.replace(hour=9, minute=30, second=0, microsecond=0)
-            market_close = current_time.replace(hour=16, minute=0, second=0, microsecond=0)
-            
-            # Time-based scoring
-            if market_open <= current_time <= market_open + timedelta(hours=1):
-                # Opening hour - high volatility, good for breakouts
-                time_score = 0.8 if 'breakout' in trade_data.get('strategy', '').lower() else 0.6
-            elif market_close - timedelta(hours=1) <= current_time <= market_close:
-                # Closing hour - institutional activity
-                time_score = 0.7
-            elif market_open + timedelta(hours=2) <= current_time <= market_close - timedelta(hours=2):
-                # Mid-day - lower volatility, good for mean reversion
-                time_score = 0.8 if 'mean_reversion' in trade_data.get('strategy', '').lower() else 0.5
-            else:
-                # After hours or pre-market
-                time_score = 0.3
-            
-            # Adjust for day of week
-            weekday = current_time.weekday()
-            if weekday == 0:  # Monday
-                time_score *= 1.1  # Often good momentum days
-            elif weekday == 4:  # Friday
-                time_score *= 0.9  # Often choppy
-            
-            return min(1.0, time_score)
+            return {
+                'patterns': patterns,
+                'insights': insights,
+                'predictions': predictions,
+                'optimization_suggestions': self._generate_optimization_suggestions(patterns)
+            }
             
         except Exception as e:
-            logger.error(f"Error analyzing execution timing: {str(e)}")
-            return 0.5
+            logger.error(f"Error analyzing trading patterns: {e}")
+            return {'error': str(e)}
     
-    def _analyze_position_sizing(self, user_id: str, trade_data: Dict) -> float:
-        """Analyze if position size is appropriate for user's account and risk profile"""
-        try:
-            # Get user's recent position sizes
-            recent_trades = self.db.query(Trade).filter(
-                Trade.user_id == user_id
-            ).order_by(desc(Trade.entry_time)).limit(20).all()
-            
-            if not recent_trades:
-                return 0.5
-            
-            current_size = abs(trade_data.get('quantity', 0))
-            recent_sizes = [abs(t.quantity) for t in recent_trades]
-            avg_size = sum(recent_sizes) / len(recent_sizes)
-            
-            # Calculate position size consistency
-            size_ratio = current_size / avg_size if avg_size > 0 else 1.0
-            
-            # Optimal range is 0.5x to 2x average size
-            if 0.5 <= size_ratio <= 2.0:
-                consistency_score = 1.0 - abs(size_ratio - 1.0) * 0.5
-            else:
-                consistency_score = max(0.1, 0.5 - abs(size_ratio - 1.0) * 0.3)
-            
-            # Factor in strategy type - some strategies warrant larger positions
-            strategy = trade_data.get('strategy', '').lower()
-            if 'high_conviction' in strategy or 'breakout' in strategy:
-                if size_ratio > 1.0:
-                    consistency_score *= 1.2  # Reward larger size for high conviction
-            
-            return min(1.0, consistency_score)
-            
-        except Exception as e:
-            logger.error(f"Error analyzing position sizing: {str(e)}")
-            return 0.5
+    def _calculate_risk_reward(self, trade_data: Dict) -> float:
+        """Calculate risk-reward ratio"""
+        entry_price = trade_data.get('entry_price', 0)
+        exit_price = trade_data.get('exit_price', 0)
+        stop_loss = trade_data.get('stop_loss', entry_price * 0.98)  # Default 2% stop
+        
+        if entry_price == 0:
+            return 0
+        
+        risk = abs(entry_price - stop_loss)
+        reward = abs(exit_price - entry_price)
+        
+        return reward / risk if risk > 0 else 0
     
-    def _analyze_strategy_consistency(self, user_id: str, trade_data: Dict) -> float:
-        """Analyze if trade is consistent with user's successful strategies"""
-        try:
-            # Get user's strategy performance
-            strategy_performance = self._get_strategy_performance(user_id)
-            
-            current_strategy = trade_data.get('strategy', '').lower()
-            
-            if current_strategy in strategy_performance:
-                perf = strategy_performance[current_strategy]
-                win_rate = perf['win_rate']
-                avg_return = perf['avg_return']
-                trade_count = perf['trade_count']
-                
-                # Weight by number of trades (more data = more confidence)
-                confidence_weight = min(1.0, trade_count / 20)
-                
-                # Combine win rate and profitability
-                strategy_score = (win_rate * 0.7) + (min(1.0, max(0.0, avg_return + 0.5)) * 0.3)
-                
-                return strategy_score * confidence_weight + 0.5 * (1 - confidence_weight)
-            
-            return 0.5  # Neutral for new strategy
-            
-        except Exception as e:
-            logger.error(f"Error analyzing strategy consistency: {str(e)}")
-            return 0.5
+    def _analyze_execution_quality(self, trade_data: Dict) -> float:
+        """Analyze trade execution quality (0-100)"""
+        # Simplified execution analysis
+        slippage = trade_data.get('slippage', 0)
+        timing_score = 85 - (abs(slippage) * 1000)  # Penalize slippage
+        
+        return max(0, min(100, timing_score))
     
-    def _analyze_emotional_state(self, user_id: str, trade_data: Dict) -> float:
-        """Analyze user's likely emotional state based on recent performance"""
-        try:
-            # Get last 10 trades
-            recent_trades = self.db.query(Trade).filter(
-                Trade.user_id == user_id
-            ).order_by(desc(Trade.entry_time)).limit(10).all()
-            
-            if not recent_trades:
-                return 0.7  # Slightly positive for new users
-            
-            # Calculate recent performance metrics
-            recent_pnl = [t.pnl for t in recent_trades[:5]]  # Last 5 trades
-            win_streak = 0
-            loss_streak = 0
-            
-            for trade in recent_trades:
-                if trade.pnl > 0:
-                    win_streak += 1
-                    break
-                else:
-                    loss_streak += 1
-            
-            # Emotional state scoring
-            emotional_score = 0.7  # Base neutral state
-            
-            # Adjust for streaks
-            if win_streak >= 3:
-                emotional_score = 0.4  # Possible overconfidence
-            elif loss_streak >= 3:
-                emotional_score = 0.3  # Possible revenge trading
-            elif loss_streak == 1 or loss_streak == 2:
-                emotional_score = 0.8  # Likely focused and careful
-            
-            # Adjust for recent P&L volatility
-            if len(recent_pnl) >= 3:
-                pnl_std = np.std(recent_pnl)
-                pnl_mean = np.mean(recent_pnl)
-                
-                if pnl_std > abs(pnl_mean) * 2:  # High volatility
-                    emotional_score *= 0.8  # Potentially unstable state
-            
-            return emotional_score
-            
-        except Exception as e:
-            logger.error(f"Error analyzing emotional state: {str(e)}")
-            return 0.5
+    def _analyze_market_timing(self, trade_data: Dict) -> float:
+        """Analyze market timing quality (0-100)"""
+        # Simplified timing analysis based on market conditions
+        market_volatility = trade_data.get('market_volatility', 0.5)
+        
+        # Better timing in lower volatility for most strategies
+        timing_score = 100 - (market_volatility * 50)
+        
+        return max(0, min(100, timing_score))
     
-    def _generate_trade_recommendations(self, score_components: Dict, trade_data: Dict) -> List[str]:
-        """Generate actionable recommendations based on score components"""
+    def _analyze_strategy_alignment(self, trade_data: Dict) -> float:
+        """Analyze how well trade aligns with stated strategy (0-100)"""
+        strategy = trade_data.get('strategy', '').lower()
+        pnl_percentage = trade_data.get('pnl_percentage', 0)
+        
+        # Strategy-specific scoring
+        if 'momentum' in strategy:
+            # Momentum strategies should capture larger moves
+            return min(100, 70 + abs(pnl_percentage) * 5)
+        elif 'mean_reversion' in strategy:
+            # Mean reversion should be quick and precise
+            return min(100, 80 + (10 if abs(pnl_percentage) < 2 else 0))
+        else:
+            return 75  # Default score
+    
+    def _calculate_overall_score(self, execution: float, timing: float, strategy: float, pnl_pct: float) -> float:
+        """Calculate overall trade score"""
+        # Weighted combination of factors
+        score = (execution * 0.3 + timing * 0.3 + strategy * 0.2) * 0.8
+        
+        # Bonus for profitable trades
+        if pnl_pct > 0:
+            score += min(20, pnl_pct * 2)
+        else:
+            score += max(-20, pnl_pct * 1.5)
+        
+        return max(0, min(100, score))
+    
+    def _generate_trade_insights(self, trade_data: Dict, score: float) -> List[str]:
+        """Generate specific insights about the trade"""
+        insights = []
+        
+        if score >= 80:
+            insights.append("🎯 Excellent trade execution - strategy and timing aligned perfectly")
+        elif score >= 60:
+            insights.append("✅ Good trade overall with room for minor improvements")
+        elif score >= 40:
+            insights.append("⚠️ Mixed results - review strategy alignment and timing")
+        else:
+            insights.append("🔴 Poor trade execution - significant improvement needed")
+        
+        # Add specific insights based on trade characteristics
+        risk_reward = self._calculate_risk_reward(trade_data)
+        if risk_reward > 2:
+            insights.append("💎 Excellent risk-reward ratio maintained")
+        elif risk_reward < 1:
+            insights.append("⚠️ Poor risk-reward ratio - consider tighter stops or larger targets")
+        
+        return insights
+    
+    def _generate_recommendations(self, trade_data: Dict, score: float) -> List[str]:
+        """Generate actionable recommendations"""
         recommendations = []
         
-        # Market regime recommendations
-        if score_components.get('market_regime', 0.5) < 0.4:
-            recommendations.append("⚠️ Current market regime doesn't favor this strategy - consider waiting")
+        if score < 60:
+            recommendations.append("📚 Review strategy rules and market conditions before next trade")
+            recommendations.append("⏰ Consider better entry timing based on market regime")
         
-        # Historical performance recommendations
-        if score_components.get('historical_performance', 0.5) < 0.3:
-            recommendations.append("📊 Your historical performance with this setup is poor - consider paper trading first")
-        elif score_components.get('historical_performance', 0.5) > 0.8:
-            recommendations.append("✅ Strong historical performance with this setup - good execution")
+        if self._calculate_risk_reward(trade_data) < 1.5:
+            recommendations.append("🎯 Improve target selection for better risk-reward ratios")
         
-        # Timing recommendations
-        if score_components.get('execution_timing', 0.5) < 0.4:
-            recommendations.append("⏰ Timing could be better - consider waiting for optimal market hours")
-        
-        # Position size recommendations
-        if score_components.get('position_sizing', 0.5) < 0.4:
-            recommendations.append("📏 Position size seems inappropriate - consider adjusting to your typical range")
-        
-        # Emotional state recommendations
-        if score_components.get('emotional_state', 0.5) < 0.4:
-            recommendations.append("🧠 Your emotional state may be affecting judgment - take a step back")
-        
-        if not recommendations:
-            recommendations.append("✅ Trade setup looks solid - execute with confidence")
+        recommendations.append("📊 Log emotional state and market conditions for pattern analysis")
         
         return recommendations
     
-    def _determine_risk_level(self, final_score: float, components: Dict) -> str:
-        """Determine overall risk level for the trade"""
-        if final_score >= 0.7:
-            return "Low"
-        elif final_score >= 0.5:
-            return "Medium" 
+    def _get_current_market_regime(self) -> Dict[str, Any]:
+        """Get current market regime analysis"""
+        # Simplified market regime detection
+        return {
+            'type': 'bull',  # This would be determined by real market analysis
+            'confidence': 0.75,
+            'volatility': 'medium'
+        }
+    
+    def _assess_strategy_regime_fit(self, strategy: str, regime: Dict) -> float:
+        """Assess how well strategy fits current market regime (0-1)"""
+        regime_type = regime.get('type', 'sideways')
+        
+        strategy_fits = {
+            'bull': {'momentum': 0.9, 'breakout': 0.8, 'mean_reversion': 0.3},
+            'bear': {'momentum': 0.4, 'breakout': 0.3, 'mean_reversion': 0.8},
+            'sideways': {'momentum': 0.5, 'breakout': 0.4, 'mean_reversion': 0.9}
+        }
+        
+        return strategy_fits.get(regime_type, {}).get(strategy.lower(), 0.5)
+    
+    def _assess_trade_risk(self, trade_setup: Dict) -> Dict[str, Any]:
+        """Assess overall trade risk"""
+        entry_price = trade_setup.get('entry_price', 0)
+        stop_loss = trade_setup.get('stop_loss', 0)
+        position_size = trade_setup.get('position_size', 0)
+        
+        risk_amount = abs(entry_price - stop_loss) * position_size if entry_price > 0 else 0
+        risk_percentage = (risk_amount / (entry_price * position_size)) * 100 if entry_price > 0 else 0
+        
+        if risk_percentage <= 1:
+            risk_level = 'low'
+        elif risk_percentage <= 2:
+            risk_level = 'medium'
         else:
-            return "High"
-    
-    def _calculate_confidence_interval(self, components: Dict) -> Tuple[float, float]:
-        """Calculate confidence interval for the prediction"""
-        # Simple confidence interval based on component variance
-        scores = list(components.values())
-        mean_score = sum(scores) / len(scores)
-        variance = sum((s - mean_score) ** 2 for s in scores) / len(scores)
-        std_dev = variance ** 0.5
-        
-        lower = max(0.0, mean_score - 1.96 * std_dev)
-        upper = min(1.0, mean_score + 1.96 * std_dev)
-        
-        return (round(lower * 100, 1), round(upper * 100, 1))
-    
-    def _predict_trade_outcome(self, score: float, trade_data: Dict) -> Dict[str, Any]:
-        """Predict likely trade outcome"""
-        # Simple prediction model
-        win_probability = score
-        
-        # Estimate potential return based on historical data
-        strategy = trade_data.get('strategy', '').lower()
-        expected_return = self._get_strategy_expected_return(strategy)
+            risk_level = 'high'
         
         return {
-            'win_probability': round(win_probability * 100, 1),
-            'expected_return_pct': round(expected_return * 100, 2),
-            'risk_reward_ratio': round(abs(expected_return) / max(0.01, 1 - win_probability), 2)
+            'risk_amount': risk_amount,
+            'risk_percentage': risk_percentage,
+            'risk_level': risk_level
         }
     
-    # Helper methods (mock implementations for now)
-    def _get_current_market_regime(self) -> Dict:
-        """Get current market regime data"""
-        return {'type': 'bull', 'confidence': 0.7, 'volatility': 'medium'}
-    
-    def _get_volatility_adjustment(self, regime: Dict, trade_data: Dict) -> float:
-        """Get volatility-based adjustment to score"""
-        return 0.0  # Placeholder
-    
-    def _find_similar_trades(self, user_id: str, trade_data: Dict) -> List[Trade]:
-        """Find historically similar trades"""
-        symbol = trade_data.get('symbol', '')
-        strategy = trade_data.get('strategy', '')
+    def _calculate_win_probability(self, trade_setup: Dict) -> float:
+        """Calculate probability of winning trade"""
+        # Simplified probability calculation
+        strategy = trade_setup.get('strategy', '').lower()
         
-        return self.db.query(Trade).filter(
-            and_(
-                Trade.user_id == user_id,
-                Trade.symbol == symbol,
-                Trade.tags.contains([strategy]) if strategy else True
-            )
-        ).limit(50).all()
-    
-    def _get_strategy_performance(self, user_id: str) -> Dict:
-        """Get performance by strategy for user"""
-        trades = self.db.query(Trade).filter(Trade.user_id == user_id).all()
-        strategy_stats = defaultdict(lambda: {'wins': 0, 'total': 0, 'total_pnl': 0})
-        
-        for trade in trades:
-            if trade.tags:
-                for tag in trade.tags:
-                    strategy_stats[tag.lower()]['total'] += 1
-                    strategy_stats[tag.lower()]['total_pnl'] += trade.pnl
-                    if trade.pnl > 0:
-                        strategy_stats[tag.lower()]['wins'] += 1
-        
-        result = {}
-        for strategy, stats in strategy_stats.items():
-            if stats['total'] >= 3:  # Only include strategies with enough trades
-                result[strategy] = {
-                    'win_rate': stats['wins'] / stats['total'],
-                    'avg_return': stats['total_pnl'] / stats['total'],
-                    'trade_count': stats['total']
-                }
-        
-        return result
-    
-    def _get_strategy_expected_return(self, strategy: str) -> float:
-        """Get expected return for strategy type"""
-        strategy_returns = {
-            'momentum': 0.02,
-            'breakout': 0.03,
-            'mean_reversion': 0.015,
-            'trend_following': 0.025,
-            'contrarian': 0.01
+        base_probabilities = {
+            'momentum': 0.55,
+            'mean_reversion': 0.60,
+            'breakout': 0.45,
+            'scalping': 0.65
         }
-        return strategy_returns.get(strategy, 0.015)
+        
+        return base_probabilities.get(strategy, 0.50)
     
-    def _fallback_score(self) -> Dict[str, Any]:
-        """Fallback scoring when analysis fails"""
+    def _calculate_expected_value(self, trade_setup: Dict, win_prob: float) -> float:
+        """Calculate expected value of trade"""
+        entry_price = trade_setup.get('entry_price', 0)
+        stop_loss = trade_setup.get('stop_loss', 0)
+        take_profit = trade_setup.get('take_profit', 0)
+        
+        if entry_price == 0:
+            return 0
+        
+        win_amount = abs(take_profit - entry_price)
+        loss_amount = abs(entry_price - stop_loss)
+        
+        expected_value = (win_prob * win_amount) - ((1 - win_prob) * loss_amount)
+        
+        return expected_value / entry_price * 100  # Return as percentage
+    
+    def _calculate_real_time_score(self, regime_fit: float, risk_assessment: Dict, 
+                                  win_prob: float, expected_value: float) -> float:
+        """Calculate real-time trade setup score"""
+        # Weighted scoring
+        regime_score = regime_fit * 30
+        risk_score = (1 - min(risk_assessment['risk_percentage'] / 3, 1)) * 25
+        probability_score = win_prob * 25
+        ev_score = max(0, min(expected_value / 2, 1)) * 20
+        
+        return regime_score + risk_score + probability_score + ev_score
+    
+    def _generate_setup_recommendations(self, trade_setup: Dict, score: float) -> List[str]:
+        """Generate recommendations for trade setup"""
+        recommendations = []
+        
+        if score >= 75:
+            recommendations.append("🚀 High-quality setup - consider taking this trade")
+        elif score >= 50:
+            recommendations.append("⚖️ Moderate setup - ensure proper risk management")
+        else:
+            recommendations.append("⛔ Low-quality setup - consider waiting for better opportunity")
+        
+        return recommendations
+    
+    def _generate_trade_alerts(self, trade_setup: Dict, score: float) -> List[str]:
+        """Generate alerts for trade setup"""
+        alerts = []
+        
+        risk_pct = self._assess_trade_risk(trade_setup)['risk_percentage']
+        if risk_pct > 2:
+            alerts.append("⚠️ HIGH RISK: Position size may be too large")
+        
+        if score < 30:
+            alerts.append("🔴 POOR SETUP: Multiple factors against this trade")
+        
+        return alerts
+    
+    def _get_market_context_at_trade_time(self, trade_data: Dict) -> Dict[str, Any]:
+        """Get market context when trade was executed"""
         return {
-            'overall_score': 50.0,
-            'risk_level': 'Medium',
-            'score_components': {},
-            'recommendations': ['⚠️ Unable to analyze trade - proceed with caution'],
-            'confidence_interval': (40.0, 60.0),
-            'expected_outcome': {
-                'win_probability': 50.0,
-                'expected_return_pct': 1.5,
-                'risk_reward_ratio': 1.0
-            }
+            'market_regime': 'bull',  # This would be historical regime data
+            'volatility': 'medium',
+            'sector_performance': 'positive',
+            'economic_events': []
         }
     
-    def __del__(self):
-        """Cleanup database session"""
-        if hasattr(self, 'db'):
-            self.db.close()
+    def _analyze_time_patterns(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze time-based trading patterns"""
+        if df.empty:
+            return {}
+        
+        # Add time-based features
+        df['hour'] = pd.to_datetime(df['entry_time']).dt.hour
+        df['day_of_week'] = pd.to_datetime(df['entry_time']).dt.dayofweek
+        
+        # Performance by hour
+        hourly_performance = df.groupby('hour')['pnl'].agg(['mean', 'count']).to_dict()
+        
+        # Performance by day of week
+        daily_performance = df.groupby('day_of_week')['pnl'].agg(['mean', 'count']).to_dict()
+        
+        return {
+            'best_hours': hourly_performance,
+            'best_days': daily_performance
+        }
+    
+    def _analyze_strategy_performance(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze performance by strategy"""
+        if df.empty or 'strategy' not in df.columns:
+            return {}
+        
+        strategy_stats = df.groupby('strategy')['pnl'].agg([
+            'count', 'mean', 'sum', 
+            lambda x: (x > 0).sum() / len(x)  # Win rate
+        ]).to_dict()
+        
+        return strategy_stats
+    
+    def _analyze_emotional_patterns(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze emotional state patterns"""
+        if df.empty or 'emotional_state' not in df.columns:
+            return {}
+        
+        emotional_performance = df.groupby('emotional_state')['pnl'].agg([
+            'count', 'mean', lambda x: (x > 0).sum() / len(x)
+        ]).to_dict()
+        
+        return emotional_performance
+    
+    def _analyze_streak_patterns(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze win/loss streak patterns"""
+        if df.empty:
+            return {}
+        
+        df = df.sort_values('entry_time')
+        df['is_winner'] = df['pnl'] > 0
+        
+        # Calculate streaks
+        df['streak_id'] = (df['is_winner'] != df['is_winner'].shift()).cumsum()
+        streaks = df.groupby('streak_id').agg({
+            'is_winner': 'first',
+            'pnl': ['count', 'sum']
+        })
+        
+        return {
+            'max_win_streak': streaks[streaks[('is_winner', 'first')]]['pnl']['count'].max(),
+            'max_loss_streak': streaks[~streaks[('is_winner', 'first')]]['pnl']['count'].max()
+        }
+    
+    def _analyze_confidence_calibration(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze confidence vs actual performance"""
+        if df.empty or 'confidence_level' not in df.columns:
+            return {}
+        
+        confidence_performance = df.groupby('confidence_level')['pnl'].agg([
+            'count', 'mean', lambda x: (x > 0).sum() / len(x)
+        ]).to_dict()
+        
+        return confidence_performance
+    
+    def _generate_pattern_insights(self, patterns: Dict) -> List[str]:
+        """Generate insights from pattern analysis"""
+        insights = []
+        
+        # Add pattern-based insights
+        insights.append("📊 Pattern analysis completed - review specific metrics for optimization")
+        
+        return insights
+    
+    def _generate_performance_predictions(self, patterns: Dict) -> Dict[str, Any]:
+        """Generate performance predictions based on patterns"""
+        return {
+            'predicted_win_rate': 0.65,  # This would be calculated from patterns
+            'optimal_strategy': 'momentum',
+            'best_trading_hours': [10, 11, 14, 15]
+        }
+    
+    def _generate_optimization_suggestions(self, patterns: Dict) -> List[str]:
+        """Generate optimization suggestions"""
+        suggestions = [
+            "🎯 Focus on your highest-performing strategies during optimal hours",
+            "📈 Consider position sizing adjustments based on confidence levels",
+            "🧠 Monitor emotional state before entering trades"
+        ]
+        
+        return suggestions

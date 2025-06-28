@@ -579,3 +579,40 @@ args = "echo \"🚀 Phase 2: Start Backend Server...\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd backend && python main.py"
+
+[[workflows.workflow]]
+name = "DevOps Complete Setup"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Setting up complete DevOps automation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash scripts/automated_testing.sh"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash scripts/monitoring_setup.sh"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ DevOps automation setup completed!\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📋 Available tools:\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  • Automated testing: bash scripts/automated_testing.sh\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  • Monitoring: python monitoring/real_time_monitor.py\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  • Dashboard: streamlit run monitoring/dashboard.py --server.port=5001\""

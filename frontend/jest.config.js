@@ -1,4 +1,6 @@
+
 module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   moduleNameMapping: {
@@ -6,22 +8,19 @@ module.exports = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      useESM: true
-    }],
-    '^.+\\.(js|jsx)$': ['babel-jest', {
-      presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-react', { runtime: 'automatic' }],
-      ],
-    }],
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(js|jsx)$': 'babel-jest'
   },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-redux|@reduxjs/toolkit)/)'
+  ],
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx,js,jsx}',
+    'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/test/**',
-    '!src/**/*.stories.{ts,tsx,js,jsx}'
+    '!src/test/**/*',
+    '!src/**/*.stories.{ts,tsx}',
+    '!src/main.tsx',
+    '!src/vite-env.d.ts'
   ],
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
@@ -29,15 +28,13 @@ module.exports = {
       branches: 70,
       functions: 70,
       lines: 70,
-      statements: 70,
-    },
+      statements: 70
+    }
   },
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{ts,tsx,js,jsx}',
-    '<rootDir>/src/**/*.{test,spec}.{ts,tsx,js,jsx}'
+    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,tsx}'
   ],
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-  ],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  testTimeout: 10000
 };

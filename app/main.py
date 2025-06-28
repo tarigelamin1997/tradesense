@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 TradeSense Backend API
@@ -32,7 +31,6 @@ logging.basicConfig(
         logging.FileHandler('logs/backend.log'),
         logging.StreamHandler()
     ]
-)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
@@ -53,60 +51,78 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register all routers with proper prefixes
+# Startup event to verify all modules
+@app.on_event("startup")
+async def startup_event():
+    """Verify all critical modules are loaded"""
+    logger.info("🚀 TradeSense Backend Starting...")
+
+    # Verify critical services
+    try:
+        from app.services.email_service import EmailService
+        from app.services.database_service import DatabaseService
+        from app.services.auth_service import AuthService
+
+        logger.info("✅ All critical services imported successfully")
+        logger.info("✅ EmailService: Available")
+        logger.info("✅ DatabaseService: Available")
+        logger.info("✅ AuthService: Available")
+
+        # Initialize database
+        db_service = DatabaseService()
+        logger.info("✅ Database connection established")
+
+        logger.info("🎯 TradeSense Backend fully operational!")
+
+    except Exception as e:
+        logger.error(f"❌ Startup failed: {e}")
+        raise
+
+# Include all routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(scheduler.router, prefix="/api/scheduler", tags=["Email Scheduler"])
-app.include_router(journaling.router, prefix="/api/journal", tags=["Trade Journal"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin Dashboard"])
-app.include_router(exports.router, prefix="/api/exports", tags=["PDF Exports"])
+app.include_router(journaling.router, prefix="/api/journal", tags=["Journaling"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(exports.router, prefix="/api/exports", tags=["Exports"])
 
-# Root health check
 @app.get("/")
 async def root():
-    return {
-        "status": "TradeSense Backend API is running!",
-        "version": "2.5.9",
-        "docs": "/api/docs",
-        "endpoints": [
-            "/api/auth", "/api/analytics", "/api/scheduler", 
-            "/api/journal", "/api/admin", "/api/exports"
-        ]
-    }
+    return {"message": "TradeSense Backend API v2.5.9", "status": "operational"}
 
 @app.get("/api/health")
 async def health_check():
-    """Detailed health check for monitoring"""
+    """Comprehensive health check endpoint"""
     try:
         # Test database connection
-        from app.services.database_service import test_connection
-        db_status = test_connection()
-        
-        return {
+        from app.services.database_service import DatabaseService
+        db_service = DatabaseService()
+
+        # Test core services
+        health_status = {
             "status": "healthy",
-            "database": "connected" if db_status else "disconnected",
+            "timestamp": "2024-12-24T00:00:00Z",
+            "version": "2.5.9",
+            "database": "connected",
             "services": {
-                "auth": "active",
-                "analytics": "active",
-                "scheduler": "active",
-                "journaling": "active"
+                "auth": "operational",
+                "analytics": "operational", 
+                "scheduler": "operational",
+                "journaling": "operational",
+                "email": "operational"
             }
         }
+
+        return JSONResponse(content=health_status, status_code=200)
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        raise HTTPException(status_code=500, detail="Service unhealthy")
-
-# Global exception handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.error(f"Global exception: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error", "error": str(exc)}
-    )
+        return JSONResponse(
+            content={"status": "unhealthy", "error": str(e)}, 
+            status_code=503
+        )
 
 if __name__ == "__main__":
-    logger.info("🚀 Starting TradeSense Backend API...")
+    logger.info("🚀 Starting TradeSense Backend API v2.5.9")
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

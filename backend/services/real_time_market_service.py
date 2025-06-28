@@ -1,430 +1,426 @@
 
+#!/usr/bin/env python3
 """
-Real-time Market Data Service for TradeSense
-Provides live market feeds and real-time context for trades
+Real-time Market Data Service
+Connects to multiple free market data APIs to provide live market context
 """
+
 import asyncio
-import json
+import aiohttp
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
-import websocket
-import requests
-from sqlalchemy.orm import Session
-from backend.core.db.session import get_db
-from backend.models.trade import Trade
+import json
+from dataclasses import dataclass
+from enum import Enum
+import sqlite3
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+class MarketDataSource(Enum):
+    ALPHA_VANTAGE = "alpha_vantage"
+    TWELVE_DATA = "twelve_data"
+    YAHOO_FINANCE = "yahoo_finance"
+    POLYGON = "polygon"
+
+@dataclass
+class MarketQuote:
+    symbol: str
+    price: float
+    change: float
+    change_percent: float
+    volume: int
+    timestamp: datetime
+    source: MarketDataSource
+    
+@dataclass
+class MarketSentiment:
+    symbol: str
+    sentiment_score: float  # -1 to 1
+    news_count: int
+    volatility: float
+    rsi: float
+    ma_signal: str  # "bullish", "bearish", "neutral"
+    timestamp: datetime
+
 class RealTimeMarketService:
-    """Service for real-time market data integration"""
+    """Real-time market data service with multiple data sources."""
     
-    def __init__(self):
-        self.active_connections = {}
-        self.market_data_cache = {}
-        self.subscribers = {}
-        
-    async def get_live_quote(self, symbol: str) -> Dict[str, Any]:
-        """Get live quote for a symbol"""
-        try:
-            # Using Alpha Vantage API (free tier)
-            api_key = "demo"  # Replace with actual API key
-            url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={api_key}"
-            
-            response = requests.get(url, timeout=5)
-            data = response.json()
-            
-            if "Global Quote" in data:
-                quote = data["Global Quote"]
-                return {
-                    "symbol": symbol,
-                    "price": float(quote.get("05. price", 0)),
-                    "change": float(quote.get("09. change", 0)),
-                    "change_percent": quote.get("10. change percent", "0%"),
-                    "volume": int(quote.get("06. volume", 0)),
-                    "timestamp": datetime.now().isoformat(),
-                    "market_state": self._determine_market_state()
-                }
-        except Exception as e:
-            logger.error(f"Error fetching live quote for {symbol}: {e}")
-            
-        return self._get_fallback_quote(symbol)
-    
-    def _determine_market_state(self) -> str:
-        """Determine current market state"""
-        now = datetime.now()
-        hour = now.hour
-        
-        # Simple US market hours check (9:30 AM - 4:00 PM ET)
-        if 9 <= hour < 16:
-            return "open"
-        elif 16 <= hour < 20:
-            return "after_hours"
-        else:
-            return "closed"
-    
-    def _get_fallback_quote(self, symbol: str) -> Dict[str, Any]:
-        """Fallback quote when API fails"""
-        return {
-            "symbol": symbol,
-            "price": 100.0,  # Mock price
-            "change": 0.5,
-            "change_percent": "0.50%",
-            "volume": 1000000,
-            "timestamp": datetime.now().isoformat(),
-            "market_state": "demo_mode"
-        }
-    
-    async def get_market_sentiment(self, symbol: str) -> Dict[str, Any]:
-        """Get market sentiment indicators"""
-        try:
-            # Mock sentiment data - replace with real sentiment API
-            sentiment_score = 0.65  # Range: -1 to 1
-            
-            return {
-                "symbol": symbol,
-                "sentiment_score": sentiment_score,
-                "sentiment_label": self._get_sentiment_label(sentiment_score),
-                "fear_greed_index": 45,  # 0-100 scale
-                "volatility_percentile": 72,
-                "news_sentiment": "neutral",
-                "social_sentiment": "bullish",
-                "timestamp": datetime.now().isoformat()
+    def __init__(self, db_path: str = "tradesense.db"):
+        self.db_path = db_path
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.cache: Dict[str, MarketQuote] = {}
+        self.cache_ttl = 60  # seconds
+        self.sources_config = {
+            MarketDataSource.ALPHA_VANTAGE: {
+                "base_url": "https://www.alphavantage.co/query",
+                "api_key": None,  # Free tier available
+                "rate_limit": 5  # requests per minute
+            },
+            MarketDataSource.TWELVE_DATA: {
+                "base_url": "https://api.twelvedata.com",
+                "api_key": None,  # Free tier: 800 requests/day
+                "rate_limit": 8
+            },
+            MarketDataSource.YAHOO_FINANCE: {
+                "base_url": "https://query1.finance.yahoo.com/v8/finance/chart",
+                "api_key": None,  # No API key needed
+                "rate_limit": 100
             }
-        except Exception as e:
-            logger.error(f"Error fetching sentiment for {symbol}: {e}")
-            return {"error": str(e)}
-    
-    def _get_sentiment_label(self, score: float) -> str:
-        """Convert sentiment score to label"""
-        if score > 0.3:
-            return "bullish"
-        elif score < -0.3:
-            return "bearish"
-        else:
-            return "neutral"
-    
-    async def get_market_regime(self) -> Dict[str, Any]:
-        """Determine current market regime"""
-        return {
-            "regime": "trending",  # trending, ranging, volatile, calm
-            "volatility_regime": "normal",  # low, normal, high, extreme
-            "trend_strength": 0.7,  # 0-1 scale
-            "support_level": 95.5,
-            "resistance_level": 105.2,
-            "market_phase": "mid_session",
-            "timestamp": datetime.now().isoformat()
         }
+        self._init_market_tables()
     
-    async def enhance_trade_with_market_context(self, trade_data: Dict) -> Dict:
-        """Enhance trade data with real-time market context"""
-        symbol = trade_data.get("symbol", "")
-        
-        if symbol:
-            # Get live market data
-            quote = await self.get_live_quote(symbol)
-            sentiment = await self.get_market_sentiment(symbol)
-            regime = await self.get_market_regime()
+    def _init_market_tables(self):
+        """Initialize market data tables."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
             
-            # Add market context
-            trade_data["market_context"] = {
-                "live_quote": quote,
-                "sentiment": sentiment,
-                "regime": regime,
-                "context_timestamp": datetime.now().isoformat()
-            }
-        
-        return trade_data
+            # Market quotes table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS market_quotes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    price REAL NOT NULL,
+                    change_amount REAL,
+                    change_percent REAL,
+                    volume INTEGER,
+                    source TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX(symbol, timestamp)
+                )
+            """)
+            
+            # Market sentiment table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS market_sentiment (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    sentiment_score REAL,
+                    news_count INTEGER,
+                    volatility REAL,
+                    rsi REAL,
+                    ma_signal TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX(symbol, timestamp)
+                )
+            """)
+            
+            # Watchlist table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS market_watchlist (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    symbol TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    UNIQUE(user_id, symbol)
+                )
+            """)
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            logger.error(f"Error initializing market tables: {e}")
     
-    def subscribe_to_symbol(self, symbol: str, callback):
-        """Subscribe to real-time updates for a symbol"""
-        if symbol not in self.subscribers:
-            self.subscribers[symbol] = []
-        self.subscribers[symbol].append(callback)
+    async def start_session(self):
+        """Start aiohttp session."""
+        if not self.session:
+            timeout = aiohttp.ClientTimeout(total=10)
+            self.session = aiohttp.ClientSession(timeout=timeout)
     
-    async def start_real_time_feed(self, symbols: List[str]):
-        """Start real-time data feed for symbols"""
-        logger.info(f"Starting real-time feed for {symbols}")
-        
-        # Mock real-time feed - replace with actual WebSocket connection
-        while True:
-            for symbol in symbols:
-                try:
-                    quote = await self.get_live_quote(symbol)
+    async def close_session(self):
+        """Close aiohttp session."""
+        if self.session:
+            await self.session.close()
+            self.session = None
+    
+    async def get_quote_yahoo(self, symbol: str) -> Optional[MarketQuote]:
+        """Get quote from Yahoo Finance (free, no API key required)."""
+        try:
+            await self.start_session()
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+            
+            async with self.session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    result = data.get('chart', {}).get('result', [])
                     
-                    # Notify subscribers
-                    if symbol in self.subscribers:
-                        for callback in self.subscribers[symbol]:
-                            await callback(quote)
-                            
-                except Exception as e:
-                    logger.error(f"Error in real-time feed for {symbol}: {e}")
+                    if result:
+                        meta = result[0].get('meta', {})
+                        return MarketQuote(
+                            symbol=symbol,
+                            price=meta.get('regularMarketPrice', 0.0),
+                            change=meta.get('regularMarketPrice', 0.0) - meta.get('previousClose', 0.0),
+                            change_percent=((meta.get('regularMarketPrice', 0.0) - meta.get('previousClose', 1.0)) / meta.get('previousClose', 1.0)) * 100,
+                            volume=meta.get('regularMarketVolume', 0),
+                            timestamp=datetime.now(),
+                            source=MarketDataSource.YAHOO_FINANCE
+                        )
+                        
+        except Exception as e:
+            logger.error(f"Error fetching Yahoo quote for {symbol}: {e}")
+        
+        return None
+    
+    async def get_quote_alpha_vantage(self, symbol: str, api_key: str) -> Optional[MarketQuote]:
+        """Get quote from Alpha Vantage (free tier available)."""
+        try:
+            await self.start_session()
+            url = f"https://www.alphavantage.co/query"
+            params = {
+                'function': 'GLOBAL_QUOTE',
+                'symbol': symbol,
+                'apikey': api_key
+            }
             
-            await asyncio.sleep(5)  # Update every 5 seconds
+            async with self.session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    quote = data.get('Global Quote', {})
+                    
+                    if quote:
+                        return MarketQuote(
+                            symbol=symbol,
+                            price=float(quote.get('05. price', 0)),
+                            change=float(quote.get('09. change', 0)),
+                            change_percent=float(quote.get('10. change percent', '0%').replace('%', '')),
+                            volume=int(quote.get('06. volume', 0)),
+                            timestamp=datetime.now(),
+                            source=MarketDataSource.ALPHA_VANTAGE
+                        )
+                        
+        except Exception as e:
+            logger.error(f"Error fetching Alpha Vantage quote for {symbol}: {e}")
+        
+        return None
+    
+    async def get_quote(self, symbol: str, api_key: Optional[str] = None) -> Optional[MarketQuote]:
+        """Get quote with fallback sources."""
+        # Check cache first
+        cache_key = f"{symbol}_{datetime.now().timestamp() // self.cache_ttl}"
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        
+        # Try Yahoo Finance first (free, no API key)
+        quote = await self.get_quote_yahoo(symbol)
+        
+        # Fallback to Alpha Vantage if API key provided
+        if not quote and api_key:
+            quote = await self.get_quote_alpha_vantage(symbol, api_key)
+        
+        # Cache the result
+        if quote:
+            self.cache[cache_key] = quote
+            await self._store_quote(quote)
+        
+        return quote
+    
+    async def _store_quote(self, quote: MarketQuote):
+        """Store quote in database."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO market_quotes 
+                (symbol, price, change_amount, change_percent, volume, source)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                quote.symbol,
+                quote.price,
+                quote.change,
+                quote.change_percent,
+                quote.volume,
+                quote.source.value
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            logger.error(f"Error storing quote: {e}")
+    
+    async def get_market_sentiment(self, symbol: str) -> Optional[MarketSentiment]:
+        """Calculate market sentiment based on recent data."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Get recent quotes for volatility calculation
+            cursor.execute("""
+                SELECT price, change_percent, timestamp 
+                FROM market_quotes 
+                WHERE symbol = ? AND timestamp > datetime('now', '-7 days')
+                ORDER BY timestamp DESC
+                LIMIT 50
+            """, (symbol,))
+            
+            quotes = cursor.fetchall()
+            
+            if len(quotes) < 5:
+                return None
+            
+            # Calculate basic sentiment metrics
+            prices = [q[0] for q in quotes]
+            changes = [q[1] for q in quotes]
+            
+            # Volatility (standard deviation of price changes)
+            avg_change = sum(changes) / len(changes)
+            volatility = (sum((c - avg_change) ** 2 for c in changes) / len(changes)) ** 0.5
+            
+            # Simple RSI calculation
+            gains = [c for c in changes if c > 0]
+            losses = [abs(c) for c in changes if c < 0]
+            
+            avg_gain = sum(gains) / len(gains) if gains else 0
+            avg_loss = sum(losses) / len(losses) if losses else 1
+            
+            rs = avg_gain / avg_loss if avg_loss != 0 else 100
+            rsi = 100 - (100 / (1 + rs))
+            
+            # Moving average signal
+            recent_avg = sum(prices[:10]) / min(10, len(prices))
+            older_avg = sum(prices[10:20]) / min(10, len(prices[10:20])) if len(prices) > 10 else recent_avg
+            
+            ma_signal = "bullish" if recent_avg > older_avg else "bearish" if recent_avg < older_avg else "neutral"
+            
+            # Sentiment score (-1 to 1)
+            sentiment_score = 0.0
+            sentiment_score += 0.3 * (avg_change / 10)  # Recent performance
+            sentiment_score += 0.3 * ((70 - rsi) / 70)  # RSI (inverted, lower RSI = more bullish potential)
+            sentiment_score += 0.2 * (1 if ma_signal == "bullish" else -1 if ma_signal == "bearish" else 0)
+            sentiment_score += 0.2 * (1 - min(volatility / 5, 1))  # Lower volatility = more confidence
+            
+            sentiment_score = max(-1, min(1, sentiment_score))
+            
+            sentiment = MarketSentiment(
+                symbol=symbol,
+                sentiment_score=sentiment_score,
+                news_count=0,  # Would integrate with news API
+                volatility=volatility,
+                rsi=rsi,
+                ma_signal=ma_signal,
+                timestamp=datetime.now()
+            )
+            
+            conn.close()
+            return sentiment
+            
+        except Exception as e:
+            logger.error(f"Error calculating sentiment for {symbol}: {e}")
+            return None
+    
+    async def get_watchlist_quotes(self, user_id: int) -> List[MarketQuote]:
+        """Get quotes for user's watchlist."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT DISTINCT symbol FROM market_watchlist WHERE user_id = ?
+            """, (user_id,))
+            
+            symbols = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            
+            quotes = []
+            for symbol in symbols:
+                quote = await self.get_quote(symbol)
+                if quote:
+                    quotes.append(quote)
+            
+            return quotes
+            
+        except Exception as e:
+            logger.error(f"Error getting watchlist quotes: {e}")
+            return []
+    
+    def add_to_watchlist(self, user_id: int, symbol: str) -> bool:
+        """Add symbol to user's watchlist."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT OR IGNORE INTO market_watchlist (user_id, symbol)
+                VALUES (?, ?)
+            """, (user_id, symbol.upper()))
+            
+            conn.commit()
+            conn.close()
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error adding to watchlist: {e}")
+            return False
+    
+    def remove_from_watchlist(self, user_id: int, symbol: str) -> bool:
+        """Remove symbol from user's watchlist."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                DELETE FROM market_watchlist WHERE user_id = ? AND symbol = ?
+            """, (user_id, symbol.upper()))
+            
+            conn.commit()
+            conn.close()
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error removing from watchlist: {e}")
+            return False
+    
+    async def get_market_context_for_trade(self, symbol: str, trade_timestamp: datetime) -> Dict[str, Any]:
+        """Get market context at the time of trade."""
+        try:
+            # Get quote closest to trade time
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT price, change_percent, volume, timestamp
+                FROM market_quotes 
+                WHERE symbol = ? AND timestamp <= ?
+                ORDER BY ABS(julianday(timestamp) - julianday(?))
+                LIMIT 1
+            """, (symbol, trade_timestamp, trade_timestamp))
+            
+            quote_data = cursor.fetchone()
+            
+            # Get sentiment at trade time
+            sentiment = await self.get_market_sentiment(symbol)
+            
+            context = {
+                "market_price": quote_data[0] if quote_data else None,
+                "market_change": quote_data[1] if quote_data else None,
+                "market_volume": quote_data[2] if quote_data else None,
+                "sentiment_score": sentiment.sentiment_score if sentiment else None,
+                "volatility": sentiment.volatility if sentiment else None,
+                "rsi": sentiment.rsi if sentiment else None,
+                "ma_signal": sentiment.ma_signal if sentiment else None
+            }
+            
+            conn.close()
+            return context
+            
+        except Exception as e:
+            logger.error(f"Error getting market context: {e}")
+            return {}
 
 # Global service instance
-real_time_market_service = RealTimeMarketService()
-import asyncio
-import aiohttp
-import json
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any
-from sqlalchemy.orm import Session
-from backend.core.db.session import get_db
-from backend.models.trade import Trade
-import logging
-
-logger = logging.getLogger(__name__)
-
-class RealTimeMarketService:
-    """Enhanced real-time market data service with multiple providers"""
-    
-    def __init__(self):
-        self.active_subscriptions = {}
-        self.market_cache = {}
-        self.websocket_connections = {}
-        
-    async def connect_to_feed(self, provider: str = "alpha_vantage") -> bool:
-        """Connect to real-time market data feed"""
-        try:
-            if provider == "alpha_vantage":
-                return await self._connect_alpha_vantage()
-            elif provider == "yahoo_finance":
-                return await self._connect_yahoo_finance()
-            elif provider == "polygon":
-                return await self._connect_polygon()
-            else:
-                logger.error(f"Unsupported provider: {provider}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to connect to {provider}: {e}")
-            return False
-    
-    async def _connect_alpha_vantage(self) -> bool:
-        """Connect to Alpha Vantage real-time feed"""
-        # Alpha Vantage WebSocket connection
-        url = "wss://ws.finnhub.io/"
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.ws_connect(url) as ws:
-                    self.websocket_connections["alpha_vantage"] = ws
-                    logger.info("Connected to Alpha Vantage WebSocket")
-                    return True
-        except Exception as e:
-            logger.error(f"Alpha Vantage connection failed: {e}")
-            return False
-    
-    async def _connect_yahoo_finance(self) -> bool:
-        """Connect to Yahoo Finance data feed"""
-        # Yahoo Finance doesn't have official WebSocket, using REST API polling
-        self.websocket_connections["yahoo_finance"] = "polling"
-        logger.info("Yahoo Finance polling mode enabled")
-        return True
-    
-    async def _connect_polygon(self) -> bool:
-        """Connect to Polygon.io WebSocket"""
-        url = "wss://socket.polygon.io/stocks"
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.ws_connect(url) as ws:
-                    self.websocket_connections["polygon"] = ws
-                    logger.info("Connected to Polygon WebSocket")
-                    return True
-        except Exception as e:
-            logger.error(f"Polygon connection failed: {e}")
-            return False
-    
-    async def subscribe_to_symbol(self, symbol: str, provider: str = "yahoo_finance") -> bool:
-        """Subscribe to real-time data for a specific symbol"""
-        try:
-            if provider == "yahoo_finance":
-                return await self._subscribe_yahoo(symbol)
-            elif provider == "alpha_vantage":
-                return await self._subscribe_alpha_vantage(symbol)
-            elif provider == "polygon":
-                return await self._subscribe_polygon(symbol)
-            return False
-        except Exception as e:
-            logger.error(f"Failed to subscribe to {symbol} on {provider}: {e}")
-            return False
-    
-    async def _subscribe_yahoo(self, symbol: str) -> bool:
-        """Subscribe to Yahoo Finance data"""
-        self.active_subscriptions[symbol] = {
-            "provider": "yahoo_finance",
-            "subscribed_at": datetime.now(timezone.utc),
-            "last_update": None
-        }
-        
-        # Start polling task
-        asyncio.create_task(self._poll_yahoo_data(symbol))
-        logger.info(f"Subscribed to {symbol} on Yahoo Finance")
-        return True
-    
-    async def _poll_yahoo_data(self, symbol: str):
-        """Poll Yahoo Finance API for data"""
-        while symbol in self.active_subscriptions:
-            try:
-                # Simulate API call to Yahoo Finance
-                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            await self._process_market_data(symbol, data, "yahoo_finance")
-                
-                # Wait 5 seconds before next poll
-                await asyncio.sleep(5)
-                
-            except Exception as e:
-                logger.error(f"Error polling Yahoo data for {symbol}: {e}")
-                await asyncio.sleep(10)  # Wait longer on error
-    
-    async def _process_market_data(self, symbol: str, data: Dict, provider: str):
-        """Process incoming market data"""
-        try:
-            # Extract relevant data based on provider
-            if provider == "yahoo_finance":
-                processed_data = self._process_yahoo_data(data)
-            elif provider == "alpha_vantage":
-                processed_data = self._process_alpha_vantage_data(data)
-            elif provider == "polygon":
-                processed_data = self._process_polygon_data(data)
-            else:
-                return
-            
-            # Update cache
-            self.market_cache[symbol] = {
-                "data": processed_data,
-                "timestamp": datetime.now(timezone.utc),
-                "provider": provider
-            }
-            
-            # Update subscription
-            if symbol in self.active_subscriptions:
-                self.active_subscriptions[symbol]["last_update"] = datetime.now(timezone.utc)
-            
-            logger.debug(f"Updated market data for {symbol} from {provider}")
-            
-        except Exception as e:
-            logger.error(f"Error processing market data for {symbol}: {e}")
-    
-    def _process_yahoo_data(self, data: Dict) -> Dict:
-        """Process Yahoo Finance data format"""
-        try:
-            chart = data.get("chart", {}).get("result", [{}])[0]
-            meta = chart.get("meta", {})
-            
-            return {
-                "symbol": meta.get("symbol"),
-                "price": meta.get("regularMarketPrice"),
-                "change": meta.get("regularMarketPrice", 0) - meta.get("previousClose", 0),
-                "change_percent": ((meta.get("regularMarketPrice", 0) - meta.get("previousClose", 1)) / meta.get("previousClose", 1)) * 100,
-                "volume": meta.get("regularMarketVolume"),
-                "market_cap": meta.get("marketCap"),
-                "pe_ratio": meta.get("trailingPE"),
-                "fifty_two_week_high": meta.get("fiftyTwoWeekHigh"),
-                "fifty_two_week_low": meta.get("fiftyTwoWeekLow"),
-                "market_state": meta.get("marketState", "REGULAR")
-            }
-        except Exception as e:
-            logger.error(f"Error processing Yahoo data: {e}")
-            return {}
-    
-    def get_market_data(self, symbol: str) -> Optional[Dict]:
-        """Get cached market data for symbol"""
-        return self.market_cache.get(symbol)
-    
-    def get_all_subscriptions(self) -> Dict:
-        """Get all active subscriptions"""
-        return self.active_subscriptions.copy()
-    
-    async def unsubscribe_from_symbol(self, symbol: str) -> bool:
-        """Unsubscribe from symbol"""
-        if symbol in self.active_subscriptions:
-            del self.active_subscriptions[symbol]
-            if symbol in self.market_cache:
-                del self.market_cache[symbol]
-            logger.info(f"Unsubscribed from {symbol}")
-            return True
-        return False
-    
-    async def get_market_context_for_trade(self, symbol: str, trade_time: datetime) -> Dict:
-        """Get market context around trade time"""
-        try:
-            # Get current market data
-            current_data = self.get_market_data(symbol)
-            if not current_data:
-                # Subscribe if not already subscribed
-                await self.subscribe_to_symbol(symbol)
-                await asyncio.sleep(2)  # Wait for initial data
-                current_data = self.get_market_data(symbol)
-            
-            return {
-                "symbol": symbol,
-                "trade_time": trade_time,
-                "market_price_at_analysis": current_data.get("price") if current_data else None,
-                "market_state": current_data.get("market_state", "UNKNOWN") if current_data else "UNKNOWN",
-                "volume": current_data.get("volume") if current_data else None,
-                "volatility_indicator": self._calculate_volatility_indicator(current_data) if current_data else None,
-                "market_trend": self._determine_market_trend(current_data) if current_data else None,
-                "support_resistance": self._calculate_support_resistance(symbol) if current_data else None
-            }
-        except Exception as e:
-            logger.error(f"Error getting market context for {symbol}: {e}")
-            return {"error": str(e)}
-    
-    def _calculate_volatility_indicator(self, market_data: Dict) -> str:
-        """Calculate volatility indicator from market data"""
-        try:
-            change_percent = abs(market_data.get("change_percent", 0))
-            if change_percent > 5:
-                return "HIGH"
-            elif change_percent > 2:
-                return "MEDIUM"
-            else:
-                return "LOW"
-        except:
-            return "UNKNOWN"
-    
-    def _determine_market_trend(self, market_data: Dict) -> str:
-        """Determine market trend from data"""
-        try:
-            change_percent = market_data.get("change_percent", 0)
-            if change_percent > 1:
-                return "BULLISH"
-            elif change_percent < -1:
-                return "BEARISH"
-            else:
-                return "SIDEWAYS"
-        except:
-            return "UNKNOWN"
-    
-    def _calculate_support_resistance(self, symbol: str) -> Dict:
-        """Calculate basic support and resistance levels"""
-        try:
-            market_data = self.get_market_data(symbol)
-            if not market_data:
-                return {}
-            
-            current_price = market_data.get("price", 0)
-            high_52w = market_data.get("fifty_two_week_high", current_price)
-            low_52w = market_data.get("fifty_two_week_low", current_price)
-            
-            # Simple support/resistance calculation
-            resistance = current_price + (high_52w - current_price) * 0.3
-            support = current_price - (current_price - low_52w) * 0.3
-            
-            return {
-                "support": round(support, 2),
-                "resistance": round(resistance, 2),
-                "current_price": current_price,
-                "distance_to_support": round(((current_price - support) / current_price) * 100, 2),
-                "distance_to_resistance": round(((resistance - current_price) / current_price) * 100, 2)
-            }
-        except Exception as e:
-            logger.error(f"Error calculating support/resistance for {symbol}: {e}")
-            return {}
-
-# Global instance
 market_service = RealTimeMarketService()
+
+async def start_market_data_service():
+    """Start the market data service."""
+    await market_service.start_session()
+    logger.info("Real-time market data service started")
+
+async def stop_market_data_service():
+    """Stop the market data service."""
+    await market_service.close_session()
+    logger.info("Real-time market data service stopped")

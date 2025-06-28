@@ -1,348 +1,187 @@
-
-"""
-Market Context Service for TradeSense
-Integrates market data and provides context tags for trades
-"""
+import yfinance as yf
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-import aiohttp
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-class MarketCondition(Enum):
-    BULLISH = "bullish"
-    BEARISH = "bearish"
-    SIDEWAYS = "sideways"
-    VOLATILE = "volatile"
-    LOW_VOLUME = "low_volume"
-    HIGH_VOLUME = "high_volume"
+class MarketContextEngine:
+    """Enhanced market context analysis with full tagging system."""
 
-class MarketContextService:
-    """Service for analyzing market conditions and tagging trades"""
-    
     def __init__(self):
-        self.cache = {}
-        self.cache_expiry = timedelta(minutes=15)
-        
-    async def get_market_context(self, symbol: str, trade_date: datetime) -> Dict[str, Any]:
-        """Get market context for a specific symbol and date"""
-        cache_key = f"{symbol}_{trade_date.date()}"
-        
-        if self._is_cache_valid(cache_key):
-            return self.cache[cache_key]['data']
-            
-        try:
-            # Simulate market data fetch (replace with real API)
-            context = await self._fetch_market_data(symbol, trade_date)
-            
-            # Cache the result
-            self.cache[cache_key] = {
-                'data': context,
-                'timestamp': datetime.now()
-            }
-            
-            return context
-            
-        except Exception as e:
-            logger.error(f"Error fetching market context for {symbol}: {e}")
-            return self._get_default_context()
-    
-    async def _fetch_market_data(self, symbol: str, trade_date: datetime) -> Dict[str, Any]:
-        """Fetch market data from external API"""
-        try:
-            # Use Alpha Vantage API key from configuration
-            from backend.core.config import settings
-            api_key = settings.alpha_vantage_api_key
-            
-            async with aiohttp.ClientSession() as session:
-                # Get daily data
-                daily_url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={api_key}"
-                
-                # Get technical indicators
-                rsi_url = f"https://www.alphavantage.co/query?function=RSI&symbol={symbol}&interval=daily&time_period=14&series_type=close&apikey={api_key}"
-                
-                # Fetch data with timeout
-                async with session.get(daily_url, timeout=10) as response:
-                    daily_data = await response.json()
-                    
-                async with session.get(rsi_url, timeout=10) as response:
-                    rsi_data = await response.json()
-                
-                # Process real data
-                context = self._process_market_data(symbol, trade_date, daily_data, rsi_data)
-                return context
-                
-        except Exception as e:
-            logger.warning(f"Failed to fetch real market data for {symbol}: {e}")
-            # Fall back to simulated data
-            return self._get_simulated_market_data(symbol, trade_date)
-    
-    def _process_market_data(self, symbol: str, trade_date: datetime, daily_data: dict, rsi_data: dict) -> Dict[str, Any]:
-        """Process real market data from API"""
-        try:
-            # Extract time series data
-            time_series = daily_data.get('Time Series (Daily)', {})
-            
-            # Get the closest date to trade_date
-            trade_date_str = trade_date.strftime('%Y-%m-%d')
-            closest_date = self._find_closest_date(trade_date_str, list(time_series.keys()))
-            
-            if closest_date and closest_date in time_series:
-                day_data = time_series[closest_date]
-                
-                # Calculate volatility from high/low
-                high = float(day_data['2. high'])
-                low = float(day_data['1. open'])
-                volatility = ((high - low) / low) * 100 if low > 0 else 0
-                
-                # Get RSI
-                rsi_series = rsi_data.get('Technical Analysis: RSI', {})
-                rsi_value = 50.0  # Default
-                if closest_date in rsi_series:
-                    rsi_value = float(rsi_series[closest_date]['RSI'])
-                
-                # Determine market condition based on real data
-                volume = int(day_data['5. volume'])
-                market_condition = self._determine_market_condition(high, low, volume, rsi_value)
-                
-                return {
-                    'symbol': symbol,
-                    'date': trade_date.isoformat(),
-                    'market_condition': market_condition,
-                    'volatility': round(volatility, 2),
-                    'volume_profile': self._classify_volume(volume),
-                    'sector_performance': self._get_sector_context(symbol),
-                    'economic_events': self._get_economic_events(trade_date),
-                    'technical_indicators': {
-                        'rsi': round(rsi_value, 2),
-                        'high': high,
-                        'low': low,
-                        'volume': volume,
-                        'volatility_percent': round(volatility, 2)
-                    },
-                    'market_sentiment': self._analyze_sentiment(rsi_value, volatility)
-                }
-            else:
-                raise ValueError("No data available for date")
-                
-        except Exception as e:
-            logger.error(f"Error processing market data: {e}")
-            return self._get_simulated_market_data(symbol, trade_date)
-    
-    def _get_simulated_market_data(self, symbol: str, trade_date: datetime) -> Dict[str, Any]:
-        """Get simulated market data as fallback"""
-        context = {
-            'symbol': symbol,
-            'date': trade_date.isoformat(),
-            'market_condition': self._analyze_market_condition(symbol),
-            'volatility': self._calculate_volatility(symbol),
-            'volume_profile': self._analyze_volume(symbol),
-            'sector_performance': self._get_sector_context(symbol),
-            'economic_events': self._get_economic_events(trade_date),
-            'technical_indicators': self._get_technical_indicators(symbol),
-            'market_sentiment': self._get_market_sentiment(symbol)
-        }
-        return context
-    
-    def _find_closest_date(self, target_date: str, available_dates: list) -> str:
-        """Find the closest available date to target date"""
-        from datetime import datetime
-        
-        target = datetime.strptime(target_date, '%Y-%m-%d')
-        available = [datetime.strptime(d, '%Y-%m-%d') for d in available_dates]
-        
-        closest = min(available, key=lambda x: abs((x - target).days))
-        return closest.strftime('%Y-%m-%d')
-    
-    def _determine_market_condition(self, high: float, low: float, volume: int, rsi: float) -> str:
-        """Determine market condition from real data"""
-        volatility = ((high - low) / low) * 100 if low > 0 else 0
-        
-        if rsi > 70:
-            return MarketCondition.BULLISH.value
-        elif rsi < 30:
-            return MarketCondition.BEARISH.value
-        elif volatility > 5:
-            return MarketCondition.VOLATILE.value
-        else:
-            return MarketCondition.SIDEWAYS.value
-    
-    def _classify_volume(self, volume: int) -> str:
-        """Classify volume levels"""
-        if volume > 1000000:
-            return MarketCondition.HIGH_VOLUME.value
-        elif volume < 100000:
-            return MarketCondition.LOW_VOLUME.value
-        else:
-            return "normal_volume"
-    
-    def _analyze_sentiment(self, rsi: float, volatility: float) -> Dict[str, Any]:
-        """Analyze market sentiment from real indicators"""
-        if rsi > 70:
-            sentiment = "bullish"
-        elif rsi < 30:
-            sentiment = "bearish"
-        else:
-            sentiment = "neutral"
-            
-        return {
-            'sentiment_score': sentiment,
-            'rsi_level': rsi,
-            'volatility_level': volatility,
-            'fear_greed_index': min(100, max(0, int(rsi + (volatility * 2))))
-        }
-    
-    def _analyze_market_condition(self, symbol: str) -> str:
-        """Analyze overall market condition"""
-        # Simplified logic - would use real technical analysis
-        if 'SPY' in symbol or 'QQQ' in symbol:
-            return MarketCondition.BULLISH.value
-        elif 'VIX' in symbol:
-            return MarketCondition.VOLATILE.value
-        else:
-            return MarketCondition.SIDEWAYS.value
-    
-    def _calculate_volatility(self, symbol: str) -> float:
-        """Calculate volatility score (0-100)"""
-        # Simplified volatility calculation
-        import random
-        return round(random.uniform(10, 80), 2)
-    
-    def _analyze_volume(self, symbol: str) -> str:
-        """Analyze volume profile"""
-        import random
-        volume_ratio = random.uniform(0.5, 2.0)
-        
-        if volume_ratio > 1.5:
-            return MarketCondition.HIGH_VOLUME.value
-        elif volume_ratio < 0.8:
-            return MarketCondition.LOW_VOLUME.value
-        else:
-            return "normal_volume"
-    
-    def _get_sector_context(self, symbol: str) -> Dict[str, Any]:
-        """Get sector-specific context"""
-        # Map symbols to sectors (simplified)
-        sector_map = {
-            'AAPL': 'Technology',
-            'MSFT': 'Technology', 
-            'GOOGL': 'Technology',
-            'TSLA': 'Automotive',
-            'SPY': 'Market Index',
-            'QQQ': 'Technology Index'
-        }
-        
-        sector = sector_map.get(symbol, 'Unknown')
-        
-        return {
-            'sector': sector,
-            'sector_performance': 'outperforming' if sector == 'Technology' else 'neutral',
-            'relative_strength': round(random.uniform(0.8, 1.2), 2)
-        }
-    
-    def _get_economic_events(self, trade_date: datetime) -> List[str]:
-        """Get economic events for the trade date"""
-        # Simplified economic events
-        events = []
-        
-        if trade_date.weekday() == 4:  # Friday
-            events.append('Non-Farm Payrolls')
-        elif trade_date.day <= 7:  # First week of month
-            events.append('CPI Release')
-        elif trade_date.day % 10 == 0:  # Every 10th day
-            events.append('Fed Meeting')
-            
-        return events
-    
-    def _get_technical_indicators(self, symbol: str) -> Dict[str, Any]:
-        """Get technical indicators"""
-        import random
-        
-        return {
-            'rsi': round(random.uniform(20, 80), 2),
-            'macd_signal': random.choice(['bullish', 'bearish', 'neutral']),
-            'moving_average_trend': random.choice(['uptrend', 'downtrend', 'sideways']),
-            'support_level': round(random.uniform(100, 200), 2),
-            'resistance_level': round(random.uniform(200, 300), 2)
-        }
-    
-    def _get_market_sentiment(self, symbol: str) -> Dict[str, Any]:
-        """Get market sentiment indicators"""
-        import random
-        
-        return {
-            'fear_greed_index': random.randint(0, 100),
-            'put_call_ratio': round(random.uniform(0.5, 1.5), 2),
-            'vix_level': round(random.uniform(10, 40), 2),
-            'sentiment_score': random.choice(['bullish', 'bearish', 'neutral'])
-        }
-    
-    def _is_cache_valid(self, cache_key: str) -> bool:
-        """Check if cached data is still valid"""
-        if cache_key not in self.cache:
-            return False
-            
-        cache_time = self.cache[cache_key]['timestamp']
-        return datetime.now() - cache_time < self.cache_expiry
-    
-    def _get_default_context(self) -> Dict[str, Any]:
-        """Get default context when API fails"""
-        return {
-            'symbol': 'UNKNOWN',
-            'date': datetime.now().isoformat(),
-            'market_condition': 'unknown',
-            'volatility': 0.0,
-            'volume_profile': 'unknown',
-            'sector_performance': {'sector': 'Unknown'},
-            'economic_events': [],
-            'technical_indicators': {},
-            'market_sentiment': {}
+        self.market_indicators = {
+            'SPY': 'S&P 500',
+            'QQQ': 'NASDAQ',
+            'VIX': 'Volatility Index',
+            'DXY': 'Dollar Index'
         }
 
-    async def tag_trade_with_context(self, trade_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Add market context tags to a trade"""
-        symbol = trade_data.get('symbol', '')
-        trade_date = datetime.fromisoformat(trade_data.get('entry_time', ''))
-        
-        context = await self.get_market_context(symbol, trade_date)
-        
-        # Generate context tags
+    async def get_market_context(self, trade_date: datetime) -> Dict:
+        """Get comprehensive market context for a trade date."""
+        try:
+            context = {}
+
+            # Get market data for trade date
+            for symbol, name in self.market_indicators.items():
+                data = await self._get_symbol_data(symbol, trade_date)
+                context[symbol] = data
+
+            # Generate market tags
+            tags = self._generate_market_tags(context, trade_date)
+
+            return {
+                'trade_date': trade_date.isoformat(),
+                'market_data': context,
+                'tags': tags,
+                'market_regime': self._determine_market_regime(context),
+                'volatility_environment': self._assess_volatility(context.get('VIX', {}))
+            }
+
+        except Exception as e:
+            logger.error(f"Market context error: {e}")
+            return self._default_context(trade_date)
+
+    async def _get_symbol_data(self, symbol: str, trade_date: datetime) -> Dict:
+        """Get price data for symbol around trade date."""
+        try:
+            ticker = yf.Ticker(symbol)
+
+            # Get 5 days of data around trade date
+            start_date = trade_date - timedelta(days=5)
+            end_date = trade_date + timedelta(days=1)
+
+            hist = ticker.history(start=start_date, end=end_date)
+
+            if hist.empty:
+                return {}
+
+            # Get closest trading day data
+            closest_data = hist.iloc[-1] if not hist.empty else None
+
+            if closest_data is None:
+                return {}
+
+            return {
+                'price': float(closest_data['Close']),
+                'volume': int(closest_data['Volume']),
+                'high': float(closest_data['High']),
+                'low': float(closest_data['Low']),
+                'change_pct': self._calculate_change_pct(hist)
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting data for {symbol}: {e}")
+            return {}
+
+    def _calculate_change_pct(self, hist) -> float:
+        """Calculate percentage change from previous day."""
+        if len(hist) < 2:
+            return 0.0
+
+        current = hist.iloc[-1]['Close']
+        previous = hist.iloc[-2]['Close']
+
+        return ((current - previous) / previous) * 100
+
+    def _generate_market_tags(self, context: Dict, trade_date: datetime) -> List[str]:
+        """Generate comprehensive market context tags."""
         tags = []
-        
-        # Market condition tags
-        tags.append(f"market_{context['market_condition']}")
-        
+
+        # Market direction tags
+        spy_data = context.get('SPY', {})
+        if spy_data.get('change_pct'):
+            change = spy_data['change_pct']
+            if change > 1:
+                tags.append('strong_bullish_market')
+            elif change > 0.5:
+                tags.append('bullish_market')
+            elif change < -1:
+                tags.append('strong_bearish_market')
+            elif change < -0.5:
+                tags.append('bearish_market')
+            else:
+                tags.append('sideways_market')
+
         # Volatility tags
-        if context['volatility'] > 60:
-            tags.append("high_volatility")
-        elif context['volatility'] < 20:
-            tags.append("low_volatility")
-            
-        # Volume tags
-        tags.append(f"volume_{context['volume_profile']}")
-        
-        # Sector tags
-        sector_info = context['sector_performance']
-        if sector_info['sector'] != 'Unknown':
-            tags.append(f"sector_{sector_info['sector'].lower()}")
-            
-        # Economic event tags
-        for event in context['economic_events']:
-            tags.append(f"event_{event.lower().replace(' ', '_')}")
-            
-        # Technical indicator tags
-        tech_indicators = context['technical_indicators']
-        if 'macd_signal' in tech_indicators:
-            tags.append(f"macd_{tech_indicators['macd_signal']}")
-            
-        # Add tags to trade data
-        trade_data['market_context_tags'] = tags
-        trade_data['market_context'] = context
-        
-        return trade_data
+        vix_data = context.get('VIX', {})
+        if vix_data.get('price'):
+            vix_level = vix_data['price']
+            if vix_level > 30:
+                tags.append('high_volatility')
+            elif vix_level > 20:
+                tags.append('medium_volatility')
+            else:
+                tags.append('low_volatility')
+
+        # Tech vs broader market
+        spy_change = spy_data.get('change_pct', 0)
+        qqq_change = context.get('QQQ', {}).get('change_pct', 0)
+
+        if qqq_change > spy_change + 0.5:
+            tags.append('tech_outperforming')
+        elif spy_change > qqq_change + 0.5:
+            tags.append('value_outperforming')
+
+        # Day of week patterns
+        weekday = trade_date.weekday()
+        if weekday == 0:
+            tags.append('monday_session')
+        elif weekday == 4:
+            tags.append('friday_session')
+        elif weekday in [1, 2, 3]:
+            tags.append('midweek_session')
+
+        # Time-based tags
+        hour = trade_date.hour
+        if 9 <= hour <= 10:
+            tags.append('market_open')
+        elif 15 <= hour <= 16:
+            tags.append('market_close')
+        elif 11 <= hour <= 14:
+            tags.append('midday_session')
+
+        return tags
+
+    def _determine_market_regime(self, context: Dict) -> str:
+        """Determine overall market regime."""
+        spy_data = context.get('SPY', {})
+        vix_data = context.get('VIX', {})
+
+        spy_change = spy_data.get('change_pct', 0)
+        vix_level = vix_data.get('price', 20)
+
+        if vix_level > 25 and spy_change < -0.5:
+            return 'risk_off'
+        elif vix_level < 15 and spy_change > 0.5:
+            return 'risk_on'
+        elif abs(spy_change) < 0.3:
+            return 'consolidation'
+        else:
+            return 'trending'
+
+    def _assess_volatility(self, vix_data: Dict) -> str:
+        """Assess volatility environment."""
+        vix_level = vix_data.get('price', 20)
+
+        if vix_level > 35:
+            return 'extreme_high'
+        elif vix_level > 25:
+            return 'high'
+        elif vix_level > 15:
+            return 'normal'
+        else:
+            return 'low'
+
+    def _default_context(self, trade_date: datetime) -> Dict:
+        """Return default context when data unavailable."""
+        return {
+            'trade_date': trade_date.isoformat(),
+            'market_data': {},
+            'tags': ['market_data_unavailable'],
+            'market_regime': 'unknown',
+            'volatility_environment': 'unknown'
+        }
 
 # Global instance
-market_context_service = MarketContextService()
+market_context_engine = MarketContextEngine()

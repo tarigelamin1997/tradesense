@@ -1,6 +1,31 @@
-from fastapi import FastAPI, WebSocket
+import sys
+import os
+
+# Add backend to Python path
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api.v1.auth.router import router as auth_router
+
+# Initialize database first
+try:
+    print("🚀 Starting TradeSense Backend...")
+
+    # Initialize database
+    from backend.initialize_db import *
+
+    print("✅ Database initialized successfully")
+except Exception as e:
+    print(f"⚠️ Database initialization warning: {e}")
+
+# Import routers
+try:
+    from backend.api.v1.auth.router import router as auth_router
+except ImportError as e:
+    print(f"❌ Failed to import auth router: {e}")
+    auth_router = None
 from backend.api.v1.trades.router import router as trades_router
 from backend.api.v1.analytics.router import router as analytics_router
 from backend.api.v1.uploads.router import router as uploads_router

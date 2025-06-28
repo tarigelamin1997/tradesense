@@ -210,7 +210,7 @@ def _calculate_streak_distribution(streaks: List[int]) -> Dict[str, int]:
     return distribution
 
 
-def _calculate_streak_consistency(streak_data: Dict[str, Any]) -> float:
+def _calculate_streak_consistency(streak_data: Dict[str, Any]]) -> float:
     """
     Calculate how consistent streak lengths are (lower variance = more consistent)
 
@@ -270,36 +270,59 @@ def find_longest_streak(trades_data: List[Dict], streak_type: str = 'winning') -
 
     return max_streak
 
-def calculate_average_duration(trades_data: List[Dict]) -> float:
-    """Calculate average trade duration in hours."""
-    if not trades_data:
-        return 0.0
-    
-    durations = []
-    for trade in trades_data:
-        entry_time = trade.get('entry_time')
-        exit_time = trade.get('exit_time')
-        
-        if entry_time and exit_time:
-            try:
-                if isinstance(entry_time, str):
-                    entry_time = pd.to_datetime(entry_time)
-                if isinstance(exit_time, str):
-                    exit_time = pd.to_datetime(exit_time)
-                
-                duration = (exit_time - entry_time).total_seconds() / 3600  # Convert to hours
-                durations.append(duration)
-            except:
-                continue
-    
-    return sum(durations) / len(durations) if durations else 0.0
-
-def calculate_streak_statistics(trades_data: List[Dict]) -> Dict:
+def calculate_streak_statistics(trades_df, streak_column='streak_id'):
     """Calculate comprehensive streak statistics."""
-    if not trades_data:
+    if trades_df.empty:
         return {
-            'current_streak': 0,
-            'longest_winning_streak': 0,
-            'longest_losing_streak': 0,
-            'streak_type': 'none'
+            'total_streaks': 0,
+            'avg_streak_length': 0,
+            'max_streak_length': 0,
+            'win_streak_avg': 0,
+            'loss_streak_avg': 0
         }
+
+    # Group by streak and calculate statistics
+    streak_stats = trades_df.groupby(streak_column).agg({
+        'pnl': ['count', 'sum', 'mean'],
+        'trade_id': 'count'
+    }).reset_index()
+
+    return {
+        'total_streaks': len(streak_stats),
+        'avg_streak_length': streak_stats[('trade_id', 'count')].mean(),
+        'max_streak_length': streak_stats[('trade_id', 'count')].max(),
+        'win_streak_avg': streak_stats[streak_stats[('pnl', 'sum')] > 0][('trade_id', 'count')].mean() or 0,
+        'loss_streak_avg': streak_stats[streak_stats[('pnl', 'sum')] < 0][('trade_id', 'count')].mean() or 0
+    }
+
+def calculate_average_duration(trades_df):
+    """Calculate average trade duration from trades dataframe."""
+    if trades_df.empty:
+        return 0
+
+    # Convert entry_time and exit_time to datetime if they're strings
+    if 'entry_time' in trades_df.columns and 'exit_time' in trades_df.columns:
+        try:
+            from datetime import datetime
+            import pandas as pd
+
+            # Handle different datetime formats
+            entry_times = pd.to_datetime(trades_df['entry_time'], errors='coerce')
+            exit_times = pd.to_datetime(trades_df['exit_time'], errors='coerce')
+
+            # Calculate duration in hours
+            durations = (exit_times - entry_times).dt.total_seconds() / 3600
+
+            # Filter out invalid durations
+            valid_durations = durations.dropna()
+
+            if len(valid_durations) > 0:
+                return float(valid_durations.mean())
+            else:
+                return 0
+
+        except Exception as e:
+            print(f"Error calculating duration: {e}")
+            return 0
+
+    return 0

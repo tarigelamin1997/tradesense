@@ -32,6 +32,8 @@ class MarketEvent:
     affected_symbols: List[str]
 
 class RealTimeMarketService:
+    """Real-time market data service for TradeSense."""
+
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         self.cache: Dict[str, Any] = {}
@@ -40,12 +42,21 @@ class RealTimeMarketService:
         self.active_connections = set()
         self.market_data = {}
         self.sentiment_data = {}
-        
+
         # Demo mode - simulate real market data
         self.demo_mode = True
         self.cache_duration = timedelta(minutes=5)
         self._market_context_cache: Optional[MarketContext] = None
         self._cache_timestamp: Optional[datetime] = None
+        self.cache = {}
+        self.cache_expiry = 60  # 1 minute cache
+        self.last_update = {}
+        self.market_hours = {
+            'pre_market_start': '04:00',
+            'market_open': '09:30', 
+            'market_close': '16:00',
+            'after_hours_end': '20:00'
+        }
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
@@ -65,7 +76,7 @@ class RealTimeMarketService:
             return False
 
         return datetime.now() - cached_time < timedelta(seconds=self.cache_ttl)
-    
+
     def _is_cache_valid(self) -> bool:
         if not self._market_context_cache or not self._cache_timestamp:
             return False
@@ -77,7 +88,7 @@ class RealTimeMarketService:
             await self._start_demo_feed()
         else:
             await self._start_live_feed()
-            
+
     async def get_current_market_context(self) -> MarketContext:
         """Get current market context with caching"""
         if self._is_cache_valid():
@@ -91,18 +102,18 @@ class RealTimeMarketService:
         except Exception as e:
             logger.error(f"Error fetching market context: {e}")
             return self._get_fallback_context()
-    
+
     async def _start_demo_feed(self):
         """Simulate real-time market data for demo purposes"""
         symbols = ["AAPL", "TSLA", "NVDA", "SPY", "QQQ", "MSFT", "GOOGL", "AMZN"]
-        
+
         # Initialize base prices
         base_prices = {
             "AAPL": 175.50, "TSLA": 245.30, "NVDA": 465.20,
             "SPY": 445.80, "QQQ": 385.40, "MSFT": 420.15,
             "GOOGL": 2850.75, "AMZN": 3100.25
         }
-        
+
         while True:
             try:
                 for symbol in symbols:
@@ -110,7 +121,7 @@ class RealTimeMarketService:
                     base_price = base_prices[symbol]
                     price_change = (asyncio.get_event_loop().time() % 10 - 5) * 0.02
                     current_price = base_price * (1 + price_change)
-                    
+
                     market_data = MarketData(
                         symbol=symbol,
                         price=round(current_price, 2),
@@ -121,9 +132,9 @@ class RealTimeMarketService:
                         market_cap=50000000000 + hash(symbol) % 100000000000,
                         pe_ratio=15.0 + hash(symbol) % 20
                     )
-                    
+
                     self.market_data[symbol] = market_data
-                    
+
                     # Generate sentiment data
                     sentiment = MarketSentiment(
                         fear_greed_index=45,  # 0-100 scale
@@ -138,24 +149,24 @@ class RealTimeMarketService:
                         },
                         market_regime="sideways"
                     )
-                    
+
                     self.sentiment_data[symbol] = sentiment
-                    
+
                     # Notify subscribers
                     await self._notify_subscribers(symbol, market_data, sentiment)
-                
+
                 await asyncio.sleep(1)  # Update every second
-                
+
             except Exception as e:
                 logger.error(f"Error in demo feed: {e}")
                 await asyncio.sleep(5)
-    
+
     async def _start_live_feed(self):
         """Connect to actual market data providers (Alpha Vantage, IEX, etc.)"""
         # Implementation for real market data feeds
         # This would connect to actual APIs like Alpha Vantage, IEX Cloud, etc.
         pass
-    
+
     async def _fetch_market_context(self) -> MarketContext:
         """Fetch real-time market data from multiple sources"""
         # Simulate fetching from multiple APIs
@@ -182,7 +193,7 @@ class RealTimeMarketService:
             economic_indicators=events_data,
             timestamp=datetime.utcnow()
         )
-    
+
     async def _fetch_vix_data(self, session: aiohttp.ClientSession) -> Dict[str, Any]:
         """Fetch VIX volatility data"""
         try:
@@ -311,7 +322,7 @@ class RealTimeMarketService:
             return max(-1.0, min(1.0, sentiment / 5.0))
         except Exception:
             return 0.0
-            
+
     async def _notify_subscribers(self, symbol: str, market_data: MarketData, sentiment: MarketSentiment):
         """Notify all subscribers about market data updates"""
         if symbol in self.subscribers:
@@ -320,7 +331,7 @@ class RealTimeMarketService:
                     await callback(market_data, sentiment)
                 except Exception as e:
                     logger.error(f"Error notifying subscriber: {e}")
-                    
+
     def _get_fallback_context(self) -> MarketContext:
         """Return fallback context when data fetch fails"""
         return MarketContext(
@@ -339,12 +350,12 @@ class RealTimeMarketService:
         if symbol not in self.subscribers:
             self.subscribers[symbol] = []
         self.subscribers[symbol].append(callback)
-    
+
     def unsubscribe_from_symbol(self, symbol: str, callback):
         """Unsubscribe from symbol updates"""
         if symbol in self.subscribers:
             self.subscribers[symbol].remove(callback)
-    
+
     async def get_current_price(self, symbol: str) -> Optional[MarketData]:
         """Get current market data for a symbol"""
         return self.market_data.get(symbol)
@@ -384,7 +395,7 @@ class RealTimeMarketService:
         except Exception as e:
             logger.error(f"Error fetching market data: {e}")
             return {}
-    
+
     async def get_market_sentiment(self) -> MarketSentiment:
         """Get overall market sentiment indicators"""
         cache_key = "market_sentiment"
@@ -426,11 +437,11 @@ class RealTimeMarketService:
                 sector_performance={},
                 market_regime="neutral"
             )
-    
+
     async def get_market_sentiment(self, symbol: str) -> Optional[MarketSentiment]:
         """Get current market sentiment for a symbol"""
         return self.sentiment_data.get(symbol)
-    
+
     async def get_economic_calendar(self, days_ahead: int = 7) -> List[Dict[str, Any]]:
         """Get upcoming economic events"""
         cache_key = f"economic_calendar_{days_ahead}"
@@ -478,7 +489,7 @@ class RealTimeMarketService:
         except Exception as e:
             logger.error(f"Error fetching economic calendar: {e}")
             return []
-            
+
     async def get_market_events(self, days_ahead: int = 7) -> List[MarketEvent]:
         """Get upcoming market events that could impact trading"""
         try:
@@ -512,28 +523,28 @@ class RealTimeMarketService:
         except Exception as e:
             logger.error(f"Error fetching market events: {e}")
             return []
-    
+
     async def analyze_trade_context(self, symbol: str, entry_price: float) -> Dict[str, Any]:
         """Analyze market context for a trade"""
         market_data = await self.get_current_price(symbol)
         sentiment = await self.get_market_sentiment(symbol)
-        
+
         if not market_data or not sentiment:
             return {"error": "Market data not available"}
-        
+
         current_price = market_data.price
         price_diff = current_price - entry_price
         price_diff_percent = (price_diff / entry_price) * 100
-        
+
         # Determine market regime
         regime = self._determine_market_regime(sentiment)
-        
+
         # Calculate risk/reward metrics
         risk_reward = self._calculate_risk_reward(
             entry_price, current_price, 
             sentiment.support_level, sentiment.resistance_level
         )
-        
+
         return {
             "symbol": symbol,
             "current_price": current_price,
@@ -569,7 +580,7 @@ class RealTimeMarketService:
         except Exception as e:
             logger.error(f"Error analyzing trade context: {e}")
             return {"error": str(e)}
-    
+
     def _determine_market_regime(self, sentiment: MarketSentiment) -> str:
         """Determine current market regime"""
         return sentiment.market_regime
@@ -581,7 +592,7 @@ class RealTimeMarketService:
         #    return "bearish_trending"
         #else:
         #    return "sideways_consolidation"
-    
+
     def _calculate_risk_reward(self, entry: float, current: float, support: float, resistance: float) -> Dict[str, float]:
         """Calculate risk/reward metrics"""
         potential_reward = 0
@@ -592,15 +603,15 @@ class RealTimeMarketService:
         else:  # Short position
             potential_reward = current - support
             potential_risk = resistance - current
-        
+
         risk_reward_ratio = potential_reward / potential_risk if potential_risk > 0 else 0
-        
+
         return {
             "potential_reward": round(potential_reward, 2),
             "potential_risk": round(potential_risk, 2),
             "risk_reward_ratio": round(risk_reward_ratio, 2)
         }
-    
+
     def _generate_recommendation(self, sentiment: MarketSentiment, pnl_percent: float) -> str:
         """Generate trading recommendation based on market context"""
         if pnl_percent > 5 and sentiment.fear_greed_index < 40:
@@ -611,7 +622,7 @@ class RealTimeMarketService:
             return "High volatility detected - manage risk carefully"
         else:
             return "Monitor position - neutral market conditions"
-        
+
     def _check_regime_alignment(self, trade: Trade, context: MarketContext) -> float:
         """Check if trade direction aligns with market regime"""
         if not trade.direction:
@@ -675,18 +686,18 @@ class RealTimeMarketService:
         risk_score += 0.1  # Placeholder
 
         return max(0.0, min(1.0, risk_score))
-    
+
     async def get_portfolio_context(self, user_id: str) -> Dict[str, Any]:
         """Get real-time context for user's entire portfolio"""
         try:
             db = next(get_db())
-            
+
             # Get open positions (assuming we track them)
             open_trades = db.query(Trade).filter(
                 Trade.user_id == user_id,
                 Trade.exit_time.is_(None)  # Open positions
             ).all()
-            
+
             portfolio_context = {
                 "total_positions": len(open_trades),
                 "symbols": [],
@@ -694,7 +705,7 @@ class RealTimeMarketService:
                 "market_exposure": {},
                 "risk_metrics": {}
             }
-            
+
             for trade in open_trades:
                 #context = await self.analyze_trade_context(trade.symbol, trade.entry_price)
                 market_data = await self.get_market_data([trade.symbol])
@@ -718,15 +729,15 @@ class RealTimeMarketService:
 
                     portfolio_context["symbols"].append(context)
                     portfolio_context["total_unrealized_pnl"] += context["unrealized_pnl"]
-            
+
             return portfolio_context
-            
+
         except Exception as e:
             logger.error(f"Error getting portfolio context: {e}")
             return {"error": str(e)}
         finally:
             db.close()
-    
+
     def get_market_context_tags(self, trade_time: datetime) -> List[str]:
         """Generate market context tags for a trade"""
         tags = []
@@ -750,5 +761,189 @@ class RealTimeMarketService:
 
         return tags
 
+    async def get_market_data(self, symbol: str) -> dict:
+        """Get real-time market data for a symbol."""
+        # Check cache first
+        if self._is_cached(symbol):
+            return self.cache[symbol]
+
+        # Get comprehensive market data
+        market_data = await self._fetch_comprehensive_data(symbol)
+
+        # Cache the data
+        self.cache[symbol] = market_data
+        self.last_update[symbol] = time.time()
+
+        return market_data
+
+    async def _fetch_comprehensive_data(self, symbol: str) -> dict:
+        """Fetch comprehensive market data including context."""
+        base_data = self._simulate_market_data(symbol)
+
+        # Add market regime analysis
+        regime_data = await self._analyze_market_regime(symbol)
+
+        # Add sentiment indicators
+        sentiment_data = await self._get_market_sentiment(symbol)
+
+        # Add economic calendar events
+        calendar_events = await self._get_economic_events()
+
+        return {
+            **base_data,
+            'market_regime': regime_data,
+            'sentiment': sentiment_data,
+            'economic_events': calendar_events,
+            'market_session': self._get_market_session(),
+            'volatility_context': self._calculate_volatility_context(base_data),
+            'trend_context': self._analyze_trend_context(base_data)
+        }
+
+    async def _analyze_market_regime(self, symbol: str) -> dict:
+        """Analyze current market regime."""
+        import random
+
+        regimes = ['Bull Market', 'Bear Market', 'Sideways', 'High Volatility', 'Low Volatility']
+        confidence_levels = ['High', 'Medium', 'Low']
+
+        return {
+            'current_regime': random.choice(regimes),
+            'confidence': random.choice(confidence_levels),
+            'regime_strength': round(random.uniform(0.1, 1.0), 2),
+            'days_in_regime': random.randint(1, 90),
+            'expected_duration': random.randint(5, 180)
+        }
+
+    async def _get_market_sentiment(self, symbol: str) -> dict:
+        """Get market sentiment indicators."""
+        import random
+
+        return {
+            'overall_sentiment': random.choice(['Bullish', 'Bearish', 'Neutral']),
+            'sentiment_score': round(random.uniform(-1.0, 1.0), 2),
+            'fear_greed_index': random.randint(0, 100),
+            'put_call_ratio': round(random.uniform(0.5, 2.0), 2),
+            'vix_level': round(random.uniform(10, 40), 2),
+            'social_sentiment': random.choice(['Positive', 'Negative', 'Mixed'])
+        }
+
+    async def _get_economic_events(self) -> list:
+        """Get upcoming economic calendar events."""
+        import random
+        from datetime import datetime, timedelta
+
+        events = [
+            'Fed Interest Rate Decision',
+            'Non-Farm Payrolls',
+            'CPI Release',
+            'GDP Report',
+            'Earnings Announcement',
+            'FOMC Meeting'
+        ]
+
+        upcoming_events = []
+        for i in range(random.randint(1, 4)):
+            event_date = datetime.now() + timedelta(days=random.randint(0, 7))
+            upcoming_events.append({
+                'event': random.choice(events),
+                'date': event_date.strftime('%Y-%m-%d'),
+                'time': f"{random.randint(8, 16):02d}:{random.choice(['00', '30'])}",
+                'importance': random.choice(['High', 'Medium', 'Low']),
+                'expected_impact': random.choice(['Bullish', 'Bearish', 'Neutral'])
+            })
+
+        return upcoming_events
+
+    def _get_market_session(self) -> dict:
+        """Determine current market session."""
+        from datetime import datetime
+
+        now = datetime.now().time()
+        current_time = now.strftime('%H:%M')
+
+        if '04:00' <= current_time < '09:30':
+            session = 'Pre-Market'
+        elif '09:30' <= current_time < '16:00':
+            session = 'Regular Hours'
+        elif '16:00' <= current_time < '20:00':
+            session = 'After Hours'
+        else:
+            session = 'Closed'
+
+        return {
+            'current_session': session,
+            'next_open': '09:30' if session == 'Closed' else None,
+            'time_to_close': '16:00' if session == 'Regular Hours' else None
+        }
+
+    def _calculate_volatility_context(self, data: dict) -> dict:
+        """Calculate volatility context."""
+        import random
+
+        return {
+            'current_volatility': round(random.uniform(0.1, 0.8), 3),
+            'volatility_percentile': random.randint(1, 99),
+            'volatility_trend': random.choice(['Increasing', 'Decreasing', 'Stable']),
+            'implied_volatility': round(random.uniform(0.15, 0.6), 3)
+        }
+
+    def _analyze_trend_context(self, data: dict) -> dict:
+        """Analyze trend context."""
+        import random
+
+        return {
+            'short_term_trend': random.choice(['Bullish', 'Bearish', 'Neutral']),
+            'medium_term_trend': random.choice(['Bullish', 'Bearish', 'Neutral']),
+            'long_term_trend': random.choice(['Bullish', 'Bearish', 'Neutral']),
+            'trend_strength': round(random.uniform(0.1, 1.0), 2),
+            'support_levels': [round(data.get('price', 100) * random.uniform(0.95, 0.99), 2) for _ in range(2)],
+            'resistance_levels': [round(data.get('price', 100) * random.uniform(1.01, 1.05), 2) for _ in range(2)]
+        }
+
+    def _is_cached(self, symbol: str) -> bool:
+        """Check if market data is cached and still valid."""
+        if symbol not in self.cache:
+            return False
+        return time.time() - self.last_update[symbol] < self.cache_expiry
+
+    def _simulate_market_data(self, symbol: str) -> dict:
+        """Simulate real-time market data (replace with real API)."""
+        import random
+
+        price = round(random.uniform(50, 200), 2)
+        volume = random.randint(100000, 1000000)
+
+        return {
+            'symbol': symbol,
+            'price': price,
+            'volume': volume,
+            'timestamp': datetime.now().isoformat(),
+            'bid': round(price * 0.995, 2),
+            'ask': round(price * 1.005, 2),
+            'high': round(price * random.uniform(1.01, 1.03), 2),
+            'low': round(price * random.uniform(0.97, 0.99), 2),
+            'open': round(price * random.uniform(0.98, 1.02), 2),
+            'prev_close': round(price * random.uniform(0.98, 1.02), 2)
+        }
+
 # Global service instance
 market_service = RealTimeMarketService()
+import time
+@dataclass
+class MarketData:
+    symbol: str
+    price: float
+    change: float
+    change_percent: float
+    volume: int
+    timestamp: datetime
+    market_cap: int
+    pe_ratio: float
+
+@dataclass
+class MarketSentiment:
+    fear_greed_index: int
+    vix: float
+    trending_symbols: List[str]
+    sector_performance: Dict[str, float]
+    market_regime: str

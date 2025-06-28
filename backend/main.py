@@ -23,9 +23,16 @@ except Exception as e:
 # Import routers
 try:
     from backend.api.v1.auth.router import router as auth_router
+    print("✅ Auth router imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import auth router: {e}")
-    auth_router = None
+    # Create a simple fallback router
+    from fastapi import APIRouter
+    auth_router = APIRouter()
+    
+    @auth_router.get("/auth/status")
+    async def auth_status():
+        return {"status": "Auth service temporarily unavailable", "fallback": True}
 from backend.api.v1.trades.router import router as trades_router
 from backend.api.v1.analytics.router import router as analytics_router
 from backend.api.v1.uploads.router import router as uploads_router

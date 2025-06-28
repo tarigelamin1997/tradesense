@@ -1,20 +1,18 @@
+
 import React, { StrictMode, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Provider } from 'react-redux';
-import { store } from './store';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { AuthWrapper } from './components/AuthWrapper';
 import { AppLayout } from './components/layout/AppLayout';
-import { DevTools, PerformanceMonitor } from './components/DevTools';
 import './styles/mobile.css';
 
 // Lazy load pages for better performance
-const DashboardPage = React.lazy(() => import('./features/dashboard/pages/DashboardPage'));
-const AnalyticsPage = React.lazy(() => import('./features/analytics/pages/AnalyticsPage'));
-const UploadPage = React.lazy(() => import('./features/upload/pages/UploadPage'));
-const LoginPage = React.lazy(() => import('./features/auth/pages/LoginPage'));
+const DashboardPage = lazy(() => import('./features/dashboard/pages/DashboardPage'));
+const AnalyticsPage = lazy(() => import('./features/analytics/pages/AnalyticsPage'));
+const UploadPage = lazy(() => import('./features/upload/pages/UploadPage'));
+const LoginPage = lazy(() => import('./features/auth/pages/LoginPage'));
+const ProfilePage = lazy(() => import('./features/auth/pages/ProfilePage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,45 +24,43 @@ const queryClient = new QueryClient({
   }
 });
 
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+    <span className="ml-3 text-gray-600">Loading...</span>
+  </div>
+);
+
 function App() {
   return (
     <StrictMode>
       <ErrorBoundary>
-        <Provider store={store}>
-          <QueryClientProvider client={queryClient}>
-            <PerformanceMonitor>
-              <Router>
-                <AppLayout>
-                  <Routes>
-                    <Route path="/login" element={
-                      <React.Suspense fallback={<div className="flex justify-center items-center h-64">Loading...</div>}>
-                        <LoginPage />
-                      </React.Suspense>
-                    } />
-                    <Route path="/" element={<AuthWrapper />}>
-                      <Route index element={
-                        <React.Suspense fallback={<div className="flex justify-center items-center h-64">Loading...</div>}>
-                          <DashboardPage />
-                        </React.Suspense>
-                      } />
-                      <Route path="analytics" element={
-                        <React.Suspense fallback={<div className="flex justify-center items-center h-64">Loading...</div>}>
-                          <AnalyticsPage />
-                        </React.Suspense>
-                      } />
-                      <Route path="upload" element={
-                        <React.Suspense fallback={<div className="flex justify-center items-center h-64">Loading...</div>}>
-                          <UploadPage />
-                        </React.Suspense>
-                      } />
-                    </Route>
-                  </Routes>
-                </AppLayout>
-              </Router>
-              <DevTools />
-            </PerformanceMonitor>
-          </QueryClientProvider>
-        </Provider>
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            <AppLayout>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/upload" element={<UploadPage />} />
+                  <Route path="*" element={
+                    <div className="flex justify-center items-center h-64">
+                      <div className="text-center">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Page Not Found</h2>
+                        <p className="text-gray-600">The page you're looking for doesn't exist.</p>
+                      </div>
+                    </div>
+                  } />
+                </Routes>
+              </Suspense>
+            </AppLayout>
+          </Router>
+          {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
+        </QueryClientProvider>
       </ErrorBoundary>
     </StrictMode>
   );

@@ -31,6 +31,7 @@ logging.basicConfig(
         logging.FileHandler('logs/backend.log'),
         logging.StreamHandler()
     ]
+)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app

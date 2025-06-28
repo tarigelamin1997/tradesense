@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -8,33 +7,46 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   height?: string;
+  enablePreview?: boolean;
+  enableImageUpload?: boolean;
+}
+
+interface ToolbarButton {
+  icon: string;
+  label: string;
+  action: () => void;
+  shortcut?: string;
 }
 
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   value,
   onChange,
   placeholder = "Start writing your trading notes...",
-  height = "400px"
+  height = "400px",
+  enablePreview = true,
+  enableImageUpload = true
 }) => {
   const [isPreview, setIsPreview] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
-  const insertText = useCallback((before: string, after: string = '') => {
+  const insertText = useCallback((before: string, after: string = '', placeholder: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    
-    const newValue = 
-      value.substring(0, start) + 
-      before + selectedText + after + 
+    const selectedText = value.substring(start, end) || placeholder;
+
+    const newValue =
+      value.substring(0, start) +
+      before + selectedText + after +
       value.substring(end);
-    
+
     onChange(newValue);
-    
+
     // Restore cursor position
     setTimeout(() => {
       textarea.focus();
@@ -125,6 +137,100 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     return html;
   };
 
+    const templates = [
+    {
+      name: 'Trade Review',
+      content: `# Trade Review - [Date]
+
+## Trade Setup
+- **Symbol**: 
+- **Entry**: $
+- **Exit**: $
+- **Size**: 
+- **Strategy**: 
+
+## What Went Well
+- 
+
+## What Could Improve
+- 
+
+## Key Learnings
+- 
+
+## Emotional State
+**Before Trade**: 
+**During Trade**: 
+**After Trade**: 
+
+## Next Actions
+- `
+    },
+    {
+      name: 'Daily Journal',
+      content: `# Daily Trading Journal - [Date]
+
+## Market Overview
+- **Market Sentiment**: 
+- **Key Economic Events**: 
+- **Sector Performance**: 
+
+## Today's Trades
+### Trade 1: [Symbol]
+- **Setup**: 
+- **Execution**: 
+- **Result**: 
+
+## Lessons Learned
+- 
+
+## Tomorrow's Plan
+- **Watchlist**: 
+- **Strategies to Focus**: 
+- **Risk Management**: 
+
+## Mood & Psychology
+**Morning**: 
+**End of Day**: `
+    },
+    {
+      name: 'Weekly Review',
+      content: `# Weekly Trading Review
+
+## Performance Summary
+- **Total P&L**: $
+- **Win Rate**: %
+- **Best Trade**: 
+- **Worst Trade**: 
+
+## Strategy Performance
+| Strategy | Trades | Win Rate | P&L |
+|----------|--------|----------|-----|
+|          |        |          |     |
+
+## Key Insights
+1. 
+2. 
+3. 
+
+## Areas for Improvement
+- 
+
+## Goals for Next Week
+- `
+    }
+  ];
+
+    const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      // In a real implementation, you'd upload to a server
+      // For now, we'll simulate with a placeholder
+      const imageUrl = `![${file.name}](image-placeholder-${file.name})`;
+      insertText(imageUrl, '', '');
+    }
+  }, [insertText]);
+
   return (
     <Card className="overflow-hidden">
       {/* Toolbar */}
@@ -142,7 +248,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               </button>
             ))}
           </div>
-          
+
           <div className="flex rounded-lg bg-gray-200 p-1">
             <button
               onClick={() => setSelectedTab('write')}
@@ -190,6 +296,52 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           </div>
         )}
       </div>
+
+            {/* Templates dropdown */}
+        {showTemplates && (
+          <div className="absolute z-10 mt-2 w-64 bg-white border rounded-lg shadow-lg">
+            <div className="p-2">
+              <div className="text-sm font-medium text-gray-700 mb-2">Choose a template:</div>
+              {templates.map((template, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    onChange(template.content);
+                    setShowTemplates(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                >
+                  {template.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+            {enableImageUpload && (
+              <>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-100 flex items-center gap-1"
+                >
+                  🖼️ Image
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </>
+            )}
+
+            <button
+              onClick={() => setShowTemplates(!showTemplates)}
+              className="px-3 py-1 text-sm border rounded hover:bg-gray-100"
+            >
+              📋 Templates
+            </button>
 
       {/* Footer with tips */}
       <div className="border-t border-gray-200 bg-gray-50 px-4 py-2">

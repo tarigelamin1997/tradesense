@@ -558,3 +558,24 @@ args = "echo \"  3. Enhance Journal Markdown Editor (25% remaining)\" "
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"  4. Finalize DevOps Automation (40% remaining)\""
+
+[[workflows.workflow]]
+name = "Backend Infrastructure Fix"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 Phase 1: Initialize Database...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && python initialize_db.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Phase 2: Start Backend Server...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && python main.py"

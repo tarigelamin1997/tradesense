@@ -270,6 +270,30 @@ def find_longest_streak(trades_data: List[Dict], streak_type: str = 'winning') -
 
     return max_streak
 
+def calculate_average_duration(trades_data: List[Dict]) -> float:
+    """Calculate average trade duration in hours."""
+    if not trades_data:
+        return 0.0
+    
+    durations = []
+    for trade in trades_data:
+        entry_time = trade.get('entry_time')
+        exit_time = trade.get('exit_time')
+        
+        if entry_time and exit_time:
+            try:
+                if isinstance(entry_time, str):
+                    entry_time = pd.to_datetime(entry_time)
+                if isinstance(exit_time, str):
+                    exit_time = pd.to_datetime(exit_time)
+                
+                duration = (exit_time - entry_time).total_seconds() / 3600  # Convert to hours
+                durations.append(duration)
+            except:
+                continue
+    
+    return sum(durations) / len(durations) if durations else 0.0
+
 def calculate_streak_statistics(trades_data: List[Dict]) -> Dict:
     """Calculate comprehensive streak statistics."""
     if not trades_data:

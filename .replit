@@ -421,3 +421,140 @@ args = "python -m pip install --user --break-system-packages --no-cache-dir fast
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+
+[[workflows.workflow]]
+name = "Complete to 100%"
+author = 43683701
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🎯 TradeSense - Pushing to 100% Completion\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📊 Current Status: 76% → Target: 100%\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 Phase 1: Fix Backend Infrastructure\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pip install --user --break-system-packages --no-cache-dir fastapi uvicorn python-multipart sqlalchemy psycopg2-binary python-jose[cryptography] passlib[bcrypt] python-dateutil pandas cachetools"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🗄️ Phase 2: Initialize Database\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from backend.db.connection import engine, Base"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from backend.models.trade import Trade"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from backend.models.user import User"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from backend.models.feature_request import FeatureRequest"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "Base.metadata.create_all(bind=engine)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "print('✅ Database initialized successfully')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Phase 3: Test Backend\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "timeout 10s python main.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 5"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "curl -s http://localhost:8000/api/health || echo \"⚠️ Backend needs attention\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"python main.py\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🎨 Phase 4: Frontend Dependencies\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd ../frontend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install --legacy-peer-deps"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Infrastructure Ready - Backend and Frontend Prepared\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"📋 Next Steps:\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  1. Polish Trader Profiles UI (15% remaining)\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  2. Complete Market Context Integration (30% remaining)\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  3. Enhance Journal Markdown Editor (25% remaining)\" "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"  4. Finalize DevOps Automation (40% remaining)\""

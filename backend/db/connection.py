@@ -1,4 +1,3 @@
-
 import os
 import logging
 from contextlib import contextmanager
@@ -92,7 +91,7 @@ def get_db_context():
 
 class DatabaseManager:
     """Database management utilities"""
-    
+
     @staticmethod
     def health_check() -> bool:
         """Check database health"""
@@ -103,17 +102,17 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Database health check failed: {e}")
             return False
-    
+
     @staticmethod
     def get_stats() -> dict:
         """Get database statistics"""
         try:
             with get_db_context() as db:
                 from backend.models.trade import Trade
-                
+
                 total_trades = db.query(Trade).count()
                 unique_users = db.query(Trade.user_id).distinct().count()
-                
+
                 return {
                     "total_trades": total_trades,
                     "unique_users": unique_users,
@@ -123,14 +122,14 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Failed to get database stats: {e}")
             return {"error": str(e)}
-    
+
     @staticmethod
     def backup_database(backup_path: str = None) -> bool:
         """Backup SQLite database"""
         if not DATABASE_URL.startswith("sqlite"):
             logger.warning("Backup only supported for SQLite databases")
             return False
-        
+
         try:
             import shutil
             source_path = DATABASE_URL.replace("sqlite:///", "")
@@ -138,7 +137,7 @@ class DatabaseManager:
                 from datetime import datetime
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 backup_path = f"{source_path}.backup_{timestamp}"
-            
+
             shutil.copy2(source_path, backup_path)
             logger.info(f"Database backed up to: {backup_path}")
             return True

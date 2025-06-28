@@ -4,76 +4,163 @@
 set -e
 
 echo "🔄 TradeSense Rollback Script"
-echo "============================="
+echo "============================"
 
 # Configuration
-ENVIRONMENT=${1:-staging}
-TARGET_VERSION=${2}
+DATABASE_BACKUP_DIR="./backups"
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
 
-if [ -z "$TARGET_VERSION" ]; then
-    echo "❌ Error: Target version required"
-    echo "Usage: ./rollback.sh [environment] [version]"
-    exit 1
-fi
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
 
-echo "Environment: $ENVIRONMENT"
-echo "Rolling back to version: $TARGET_VERSION"
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
 
-# Confirmation prompt for production
-if [ "$ENVIRONMENT" = "production" ]; then
-    echo "⚠️  WARNING: You are about to rollback PRODUCTION!"
-    read -p "Type 'CONFIRM' to proceed: " confirmation
-    if [ "$confirmation" != "CONFIRM" ]; then
-        echo "Rollback cancelled."
-        exit 1
-    fi
-fi
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 # Stop current services
-echo "🛑 Stopping current services..."
-pkill -f "uvicorn\|npm\|node" || true
-
-# Checkout target version
-echo "📦 Checking out version $TARGET_VERSION..."
-git fetch --all
-git checkout $TARGET_VERSION
-
-# Restore database backup
-echo "📊 Restoring database..."
-# Add database restore logic here
-
-# Reinstall dependencies
-echo "📦 Installing dependencies..."
-cd backend && pip install -r requirements.txt && cd ..
-cd frontend && npm install && cd ..
-
-# Rebuild frontend
-echo "🔨 Building frontend..."
-cd frontend && npm run build && cd ..
-
-# Start services
-echo "🚀 Starting services..."
-# Add service start commands here
-
-# Health check
-echo "🏥 Running health checks..."
-sleep 10
-
-curl -f http://localhost:8000/health || {
-    echo "❌ Backend health check failed"
-    exit 1
+stop_services() {
+    log_info "Stopping current services..."
+    
+    if [ -f ".backend.pid" ]; then
+        BACKEND_PID=$(cat .backend.pid)
+        kill $BACKEND_PID 2>/dev/null || true
+        rm .backend.pid
+        log_info "Backend stopped (PID: $BACKEND_PID)"
+    fi
+    
+    if [ -f ".frontend.pid" ]; then
+        FRONTEND_PID=$(cat .frontend.pid)
+        kill $FRONTEND_PID 2>/dev/null || true
+        rm .frontend.pid
+        log_info "Frontend stopped (PID: $FRONTEND_PID)"
+    fi
+    
+    # Fallback: kill all related processes
+    pkill -f "python.*main.py" || true
+    pkill -f "npm.*dev" || true
+    
+    log_info "Services stopped ✓"
 }
 
-curl -f http://localhost:3000 || {
-    echo "❌ Frontend health check failed"
-    exit 1
+# List available backups
+list_backups() {
+    log_info "Available database backups:"
+    if [ -d "$DATABASE_BACKUP_DIR" ]; then
+        ls -la $DATABASE_BACKUP_DIR/*.db 2>/dev/null || log_warn "No backups found"
+    else
+        log_warn "Backup directory not found"
+    fi
 }
 
-echo "✅ Rollback to $TARGET_VERSION completed successfully!"
+# Restore database from backup
+restore_database() {
+    local backup_file=$1
+    
+    if [ -z "$backup_file" ]; then
+        log_error "Backup file not specified"
+        list_backups
+        read -p "Enter backup filename: " backup_file
+    fi
+    
+    if [ ! -f "$DATABASE_BACKUP_DIR/$backup_file" ]; then
+        log_error "Backup file not found: $DATABASE_BACKUP_DIR/$backup_file"
+        exit 1
+    fi
+    
+    log_info "Restoring database from backup: $backup_file"
+    cp "$DATABASE_BACKUP_DIR/$backup_file" "backend/tradesense.db"
+    log_info "Database restored ✓"
+}
 
-# Send notification
-if [ -n "$SLACK_WEBHOOK" ]; then
-    curl -X POST -H 'Content-type: application/json' \
-        --data "{\"text\":\"🔄 TradeSense rolled back to $TARGET_VERSION in $ENVIRONMENT\"}" \
-        $SLACK_WEBHOOK
-fi
+# Git rollback
+git_rollback() {
+    local commit_hash=$1
+    
+    if [ -z "$commit_hash" ]; then
+        log_info "Recent commits:"
+        git log --oneline -10
+        read -p "Enter commit hash to rollback to: " commit_hash
+    fi
+    
+    log_info "Rolling back to commit: $commit_hash"
+    git checkout $commit_hash
+    log_info "Git rollback completed ✓"
+}
+
+# Full rollback
+full_rollback() {
+    log_warn "This will stop services, restore database, and rollback code"
+    read -p "Are you sure? (y/N): " confirm
+    
+    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+        log_info "Rollback cancelled"
+        exit 0
+    fi
+    
+    stop_services
+    
+    log_info "Available options:"
+    echo "1. Restore database only"
+    echo "2. Git rollback only"
+    echo "3. Both database and git rollback"
+    read -p "Choose option (1-3): " option
+    
+    case $option in
+        1)
+            list_backups
+            read -p "Enter backup filename: " backup_file
+            restore_database "$backup_file"
+            ;;
+        2)
+            git_rollback
+            ;;
+        3)
+            list_backups
+            read -p "Enter backup filename: " backup_file
+            restore_database "$backup_file"
+            git_rollback
+            ;;
+        *)
+            log_error "Invalid option"
+            exit 1
+            ;;
+    esac
+    
+    log_info "Rollback completed. Run deploy.sh to restart services."
+}
+
+# Handle command line arguments
+case "$1" in
+    "stop")
+        stop_services
+        ;;
+    "list")
+        list_backups
+        ;;
+    "restore")
+        restore_database "$2"
+        ;;
+    "git")
+        git_rollback "$2"
+        ;;
+    "full")
+        full_rollback
+        ;;
+    *)
+        echo "Usage: $0 [stop|list|restore|git|full]"
+        echo "  stop           - Stop running services"
+        echo "  list           - List available database backups"
+        echo "  restore <file> - Restore database from backup"
+        echo "  git <hash>     - Rollback to git commit"
+        echo "  full           - Interactive full rollback"
+        exit 1
+        ;;
+esac

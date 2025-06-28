@@ -10,6 +10,45 @@ from backend.models.user import User
 
 router = APIRouter(prefix="/market-data", tags=["market-data"])
 
+@router.get("/quotes")
+async def get_market_quotes(symbols: str) -> Dict[str, MarketData]:
+    """Get real-time quotes for symbols (comma-separated)"""
+    try:
+        symbol_list = [s.strip().upper() for s in symbols.split(",")]
+        async with market_service as service:
+            return await service.get_market_data(symbol_list)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching market data: {str(e)}")
+
+@router.get("/sentiment")
+async def get_market_sentiment() -> MarketSentiment:
+    """Get overall market sentiment indicators"""
+    try:
+        async with market_service as service:
+            return await service.get_market_sentiment()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching market sentiment: {str(e)}")
+
+@router.get("/economic-calendar")
+async def get_economic_calendar(days_ahead: int = 7) -> List[Dict[str, Any]]:
+    """Get upcoming economic events"""
+    try:
+        async with market_service as service:
+            return await service.get_economic_calendar(days_ahead)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching economic calendar: {str(e)}")
+
+@router.get("/context-tags/{trade_timestamp}")
+async def get_market_context_tags(trade_timestamp: str) -> List[str]:
+    """Get market context tags for a specific trade time"""
+    try:
+        from datetime import datetime
+        trade_time = datetime.fromisoformat(trade_timestamp.replace('Z', '+00:00'))
+        async with market_service as service:
+            return service.get_market_context_tags(trade_time)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating context tags: {str(e)}")
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []

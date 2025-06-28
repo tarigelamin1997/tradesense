@@ -21,8 +21,7 @@ from backend.analytics.performance import (
 )
 from backend.analytics.equity import calculate_max_drawdown
 from backend.analytics.streaks import (
-    find_longest_streak,
-    calculate_average_duration
+    find_longest_streak
 )
 from backend.analytics.filters import filter_trades_by_symbol
 from backend.analytics.utils import safe_divide, calculate_percentage

@@ -6,6 +6,7 @@ import { AuthWrapper } from './components/AuthWrapper';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DevToolsToggle } from './components/DevTools';
 import { performanceMonitor } from './utils/performance';
+import PerformanceMonitor from './components/PerformanceMonitor';
 
 // Lazy load pages for better performance
 const DashboardPage = React.lazy(() => import('./features/dashboard/pages/DashboardPage'));
@@ -53,7 +54,7 @@ function App() {
             </React.Suspense>
             <DevToolsToggle />
           </Router>
-        </Provider>
+          <PerformanceMonitor />
       </ErrorBoundary>
     </React.StrictMode>
   );

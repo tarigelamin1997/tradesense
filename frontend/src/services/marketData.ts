@@ -1,109 +1,87 @@
-
 import { api } from './api';
 
-export interface MarketDataSubscription {
-  symbol: string;
-  provider: string;
-  subscribed_at: string;
-  last_update: string | null;
-}
-
-export interface MarketData {
+export interface MarketQuote {
   symbol: string;
   price: number;
   change: number;
   change_percent: number;
   volume: number;
-  market_cap: number;
-  pe_ratio: number;
-  fifty_two_week_high: number;
-  fifty_two_week_low: number;
-  market_state: string;
+  timestamp: string;
+  source: string;
+}
+
+export interface MarketSentiment {
+  symbol: string;
+  sentiment_score: number;
+  sentiment_label: string;
+  news_count: number;
+  volatility: number;
+  rsi: number;
+  ma_signal: string;
+  timestamp: string;
 }
 
 export interface MarketContext {
   symbol: string;
-  trade_time: string;
-  market_price_at_analysis: number;
-  market_state: string;
-  volume: number;
-  volatility_indicator: string;
-  market_trend: string;
-  support_resistance: {
-    support: number;
-    resistance: number;
-    current_price: number;
-    distance_to_support: number;
-    distance_to_resistance: number;
-  };
-}
-
-export interface TimingAnalysis {
-  symbol: string;
-  entry_time: string;
-  market_context: MarketContext;
-  timing_analysis: {
-    market_volatility: string;
-    market_trend: string;
-    timing_score: number;
-    recommendations: string[];
+  timestamp: string;
+  context: {
+    market_price?: number;
+    market_change?: number;
+    market_volume?: number;
+    sentiment_score?: number;
+    volatility?: number;
+    rsi?: number;
+    ma_signal?: string;
   };
 }
 
 export const marketDataService = {
-  async subscribeToSymbol(symbol: string, provider: string = 'yahoo_finance') {
-    const response = await api.get(`/market-data/subscribe/${symbol}?provider=${provider}`);
+  async getQuote(symbol: string, apiKey?: string): Promise<MarketQuote> {
+    const params = new URLSearchParams();
+    if (apiKey) params.append('api_key', apiKey);
+
+    const response = await api.get(`/market-data/quote/${symbol}?${params}`);
     return response.data;
   },
 
-  async unsubscribeFromSymbol(symbol: string) {
-    const response = await api.get(`/market-data/unsubscribe/${symbol}`);
+  async getBatchQuotes(symbols: string, apiKey?: string): Promise<{ quotes: MarketQuote[] }> {
+    const params = new URLSearchParams({ symbols });
+    if (apiKey) params.append('api_key', apiKey);
+
+    const response = await api.get(`/market-data/quotes/batch?${params}`);
     return response.data;
   },
 
-  async getMarketData(symbol: string) {
-    const response = await api.get(`/market-data/data/${symbol}`);
+  async getMarketSentiment(symbol: string): Promise<MarketSentiment> {
+    const response = await api.get(`/market-data/sentiment/${symbol}`);
     return response.data;
   },
 
-  async getActiveSubscriptions(): Promise<{ success: boolean; subscriptions: Record<string, MarketDataSubscription>; count: number }> {
-    const response = await api.get('/market-data/subscriptions');
+  async getWatchlist(): Promise<{ watchlist: MarketQuote[] }> {
+    const response = await api.get('/market-data/watchlist');
     return response.data;
   },
 
-  async getMarketContext(symbol: string, tradeTime?: string): Promise<{ success: boolean; context: MarketContext }> {
-    const params = tradeTime ? `?trade_time=${tradeTime}` : '';
-    const response = await api.get(`/market-data/context/${symbol}${params}`);
+  async addToWatchlist(symbol: string): Promise<{ message: string }> {
+    const response = await api.post(`/market-data/watchlist/${symbol}`);
     return response.data;
   },
 
-  async analyzeTradeTimingn(tradeData: { symbol: string; entry_time: string }): Promise<{ success: boolean; analysis: TimingAnalysis }> {
-    const response = await api.post('/market-data/analyze-trade-timing', tradeData);
+  async removeFromWatchlist(symbol: string): Promise<{ message: string }> {
+    const response = await api.delete(`/market-data/watchlist/${symbol}`);
     return response.data;
   },
 
-  // Utility functions
-  formatPrice(price: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(price);
+  async getMarketContext(symbol: string, timestamp?: string): Promise<MarketContext> {
+    const params = new URLSearchParams();
+    if (timestamp) params.append('timestamp', timestamp);
+
+    const response = await api.get(`/market-data/context/${symbol}?${params}`);
+    return response.data;
   },
 
-  formatVolume(volume: number): string {
-    if (volume >= 1000000) {
-      return `${(volume / 1000000).toFixed(1)}M`;
-    } else if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}K`;
-    }
-    return volume.toString();
-  },
-
-  getChangeColor(change: number): string {
-    if (change > 0) return 'text-green-600';
-    if (change < 0) return 'text-red-600';
-    return 'text-gray-600';
+  async getHealthStatus(): Promise<{ status: string; message: string; timestamp: string }> {
+    const response = await api.get('/market-data/health');
+    return response.data;
   }
 };

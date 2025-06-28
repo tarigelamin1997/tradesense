@@ -1,162 +1,104 @@
+import React, { useEffect, useRef } from 'react';
+import { getCLS, getFCP, getFID, getLCP, getTTFB } from 'web-vitals';
 
-import React, { useEffect, useState } from 'react';
-import { performanceMonitor } from '../utils/performance';
-
-interface PerformanceData {
-  CLS: number;
-  FID: number;
-  FCP: number;
-  LCP: number;
-  TTFB: number;
-  routeChange: number;
-  apiResponse: number;
-  componentRender: number;
+interface PerformanceMonitorProps {
+  children: React.ReactNode;
 }
 
-const PerformanceMonitor: React.FC = () => {
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
+interface VitalMetric {
+  name: string;
+  value: number;
+  rating: 'good' | 'needs-improvement' | 'poor';
+  timestamp: number;
+}
+
+const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => {
+  const metricsRef = useRef<VitalMetric[]>([]);
+
+  const logMetric = (metric: any) => {
+    const vitalMetric: VitalMetric = {
+      name: metric.name,
+      value: metric.value,
+      rating: metric.rating,
+      timestamp: Date.now(),
+    };
+
+    metricsRef.current.push(vitalMetric);
+
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📊 Web Vital: ${metric.name}`, {
+        value: `${Math.round(metric.value)}ms`,
+        rating: metric.rating,
+        threshold: getThreshold(metric.name, metric.rating),
+      });
+    }
+
+    // Send to analytics in production
+    if (process.env.NODE_ENV === 'production') {
+      // You can integrate with your analytics service here
+      // Example: gtag('event', 'web_vital', { name: metric.name, value: metric.value });
+    }
+  };
+
+  const getThreshold = (name: string, rating: string) => {
+    const thresholds: Record<string, Record<string, string>> = {
+      CLS: { good: '< 0.1', poor: '≥ 0.25' },
+      FCP: { good: '< 1.8s', poor: '≥ 3.0s' },
+      FID: { good: '< 100ms', poor: '≥ 300ms' },
+      LCP: { good: '< 2.5s', poor: '≥ 4.0s' },
+      TTFB: { good: '< 800ms', poor: '≥ 1800ms' },
+    };
+    return thresholds[name]?.[rating] || 'unknown';
+  };
 
   useEffect(() => {
-    // Update performance data every 5 seconds in development
-    if (process.env.NODE_ENV === 'development') {
-      const interval = setInterval(() => {
-        const vitals = {
-          CLS: performanceMonitor.getAverageMetric('CLS'),
-          FID: performanceMonitor.getAverageMetric('FID'),
-          FCP: performanceMonitor.getAverageMetric('FCP'),
-          LCP: performanceMonitor.getAverageMetric('LCP'),
-          TTFB: performanceMonitor.getAverageMetric('TTFB'),
-          routeChange: performanceMonitor.getAverageMetric('route-change'),
-          apiResponse: performanceMonitor.getAverageMetric('api-response'),
-          componentRender: performanceMonitor.getAverageMetric('component-render')
-        };
-        setPerformanceData(vitals);
-      }, 5000);
+    // Measure Core Web Vitals
+    getCLS(logMetric);
+    getFCP(logMetric);
+    getFID(logMetric);
+    getLCP(logMetric);
+    getTTFB(logMetric);
 
-      return () => clearInterval(interval);
+    // Monitor resource loading
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.entryType === 'navigation') {
+          const navigation = entry as PerformanceNavigationTiming;
+          console.log('🚀 Navigation Timing:', {
+            domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.navigationStart),
+            loadComplete: Math.round(navigation.loadEventEnd - navigation.navigationStart),
+            firstByte: Math.round(navigation.responseStart - navigation.navigationStart),
+          });
+        }
+      });
+    });
+
+    observer.observe({ entryTypes: ['navigation'] });
+
+    // Memory usage monitoring (if available)
+    if ('memory' in performance) {
+      const memoryInfo = (performance as any).memory;
+      console.log('💾 Memory Usage:', {
+        used: `${Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024)}MB`,
+        total: `${Math.round(memoryInfo.totalJSHeapSize / 1024 / 1024)}MB`,
+        limit: `${Math.round(memoryInfo.jsHeapSizeLimit / 1024 / 1024)}MB`,
+      });
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Expose metrics to global for debugging
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      (window as any).getPerformanceMetrics = () => metricsRef.current;
     }
   }, []);
 
-  const getRatingColor = (value: number, type: string): string => {
-    const thresholds: Record<string, [number, number]> = {
-      CLS: [0.1, 0.25],
-      FID: [100, 300],
-      FCP: [1800, 3000],
-      LCP: [2500, 4000],
-      TTFB: [800, 1800],
-      routeChange: [1000, 2500],
-      apiResponse: [200, 1000],
-      componentRender: [16, 50]
-    };
-
-    const [good, poor] = thresholds[type] || [100, 300];
-    
-    if (value <= good) return 'text-green-600';
-    if (value <= poor) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const formatValue = (value: number, type: string): string => {
-    if (type === 'CLS') return value.toFixed(3);
-    return `${Math.round(value)}ms`;
-  };
-
-  if (process.env.NODE_ENV !== 'development' || !performanceData) {
-    return null;
-  }
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <button
-        onClick={() => setIsVisible(!isVisible)}
-        className="bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
-      >
-        📊 Performance
-      </button>
-      
-      {isVisible && (
-        <div className="absolute bottom-12 right-0 bg-white shadow-xl rounded-lg p-4 w-80 border">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-semibold text-gray-800">Performance Metrics</h3>
-            <button
-              onClick={() => setIsVisible(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          </div>
-          
-          <div className="space-y-2 text-sm">
-            <div className="border-b pb-2 mb-2">
-              <h4 className="font-medium text-gray-700 mb-1">Web Vitals</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex justify-between">
-                  <span>CLS:</span>
-                  <span className={getRatingColor(performanceData.CLS, 'CLS')}>
-                    {formatValue(performanceData.CLS, 'CLS')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>FID:</span>
-                  <span className={getRatingColor(performanceData.FID, 'FID')}>
-                    {formatValue(performanceData.FID, 'FID')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>FCP:</span>
-                  <span className={getRatingColor(performanceData.FCP, 'FCP')}>
-                    {formatValue(performanceData.FCP, 'FCP')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>LCP:</span>
-                  <span className={getRatingColor(performanceData.LCP, 'LCP')}>
-                    {formatValue(performanceData.LCP, 'LCP')}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-gray-700 mb-1">Custom Metrics</h4>
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span>Route Change:</span>
-                  <span className={getRatingColor(performanceData.routeChange, 'routeChange')}>
-                    {formatValue(performanceData.routeChange, 'routeChange')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>API Response:</span>
-                  <span className={getRatingColor(performanceData.apiResponse, 'apiResponse')}>
-                    {formatValue(performanceData.apiResponse, 'apiResponse')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Component Render:</span>
-                  <span className={getRatingColor(performanceData.componentRender, 'componentRender')}>
-                    {formatValue(performanceData.componentRender, 'componentRender')}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <button
-              onClick={() => {
-                const report = performanceMonitor.generateReport();
-                console.log('Performance Report:', report);
-                navigator.clipboard?.writeText(report);
-              }}
-              className="w-full mt-3 bg-gray-100 text-gray-700 py-2 px-3 rounded text-xs hover:bg-gray-200 transition-colors"
-            >
-              Copy Report to Clipboard
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <>{children}</>;
 };
 
 export default PerformanceMonitor;

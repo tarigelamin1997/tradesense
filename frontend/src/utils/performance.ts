@@ -404,3 +404,101 @@ class PerformanceMonitor {
 
 export const performanceMonitor = new PerformanceMonitor();
 export default performanceMonitor;
+/**
+ * Performance measurement utilities for TradeSense
+ */
+
+// Performance measurement wrapper for components
+export const measureRender = <T extends any[], R>(
+  fn: (...args: T) => R,
+  name: string
+) => {
+  return (...args: T): R => {
+    const start = performance.now();
+    const result = fn(...args);
+    const end = performance.now();
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`⚡ ${name} render time: ${(end - start).toFixed(2)}ms`);
+    }
+    
+    return result;
+  };
+};
+
+// Debounce utility for performance optimization
+export const debounce = <T extends any[]>(
+  func: (...args: T) => void,
+  delay: number
+) => {
+  let timeoutId: NodeJS.Timeout;
+  
+  return (...args: T): void => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
+// Throttle utility for scroll/resize events
+export const throttle = <T extends any[]>(
+  func: (...args: T) => void,
+  limit: number
+) => {
+  let inThrottle: boolean;
+  
+  return (...args: T): void => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+};
+
+// Memory usage tracker
+export const trackMemoryUsage = () => {
+  if ('memory' in performance) {
+    const memory = (performance as any).memory;
+    return {
+      used: Math.round(memory.usedJSHeapSize / 1024 / 1024),
+      total: Math.round(memory.totalJSHeapSize / 1024 / 1024),
+      limit: Math.round(memory.jsHeapSizeLimit / 1024 / 1024)
+    };
+  }
+  return null;
+};
+
+// Bundle size analyzer helper
+export const logBundleSize = () => {
+  if (process.env.NODE_ENV === 'development') {
+    const scripts = Array.from(document.querySelectorAll('script[src]'));
+    scripts.forEach(script => {
+      const src = (script as HTMLScriptElement).src;
+      if (src.includes('chunk') || src.includes('vendor')) {
+        console.log(`📦 Bundle: ${src.split('/').pop()}`);
+      }
+    });
+  }
+};
+
+// Performance observer for navigation timing
+export const observeNavigationTiming = () => {
+  const observer = new PerformanceObserver((list) => {
+    list.getEntries().forEach((entry) => {
+      if (entry.entryType === 'navigation') {
+        const navigation = entry as PerformanceNavigationTiming;
+        const metrics = {
+          domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.navigationStart),
+          loadComplete: Math.round(navigation.loadEventEnd - navigation.navigationStart),
+          firstByte: Math.round(navigation.responseStart - navigation.navigationStart),
+          firstPaint: Math.round(navigation.responseEnd - navigation.navigationStart)
+        };
+        
+        console.log('🎯 Navigation Metrics:', metrics);
+      }
+    });
+  });
+  
+  observer.observe({ entryTypes: ['navigation'] });
+  return observer;
+};

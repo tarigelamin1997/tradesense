@@ -1,13 +1,13 @@
-
-import React, { StrictMode } from 'react';
+import React, { StrictMode, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Provider } from 'react-redux';
 import { store } from './store';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { DevTools, PerformanceMonitor } from './components/DevTools';
-import { AppLayout } from './components/layout/AppLayout';
 import { AuthWrapper } from './components/AuthWrapper';
+import { AppLayout } from './components/layout/AppLayout';
+import { DevTools, PerformanceMonitor } from './components/DevTools';
 import './styles/mobile.css';
 
 // Lazy load pages for better performance

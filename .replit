@@ -3,8 +3,11 @@ modules = ["nodejs-20", "python-3.11"]
 
 run = """
 cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-cd frontend && npm install --legacy-peer-deps && npm run dev -- --host 0.0.0.0 --port 3000
+cd frontend && npm install --legacy-peer-deps && npm run dev
 """
+
+entrypoint = "frontend/index.html"
+language = "nodejs"
 
 [env]
 PORT = "3000"

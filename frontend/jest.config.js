@@ -2,14 +2,12 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   moduleNameMapping: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react-jsx',
-      },
+      useESM: true
     }],
     '^.+\\.(js|jsx)$': ['babel-jest', {
       presets: [
@@ -22,9 +20,10 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx,js,jsx}',
     '!src/**/*.d.ts',
-    '!src/test/**/*',
-    '!src/**/*.stories.{ts,tsx,js,jsx}',
+    '!src/test/**',
+    '!src/**/*.stories.{ts,tsx,js,jsx}'
   ],
+  coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
       branches: 70,
@@ -35,7 +34,7 @@ module.exports = {
   },
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.{ts,tsx,js,jsx}',
-    '<rootDir>/src/**/*.{test,spec}.{ts,tsx,js,jsx}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,tsx,js,jsx}'
   ],
   watchPlugins: [
     'jest-watch-typeahead/filename',

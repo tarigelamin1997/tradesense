@@ -1,4 +1,5 @@
 import React from 'react';
+import { ReactWrapper } from 'enzyme';
 
 /**
  * Accessibility utility functions
@@ -116,7 +117,7 @@ export const getContrastRatio = (color1: string, color2: string): number => {
  * Checks if contrast ratio meets WCAG standards
  */
 export const meetsContrastRequirement = (
-  ratio: number, 
+  ratio: number,
   level: 'AA' | 'AAA' = 'AA',
   textSize: 'normal' | 'large' = 'normal'
 ): boolean => {
@@ -157,10 +158,6 @@ export const focusManagement = {
             e.preventDefault();
           }
         }
-      }
-
-      if (e.key === 'Escape') {
-        containerElement.dispatchEvent(new CustomEvent('escape'));
       }
     };
 
@@ -480,16 +477,16 @@ export default a11y;
 
 // ARIA label generators
 export const generateAriaLabel = {
-  tradeCard: (trade: any) => 
+  tradeCard: (trade: any) =>
     `Trade ${trade.symbol}, entry ${trade.entry_price}, ${trade.pnl > 0 ? 'profit' : 'loss'} ${Math.abs(trade.pnl)}`,
 
-  metric: (label: string, value: string | number) => 
+  metric: (label: string, value: string | number) =>
     `${label}: ${value}`,
 
-  button: (action: string, context?: string) => 
+  button: (action: string, context?: string) =>
     context ? `${action} ${context}` : action,
 
-  chart: (type: string, description: string) => 
+  chart: (type: string, description: string) =>
     `${type} chart showing ${description}`,
 };
 
@@ -522,7 +519,7 @@ export const trapFocus = (element: HTMLElement) => {
 };
 
 // Announce to screen readers
-export const announceToScreenReader = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+export const announceToScreenReader2 = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
   const announcement = document.createElement('div');
   announcement.setAttribute('aria-live', priority);
   announcement.setAttribute('aria-atomic', 'true');
@@ -619,10 +616,10 @@ export const addSkipLinks = () => {
 };
 
 // Keyboard navigation helpers
-export const keyboardNavigation = {
+export const keyboardNavigation2 = {
   handleArrowKeys: (
-    e: KeyboardEvent, 
-    items: HTMLElement[], 
+    e: KeyboardEvent,
+    items: HTMLElement[],
     currentIndex: number,
     onIndexChange: (newIndex: number) => void
   ) => {
@@ -719,4 +716,183 @@ export const screenReader = {
     element.setAttribute('aria-live', politeness);
     element.setAttribute('aria-atomic', 'true');
   },
+};
+
+// Accessibility testing helper
+export const runAxeTest = async (container: HTMLElement) => {
+  const { axe, toHaveNoViolations } = await import('jest-axe');
+  expect.extend(toHaveNoViolations);
+
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+};
+
+// ARIA live region announcer
+class LiveRegionAnnouncer {
+  private liveRegion: HTMLElement | null = null;
+
+  constructor() {
+    this.createLiveRegion();
+  }
+
+  private createLiveRegion() {
+    if (typeof document === 'undefined') return;
+
+    this.liveRegion = document.createElement('div');
+    this.liveRegion.setAttribute('aria-live', 'polite');
+    this.liveRegion.setAttribute('aria-atomic', 'true');
+    this.liveRegion.className = 'sr-only';
+    document.body.appendChild(this.liveRegion);
+  }
+
+  announce(message: string, priority: 'polite' | 'assertive' = 'polite') {
+    if (!this.liveRegion) return;
+
+    this.liveRegion.setAttribute('aria-live', priority);
+    this.liveRegion.textContent = message;
+
+    // Clear after announcement
+    setTimeout(() => {
+      if (this.liveRegion) {
+        this.liveRegion.textContent = '';
+      }
+    }, 1000);
+  }
+}
+
+export const announcer = new LiveRegionAnnouncer();
+
+// Screen reader utilities
+export const screenReaderUtils = {
+  announce: (message: string) => announcer.announce(message),
+
+  // Generate unique IDs for form labels
+  generateId: (prefix: string = 'a11y') => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+
+  // Check if screen reader is likely active
+  isScreenReaderActive: () => {
+    if (typeof window === 'undefined') return false;
+
+    return (
+      window.navigator.userAgent.includes('NVDA') ||
+      window.navigator.userAgent.includes('JAWS') ||
+      window.speechSynthesis?.getVoices().length > 0
+    );
+  },
+
+  // Focus management
+  focusFirst: (container: HTMLElement) => {
+    const focusable = container.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    focusable?.focus();
+  },
+
+  // Trap focus within container
+  trapFocus: (container: HTMLElement) => {
+    const focusableElements = container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
+  }
+};
+
+// Keyboard navigation utilities
+export const keyboardUtils = {
+  // Handle arrow key navigation for lists
+  handleArrowNavigation: (
+    event: React.KeyboardEvent,
+    items: HTMLElement[],
+    currentIndex: number,
+    onIndexChange: (index: number) => void
+  ) => {
+    let newIndex = currentIndex;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        newIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        newIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        break;
+      case 'Home':
+        event.preventDefault();
+        newIndex = 0;
+        break;
+      case 'End':
+        event.preventDefault();
+        newIndex = items.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    onIndexChange(newIndex);
+    items[newIndex]?.focus();
+  },
+
+  // Common keyboard event handlers
+  isActivationKey: (key: string) => key === 'Enter' || key === ' ',
+  isEscapeKey: (key: string) => key === 'Escape',
+  isNavigationKey: (key: string) => ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)
+};
+
+// Color contrast utilities
+export const contrastUtils = {
+  // Calculate relative luminance
+  getLuminance: (color: string): number => {
+    const rgb = parseInt(color.replace('#', ''), 16);
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >> 8) & 0xff;
+    const b = (rgb >> 0) & 0xff;
+
+    const [rs, gs, bs] = [r, g, b].map(c => {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+
+    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+  },
+
+  // Calculate contrast ratio
+  getContrastRatio: (color1: string, color2: string): number => {
+    const lum1 = contrastUtils.getLuminance(color1);
+    const lum2 = contrastUtils.getLuminance(color2);
+    const brightest = Math.max(lum1, lum2);
+    const darkest = Math.min(lum1, lum2);
+    return (brightest + 0.05) / (darkest + 0.05);
+  },
+
+  // Check if colors meet WCAG AA standard
+  meetsWCAG_AA: (foreground: string, background: string): boolean => {
+    return contrastUtils.getContrastRatio(foreground, background) >= 4.5;
+  },
+
+  // Check if colors meet WCAG AAA standard
+  meetsWCAG_AAA: (foreground: string, background: string): boolean => {
+    return contrastUtils.getContrastRatio(foreground, background) >= 7;
+  }
 };

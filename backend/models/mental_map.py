@@ -10,6 +10,12 @@ import uuid
 
 Base = declarative_base()
 
+# Export classes for proper importing
+__all__ = ['MentalMapEntry', 'SessionReplay', 'MentalMapEntryCreate', 'MentalMapEntryResponse', 'SessionReplayCreate', 'SessionReplayResponse', 'MentalMap']
+
+# Backward compatibility alias
+MentalMap = MentalMapEntry
+
 class MentalMapEntry(Base):
     __tablename__ = "mental_map_entries"
 

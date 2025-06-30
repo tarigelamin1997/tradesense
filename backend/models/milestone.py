@@ -31,7 +31,7 @@ class Milestone(Base):
     rarity = Column(String, default="common")  # common, rare, epic, legendary
 
     # Metadata
-    meta_data = Column(JSON)  # Additional context data
+    milestone_metadata = Column(JSON)  # Additional context data
 
     created_at = Column(DateTime, default=func.now())
 
@@ -53,7 +53,7 @@ class MilestoneBase(BaseModel):
     xp_points: float = Field(default=0, ge=0)
     badge_icon: Optional[str] = None
     rarity: str = Field(default="common", pattern="^(common|rare|epic|legendary)$")
-    meta_data: Optional[Dict[str, Any]] = None
+    milestone_metadata: Optional[Dict[str, Any]] = None
 
 class MilestoneCreate(MilestoneBase):
     pass

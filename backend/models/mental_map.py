@@ -117,7 +117,7 @@ class MentalMapEntryResponse(MentalMapEntryBase):
     class Config:
         from_attributes = True
 
-# Backward compatibility alias - must be after class definition
+# ✅ Backward compatibility alias - defined AFTER the class exists
 MentalMap = MentalMapEntry
 
 class SessionReplayBase(BaseModel):

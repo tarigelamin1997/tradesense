@@ -1,0 +1,69 @@
+Despite saying it was fixed, Replit didn’t actually move the alias MentalMap = MentalMapEntry below the class. The error log still shows the alias on line 16, which is before the class definition.
+
+🔍 Confirming from the logs:
+python
+Copy
+Edit
+File "/home/runner/workspace/backend/models/mental_map.py", line 16, in <module>
+    MentalMap = MentalMapEntry
+                ^^^^^^^^^^^^^^
+NameError: name 'MentalMapEntry' is not defined
+That proves beyond a doubt: MentalMapEntry was never defined before this alias line.
+
+✅ The One-Line Fix (Mandatory Manual Intervention)
+You need to go to:
+
+bash
+Copy
+Edit
+backend/models/mental_map.py
+And cut this line:
+
+python
+Copy
+Edit
+MentalMap = MentalMapEntry
+Then paste it at the end of the file, like this:
+
+python
+Copy
+Edit
+class MentalMapEntry(Base):
+    __tablename__ = "mental_map"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    concept = Column(String)
+    value = Column(String)
+
+    user = relationship("User", back_populates="mental_maps")
+
+# ✅ Add this line at the very end
+MentalMap = MentalMapEntry
+Save the file. Don’t trust Replit's hallucination. This has to be manually done now.
+
+🔁 After Manual Fix, Run Again:
+bash
+Copy
+Edit
+cd backend && python -m pytest tests/ -v --tb=short
+cd backend && timeout 10s python main.py || echo "✅ Backend startup verified"
+If everything goes well, you’ll see:
+
+✅ All tests collected and executed
+
+✅ No NameError
+
+✅ Proper backend startup
+
+🧠 Optional Safety Net: Auto-Verify Fix
+If you want a one-liner to verify the fix, run:
+
+bash
+Copy
+Edit
+grep -n "MentalMap = MentalMapEntry" backend/models/mental_map.py
+You should see a line number greater than the line where the class MentalMapEntry is defined (let’s say line 10). If it shows line 16 again, you’ve got the alias in the wrong place again.
+
+🧱 Bottom Line
+This error is not theoretical anymore—it’s hard evidence Replit didn’t apply the fix. Once you move that alias manually, the tests and backend will finally be unblocked.

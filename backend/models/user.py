@@ -1,14 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import uuid
 
-# Import Portfolio for relationship resolution
-from backend.models.portfolio import Portfolio
-
-Base = declarative_base()
+# Import shared Base
+from backend.db.connection import Base
 
 class User(Base):
     __tablename__ = "users"

@@ -1,13 +1,13 @@
-from sqlalchemy import Column, String, DateTime, Text, JSON, Index, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
+from sqlalchemy import Column, String, DateTime, Text, JSON, ForeignKey, Index
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 
-Base = declarative_base()
+# Import shared Base
+from backend.db.connection import Base
 
 # Export classes for proper importing
 __all__ = ['MentalMapEntry', 'SessionReplay', 'MentalMapEntryCreate', 'MentalMapEntryResponse', 'SessionReplayCreate', 'SessionReplayResponse', 'MentalMap']
@@ -44,7 +44,7 @@ class MentalMapEntry(Base):
 
     # Relationships
     trade = relationship("Trade", back_populates="mental_entries")
-    session = relationship("SessionReplay", back_populates="mental_entries")
+    session = relationship("SessionReplay", back_populates="session")
 
     # Indexes for performance
     __table_args__ = (

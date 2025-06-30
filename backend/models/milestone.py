@@ -1,12 +1,12 @@
 from sqlalchemy import Column, String, DateTime, Float, Text, JSON, Index
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-Base = declarative_base()
+# Import shared Base
+from backend.db.connection import Base
 
 class Milestone(Base):
     __tablename__ = "milestones"

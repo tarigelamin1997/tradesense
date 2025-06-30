@@ -1,13 +1,13 @@
 
 from sqlalchemy import Column, String, Float, DateTime, Text, JSON, Index
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 
-Base = declarative_base()
+# Import shared Base
+from backend.db.connection import Base
 
 class PatternCluster(Base):
     __tablename__ = "pattern_clusters"

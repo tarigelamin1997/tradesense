@@ -12,7 +12,10 @@ from fastapi.middleware.cors import CORSMiddleware
 # Initialize database first
 try:
     print("🚀 Starting TradeSense Backend...")
-
+    
+    # Import all models first to register them with SQLAlchemy
+    import backend.models  # This ensures all models are registered
+    
     # Initialize database
     from backend.initialize_db import *
 

@@ -4,11 +4,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import uuid
-import typing
 
-# Use TYPE_CHECKING to avoid circular imports
-if typing.TYPE_CHECKING:
-    from backend.models.portfolio import Portfolio
+# Import Portfolio for relationship resolution
+from backend.models.portfolio import Portfolio
 
 Base = declarative_base()
 

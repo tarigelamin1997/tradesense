@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, String, DateTime, Text, JSON, Index, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -23,22 +22,22 @@ class MentalMapEntry(Base):
     user_id = Column(String, nullable=False, index=True)
     trade_id = Column(String, ForeignKey('trades.id'), nullable=True, index=True)
     session_id = Column(String, ForeignKey('session_replays.id'), nullable=True, index=True)
-    
+
     # Timing
     timestamp = Column(DateTime, nullable=False, index=True)
-    
+
     # Mental state data
     note = Column(Text, nullable=False)
     mood = Column(String, nullable=False)  # calm, anxious, revenge, euphoric, fearful, overconfident
     confidence_score = Column(String)  # 1-10 scale
-    
+
     # Rule tracking
     checklist_flags = Column(JSON)  # ["broke entry rule", "overconfidence", "fomo"]
-    
+
     # Visual context
     screenshot_url = Column(String)
     chart_context = Column(Text)  # Market conditions, setup description
-    
+
     # Metadata
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -59,21 +58,21 @@ class SessionReplay(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, nullable=False, index=True)
-    
+
     # Session timing
     start_time = Column(DateTime, nullable=False, index=True)
     end_time = Column(DateTime, index=True)
-    
+
     # Session metadata
     session_name = Column(String)  # "Morning ES Scalping", "FOMC Day"
     market_conditions = Column(String)  # "High volatility", "Range-bound"
     session_notes = Column(Text)
-    
+
     # Session summary (computed)
     total_trades = Column(String, default="0")
     dominant_mood = Column(String)
     rule_breaks = Column(JSON)  # Summary of rule violations
-    
+
     # Metadata
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -117,6 +116,9 @@ class MentalMapEntryResponse(MentalMapEntryBase):
 
     class Config:
         from_attributes = True
+
+# Backward compatibility alias - must be after class definition
+MentalMap = MentalMapEntry
 
 class SessionReplayBase(BaseModel):
     start_time: datetime

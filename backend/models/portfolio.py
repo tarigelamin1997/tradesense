@@ -1,11 +1,11 @@
 
 from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-Base = declarative_base()
+# Import shared Base
+from backend.db.connection import Base
 
 class Portfolio(Base):
     __tablename__ = "portfolios"

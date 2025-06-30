@@ -5,6 +5,9 @@ from sqlalchemy.sql import func
 from datetime import datetime
 import uuid
 
+# Import Portfolio for relationship resolution
+from backend.models.portfolio import Portfolio
+
 Base = declarative_base()
 
 class User(Base):

@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field, validator
@@ -8,7 +7,8 @@ from datetime import datetime
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
-Base = declarative_base()
+# Import shared Base
+from backend.db.connection import Base
 
 class Trade(Base):
     __tablename__ = "trades"
@@ -70,6 +70,7 @@ class Trade(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
+    user = relationship("User", back_populates="trades")
     account = relationship("TradingAccount", back_populates="trades")
     tag_objects = relationship("Tag", secondary="trade_tags", back_populates="trades")
     mental_entries = relationship("MentalMapEntry", back_populates="trade")

@@ -13,20 +13,9 @@ sys.path.insert(0, backend_dir)
 
 try:
     from backend.db.connection import engine, Base
-    from backend.models.user import User
-    from backend.models.trade import Trade
-    from backend.models.feature_request import FeatureRequest
-    from backend.models.playbook import Playbook
-    from backend.models.tag import Tag
-    from backend.models.portfolio import Portfolio
-    from backend.models.trade_review import TradeReview
-    from backend.models.trade_note import TradeNote
-    from backend.models.milestone import Milestone
-    from backend.models.mental_map import MentalMap
-    from backend.models.pattern_cluster import PatternCluster
-    from backend.models.strategy import Strategy
-    from backend.models.trading_account import TradingAccount
-    from backend.models.daily_emotion_reflection import DailyEmotionReflection
+    # Import all models through centralized registry - this ensures proper registration
+    import backend.models  # This triggers all model imports and registration
+    from backend.models import *  # Import all registered models
     
     print("🗄️ Initializing TradeSense Database...")
     

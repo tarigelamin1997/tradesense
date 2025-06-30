@@ -13,7 +13,7 @@ Base = declarative_base()
 __all__ = ['MentalMapEntry', 'SessionReplay', 'MentalMapEntryCreate', 'MentalMapEntryResponse', 'SessionReplayCreate', 'SessionReplayResponse', 'MentalMap']
 
 # Backward compatibility alias
-MentalMap = MentalMapEntry
+#MentalMap = MentalMapEntry
 
 class MentalMapEntry(Base):
     __tablename__ = "mental_map_entries"
@@ -117,33 +117,5 @@ class MentalMapEntryResponse(MentalMapEntryBase):
     class Config:
         from_attributes = True
 
-# ✅ Backward compatibility alias - defined AFTER the class exists
+# ✅ Backward compatibility alias - defined AFTER both classes exist
 MentalMap = MentalMapEntry
-
-class SessionReplayBase(BaseModel):
-    start_time: datetime
-    end_time: Optional[datetime] = None
-    session_name: Optional[str] = Field(None, max_length=100)
-    market_conditions: Optional[str] = Field(None, max_length=200)
-    session_notes: Optional[str] = Field(None, max_length=1000)
-
-class SessionReplayCreate(SessionReplayBase):
-    pass
-
-class SessionReplayUpdate(BaseModel):
-    end_time: Optional[datetime] = None
-    session_name: Optional[str] = Field(None, max_length=100)
-    market_conditions: Optional[str] = Field(None, max_length=200)
-    session_notes: Optional[str] = Field(None, max_length=1000)
-
-class SessionReplayResponse(SessionReplayBase):
-    id: str
-    user_id: str
-    total_trades: str
-    dominant_mood: Optional[str]
-    rule_breaks: Optional[List[str]]
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True

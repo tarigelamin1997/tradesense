@@ -1,0 +1,152 @@
+
+{
+  "interactive_brokers": {
+    "title": "Interactive Brokers Integration Guide",
+    "difficulty": "Advanced",
+    "setup_time": "10-15 minutes",
+    "prerequisites": [
+      "Active Interactive Brokers account",
+      "IB Gateway or TWS software installed",
+      "API access enabled in account settings"
+    ],
+    "detailed_steps": [
+      {
+        "step": 1,
+        "title": "Enable API Access",
+        "description": "Log into your IB account and enable API access",
+        "instructions": [
+          "Go to Account Management > Settings > API",
+          "Enable 'Allow connections from localhost only'",
+          "Note your User ID for later use"
+        ],
+        "screenshots": ["ib_api_settings.png"]
+      },
+      {
+        "step": 2,
+        "title": "Install IB Gateway/TWS",
+        "description": "Download and install the trading platform",
+        "instructions": [
+          "Download IB Gateway from Interactive Brokers website",
+          "Install following the setup wizard",
+          "Configure for API connections on port 7497 (paper) or 7496 (live)"
+        ],
+        "screenshots": ["ib_gateway_install.png"]
+      },
+      {
+        "step": 3,
+        "title": "Configure Connection",
+        "description": "Set up the connection in TradeSense",
+        "instructions": [
+          "Go to TradeSense Integrations page",
+          "Select 'Interactive Brokers'",
+          "Enter your username, password, and account ID",
+          "Set host to 127.0.0.1 and port to 7497/7496",
+          "Test connection"
+        ],
+        "screenshots": ["tradesense_ib_config.png"]
+      }
+    ],
+    "troubleshooting": {
+      "common_issues": [
+        {
+          "issue": "Connection refused",
+          "cause": "IB Gateway not running or wrong port",
+          "solution": "Ensure IB Gateway is running and check port configuration"
+        },
+        {
+          "issue": "Authentication failed",
+          "cause": "Incorrect credentials or API not enabled",
+          "solution": "Verify credentials and ensure API access is enabled"
+        }
+      ]
+    },
+    "advanced_configuration": {
+      "paper_trading": {
+        "description": "Use paper trading for testing",
+        "port": 7497,
+        "notes": "Recommended for initial setup and testing"
+      },
+      "live_trading": {
+        "description": "Live trading environment",
+        "port": 7496,
+        "notes": "Only use after successful paper trading setup"
+      }
+    }
+  },
+  "td_ameritrade": {
+    "title": "TD Ameritrade Integration Guide", 
+    "difficulty": "Intermediate",
+    "setup_time": "5-10 minutes",
+    "prerequisites": [
+      "TD Ameritrade account with API access",
+      "Developer account on TD Ameritrade API portal",
+      "Valid refresh token"
+    ],
+    "detailed_steps": [
+      {
+        "step": 1,
+        "title": "Create Developer App",
+        "description": "Register your application with TD Ameritrade",
+        "instructions": [
+          "Visit TD Ameritrade Developer portal",
+          "Create new application",
+          "Note your Client ID"
+        ]
+      },
+      {
+        "step": 2,
+        "title": "Generate Refresh Token",
+        "description": "Create authentication token",
+        "instructions": [
+          "Use TD Ameritrade's token generation tool",
+          "Authorize account access",
+          "Save the refresh token securely"
+        ]
+      },
+      {
+        "step": 3,
+        "title": "Configure TradeSense",
+        "description": "Add credentials to TradeSense",
+        "instructions": [
+          "Go to Integrations page",
+          "Select TD Ameritrade",
+          "Enter Client ID and refresh token",
+          "Test connection"
+        ]
+      }
+    ]
+  },
+  "apex_trader": {
+    "title": "Apex Trader Funding Integration Guide",
+    "difficulty": "Easy", 
+    "setup_time": "3-5 minutes",
+    "prerequisites": [
+      "Active Apex Trader account",
+      "API access enabled"
+    ],
+    "detailed_steps": [
+      {
+        "step": 1,
+        "title": "Get API Credentials",
+        "description": "Obtain your API key from Apex portal",
+        "instructions": [
+          "Log into Apex Trader account",
+          "Navigate to API settings",
+          "Generate new API key",
+          "Copy account ID"
+        ]
+      },
+      {
+        "step": 2,
+        "title": "Connect to TradeSense",
+        "description": "Add Apex account to TradeSense",
+        "instructions": [
+          "Go to TradeSense Integrations",
+          "Select Apex Trader Funding", 
+          "Enter API key and account ID",
+          "Test connection and start sync"
+        ]
+      }
+    ]
+  }
+}

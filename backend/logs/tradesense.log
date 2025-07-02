@@ -1,0 +1,16 @@
+2025-07-02 23:23:38,809 - backend.core.middleware - INFO - Request 8bd478bc-c43c-405f-99aa-7748a31b81db: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:23:38,816 - backend.core.middleware - INFO - Request 8bd478bc-c43c-405f-99aa-7748a31b81db completed in 0.0066s - Status: 404
+2025-07-02 23:23:38,953 - backend.core.middleware - INFO - Request 62db1fe4-4276-4b25-9539-bd40364d1c76: GET http://localhost:8000/favicon.ico
+2025-07-02 23:23:38,954 - backend.core.middleware - INFO - Request 62db1fe4-4276-4b25-9539-bd40364d1c76 completed in 0.0011s - Status: 404
+2025-07-02 23:26:24,086 - backend.core.middleware - INFO - Request 743f1735-c948-405c-932f-d6ed81c55b09: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:26:24,087 - backend.core.middleware - INFO - Request 743f1735-c948-405c-932f-d6ed81c55b09 completed in 0.0010s - Status: 404
+2025-07-02 23:40:39,858 - backend.core.middleware - INFO - Request 75e36bff-d404-4158-b1e1-bf69d5882248: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:40:39,860 - backend.core.middleware - INFO - Request 75e36bff-d404-4158-b1e1-bf69d5882248 completed in 0.0020s - Status: 403
+2025-07-02 23:43:34,219 - backend.core.middleware - INFO - Request cad0584d-cd20-4608-af0d-960153805935: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:43:34,219 - backend.core.middleware - INFO - Request cad0584d-cd20-4608-af0d-960153805935 completed in 0.0000s - Status: 403
+2025-07-02 23:43:53,132 - backend.core.middleware - INFO - Request bfeb8eb2-c1aa-40d1-a9cd-de9b7badbb2a: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:43:53,132 - backend.core.middleware - INFO - Request bfeb8eb2-c1aa-40d1-a9cd-de9b7badbb2a completed in 0.0000s - Status: 403
+2025-07-02 23:44:02,172 - backend.core.middleware - INFO - Request 43fd7310-066a-4eb5-9804-96dd5ca81131: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:44:02,180 - backend.core.middleware - INFO - Request 43fd7310-066a-4eb5-9804-96dd5ca81131 completed in 0.0075s - Status: 403
+2025-07-02 23:44:38,712 - backend.core.middleware - INFO - Request fca6da9c-e48e-4323-ad69-46be16ca8fe6: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-02 23:44:38,714 - backend.core.middleware - INFO - Request fca6da9c-e48e-4323-ad69-46be16ca8fe6 completed in 0.0016s - Status: 403

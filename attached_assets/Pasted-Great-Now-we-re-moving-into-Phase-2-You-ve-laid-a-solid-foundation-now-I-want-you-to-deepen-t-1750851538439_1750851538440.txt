@@ -1,0 +1,50 @@
+Great. Now we're moving into Phase 2.
+
+You’ve laid a solid foundation — now I want you to deepen the engineering work and harden this codebase for production and expansion.
+
+Here’s what I want you to do next:
+
+🔸 1. **Testing Setup**
+- Configure Jest + React Testing Library
+- Set up one test file per major component and feature module
+- Include sample tests for auth slice, trade slice, and at least one API module
+
+🔸 2. **Global Error Boundary**
+- Implement a robust global error boundary with fallback UI
+- Catch frontend runtime errors cleanly and report them to the console
+
+🔸 3. **React DevTools / Performance Optimizations**
+- Add React DevTools setup instructions
+- Enable React StrictMode if not already
+- Confirm lazy-loading of all feature pages is working with suspense fallback
+
+🔸 4. **API Documentation**
+- Create a markdown file that documents each service module (`auth`, `trades`, etc.)
+- Show available methods, their inputs/outputs, and usage examples
+
+🔸 5. **Storybook Integration**
+- Set up Storybook and configure at least 3 core UI components inside it
+- Document props and variants (e.g., Button, Card, Input)
+
+🔸 6. **Authentication Flow Testing**
+- Test login, logout, and token refresh logic manually
+- Ensure all edge cases are handled: expired token, invalid login, missing headers
+
+🔸 7. **Mobile Optimization Pass**
+- Run a responsive audit for screens <768px
+- Refactor any layouts or spacing issues
+- Ensure usability on iOS Safari and Android Chrome (touch targets, fonts, etc.)
+
+🔸 8. **Accessibility Audit**
+- Run a quick accessibility pass using `axe-core` or similar
+- Add ARIA labels to all key components: buttons, forms, modals
+- Make sure keyboard navigation works across pages
+
+🧠 You are authorized to use your own reasoning to solve gaps, handle unexpected patterns, or propose stronger alternatives if anything in the current structure falls short during this phase.
+
+Once all steps are completed, provide:
+- A brief implementation summary
+- A commit log or changelog by area (test, UI, infra, docs)
+- Any TODOs or tradeoffs made
+
+Let’s harden this codebase like it’s going into production tomorrow. Go.

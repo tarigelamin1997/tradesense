@@ -1,0 +1,81 @@
+confidence: Integer 1–10
+
+triggers: Array of enums (e.g., ["FOMO", "Hesitation"])
+
+2. Models & Pydantic
+Add EmotionData to journal entry schema
+
+python
+Copy
+Edit
+class EmotionData(BaseModel):
+    emotion: Literal["Calm", "Excited", "Anxious", "Fearful", "Angry"]
+    confidence: int = Field(ge=1, le=10)
+    triggers: List[Literal["FOMO", "Hesitation", "Overconfidence", "Revenge"]]
+Nest this inside JournalEntryCreateRequest
+
+3. API Updates
+Accept optional emotion data in:
+
+POST /trades/{trade_id}/journal
+
+PUT /journal/{entry_id}
+
+Return emotion data in journal responses
+
+4. Frontend
+In Journal Entry UI:
+
+Add emotion dropdown (icons/emojis)
+
+Confidence slider (1–10)
+
+Trigger checklist (chips)
+
+Display this data visually on journal timeline
+
+5. Future Bonus
+Show emotion analytics over time:
+
+“You tend to underperform when anxious”
+
+Correlate confidence score with accuracy
+
+AI reminders:
+
+“You reported FOMO 3 times last week. Take a break?”
+
+🎯 Expected Outcome
+✅ Traders become more emotionally aware
+✅ Patterns surface over time
+✅ Coaches and future AI insights can use emotion data
+✅ TradeSense becomes the only platform that truly connects execution + psychology + journaling
+
+🚀 Final Prompt for Replit
+sql
+Copy
+Edit
+Implement a Psychology & Emotion Tracker system in TradeSense.
+
+🧨 Problem:
+Right now, we capture notes but not **psychological states** like emotion, confidence, or mental triggers. This leaves blind spots in user performance evaluation.
+
+✅ Solution:
+Allow users to tag each journal entry with emotion data: emotional state, confidence score (1–10), and mental triggers (e.g., FOMO, hesitation).
+
+🛠️ Implementation Steps:
+1. DB:
+   - Extend journal_entries OR create separate emotions table
+   - Fields: emotion (enum), confidence (int), triggers (list), timestamps
+2. Backend:
+   - Pydantic model `EmotionData`
+   - Accept optional `emotion_data` in journal create/update endpoints
+3. Frontend:
+   - In journal entry UI: add emotion selector, confidence slider, and trigger checklist
+   - Display this metadata with entries
+4. Optional later:
+   - Generate analytics from emotion patterns
+   - Add AI-powered warnings or reflections
+
+🎯 Outcome:
+TradeSense now becomes an **emotional intelligence platform** as well — helping users catch self-sabotage before it happens, track psychological trends, and improve discipline by becoming self-aware.

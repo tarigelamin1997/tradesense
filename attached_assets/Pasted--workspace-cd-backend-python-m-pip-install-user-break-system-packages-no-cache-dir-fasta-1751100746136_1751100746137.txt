@@ -1,0 +1,45 @@
+~/workspace$ cd backend && python -m pip install --user --break-system-packages --no-cache-dir fastapi uvicorn python-multipart sqlalchemy psycopg2-binary python-jose[cryptography] passlib[bcrypt] python-dateutil && python main.py
+Requirement already satisfied: fastapi in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (0.115.13)
+Requirement already satisfied: uvicorn in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (0.34.3)
+Requirement already satisfied: python-multipart in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (0.0.20)
+Requirement already satisfied: sqlalchemy in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (2.0.41)
+Requirement already satisfied: psycopg2-binary in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (2.9.10)
+Requirement already satisfied: python-dateutil in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (2.8.2)
+Requirement already satisfied: python-jose[cryptography] in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (3.5.0)
+Requirement already satisfied: passlib[bcrypt] in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (1.7.4)
+Requirement already satisfied: starlette<0.47.0,>=0.40.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from fastapi) (0.46.2)
+Requirement already satisfied: pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from fastapi) (2.9.2)
+Requirement already satisfied: typing-extensions>=4.8.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from fastapi) (4.14.0)
+Requirement already satisfied: click>=7.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from uvicorn) (8.1.8)
+Requirement already satisfied: h11>=0.8 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from uvicorn) (0.16.0)
+Requirement already satisfied: greenlet>=1 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from sqlalchemy) (3.2.3)
+Requirement already satisfied: ecdsa!=0.15 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from python-jose[cryptography]) (0.19.1)
+Requirement already satisfied: rsa!=4.1.1,!=4.4,<5.0,>=4.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from python-jose[cryptography]) (4.9.1)
+Requirement already satisfied: pyasn1>=0.5.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from python-jose[cryptography]) (0.6.1)
+Requirement already satisfied: cryptography>=3.4.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from python-jose[cryptography]) (42.0.8)
+Requirement already satisfied: bcrypt>=3.1.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from passlib[bcrypt]) (4.0.1)
+Requirement already satisfied: six>=1.5 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from python-dateutil) (1.17.0)
+Requirement already satisfied: cffi>=1.12 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from cryptography>=3.4.0->python-jose[cryptography]) (1.17.1)
+Requirement already satisfied: annotated-types>=0.6.0 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi) (0.7.0)
+Requirement already satisfied: pydantic-core==2.23.4 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi) (2.23.4)
+Requirement already satisfied: anyio<5,>=3.6.2 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from starlette<0.47.0,>=0.40.0->fastapi) (4.9.0)
+Requirement already satisfied: idna>=2.8 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from anyio<5,>=3.6.2->starlette<0.47.0,>=0.40.0->fastapi) (3.10)
+Requirement already satisfied: sniffio>=1.1 in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from anyio<5,>=3.6.2->starlette<0.47.0,>=0.40.0->fastapi) (1.3.1)
+Requirement already satisfied: pycparser in /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages (from cffi>=1.12->cryptography>=3.4.0->python-jose[cryptography]) (2.22)
+/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/pydantic/_internal/_config.py:341: UserWarning: Valid config keys have changed in V2:
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+Failed to create database tables: (sqlite3.OperationalError) unable to open database file
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Database initialization failed - some features may not work
+Traceback (most recent call last):
+  File "/home/runner/workspace/backend/main.py", line 3, in <module>
+    from backend.api.v1.auth.router import router as auth_router
+  File "/home/runner/workspace/backend/api/v1/__init__.py", line 6, in <module>
+    from backend.api.v1.trades.router import router as trades_router
+  File "/home/runner/workspace/backend/api/v1/trades.py", line 13, in <module>
+    from backend.services.analytics_service import AnalyticsService
+  File "/home/runner/workspace/backend/services/analytics_service.py", line 23, in <module>
+    from backend.analytics.streaks import (
+ImportError: cannot import name 'find_longest_streak' from 'backend.analytics.streaks' (/home/runner/workspace/backend/analytics/streaks.py)
+~/workspace/backend$ 

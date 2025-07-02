@@ -1,0 +1,34 @@
+Drop everything and focus.
+
+You're not just my code assistant right now — you're my lead full-stack engineer, product-focused architect, and execution machine. We are restructuring this **entire TradeSense project** — end to end — in under 2 hours.
+
+This is a professional, production-grade cloud trading platform. The backend is FastAPI. The frontend is React + TypeScript + Tailwind + Zustand + Recharts. We’re aiming for **modular, scalable, team-ready structure** that will also support a future React Native mobile build.
+
+Here’s what I want from you immediately:
+
+🚀 GOAL: Fully restructure the frontend codebase. Clean, modular, production-grade.  
+You have full permission to create, delete, refactor, rename, and restructure files and folders as needed. Think like a software architect — not a junior dev.
+
+You MUST:
+1. Audit the current structure and immediately rework everything into a clean, domain-driven layout
+2. Ensure these folders exist and are properly populated:
+   - `features/` (domain logic, pages, layouts)
+   - `components/` (reusable UI elements)
+   - `services/` (API integration, split per domain)
+   - `hooks/` (custom hooks)
+   - `store/` (Zustand slices, modular)
+   - `utils/` (pure functions, formatters)
+   - `lib/` (shared logic, if needed)
+   - `routes/` (optional, if you want to abstract routes separately)
+3. Verify Tailwind setup and ShadCN integration
+4. Check Zustand: modular slices? clean separation? scalability?
+5. Split and optimize API logic. Separate auth, trades, reports, etc.
+6. Clean up all test files, boilerplate junk, or unnecessary cruft
+7. Remove all hardcoded junk and migrate to constants/configs if needed
+8. Check for any global UI state that should be centralized (e.g., modals, notifications, theme)
+9. Make sure everything compiles and runs cleanly during the transition — don't break anything
+10. Don’t explain what you’re doing unless you need to ask. Just **do it**. Show me final structure and key logic changes once done.
+
+Act like you’re getting paid $5,000 an hour and you’re 20 minutes in.
+
+If anything is unclear — make a smart decision and move on. I’m not here to guide you line-by-line. This project needs to be elite. Handle it.

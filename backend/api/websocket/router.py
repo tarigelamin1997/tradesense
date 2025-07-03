@@ -96,12 +96,83 @@ async def handle_websocket_message(message: dict, user_id: str, websocket: WebSo
     elif message_type == "request_trade_summary":
         # Send current trade summary
         # This would integrate with your trade service
-        summary = {
-            "total_trades": 150,  # Mock data
-            "win_rate": 65.5,
-            "profit_factor": 1.85
-        }
+        try:
+            # Import trade service to get real data
+            from backend.api.v1.trades.service import TradeService
+            from backend.core.db.session import get_db
+            
+            db = next(get_db())
+            trade_service = TradeService(db)
+            
+            # Get user's trade summary (you'd need to pass user_id in the message)
+            user_id = message.get("user_id")
+            if user_id:
+                summary = await trade_service.get_trade_summary(user_id)
+            else:
+                # Fallback to mock data
+                summary = {
+                    "total_trades": 150,
+                    "win_rate": 65.5,
+                    "profit_factor": 1.85,
+                    "total_pnl": 12500.50,
+                    "avg_trade_duration": "2.5 hours"
+                }
+            
+            await websocket.send_text(json.dumps({
+                "type": "trade_summary",
+                "data": summary
+            }))
+            
+        except Exception as e:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": f"Failed to get trade summary: {str(e)}"
+            }))
+    
+    elif message_type == "subscribe_trade_alerts":
+        # Subscribe user to trade alerts
+        user_id = message.get("user_id")
+        if user_id:
+            # Add user to trade alert subscribers
+            manager.user_connections[user_id] = websocket
+            await websocket.send_text(json.dumps({
+                "type": "subscription_confirmed",
+                "subscription": "trade_alerts"
+            }))
+    
+    elif message_type == "request_market_data":
+        # Send current market data for requested symbols
+        symbols = message.get("symbols", [])
+        if symbols:
+            try:
+                from backend.services.real_time_market_service import RealTimeMarketService
+                
+                market_service = RealTimeMarketService()
+                market_data = {}
+                
+                for symbol in symbols:
+                    data = await market_service.get_current_price(symbol)
+                    if data:
+                        market_data[symbol] = {
+                            "price": data.price,
+                            "change": data.change,
+                            "change_percent": data.change_percent,
+                            "volume": data.volume
+                        }
+                
+                await websocket.send_text(json.dumps({
+                    "type": "market_data",
+                    "data": market_data
+                }))
+                
+            except Exception as e:
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": f"Failed to get market data: {str(e)}"
+                }))
+    
+    else:
         await websocket.send_text(json.dumps({
-            "type": "trade_summary",
-            "data": summary
+            "type": "error",
+            "message": f"Unknown message type: {message_type}"
         }))

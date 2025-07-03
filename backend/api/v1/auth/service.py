@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 
 from backend.api.v1.auth.schemas import UserRegistration, UserUpdate
 from backend.core.exceptions import AuthenticationError, ValidationError
+from backend.core.config import settings
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -22,8 +23,8 @@ class AuthService:
 
     def __init__(self, db: Session):
         self.db = db
-        self.secret_key = "your-secret-key-here"  # In production, use environment variable
-        self.algorithm = "HS256"
+        self.secret_key = settings.jwt_secret  # Use settings instead of hardcoded value
+        self.algorithm = settings.jwt_algorithm
         self.access_token_expire_minutes = ACCESS_TOKEN_EXPIRE_MINUTES
         
     def get_password_hash(self, password: str) -> str:
@@ -72,6 +73,20 @@ class AuthService:
         """Get user by ID"""
         return self.db.query(User).filter(User.id == user_id).first()
 
+    def _validate_password_strength(self, password: str) -> bool:
+        """Validate password strength requirements"""
+        if len(password) < 8:
+            return False
+        if not any(c.isupper() for c in password):
+            return False
+        if not any(c.islower() for c in password):
+            return False
+        if not any(c.isdigit() for c in password):
+            return False
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
+            return False
+        return True
+
     def create_user(self, user_data: UserRegistration) -> User:
         """Create a new user"""
         # Check if user already exists
@@ -80,6 +95,10 @@ class AuthService:
 
         if self.get_user_by_username(user_data.username):
             raise ValidationError("User already exists")
+
+        # Validate password strength
+        if not self._validate_password_strength(user_data.password):
+            raise ValidationError("Password must be at least 8 characters long and contain uppercase, lowercase, digit, and special character")
 
         # Create new user
         hashed_password = self.get_password_hash(user_data.password)

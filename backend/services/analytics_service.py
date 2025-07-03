@@ -11,6 +11,8 @@ from cachetools import TTLCache
 from backend.models.trade import Trade
 from backend.core.db.session import get_db
 from backend.services.behavioral_analytics import BehavioralAnalyticsService
+from backend.core.query_optimizer import optimize_query, optimize_trade_queries, query_optimizer
+from backend.core.async_manager import async_task, run_in_thread_pool
 
 # Import analytics modules
 from backend.analytics.performance import (
@@ -42,45 +44,33 @@ class AnalyticsService:
         """Get comprehensive analytics for a user"""
         cache_key = f"analytics_{user_id}_{start_date}_{end_date}"
 
-        if cache_key in self.cache:
-            return self.cache[cache_key]
+        # Use query optimizer cache instead of local cache
+        cache_key = query_optimizer.cache_key("get_user_analytics", user_id, start_date, end_date)
+        cached_result = query_optimizer.get_cached_result(cache_key, 600)
+        if cached_result is not None:
+            return cached_result
 
         try:
             db = next(get_db())
 
-            # Base query
-            query = db.query(Trade).filter(Trade.user_id == user_id)
-
-            if start_date:
-                query = query.filter(Trade.entry_time >= start_date)
-            if end_date:
-                query = query.filter(Trade.entry_time <= end_date)
-
+            # Use optimized trade query with eager loading
+            query = optimize_trade_queries(db, user_id, start_date=start_date, end_date=end_date)
             trades = query.all()
 
             if not trades:
                 return {"error": "No trades found for the specified period"}
 
-            # Convert to DataFrame for analysis
-            df = pd.DataFrame([{
-                'symbol': t.symbol,
-                'direction': t.direction,
-                'quantity': t.quantity,
-                'entry_price': t.entry_price,
-                'exit_price': t.exit_price,
-                'entry_time': t.entry_time,
-                'exit_time': t.exit_time,
-                'pnl': t.pnl or 0,
-                'commission': t.commission or 0,
-                'net_pnl': t.net_pnl or t.pnl or 0,
-                'strategy_tag': t.strategy_tag,
-                'confidence_score': t.confidence_score
-            } for t in trades])
+            # Convert to DataFrame for analysis (optimized)
+            df = await self._convert_trades_to_dataframe(trades)
 
-            analytics = await self._calculate_comprehensive_analytics(df)
+            # Run analytics calculation in background if it's a large dataset
+            if len(trades) > 1000:
+                analytics = await self._calculate_comprehensive_analytics_async(df)
+            else:
+                analytics = await self._calculate_comprehensive_analytics(df)
 
-            # Cache the results
-            self.cache[cache_key] = analytics
+            # Cache the results using query optimizer
+            query_optimizer.set_cached_result(cache_key, analytics, 600)
 
             return analytics
 
@@ -346,3 +336,26 @@ class AnalyticsService:
             "average_win": average_win,
             "average_loss": average_loss
         }
+    
+    @run_in_thread_pool
+    def _convert_trades_to_dataframe(self, trades: List[Trade]) -> pd.DataFrame:
+        """Convert trades to DataFrame efficiently"""
+        return pd.DataFrame([{
+            'symbol': t.symbol,
+            'direction': t.direction,
+            'quantity': t.quantity,
+            'entry_price': t.entry_price,
+            'exit_price': t.exit_price,
+            'entry_time': t.entry_time,
+            'exit_time': t.exit_time,
+            'pnl': t.pnl or 0,
+            'commission': t.commission or 0,
+            'net_pnl': t.net_pnl or t.pnl or 0,
+            'strategy_tag': t.strategy_tag,
+            'confidence_score': t.confidence_score
+        } for t in trades])
+    
+    @async_task
+    async def _calculate_comprehensive_analytics_async(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Async version of analytics calculation for large datasets"""
+        return await self._calculate_comprehensive_analytics(df)

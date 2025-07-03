@@ -25,6 +25,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.core.middleware import setup_middleware
 from backend.core.exceptions import setup_exception_handlers
+from backend.core.validation_middleware import setup_validation_middleware
 from backend.api.v1.public import public_router
 from backend.api.v1.auth.router import router as auth_router
 from backend.api.v1.trades.router import router as trades_router
@@ -48,6 +49,7 @@ from backend.api.v1.critique.router import router as critique_router
 from backend.api.v1.strategy_lab.router import router as strategy_lab_router
 from backend.api.v1.mental_map.router import router as mental_map_router
 from backend.api.v1.emotions.router import router as emotions_router
+from backend.api.v1.health.performance_router import router as performance_router
 
 app = FastAPI()
 
@@ -63,6 +65,7 @@ app.add_middleware(
 # Setup middleware and exception handlers
 setup_middleware(app)
 setup_exception_handlers(app)
+setup_validation_middleware(app)
 
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1/auth")
@@ -86,4 +89,5 @@ app.include_router(reflections_router, prefix="/api/v1/reflections")
 app.include_router(critique_router, prefix="/api/v1/critique")
 app.include_router(strategy_lab_router, prefix="/api/v1/strategy-lab")
 app.include_router(mental_map_router, prefix="/api/v1/mental-map")
-app.include_router(emotions_router, prefix="/api/v1/emotions") 
+app.include_router(emotions_router, prefix="/api/v1/emotions")
+app.include_router(performance_router, prefix="/api/v1/performance", tags=["performance"]) 

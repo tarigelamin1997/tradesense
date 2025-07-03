@@ -21,7 +21,7 @@ from backend.api.v1.auth.schemas import (
 )
 from backend.api.v1.auth.service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
 from backend.models.user import User
-from backend.core.security import get_current_user
+from backend.api.deps import get_current_user
 
 router = APIRouter()
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from backend.core.db.session import get_db
-from backend.core.security import get_current_user
+from backend.api.deps import get_current_user
 from backend.api.v1.trades.service import TradesService
 from .schemas import (
     TradeCreateRequest, TradeUpdateRequest, TradeResponse, TradeIngestRequest, TradeIngestResponse

@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 from backend.core.db.session import get_db
-from backend.core.security import get_current_user
+from backend.api.deps import get_current_user
 from backend.services.market_context import market_context_service
 
 router = APIRouter(prefix="/market-context", tags=["market-context"])

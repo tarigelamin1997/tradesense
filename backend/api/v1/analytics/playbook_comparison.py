@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from backend.models.trade import Trade
 from backend.models.playbook import Playbook
 from backend.core.db.session import get_db
-from backend.core.security import get_current_user
+from backend.api.deps import get_current_user
 
 router = APIRouter()
 

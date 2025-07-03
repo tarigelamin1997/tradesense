@@ -1,4 +1,3 @@
-
 import logging
 import json
 from typing import Dict, List, Optional, Any
@@ -6,7 +5,7 @@ from datetime import datetime
 import asyncio
 from dataclasses import dataclass
 
-from backend.models.trade import Trade
+from models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,10 @@
-
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 import pandas as pd
 from sqlalchemy.orm import Session
-from backend.models.portfolio import Portfolio, EquitySnapshot
-from backend.models.trade import Trade
-from backend.models.user import User
+from models.portfolio import Portfolio, EquitySnapshot
+from models.trade import Trade
+from models.user import User
 
 class PortfolioSimulator:
     """Service for managing virtual portfolio simulations"""

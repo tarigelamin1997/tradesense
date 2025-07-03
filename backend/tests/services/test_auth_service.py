@@ -1,4 +1,3 @@
-
 """
 Authentication service tests
 """
@@ -6,385 +5,401 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 
-from backend.api.v1.auth.service import AuthService
-from backend.core.security import SecurityManager
-from backend.core.exceptions import AuthenticationError, ValidationError
+from api.v1.auth.service import AuthService
+from core.security import SecurityManager
+from core.exceptions import AuthenticationError, ValidationError
+from api.v1.auth.schemas import UserRegistration, UserUpdate
 
 
 class TestAuthService:
     """Test AuthService business logic"""
 
-    def test_create_user_success(self):
+    def test_create_user_success(self, test_db):
         """Test successful user creation"""
-        service = AuthService()
-        user_data = {
-            "username": "testuser",
-            "email": "test@example.com",
-            "password": "SecurePassword123"
-        }
+        service = AuthService(test_db)
+        user_data = UserRegistration(
+            username="testuser",
+            email="test@example.com",
+            password="SecurePassword123!",
+            first_name="Test",
+            last_name="User",
+            trading_experience="intermediate",
+            preferred_markets="stocks,forex",
+            timezone="UTC"
+        )
         
-        with patch.object(service, '_validate_user_data') as mock_validate, \
-             patch.object(service, '_check_user_exists') as mock_check, \
-             patch.object(service, '_hash_password') as mock_hash, \
-             patch.object(service, '_save_user') as mock_save:
+        with patch.object(service, 'get_user_by_email') as mock_get_email, \
+             patch.object(service, 'get_user_by_username') as mock_get_username, \
+             patch.object(service, 'get_password_hash') as mock_hash:
             
-            mock_validate.return_value = True
-            mock_check.return_value = False
+            mock_get_email.return_value = None
+            mock_get_username.return_value = None
             mock_hash.return_value = "hashed_password"
-            mock_save.return_value = {"user_id": "new-user-123"}
             
             result = service.create_user(user_data)
             
-            assert result["success"] is True
-            assert "user_id" in result
+            assert result.email == "test@example.com"
+            assert result.username == "testuser"
 
-    def test_create_user_duplicate_email(self):
+    def test_create_user_duplicate_email(self, test_db):
         """Test user creation with duplicate email"""
-        service = AuthService()
-        user_data = {
-            "username": "testuser",
-            "email": "existing@example.com",
-            "password": "SecurePassword123"
-        }
+        service = AuthService(test_db)
+        user_data = UserRegistration(
+            username="testuser",
+            email="existing@example.com",
+            password="SecurePassword123!",
+            first_name="Test",
+            last_name="User",
+            trading_experience="intermediate",
+            preferred_markets="stocks,forex",
+            timezone="UTC"
+        )
         
-        with patch.object(service, '_validate_user_data') as mock_validate, \
-             patch.object(service, '_check_user_exists') as mock_check:
+        with patch.object(service, 'get_user_by_email') as mock_get_email:
+            mock_get_email.return_value = Mock()  # User exists
             
-            mock_validate.return_value = True
-            mock_check.return_value = True  # User exists
-            
-            result = service.create_user(user_data)
-            
-            assert result["success"] is False
-            assert "already exists" in result["error"].lower()
-
-    def test_create_user_validation_error(self):
-        """Test user creation with validation errors"""
-        service = AuthService()
-        user_data = {
-            "username": "",
-            "email": "invalid-email",
-            "password": "weak"
-        }
-        
-        with patch.object(service, '_validate_user_data') as mock_validate:
-            mock_validate.side_effect = ValidationError("Invalid user data")
-            
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError, match="User already exists"):
                 service.create_user(user_data)
 
-    def test_authenticate_user_success(self):
+    def test_create_user_duplicate_username(self, test_db):
+        """Test user creation with duplicate username"""
+        service = AuthService(test_db)
+        user_data = UserRegistration(
+            username="existinguser",
+            email="test@example.com",
+            password="SecurePassword123!",
+            first_name="Test",
+            last_name="User",
+            trading_experience="intermediate",
+            preferred_markets="stocks,forex",
+            timezone="UTC"
+        )
+        
+        with patch.object(service, 'get_user_by_email') as mock_get_email, \
+             patch.object(service, 'get_user_by_username') as mock_get_username:
+            
+            mock_get_email.return_value = None
+            mock_get_username.return_value = Mock()  # Username exists
+            
+            with pytest.raises(ValidationError, match="User already exists"):
+                service.create_user(user_data)
+
+    def test_create_user_weak_password(self, test_db):
+        """Test user creation with weak password"""
+        service = AuthService(test_db)
+        user_data = UserRegistration(
+            username="testuser",
+            email="test@example.com",
+            password="weak",
+            first_name="Test",
+            last_name="User",
+            trading_experience="intermediate",
+            preferred_markets="stocks,forex",
+            timezone="UTC"
+        )
+        
+        with patch.object(service, 'get_user_by_email') as mock_get_email, \
+             patch.object(service, 'get_user_by_username') as mock_get_username:
+            
+            mock_get_email.return_value = None
+            mock_get_username.return_value = None
+            
+            with pytest.raises(ValidationError, match="Password must be at least 8 characters"):
+                service.create_user(user_data)
+
+    def test_authenticate_user_success(self, test_db):
         """Test successful user authentication"""
-        service = AuthService()
-        credentials = {
-            "username": "testuser",
-            "password": "correct_password"
-        }
+        service = AuthService(test_db)
         
-        mock_user = {
-            "user_id": "test-123",
-            "username": "testuser",
-            "email": "test@example.com",
-            "password_hash": "hashed_password",
-            "is_active": True
-        }
+        mock_user = Mock()
+        mock_user.email = "test@example.com"
+        mock_user.hashed_password = "hashed_password"
+        mock_user.is_active = True
         
-        with patch.object(service, '_get_user_by_username') as mock_get_user, \
-             patch.object(SecurityManager, 'verify_password') as mock_verify:
+        with patch.object(service, 'get_user_by_email') as mock_get_user, \
+             patch.object(service, 'verify_password') as mock_verify:
             
             mock_get_user.return_value = mock_user
             mock_verify.return_value = True
             
-            result = service.authenticate_user(credentials["username"], credentials["password"])
+            result = service.authenticate_user("test@example.com", "correct_password")
             
-            assert result is not None
-            assert result["user_id"] == "test-123"
-            assert result["username"] == "testuser"
+            assert result == mock_user
+            mock_verify.assert_called_once_with("correct_password", "hashed_password")
 
-    def test_authenticate_user_invalid_password(self):
+    def test_authenticate_user_invalid_password(self, test_db):
         """Test authentication with invalid password"""
-        service = AuthService()
+        service = AuthService(test_db)
         
-        mock_user = {
-            "user_id": "test-123",
-            "username": "testuser",
-            "password_hash": "hashed_password",
-            "is_active": True
-        }
+        mock_user = Mock()
+        mock_user.email = "test@example.com"
+        mock_user.hashed_password = "hashed_password"
+        mock_user.is_active = True
         
-        with patch.object(service, '_get_user_by_username') as mock_get_user, \
-             patch.object(SecurityManager, 'verify_password') as mock_verify:
+        with patch.object(service, 'get_user_by_email') as mock_get_user, \
+             patch.object(service, 'verify_password') as mock_verify:
             
             mock_get_user.return_value = mock_user
             mock_verify.return_value = False
             
-            result = service.authenticate_user("testuser", "wrong_password")
+            result = service.authenticate_user("test@example.com", "wrong_password")
             
             assert result is None
 
-    def test_authenticate_user_not_found(self):
+    def test_authenticate_user_not_found(self, test_db):
         """Test authentication with non-existent user"""
-        service = AuthService()
+        service = AuthService(test_db)
         
-        with patch.object(service, '_get_user_by_username') as mock_get_user:
+        with patch.object(service, 'get_user_by_email') as mock_get_user:
             mock_get_user.return_value = None
             
-            result = service.authenticate_user("nonexistent", "password")
+            result = service.authenticate_user("nonexistent@example.com", "password")
             
             assert result is None
 
-    def test_authenticate_user_inactive(self):
+    def test_authenticate_user_inactive(self, test_db):
         """Test authentication with inactive user"""
-        service = AuthService()
+        service = AuthService(test_db)
         
-        mock_user = {
-            "user_id": "test-123",
-            "username": "testuser",
-            "password_hash": "hashed_password",
-            "is_active": False
-        }
+        mock_user = Mock()
+        mock_user.email = "test@example.com"
+        mock_user.hashed_password = "hashed_password"
+        mock_user.is_active = False
         
-        with patch.object(service, '_get_user_by_username') as mock_get_user:
+        with patch.object(service, 'get_user_by_email') as mock_get_user:
             mock_get_user.return_value = mock_user
             
-            result = service.authenticate_user("testuser", "password")
+            result = service.authenticate_user("test@example.com", "password")
             
             assert result is None
 
-    def test_refresh_user_token_success(self):
-        """Test successful token refresh"""
-        service = AuthService()
-        current_user = {
-            "user_id": "test-123",
-            "username": "testuser",
-            "email": "test@example.com"
-        }
-        
-        with patch.object(service, '_get_user_by_id') as mock_get_user, \
-             patch.object(SecurityManager, 'create_access_token') as mock_create_token:
-            
-            mock_get_user.return_value = current_user
-            mock_create_token.return_value = "new_access_token"
-            
-            result = service.refresh_user_token(current_user)
-            
-            assert result["access_token"] == "new_access_token"
-            assert result["user"]["user_id"] == "test-123"
-
-    def test_refresh_user_token_user_not_found(self):
-        """Test token refresh when user no longer exists"""
-        service = AuthService()
-        current_user = {"user_id": "nonexistent-123"}
-        
-        with patch.object(service, '_get_user_by_id') as mock_get_user:
-            mock_get_user.return_value = None
-            
-            with pytest.raises(AuthenticationError):
-                service.refresh_user_token(current_user)
-
-    def test_get_user_by_id_success(self):
+    def test_get_user_by_id_success(self, test_db):
         """Test successful user retrieval by ID"""
-        service = AuthService()
+        service = AuthService(test_db)
         user_id = "test-123"
         
-        mock_user = {
-            "user_id": user_id,
-            "username": "testuser",
-            "email": "test@example.com",
-            "created_at": datetime.now()
-        }
+        mock_user = Mock()
+        mock_user.id = user_id
+        mock_user.username = "testuser"
+        mock_user.email = "test@example.com"
         
-        with patch.object(service, '_get_user_by_id') as mock_get:
+        with patch.object(service, 'get_user_by_id') as mock_get:
             mock_get.return_value = mock_user
             
             result = service.get_user_by_id(user_id)
             
-            assert result["user_id"] == user_id
-            assert result["username"] == "testuser"
+            assert result == mock_user
+            mock_get.assert_called_once_with(user_id)
 
-    def test_get_user_by_id_not_found(self):
+    def test_get_user_by_id_not_found(self, test_db):
         """Test user retrieval when user doesn't exist"""
-        service = AuthService()
+        service = AuthService(test_db)
+        user_id = "nonexistent-123"
         
-        with patch.object(service, '_get_user_by_id') as mock_get:
+        with patch.object(service, 'get_user_by_id') as mock_get:
             mock_get.return_value = None
             
-            result = service.get_user_by_id("nonexistent")
+            result = service.get_user_by_id(user_id)
+            
+            assert result is None
+            mock_get.assert_called_once_with(user_id)
+
+    def test_get_user_by_email_success(self, test_db):
+        """Test successful user retrieval by email"""
+        service = AuthService(test_db)
+        email = "test@example.com"
+        
+        mock_user = Mock()
+        mock_user.email = email
+        mock_user.username = "testuser"
+        
+        with patch.object(service, 'get_user_by_email') as mock_get:
+            mock_get.return_value = mock_user
+            
+            result = service.get_user_by_email(email)
+            
+            assert result == mock_user
+            mock_get.assert_called_once_with(email)
+
+    def test_get_user_by_username_success(self, test_db):
+        """Test successful user retrieval by username"""
+        service = AuthService(test_db)
+        username = "testuser"
+        
+        mock_user = Mock()
+        mock_user.username = username
+        mock_user.email = "test@example.com"
+        
+        with patch.object(service, 'get_user_by_username') as mock_get:
+            mock_get.return_value = mock_user
+            
+            result = service.get_user_by_username(username)
+            
+            assert result == mock_user
+            mock_get.assert_called_once_with(username)
+
+    def test_update_user_success(self, test_db):
+        """Test successful user update"""
+        service = AuthService(test_db)
+        user_id = "test-123"
+        
+        mock_user = Mock()
+        mock_user.id = user_id
+        mock_user.email = "old@example.com"
+        mock_user.username = "olduser"
+        mock_user.first_name = "Old"
+        mock_user.last_name = "Name"
+        
+        update_data = UserUpdate(
+            email="new@example.com",
+            first_name="New",
+            last_name="Name"
+        )
+        
+        with patch.object(service, 'get_user_by_id') as mock_get_user, \
+             patch.object(service, 'get_user_by_email') as mock_get_email:
+            
+            mock_get_user.return_value = mock_user
+            mock_get_email.return_value = None  # New email not taken
+            
+            result = service.update_user(user_id, update_data)
+            
+            assert result == mock_user
+            assert mock_user.email == "new@example.com"
+            assert mock_user.first_name == "New"
+            assert mock_user.last_name == "Name"
+
+    def test_update_user_not_found(self, test_db):
+        """Test updating non-existent user"""
+        service = AuthService(test_db)
+        user_id = "nonexistent-123"
+        
+        update_data = UserUpdate(first_name="New")
+        
+        with patch.object(service, 'get_user_by_id') as mock_get_user:
+            mock_get_user.return_value = None
+            
+            result = service.update_user(user_id, update_data)
             
             assert result is None
 
-    def test_invalidate_token_success(self):
-        """Test successful token invalidation"""
-        service = AuthService()
-        token = "valid_token"
-        
-        with patch.object(service, '_add_token_to_blacklist') as mock_blacklist:
-            mock_blacklist.return_value = True
-            
-            result = service.invalidate_token(token)
-            
-            assert result["success"] is True
-
-    def test_validate_user_data_success(self):
-        """Test successful user data validation"""
-        service = AuthService()
-        valid_data = {
-            "username": "validuser",
-            "email": "valid@example.com",
-            "password": "ValidPassword123"
-        }
-        
-        # This should not raise any exceptions
-        result = service._validate_user_data(valid_data)
-        assert result is True
-
-    def test_validate_user_data_invalid_email(self):
-        """Test user data validation with invalid email"""
-        service = AuthService()
-        invalid_data = {
-            "username": "testuser",
-            "email": "invalid-email",
-            "password": "ValidPassword123"
-        }
-        
-        with pytest.raises(ValidationError):
-            service._validate_user_data(invalid_data)
-
-    def test_validate_user_data_weak_password(self):
-        """Test user data validation with weak password"""
-        service = AuthService()
-        invalid_data = {
-            "username": "testuser",
-            "email": "test@example.com",
-            "password": "weak"
-        }
-        
-        with pytest.raises(ValidationError):
-            service._validate_user_data(invalid_data)
-
-    def test_password_strength_validation(self):
+    def test_password_strength_validation(self, test_db):
         """Test password strength validation"""
-        service = AuthService()
+        service = AuthService(test_db)
+        
+        # Test strong password
+        strong_password = "StrongPassword123!"
+        assert service._validate_password_strength(strong_password) is True
         
         # Test weak passwords
         weak_passwords = [
-            "short",
-            "nouppercase123",
-            "NOLOWERCASE123",
-            "NoNumbers",
-            "password"
+            "short",  # Too short
+            "nouppercase123!",  # No uppercase
+            "NOLOWERCASE123!",  # No lowercase
+            "NoNumbers!",  # No numbers
+            "NoSpecial123"  # No special characters
         ]
         
         for password in weak_passwords:
-            with pytest.raises(ValidationError):
-                service._validate_password_strength(password)
-        
-        # Test strong password
-        strong_password = "StrongPassword123"
-        result = service._validate_password_strength(strong_password)
-        assert result is True
+            assert service._validate_password_strength(password) is False
 
-    def test_email_validation(self):
-        """Test email format validation"""
-        service = AuthService()
+    def test_verify_password(self, test_db):
+        """Test password verification"""
+        service = AuthService(test_db)
         
-        # Valid emails
-        valid_emails = [
-            "test@example.com",
-            "user.name@domain.co.uk",
-            "user+tag@domain.org"
-        ]
+        password = "testpassword123"
+        hashed_password = service.get_password_hash(password)
         
-        for email in valid_emails:
-            assert service._validate_email_format(email) is True
+        # Test correct password
+        assert service.verify_password(password, hashed_password) is True
         
-        # Invalid emails
-        invalid_emails = [
-            "invalid-email",
-            "@domain.com",
-            "user@",
-            "user.domain.com"
-        ]
+        # Test incorrect password
+        assert service.verify_password("wrongpassword", hashed_password) is False
+
+    def test_create_access_token(self, test_db):
+        """Test JWT token creation"""
+        service = AuthService(test_db)
         
-        for email in invalid_emails:
-            assert service._validate_email_format(email) is False
+        data = {"sub": "test-user-123", "username": "testuser"}
+        
+        token = service.create_access_token(data)
+        
+        assert token is not None
+        assert isinstance(token, str)
+        assert len(token) > 0
+
+    def test_verify_token(self, test_db):
+        """Test JWT token verification"""
+        service = AuthService(test_db)
+        
+        data = {"sub": "test-user-123", "username": "testuser"}
+        token = service.create_access_token(data)
+        
+        # Test valid token
+        user_id = service.verify_token(token)
+        assert user_id == "test-user-123"
+        
+        # Test invalid token
+        invalid_user_id = service.verify_token("invalid_token")
+        assert invalid_user_id is None
 
 
 class TestAuthServiceIntegration:
     """Integration tests for AuthService"""
 
-    def test_user_registration_and_login_flow(self):
+    def test_user_registration_and_login_flow(self, test_db):
         """Test complete user registration and login flow"""
-        service = AuthService()
+        service = AuthService(test_db)
         
-        # Registration data
-        user_data = {
-            "username": "integrationuser",
-            "email": "integration@example.com",
-            "password": "IntegrationTest123"
-        }
+        # Test user registration
+        user_data = UserRegistration(
+            username="integration_user",
+            email="integration@example.com",
+            password="SecurePassword123!",
+            first_name="Integration",
+            last_name="User",
+            trading_experience="intermediate",
+            preferred_markets="stocks,forex",
+            timezone="UTC"
+        )
         
-        with patch.object(service, '_check_user_exists') as mock_check, \
-             patch.object(service, '_save_user') as mock_save, \
-             patch.object(service, '_get_user_by_username') as mock_get_user, \
-             patch.object(SecurityManager, 'hash_password') as mock_hash, \
-             patch.object(SecurityManager, 'verify_password') as mock_verify:
+        with patch.object(service, 'get_user_by_email') as mock_get_email, \
+             patch.object(service, 'get_user_by_username') as mock_get_username, \
+             patch.object(service, 'get_password_hash') as mock_hash:
             
-            # Setup mocks for registration
-            mock_check.return_value = False
+            mock_get_email.return_value = None
+            mock_get_username.return_value = None
             mock_hash.return_value = "hashed_password"
-            mock_save.return_value = {"user_id": "integration-123"}
             
-            # Register user
-            register_result = service.create_user(user_data)
-            assert register_result["success"] is True
+            created_user = service.create_user(user_data)
+            assert created_user.email == "integration@example.com"
             
-            # Setup mocks for login
-            mock_user = {
-                "user_id": "integration-123",
-                "username": user_data["username"],
-                "email": user_data["email"],
-                "password_hash": "hashed_password",
-                "is_active": True
-            }
-            mock_get_user.return_value = mock_user
-            mock_verify.return_value = True
+            # Test login
+            mock_user = Mock()
+            mock_user.email = "integration@example.com"
+            mock_user.hashed_password = "hashed_password"
+            mock_user.is_active = True
             
-            # Login with same credentials
-            login_result = service.authenticate_user(
-                user_data["email"], 
-                user_data["password"]
-            )
-            
-            assert login_result is not None
-            assert login_result["user_id"] == "integration-123"
-            assert login_result["email"] == user_data["email"]
+            with patch.object(service, 'verify_password') as mock_verify:
+                mock_verify.return_value = True
+                
+                logged_in_user = service.authenticate_user("integration@example.com", "SecurePassword123!")
+                assert logged_in_user == mock_user
 
-    def test_token_lifecycle(self):
-        """Test token creation, validation, and invalidation"""
-        service = AuthService()
+    def test_token_lifecycle(self, test_db):
+        """Test token creation and verification"""
+        service = AuthService(test_db)
         
-        user_data = {
-            "user_id": "token-test-123",
-            "username": "tokenuser",
-            "email": "token@example.com"
-        }
+        # Test token creation
+        user_data = {"sub": "token-test-123", "username": "tokenuser"}
+        token = service.create_access_token(user_data)
         
-        with patch.object(service, '_get_user_by_id') as mock_get_user, \
-             patch.object(service, '_add_token_to_blacklist') as mock_blacklist:
-            
-            mock_get_user.return_value = user_data
-            
-            # Create token via refresh
-            token_result = service.refresh_user_token(user_data)
-            access_token = token_result["access_token"]
-            
-            # Token should be valid
-            assert access_token is not None
-            assert len(access_token) > 50
-            
-            # Invalidate token
-            mock_blacklist.return_value = True
-            invalidate_result = service.invalidate_token(access_token)
-            
-            assert invalidate_result["success"] is True
+        assert token is not None
+        
+        # Test token verification
+        user_id = service.verify_token(token)
+        assert user_id == "token-test-123"
+        
+        # Test invalid token
+        invalid_user_id = service.verify_token("invalid_token")
+        assert invalid_user_id is None

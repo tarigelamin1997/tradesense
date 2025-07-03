@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 from sklearn.cluster import DBSCAN, KMeans
@@ -12,9 +11,9 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
-from backend.models.trade import Trade
-from backend.models.mental_map import MentalMapEntry
-from backend.models.pattern_cluster import PatternCluster, PatternClusterCreate
+from models.trade import Trade
+from models.mental_map import MentalMapEntry
+from models.pattern_cluster import PatternCluster, PatternClusterCreate
 
 class PatternDetectionEngine:
     """ML-powered trade pattern detection and clustering engine"""

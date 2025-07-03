@@ -3,7 +3,7 @@ Trade note model for attaching notes to trades
 """
 from sqlalchemy import Column, String, Text, DateTime
 from sqlalchemy.sql import func
-from backend.core.db.session import Base
+from core.db.session import Base
 import uuid
 
 

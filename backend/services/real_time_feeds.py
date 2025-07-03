@@ -1,11 +1,10 @@
-
 import asyncio
 import websockets
 import json
 from typing import Dict, List, Callable
 from datetime import datetime
 import logging
-from backend.core.config import get_settings
+from core.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

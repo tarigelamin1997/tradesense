@@ -85,37 +85,55 @@ class TradesService:
             # Calculate initial PnL if exit price is provided
             pnl = None
             net_pnl = None
-            status = "open"
 
-            # Create trade record
-            trade = {
-                "id": trade_id,
-                "user_id": user_id,
-                "symbol": trade_data.symbol,
-                "direction": trade_data.direction,
-                "quantity": trade_data.quantity,
-                "entry_price": trade_data.entry_price,
-                "exit_price": None,
-                "entry_time": trade_data.entry_time,
-                "exit_time": None,
-                "pnl": pnl,
-                "commission": 0.0,
-                "net_pnl": net_pnl,
-                "strategy_tag": trade_data.strategy_tag,
-                "strategy_id": trade_data.strategy_id,
-                "confidence_score": trade_data.confidence_score,
-                "notes": trade_data.notes,
-                "status": status,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
-            }
+            # Create trade record in database
+            trade = Trade(
+                id=trade_id,
+                user_id=user_id,
+                symbol=trade_data.symbol,
+                direction=trade_data.direction,
+                quantity=trade_data.quantity,
+                entry_price=trade_data.entry_price,
+                exit_price=None,
+                entry_time=trade_data.entry_time,
+                exit_time=None,
+                pnl=pnl,
+                commission=0.0,
+                net_pnl=net_pnl,
+                strategy_tag=trade_data.strategy_tag,
+                strategy_id=trade_data.strategy_id,
+                confidence_score=trade_data.confidence_score,
+                notes=trade_data.notes
+            )
 
-            # Store trade (in production, save to database)
-            self._trades_storage[trade_id] = trade
+            # Save to database
+            self.db.add(trade)
+            self.db.commit()
+            self.db.refresh(trade)
 
             logger.info(f"Trade {trade_id} created for user {user_id}")
 
-            return TradeResponse(**trade)
+            return TradeResponse(
+                id=trade.id,
+                user_id=trade.user_id,
+                symbol=trade.symbol,
+                direction=trade.direction,
+                quantity=trade.quantity,
+                entry_price=trade.entry_price,
+                exit_price=trade.exit_price,
+                entry_time=trade.entry_time,
+                exit_time=trade.exit_time,
+                pnl=trade.pnl,
+                commission=trade.commission,
+                net_pnl=trade.net_pnl,
+                strategy_tag=trade.strategy_tag,
+                strategy_id=trade.strategy_id,
+                confidence_score=trade.confidence_score,
+                notes=trade.notes,
+                status="open" if trade.exit_price is None else "closed",
+                created_at=trade.created_at,
+                updated_at=trade.updated_at
+            )
 
         except Exception as e:
             logger.error(f"Failed to create trade: {str(e)}")
@@ -718,13 +736,39 @@ class TradesService:
 
     async def get_trade_with_journal(self, trade_id: str, user_id: str):
         """Fetch a trade by ID for a user, including journal entries if available."""
-        from backend.models.trade import Trade
-        from backend.models.trade_note import TradeNote
         trade = self.db.query(Trade).filter(Trade.id == trade_id, Trade.user_id == user_id).first()
         if not trade:
             return None
         # Fetch related journal entries (if any)
         journal_entries = self.db.query(TradeNote).filter(TradeNote.trade_id == trade_id).all()
-        trade_dict = trade.__dict__.copy()
-        trade_dict["journal_entries"] = [j.__dict__.copy() for j in journal_entries]
+        trade_dict = {
+            "id": trade.id,
+            "user_id": trade.user_id,
+            "symbol": trade.symbol,
+            "direction": trade.direction,
+            "quantity": trade.quantity,
+            "entry_price": trade.entry_price,
+            "exit_price": trade.exit_price,
+            "entry_time": trade.entry_time,
+            "exit_time": trade.exit_time,
+            "pnl": trade.pnl,
+            "commission": trade.commission,
+            "net_pnl": trade.net_pnl,
+            "strategy_tag": trade.strategy_tag,
+            "strategy_id": trade.strategy_id,
+            "confidence_score": trade.confidence_score,
+            "notes": trade.notes,
+            "status": "open" if trade.exit_price is None else "closed",
+            "created_at": trade.created_at,
+            "updated_at": trade.updated_at,
+            "journal_entries": [
+                {
+                    "id": j.id,
+                    "trade_id": j.trade_id,
+                    "content": j.content,
+                    "created_at": j.created_at,
+                    "updated_at": j.updated_at
+                } for j in journal_entries
+            ]
+        }
         return trade_dict

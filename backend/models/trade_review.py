@@ -1,4 +1,4 @@
-from backend.core.db.session import Base
+from core.db.session import Base
 from sqlalchemy import Column, String, Integer, DateTime, Text, JSON, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func

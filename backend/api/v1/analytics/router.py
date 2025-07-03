@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, date
 import logging
 
 from backend.core.db.session import get_db
-from backend.core.security import get_current_user
+from backend.api.deps import get_current_user
 from backend.core.exceptions import (
     TradeSenseException, NotFoundError, ValidationError, 
     DatabaseError, ExternalServiceError

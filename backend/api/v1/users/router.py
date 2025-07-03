@@ -2,29 +2,28 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 
-from backend.api.v1.users.schemas import (
+from api.v1.users.schemas import (
     UserRead,
     UserUpdate,
     UserListResponse,
     UserFilterParams,
     UserStatsResponse
 )
-from backend.api.v1.users.service import UserService
-from backend.core.db.session import get_db
-from backend.core.security import get_current_active_user, get_admin_user
-from backend.core.response import ResponseHandler, APIResponse
-from backend.core.exceptions import TradeSenseException
+from api.v1.users.service import UserService
+from core.db.session import get_db
+from core.response import ResponseHandler, APIResponse
+from core.exceptions import TradeSenseException
 import logging
 
-from backend.api.deps import get_current_user
-from backend.api.v1.users.schemas import (
+from api.deps import get_current_user, get_current_active_user, get_admin_user
+from api.v1.users.schemas import (
     UserProfileResponse,
     UserProfileUpdate,
     TradingStatsResponse,
     Achievement,
     UserResponse
 )
-from backend.models.user import User, UserCreate
+from models.user import User, UserCreate
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ router = APIRouter(prefix="/users", tags=["User Management"])
 async def create_user(
     user_data: UserCreate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> UserRead:
     """
     Create a new user account (Admin only)
@@ -64,7 +63,7 @@ async def list_users(
     role: Optional[str] = Query(default=None, description="Filter by role (admin/trader)"),
     active_only: bool = Query(default=True, description="Show only active users"),
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> UserListResponse:
     """
     List all users with filtering options (Admin only)
@@ -105,7 +104,7 @@ async def list_users(
 @router.get("/stats", response_model=UserStatsResponse, summary="Get User Statistics")
 async def get_user_stats(
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> UserStatsResponse:
     """
     Get user statistics (Admin only)
@@ -136,7 +135,7 @@ async def get_user_stats(
 async def get_user(
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> UserRead:
     """
     Get user by ID (Admin only)
@@ -158,7 +157,7 @@ async def update_user(
     user_id: str,
     user_update: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> UserRead:
     """
     Update user information (Admin only)
@@ -179,7 +178,7 @@ async def update_user(
 async def deactivate_user(
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> APIResponse:
     """
     Soft delete user (deactivate) (Admin only)
@@ -204,7 +203,7 @@ async def deactivate_user(
 async def activate_user(
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> UserRead:
     """
     Activate user (Admin only)

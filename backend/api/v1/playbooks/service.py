@@ -1,4 +1,3 @@
-
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, desc, asc, or_
 from typing import List, Optional, Dict, Any
@@ -7,7 +6,8 @@ import json
 import numpy as np
 import pandas as pd
 
-from backend.models.playbook import Playbook, PlaybookCreate, PlaybookUpdate, PlaybookAnalytics
+from backend.models.playbook import Playbook
+from backend.api.v1.playbooks.schemas import PlaybookCreate, PlaybookUpdate, PlaybookAnalytics
 from backend.models.trade import Trade
 
 class PlaybookService:

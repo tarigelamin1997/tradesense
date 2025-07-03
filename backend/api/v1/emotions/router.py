@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
@@ -7,7 +6,7 @@ from backend.services.emotional_analytics import EmotionalAnalyticsService
 from backend.models.user import User
 from pydantic import BaseModel, Field
 
-router = APIRouter(prefix="/emotions", tags=["emotions"])
+router = APIRouter(tags=["emotions"])
 
 class EmotionalTagsUpdate(BaseModel):
     trade_id: str

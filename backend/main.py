@@ -36,6 +36,7 @@ from backend.api.health.router import router as health_router, root_router as he
 from backend.core.middleware import setup_middleware
 from backend.core.exceptions import setup_exception_handlers
 import logging
+from backend.api.v1.public import public_router
 
 # Configure logging
 logging.basicConfig(
@@ -84,6 +85,7 @@ def create_app() -> FastAPI:
     app.include_router(intelligence_router, prefix="/api/v1/intelligence", tags=["intelligence"])
     app.include_router(market_data_router, prefix="/api/v1/market-data", tags=["market-data"])
     app.include_router(portfolio_router, prefix="/api/v1")
+    app.include_router(public_router, prefix="/api/v1")
 
     @app.get("/", include_in_schema=False)
     async def redirect_to_frontend():

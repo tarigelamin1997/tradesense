@@ -2,11 +2,9 @@
 Strategy model for trade strategy management
 """
 from sqlalchemy import Column, String, Text, DateTime, Index
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
+from backend.core.db.session import Base
 import uuid
-
-Base = declarative_base()
 
 
 class Strategy(Base):

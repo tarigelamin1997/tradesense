@@ -1,36 +1,43 @@
-
-from sqlalchemy import Column, String, Integer, DateTime, Text, Date, Index
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, Text, DateTime, Integer, JSON
 from sqlalchemy.sql import func
+from backend.core.db.session import Base
 from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import date, datetime
+from typing import List, Optional
+from datetime import datetime, date
 import uuid
 
-Base = declarative_base()
 
 class DailyEmotionReflection(Base):
     __tablename__ = "daily_emotion_reflections"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, nullable=False, index=True)
+    user_id = Column(String, nullable=False)
+    date = Column(String, nullable=False)  # YYYY-MM-DD format
     
-    # Date for the reflection
-    reflection_date = Column(Date, nullable=False, index=True)
+    # Emotion tracking
+    pre_market_emotion = Column(String(50), nullable=True)
+    post_market_emotion = Column(String(50), nullable=True)
+    dominant_emotion = Column(String(50), nullable=True)
+    emotion_intensity = Column(Integer, nullable=True)  # 1-10 scale
     
-    # Emotional data
-    mood_score = Column(Integer)  # -5 to +5 scale
-    summary = Column(Text)
-    dominant_emotion = Column(String)
+    # Reflection content
+    what_went_well = Column(Text, nullable=True)
+    what_to_improve = Column(Text, nullable=True)
+    lessons_learned = Column(Text, nullable=True)
+    tomorrow_focus = Column(Text, nullable=True)
     
-    # Metadata
+    # Market conditions and mindset
+    market_conditions = Column(String(100), nullable=True)
+    trading_mindset = Column(String(100), nullable=True)
+    stress_level = Column(Integer, nullable=True)  # 1-10 scale
+    
+    # Goals and achievements
+    daily_goals_met = Column(JSON, nullable=True)  # List of boolean flags
+    major_wins = Column(Text, nullable=True)
+    areas_for_growth = Column(Text, nullable=True)
+    
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-
-    # Indexes for performance
-    __table_args__ = (
-        Index('idx_user_date', 'user_id', 'reflection_date'),
-    )
 
 # Pydantic models for API
 class DailyEmotionReflectionBase(BaseModel):

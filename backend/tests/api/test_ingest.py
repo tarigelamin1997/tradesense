@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime
@@ -6,6 +5,8 @@ import json
 
 from backend.main import app
 from backend.core.security import SecurityManager
+from backend.models.user import User
+from backend.core.db.session import SessionLocal
 
 client = TestClient(app)
 
@@ -19,6 +20,25 @@ class TestTradeIngest:
             data={"user_id": self.test_user_id, "email": "test@example.com"}
         )
         self.headers = {"Authorization": f"Bearer {self.test_token}"}
+        # Ensure test user exists in the database
+        db = SessionLocal()
+        user = db.query(User).filter_by(id=self.test_user_id).first()
+        if not user:
+            user = User(
+                id=self.test_user_id,
+                email="test@example.com",
+                username="testuser",
+                hashed_password="testhash",
+                first_name="Test",
+                last_name="User",
+                trading_experience="intermediate",
+                preferred_markets="stocks,forex",
+                timezone="UTC",
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+        db.close()
 
     def test_ingest_trade_success(self):
         """Test successful trade ingestion"""
@@ -41,6 +61,8 @@ class TestTradeIngest:
             headers=self.headers
         )
 
+        if response.status_code != 200:
+            print("[DEBUG] test_ingest_trade_success response:", response.status_code, response.text)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
@@ -64,6 +86,8 @@ class TestTradeIngest:
             headers=self.headers
         )
 
+        if response.status_code != 200:
+            print("[DEBUG] test_ingest_trade_open_position response:", response.status_code, response.text)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
@@ -88,7 +112,7 @@ class TestTradeIngest:
         )
 
         assert response.status_code == 422
-        assert "validation" in response.json()["detail"][0]["type"]
+        assert response.json()["details"]["validation_errors"][0]["type"] in ("value_error", "validation_error")
 
     def test_ingest_trade_missing_auth(self):
         """Test missing authentication"""

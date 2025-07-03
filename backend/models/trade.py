@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, Index, JSON, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 import uuid
@@ -110,11 +110,19 @@ class TradeBase(BaseModel):
     executed_plan: Optional[bool] = Field(None, description="Did trader follow their plan?")
     post_trade_mood: Optional[str] = Field(None, max_length=50, description="Overall mood after trade")
 
-    @validator('exit_time')
+    @field_validator('exit_time')
+    @classmethod
     def validate_exit_time(cls, v, values):
-        if v and 'entry_time' in values and v <= values['entry_time']:
-            raise ValueError('Exit time must be after entry time')
+        entry_time = values.get('entry_time')
+        if v and entry_time and v < entry_time:
+            raise ValueError('Exit time cannot be before entry time')
         return v
+
+    model_config = {
+        "json_schema_extra": {
+            # ... example ...
+        }
+    }
 
 class TradeCreate(TradeBase):
     pass
@@ -140,5 +148,6 @@ class TradeResponse(TradeBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

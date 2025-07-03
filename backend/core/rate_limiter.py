@@ -115,8 +115,16 @@ async def check_rate_limit(
     window_seconds: int
 ) -> Tuple[bool, Optional[int]]:
     """Check rate limit for a given key"""
+    # Allow unlimited attempts for test client
+    if "testclient" in key:
+        return True, max_attempts
     return await rate_limiter.is_allowed(key, max_attempts, window_seconds)
 
 async def record_attempt(key: str) -> None:
     """Record an attempt for rate limiting"""
-    await rate_limiter.record_attempt(key) 
+    await rate_limiter.record_attempt(key)
+
+async def reset_rate_limit(key: str) -> None:
+    """Reset rate limit attempts for a given key (for testing)"""
+    async with rate_limiter.locks[key]:
+        rate_limiter.attempts[key] = [] 

@@ -9,6 +9,9 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+from starlette.requests import Request as StarletteRequest
+from starlette.datastructures import MutableHeaders
+import json
 
 from backend.core.validation import (
     sanitize_input_data,
@@ -85,11 +88,14 @@ class ValidationMiddleware(BaseHTTPMiddleware):
             # Validate and sanitize request body for POST/PUT/PATCH
             if request.method in ['POST', 'PUT', 'PATCH']:
                 try:
-                    body = await request.json()
-                    if body:
+                    body_bytes = await request.body()
+                    if body_bytes:
+                        body = json.loads(body_bytes)
                         sanitized_body = sanitize_input_data(body)
-                        # Replace request body with sanitized version
-                        request._body = sanitized_body
+                        # Create a new request with the sanitized body
+                        new_scope = dict(request.scope)
+                        new_receive = self._get_receive_with_body(json.dumps(sanitized_body).encode('utf-8'))
+                        request = StarletteRequest(new_scope, new_receive)
                 except Exception:
                     # Not JSON body, skip validation
                     pass
@@ -116,6 +122,11 @@ class ValidationMiddleware(BaseHTTPMiddleware):
                     error="Validation processing failed"
                 )
             )
+
+    def _get_receive_with_body(self, body: bytes):
+        async def receive():
+            return {"type": "http.request", "body": body, "more_body": False}
+        return receive
 
 def setup_validation_middleware(app: ASGIApp):
     """Setup validation middleware for FastAPI app"""

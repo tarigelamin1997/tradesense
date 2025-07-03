@@ -37,8 +37,9 @@ class JournalEntryResponse(JournalEntryBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 # Psychology analytics response models
 class EmotionAnalytics(BaseModel):
@@ -72,8 +73,9 @@ class TradeWithJournalResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class TradeNoteBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="Note title")
@@ -103,8 +105,9 @@ class TradeNoteRead(TradeNoteBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class TradeNoteListResponse(BaseModel):
     notes: List[TradeNoteRead]

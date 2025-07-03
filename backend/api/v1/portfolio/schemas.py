@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
@@ -20,8 +19,9 @@ class PortfolioResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class EquityCurveResponse(BaseModel):
     timestamp: datetime
@@ -30,8 +30,9 @@ class EquityCurveResponse(BaseModel):
     total_pnl: float
     trade_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class TradeSimulation(BaseModel):
     symbol: str

@@ -1,4 +1,3 @@
-
 """
 Upload schemas for file upload and data processing
 """
@@ -17,8 +16,8 @@ class FileUploadResponse(BaseModel):
     message: str = Field(..., description="Upload status message")
     upload_id: str = Field(..., description="Unique upload identifier")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "filename": "trades_2024.csv",
@@ -32,6 +31,7 @@ class FileUploadResponse(BaseModel):
                 "upload_id": "upload_12345"
             }
         }
+    }
 
 
 class DataValidationResult(BaseModel):
@@ -42,8 +42,8 @@ class DataValidationResult(BaseModel):
     processed_rows: int = Field(..., description="Number of rows that passed validation")
     total_rows: int = Field(..., description="Total number of rows")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "valid": True,
                 "errors": [],
@@ -52,6 +52,7 @@ class DataValidationResult(BaseModel):
                 "total_rows": 150
             }
         }
+    }
 
 
 class ColumnMappingRequest(BaseModel):
@@ -59,8 +60,8 @@ class ColumnMappingRequest(BaseModel):
     upload_id: str = Field(..., description="Upload identifier")
     column_mapping: Dict[str, str] = Field(..., description="Mapping of file columns to standard fields")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "upload_id": "upload_12345",
                 "column_mapping": {
@@ -73,6 +74,7 @@ class ColumnMappingRequest(BaseModel):
                 }
             }
         }
+    }
 
 
 class BulkTradeImportRequest(BaseModel):
@@ -81,8 +83,8 @@ class BulkTradeImportRequest(BaseModel):
     column_mapping: Optional[Dict[str, str]] = Field(None, description="Column mapping")
     validate_only: bool = Field(default=False, description="Only validate, don't import")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "upload_id": "upload_12345",
                 "column_mapping": {
@@ -93,6 +95,7 @@ class BulkTradeImportRequest(BaseModel):
                 "validate_only": False
             }
         }
+    }
 
 
 class BulkImportResponse(BaseModel):
@@ -103,8 +106,8 @@ class BulkImportResponse(BaseModel):
     validation_result: DataValidationResult = Field(..., description="Validation results")
     message: str = Field(..., description="Import status message")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "imported_trades": 145,
@@ -119,3 +122,4 @@ class BulkImportResponse(BaseModel):
                 "message": "Bulk import completed successfully"
             }
         }
+    }

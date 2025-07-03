@@ -1,4 +1,3 @@
-
 """
 Uploads service layer - handles file uploads and data processing
 """
@@ -294,3 +293,6 @@ class UploadsService:
                         logger.warning(f"Failed to cleanup upload {upload_id}: {str(e)}")
         except Exception as e:
             logger.error(f"Cleanup task failed: {str(e)}")
+
+# Alias for test patching compatibility
+UploadService = UploadsService

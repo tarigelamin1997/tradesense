@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -9,7 +9,7 @@ from .schemas import (
     TradeCreateRequest, TradeUpdateRequest, TradeResponse, TradeIngestRequest, TradeIngestResponse
 )
 from .confidence_calibration import ConfidenceCalibrationService
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from uuid import UUID
 
 router = APIRouter(tags=["trades"])
@@ -26,7 +26,7 @@ async def create_trade(
     """Create a new trade"""
     try:
         trade = await trade_service.create_trade(
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             trade_data=trade_data
         )
         return trade
@@ -42,12 +42,19 @@ async def ingest_trade(
     """Ingest a trade (for bulk or API ingestion)"""
     try:
         result = await trade_service.ingest_trade(
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             trade_data=trade_data
         )
         return result
+    except ValidationError as ve:
+        raise HTTPException(status_code=422, detail=ve.errors())
+    except HTTPException as he:
+        # If this is an auth error, force 401
+        if he.status_code == 403:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=he.detail)
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to ingest trade")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=List[dict])
 async def get_trades(
@@ -59,7 +66,7 @@ async def get_trades(
 ):
     """Get all trades for the current user"""
     return await trade_service.get_user_trades(
-        user_id=current_user["user_id"],
+        user_id=current_user.id,
         limit=limit,
         offset=offset,
         include_journal=include_journal
@@ -74,7 +81,7 @@ async def get_trade_with_journal(
     """Get a specific trade with all its journal entries"""
     trade = await trade_service.get_trade_with_journal(
         trade_id=trade_id,
-        user_id=current_user["user_id"]
+        user_id=current_user.id
     )
 
     if not trade:
@@ -93,7 +100,7 @@ async def update_trade(
     try:
         return await trade_service.update_trade(
             trade_id=trade_id,
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             update_data=update_data
         )
     except ValueError as e:
@@ -111,7 +118,7 @@ async def delete_trade(
     try:
         await trade_service.delete_trade(
             trade_id=trade_id,
-            user_id=current_user["user_id"]
+            user_id=current_user.id
         )
         return {"message": "Trade and journal entries deleted successfully"}
     except ValueError as e:
@@ -133,7 +140,7 @@ async def attach_playbook_to_trade(
     try:
         return await trade_service.attach_playbook(
             trade_id=trade_id,
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             playbook_id=request.playbook_id
         )
     except ValueError as e:
@@ -149,7 +156,7 @@ async def get_confidence_calibration(
     """Get confidence calibration analysis for the current user"""
     try:
         calibration_service = ConfidenceCalibrationService(db)
-        return calibration_service.get_confidence_calibration(current_user["user_id"])
+        return calibration_service.get_confidence_calibration(current_user.id)
     except Exception as e:
         if "No trades with confidence scores found" in str(e):
             raise HTTPException(status_code=404, detail="No trades with confidence scores found")
@@ -163,7 +170,7 @@ async def get_confidence_calibration_by_playbook(
     """Get confidence calibration analysis grouped by playbook"""
     try:
         calibration_service = ConfidenceCalibrationService(db)
-        return calibration_service.get_confidence_by_playbook(current_user["user_id"])
+        return calibration_service.get_confidence_by_playbook(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to calculate playbook confidence calibration")
 
@@ -177,7 +184,7 @@ async def execution_quality(
     try:
         from .execution_quality import ExecutionQualityService
         execution_service = ExecutionQualityService(db)
-        return execution_service.get_execution_quality_analysis(current_user["user_id"])
+        return execution_service.get_execution_quality_analysis(current_user.id)
     except ValueError as e:
         if "No completed trades found" in str(e):
             raise HTTPException(status_code=404, detail="No completed trades found for execution analysis")

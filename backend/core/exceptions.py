@@ -97,7 +97,18 @@ def setup_exception_handlers(app):
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         """Handle Pydantic validation errors"""
         logger.warning(f"Validation error: {exc.errors()}")
-        
+        # Ensure all error details are JSON serializable
+        def make_serializable(errors):
+            serializable = []
+            for err in errors:
+                err = dict(err)
+                if 'ctx' in err and err['ctx'] is not None:
+                    for k, v in list(err['ctx'].items()):
+                        # If not a basic type, convert to string
+                        if not isinstance(v, (str, int, float, bool, type(None))):
+                            err['ctx'][k] = str(v)
+                serializable.append(err)
+            return serializable
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
@@ -105,7 +116,7 @@ def setup_exception_handlers(app):
                 "error": "ValidationError",
                 "message": "Request validation failed",
                 "details": {
-                    "validation_errors": exc.errors()
+                    "validation_errors": make_serializable(exc.errors())
                 },
                 "timestamp": datetime.utcnow().isoformat()
             }

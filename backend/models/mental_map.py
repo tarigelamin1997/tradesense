@@ -114,8 +114,9 @@ class MentalMapEntryResponse(MentalMapEntryBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 # ✅ Backward compatibility alias - defined AFTER both classes exist
 MentalMap = MentalMapEntry
@@ -148,5 +149,6 @@ class SessionReplayResponse(SessionReplayBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

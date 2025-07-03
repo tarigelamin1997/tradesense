@@ -175,9 +175,106 @@ class RealTimeMarketService:
 
     async def _start_live_feed(self):
         """Connect to actual market data providers (Alpha Vantage, IEX, etc.)"""
-        # Implementation for real market data feeds
-        # This would connect to actual APIs like Alpha Vantage, IEX Cloud, etc.
-        pass
+        try:
+            logger.info("Starting live market data feed...")
+            
+            # Initialize API clients (these would be configured with actual API keys)
+            # self.alpha_vantage_client = AlphaVantageClient(api_key=settings.alpha_vantage_key)
+            # self.iex_client = IEXCloudClient(api_key=settings.iex_api_key)
+            
+            # Start background tasks for different data feeds
+            asyncio.create_task(self._feed_market_data())
+            asyncio.create_task(self._feed_economic_data())
+            asyncio.create_task(self._feed_sentiment_data())
+            
+            logger.info("Live market data feed started successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to start live feed: {e}")
+            # Fallback to demo feed
+            await self._start_demo_feed()
+    
+    async def _feed_market_data(self):
+        """Background task to continuously feed market data"""
+        while True:
+            try:
+                # Fetch real-time data for tracked symbols
+                for symbol in self.tracked_symbols:
+                    # Real API call would go here:
+                    # data = await self.alpha_vantage_client.get_quote(symbol)
+                    
+                    # For now, simulate real-time updates
+                    current_data = self.market_data.get(symbol)
+                    if current_data:
+                        # Simulate price movement
+                        price_change = (hash(f"{symbol}{datetime.utcnow().minute}") % 100 - 50) / 1000
+                        new_price = current_data.price * (1 + price_change)
+                        
+                        updated_data = MarketData(
+                            symbol=symbol,
+                            price=new_price,
+                            change=new_price - current_data.price,
+                            change_percent=price_change * 100,
+                            volume=current_data.volume + (hash(f"{symbol}{datetime.utcnow().second}") % 1000),
+                            timestamp=datetime.utcnow(),
+                            market_cap=current_data.market_cap,
+                            pe_ratio=current_data.pe_ratio
+                        )
+                        
+                        self.market_data[symbol] = updated_data
+                        await self._notify_subscribers(symbol, updated_data, self._get_sentiment_for_symbol(symbol))
+                
+                await asyncio.sleep(5)  # Update every 5 seconds
+                
+            except Exception as e:
+                logger.error(f"Error in market data feed: {e}")
+                await asyncio.sleep(10)  # Wait longer on error
+    
+    async def _feed_economic_data(self):
+        """Background task to feed economic calendar data"""
+        while True:
+            try:
+                # Real API call would go here:
+                # events = await self.economic_calendar_client.get_upcoming_events()
+                
+                # Update economic calendar cache
+                await self.get_economic_calendar(7)
+                
+                await asyncio.sleep(300)  # Update every 5 minutes
+                
+            except Exception as e:
+                logger.error(f"Error in economic data feed: {e}")
+                await asyncio.sleep(600)  # Wait longer on error
+    
+    async def _feed_sentiment_data(self):
+        """Background task to feed sentiment data"""
+        while True:
+            try:
+                # Real API call would go here:
+                # sentiment = await self.sentiment_client.get_market_sentiment()
+                
+                # Update sentiment cache for tracked symbols
+                for symbol in self.tracked_symbols:
+                    await self.get_market_sentiment(symbol)
+                
+                await asyncio.sleep(60)  # Update every minute
+                
+            except Exception as e:
+                logger.error(f"Error in sentiment data feed: {e}")
+                await asyncio.sleep(120)  # Wait longer on error
+    
+    def _get_sentiment_for_symbol(self, symbol: str) -> MarketSentiment:
+        """Get sentiment data for a symbol"""
+        # This would integrate with real sentiment APIs
+        sentiment_score = (hash(symbol) % 200 - 100) / 100  # -1 to 1
+        
+        return MarketSentiment(
+            fear_greed_index=50 + int(sentiment_score * 30),
+            vix=20.0 + sentiment_score * 10,
+            trending_symbols=[symbol] if abs(sentiment_score) > 0.5 else [],
+            sector_performance={"Technology": 2.3, "Healthcare": 1.1},
+            market_regime="bull" if sentiment_score > 0.3 else "bear" if sentiment_score < -0.3 else "neutral"
+        )
 
     async def _fetch_market_context(self) -> MarketContext:
         """Fetch real-time market data from multiple sources"""

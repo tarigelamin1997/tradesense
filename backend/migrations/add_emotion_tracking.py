@@ -1,4 +1,3 @@
-
 """
 Migration to add emotion tracking columns to trade_notes table
 """

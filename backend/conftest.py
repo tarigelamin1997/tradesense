@@ -67,8 +67,8 @@ def setup_models_and_tables(request):
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False}
     )
-    from backend.core.db.session import Base
-    import backend.models.user, backend.models.trade, backend.models.trading_account, backend.models.feature_request, backend.models.tag, backend.models.portfolio, backend.models.playbook, backend.models.trade_review, backend.models.trade_note, backend.models.strategy, backend.models.mental_map, backend.models.pattern_cluster, backend.models.milestone, backend.models.daily_emotion_reflection
+    from core.db.session import Base
+    import models.user, models.trade, models.trading_account, models.feature_request, models.tag, models.portfolio, models.playbook, models.trade_review, models.trade_note, models.strategy, models.mental_map, models.pattern_cluster, models.milestone, models.daily_emotion_reflection
     
     # Drop all tables and indexes more aggressively
     try:
@@ -111,7 +111,7 @@ def test_engine(setup_models_and_tables):
 @pytest.fixture(scope="function")
 def test_db(test_engine):
     """Create test database session (function-scoped)."""
-    from backend.core.db.session import Base
+    from core.db.session import Base
     TestingSessionLocal = sessionmaker(
         autocommit=False,
         autoflush=False,
@@ -126,7 +126,7 @@ def test_db(test_engine):
 @pytest.fixture(scope="function")
 def test_user(test_db):
     """Ensure the test user exists in the test DB with id 'test_user_123'."""
-    from backend.models.user import User
+    from models.user import User
     test_user_id = "test_user_123"
     test_email = "test@example.com"
     test_username = "testuser"
@@ -166,7 +166,7 @@ def test_user(test_db):
 def client(test_db):
     """Create test client with database override."""
     import main_minimal
-    from backend.core.db.session import get_db
+    from core.db.session import get_db
     def override_get_db():
         yield test_db
     main_minimal.app.dependency_overrides[get_db] = override_get_db
@@ -215,9 +215,9 @@ def setup_test_environment():
 def set_app_db_override(test_engine):
     """Set the dependency override for get_db at the start of the test session."""
     import main_minimal
-    from backend.core.db.session import get_db
+    from core.db.session import get_db
     def override_get_db():
-        from backend.conftest import test_db
+        from conftest import test_db
         yield test_db
     main_minimal.app.dependency_overrides[get_db] = override_get_db
     yield

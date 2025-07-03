@@ -3,7 +3,7 @@ Strategy model for trade strategy management
 """
 from sqlalchemy import Column, String, Text, DateTime, Index
 from sqlalchemy.sql import func
-from backend.core.db.session import Base
+from core.db.session import Base
 import uuid
 
 

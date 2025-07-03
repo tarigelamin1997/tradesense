@@ -1,4 +1,3 @@
-
 """
 Milestone Engine Service for TradeSense
 Tracks user progress, achievements, and gamification elements
@@ -9,8 +8,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import logging
 from sqlalchemy.orm import Session
-from backend.models.milestone import Milestone, MilestoneCreate, UserProgress
-from backend.models.trade import Trade
+from models.milestone import Milestone, MilestoneCreate, UserProgress
+from models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

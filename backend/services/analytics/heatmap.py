@@ -1,4 +1,3 @@
-
 import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
@@ -8,7 +7,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-from backend.models.trade import Trade
+from models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

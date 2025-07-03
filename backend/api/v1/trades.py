@@ -11,7 +11,6 @@ import io
 from backend.models.trade import Trade, TradeCreate, TradeResponse
 from backend.services.analytics_service import AnalyticsService
 from backend.api.deps import get_current_user, get_db
-from backend.core.security import get_current_user
 
 router = APIRouter()
 analytics_service = AnalyticsService()

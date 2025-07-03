@@ -1,11 +1,10 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from datetime import datetime
 
 from backend.core.db.session import get_db
-from backend.core.security import get_current_user
+from backend.api.deps import get_current_user
 from backend.services.analytics.heatmap import HeatmapAnalyticsService
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["heatmap-analytics"])

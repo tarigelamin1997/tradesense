@@ -14,29 +14,29 @@ try:
     print("🚀 Starting TradeSense Backend...")
     
     # Import all models first to register them with SQLAlchemy
-    import backend.models  # This ensures all models are registered
+    import models  # This ensures all models are registered
     
     # Initialize database
-    from backend.initialize_db import *
+    from initialize_db import *
 
     print("✅ Database initialized successfully")
 except Exception as e:
     print(f"⚠️ Database initialization warning: {e}")
 
 # Import routers
-from backend.api.v1.auth.router import router as auth_router
-from backend.api.v1.trades.router import router as trades_router
-from backend.api.v1.analytics.router import router as analytics_router
-from backend.api.v1.uploads.router import router as uploads_router
-from backend.api.v1.features.router import router as features_router
-from backend.api.v1.portfolio.router import router as portfolio_router
-from backend.api.v1.intelligence.router import router as intelligence_router
-from backend.api.v1.market_data.router import router as market_data_router
-from backend.api.health.router import router as health_router, root_router as health_root_router
-from backend.core.middleware import setup_middleware
-from backend.core.exceptions import setup_exception_handlers
+from api.v1.auth.router import router as auth_router
+from api.v1.trades.router import router as trades_router
+from api.v1.analytics.router import router as analytics_router
+from api.v1.uploads.router import router as uploads_router
+from api.v1.features.router import router as features_router
+from api.v1.portfolio.router import router as portfolio_router
+from api.v1.intelligence.router import router as intelligence_router
+from api.v1.market_data.router import router as market_data_router
+from api.health.router import router as health_router, root_router as health_root_router
+from core.middleware import setup_middleware
+from core.exceptions import setup_exception_handlers
 import logging
-from backend.api.v1.public import public_router
+from api.v1.public import public_router
 
 # Configure logging
 logging.basicConfig(

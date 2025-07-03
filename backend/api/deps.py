@@ -1,12 +1,34 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from backend.core.security import SecurityManager
 from backend.core.db.session import get_db
 from backend.models.user import User
 from typing import Dict, Any
+import jwt
+from backend.core.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+def verify_token(token: str) -> Dict[str, Any]:
+    """Verify and decode JWT token"""
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.jwt_secret, 
+            algorithms=[settings.jwt_algorithm]
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -14,15 +36,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     Dependency to get current authenticated user from token
     """
     try:
-        payload = SecurityManager.verify_token(token)
+        payload = verify_token(token)
         if not payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             )
         
-        # Get user ID from token payload
-        user_id = payload.get("sub")
+        # Get user ID from token payload (support both 'sub' and 'user_id')
+        user_id = payload.get("sub") or payload.get("user_id")
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,3 +73,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         )
 
 get_current_active_user = get_current_user
+
+
+def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Dependency to ensure current user is an admin
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user

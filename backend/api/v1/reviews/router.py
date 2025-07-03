@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -12,7 +11,7 @@ from backend.models.trade_review import (
 )
 from backend.api.v1.reviews.service import TradeReviewService
 
-router = APIRouter(prefix="/reviews", tags=["reviews"])
+router = APIRouter(tags=["reviews"])
 
 @router.post("/trades/{trade_id}", response_model=TradeReviewResponse)
 async def create_trade_review(

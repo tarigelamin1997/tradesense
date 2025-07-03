@@ -35,6 +35,7 @@ class User(Base):
     portfolios = relationship("Portfolio", back_populates="user")
     trades = relationship("Trade", back_populates="user")
     playbooks = relationship("Playbook", back_populates="user")
+    feature_requests = relationship("FeatureRequest", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

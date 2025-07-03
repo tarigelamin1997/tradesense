@@ -14,3 +14,31 @@
 2025-07-02 23:44:02,180 - backend.core.middleware - INFO - Request 43fd7310-066a-4eb5-9804-96dd5ca81131 completed in 0.0075s - Status: 403
 2025-07-02 23:44:38,712 - backend.core.middleware - INFO - Request fca6da9c-e48e-4323-ad69-46be16ca8fe6: GET http://localhost:8000/api/v1/trades/debug-alive
 2025-07-02 23:44:38,714 - backend.core.middleware - INFO - Request fca6da9c-e48e-4323-ad69-46be16ca8fe6 completed in 0.0016s - Status: 403
+2025-07-03 00:10:49,223 - backend.core.middleware - INFO - Request 0b92e70f-45d7-4c8a-acaa-1092c606aad8: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-03 00:10:49,223 - backend.core.middleware - INFO - Request 0b92e70f-45d7-4c8a-acaa-1092c606aad8 completed in 0.0000s - Status: 403
+2025-07-03 00:10:49,358 - backend.core.middleware - INFO - Request 789dc42e-eabf-46ff-8636-50416b49547e: GET http://localhost:8000/favicon.ico
+2025-07-03 00:10:49,358 - backend.core.middleware - INFO - Request 789dc42e-eabf-46ff-8636-50416b49547e completed in 0.0000s - Status: 404
+2025-07-03 00:10:58,639 - backend.core.middleware - INFO - Request db620fdb-1a8c-46cd-aaaa-1e368d2ccf10: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-03 00:10:58,639 - backend.core.middleware - INFO - Request db620fdb-1a8c-46cd-aaaa-1e368d2ccf10 completed in 0.0000s - Status: 403
+2025-07-03 00:13:41,522 - backend.core.middleware - INFO - Request 74757342-546f-485f-bddd-ad2a96da3d92: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-03 00:13:41,522 - backend.core.middleware - INFO - Request 74757342-546f-485f-bddd-ad2a96da3d92 completed in 0.0023s - Status: 403
+2025-07-03 00:15:28,176 - backend.core.middleware - INFO - Request 67c9c4e1-f533-44f6-9fed-67cd2b2631e2: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-03 00:15:28,176 - backend.core.middleware - INFO - Request 67c9c4e1-f533-44f6-9fed-67cd2b2631e2 completed in 0.0000s - Status: 403
+2025-07-03 00:15:39,274 - backend.core.middleware - INFO - Request ff62dfaf-4ddc-490f-a8eb-ca707c69e943: GET http://localhost:8000/api/v1/trades/debug-alive
+2025-07-03 00:15:39,274 - backend.core.middleware - INFO - Request ff62dfaf-4ddc-490f-a8eb-ca707c69e943 completed in 0.0000s - Status: 403
+2025-07-03 00:15:39,422 - backend.core.middleware - INFO - Request 1a8a71bb-6adf-48b7-aadb-786d5534437a: GET http://localhost:8000/favicon.ico
+2025-07-03 00:15:39,422 - backend.core.middleware - INFO - Request 1a8a71bb-6adf-48b7-aadb-786d5534437a completed in 0.0000s - Status: 404
+2025-07-03 00:16:39,921 - backend.core.middleware - INFO - Request 0ed49330-9066-4215-a1e8-a3be06fc1a20: GET http://localhost:8000/api/v1/ping
+2025-07-03 00:16:39,921 - backend.core.middleware - INFO - Request 0ed49330-9066-4215-a1e8-a3be06fc1a20 completed in 0.0000s - Status: 401
+2025-07-03 00:16:41,957 - backend.core.middleware - INFO - Request 1649f511-ca7c-4aa9-9f2f-f0caf15bb5a9: GET http://localhost:8000/api/v1/ping
+2025-07-03 00:16:41,957 - backend.core.middleware - INFO - Request 1649f511-ca7c-4aa9-9f2f-f0caf15bb5a9 completed in 0.0000s - Status: 401
+2025-07-03 00:16:42,729 - backend.core.middleware - INFO - Request 9bb53cd1-efd0-4ec1-b39d-a601a81b53cf: GET http://localhost:8000/api/v1/ping
+2025-07-03 00:16:42,735 - backend.core.middleware - INFO - Request 9bb53cd1-efd0-4ec1-b39d-a601a81b53cf completed in 0.0060s - Status: 401
+2025-07-03 00:17:00,489 - backend.core.middleware - INFO - Request 96c0a9e9-b02e-4138-b40e-f8e66dfef6cc: GET http://localhost:8000/api/v1/ping
+2025-07-03 00:17:00,490 - backend.core.middleware - INFO - Request 96c0a9e9-b02e-4138-b40e-f8e66dfef6cc completed in 0.0010s - Status: 401
+2025-07-03 00:17:00,614 - backend.core.middleware - INFO - Request fc76e210-2473-4a3d-aaa1-1703f2fc329b: GET http://localhost:8000/favicon.ico
+2025-07-03 00:17:00,614 - backend.core.middleware - INFO - Request fc76e210-2473-4a3d-aaa1-1703f2fc329b completed in 0.0000s - Status: 404
+2025-07-03 00:17:17,645 - backend.core.middleware - INFO - Request d787b2fd-fc5c-47e7-9bc1-79032e2cf065: GET http://localhost:8000/api/v1/ping
+2025-07-03 00:17:17,645 - backend.core.middleware - INFO - Request d787b2fd-fc5c-47e7-9bc1-79032e2cf065 completed in 0.0000s - Status: 401
+2025-07-03 00:17:17,735 - backend.core.middleware - INFO - Request 7fd948d5-0ea4-4060-91fa-2705f7298630: GET http://localhost:8000/favicon.ico
+2025-07-03 00:17:17,735 - backend.core.middleware - INFO - Request 7fd948d5-0ea4-4060-91fa-2705f7298630 completed in 0.0000s - Status: 404

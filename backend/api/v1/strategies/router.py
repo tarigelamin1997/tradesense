@@ -1,4 +1,3 @@
-
 """
 Strategy router - handles all strategy management endpoints
 """
@@ -17,13 +16,14 @@ from backend.api.v1.strategies.schemas import (
 )
 from backend.api.v1.strategies.service import StrategyService
 from backend.core.db.session import get_db
-from backend.core.security import get_current_active_user
+from backend.api.deps import get_current_user
 from backend.core.response import ResponseHandler, APIResponse
 from backend.core.exceptions import TradeSenseException
+from backend.models.user import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/strategies", tags=["Strategy Management"])
+router = APIRouter(tags=["Strategy Management"])
 strategy_service = StrategyService()
 
 
@@ -31,7 +31,7 @@ strategy_service = StrategyService()
 async def create_strategy(
     strategy_data: StrategyCreate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> StrategyRead:
     """
     Create a new trading strategy
@@ -42,7 +42,7 @@ async def create_strategy(
     Returns the created strategy information
     """
     try:
-        return await strategy_service.create_strategy(db, current_user["user_id"], strategy_data)
+        return await strategy_service.create_strategy(db, current_user.id, strategy_data)
     except TradeSenseException:
         raise
     except Exception as e:
@@ -53,7 +53,7 @@ async def create_strategy(
 @router.get("/", response_model=StrategyListResponse, summary="List Strategies")
 async def list_strategies(
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> StrategyListResponse:
     """
     List all strategies for the current user
@@ -61,7 +61,7 @@ async def list_strategies(
     Returns all strategies created by the user
     """
     try:
-        strategies = await strategy_service.list_strategies(db, current_user["user_id"])
+        strategies = await strategy_service.list_strategies(db, current_user.id)
         
         return StrategyListResponse(
             strategies=strategies,
@@ -77,7 +77,7 @@ async def list_strategies(
 @router.get("/analytics", response_model=List[StrategyAnalytics], summary="Get Strategy Analytics")
 async def get_strategy_analytics(
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> List[StrategyAnalytics]:
     """
     Get performance analytics grouped by strategy
@@ -85,7 +85,7 @@ async def get_strategy_analytics(
     Returns detailed performance metrics for each strategy
     """
     try:
-        analytics = await strategy_service.get_strategy_analytics(db, current_user["user_id"])
+        analytics = await strategy_service.get_strategy_analytics(db, current_user.id)
         return [StrategyAnalytics(**stat) for stat in analytics]
     except TradeSenseException:
         raise
@@ -97,7 +97,7 @@ async def get_strategy_analytics(
 @router.get("/tags/analytics", response_model=List[TagAnalytics], summary="Get Tag Analytics")
 async def get_tag_analytics(
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> List[TagAnalytics]:
     """
     Get performance analytics grouped by tag
@@ -105,7 +105,7 @@ async def get_tag_analytics(
     Returns performance metrics for each trade tag
     """
     try:
-        analytics = await strategy_service.get_tag_analytics(db, current_user["user_id"])
+        analytics = await strategy_service.get_tag_analytics(db, current_user.id)
         return [TagAnalytics(**stat) for stat in analytics]
     except TradeSenseException:
         raise
@@ -118,7 +118,7 @@ async def get_tag_analytics(
 async def get_strategy(
     strategy_id: str,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> StrategyRead:
     """
     Get a specific strategy by ID
@@ -126,7 +126,7 @@ async def get_strategy(
     Users can only access their own strategies
     """
     try:
-        return await strategy_service.get_strategy_by_id(db, current_user["user_id"], strategy_id)
+        return await strategy_service.get_strategy_by_id(db, current_user.id, strategy_id)
     except TradeSenseException:
         raise
     except Exception as e:
@@ -139,7 +139,7 @@ async def update_strategy(
     strategy_id: str,
     strategy_update: StrategyUpdate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> StrategyRead:
     """
     Update a trading strategy
@@ -148,7 +148,7 @@ async def update_strategy(
     """
     try:
         return await strategy_service.update_strategy(
-            db, current_user["user_id"], strategy_id, strategy_update
+            db, current_user.id, strategy_id, strategy_update
         )
     except TradeSenseException:
         raise
@@ -161,7 +161,7 @@ async def update_strategy(
 async def delete_strategy(
     strategy_id: str,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> APIResponse:
     """
     Delete a trading strategy
@@ -170,7 +170,7 @@ async def delete_strategy(
     Cannot delete strategies that are referenced by existing trades.
     """
     try:
-        result = await strategy_service.delete_strategy(db, current_user["user_id"], strategy_id)
+        result = await strategy_service.delete_strategy(db, current_user.id, strategy_id)
         return ResponseHandler.success(
             data=result,
             message="Strategy deleted successfully"

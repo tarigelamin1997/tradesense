@@ -185,9 +185,5 @@ async def execution_quality(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to analyze execution quality")
 
-@router.get("/debug-alive", dependencies=[])
-async def debug_alive():
-    return {"status": "trades router is active"}
-
 # Export router for FastAPI
 __all__ = ["router"]

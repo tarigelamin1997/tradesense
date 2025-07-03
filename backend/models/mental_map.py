@@ -119,3 +119,34 @@ class MentalMapEntryResponse(MentalMapEntryBase):
 
 # ✅ Backward compatibility alias - defined AFTER both classes exist
 MentalMap = MentalMapEntry
+
+# SessionReplay Pydantic models
+class SessionReplayBase(BaseModel):
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    session_name: Optional[str] = Field(None, max_length=200)
+    market_conditions: Optional[str] = Field(None, max_length=200)
+    session_notes: Optional[str] = Field(None, max_length=2000)
+
+class SessionReplayCreate(SessionReplayBase):
+    pass
+
+class SessionReplayUpdate(BaseModel):
+    end_time: Optional[datetime] = None
+    session_name: Optional[str] = Field(None, max_length=200)
+    market_conditions: Optional[str] = Field(None, max_length=200)
+    session_notes: Optional[str] = Field(None, max_length=2000)
+    dominant_mood: Optional[str] = None
+    rule_breaks: Optional[List[str]] = None
+
+class SessionReplayResponse(SessionReplayBase):
+    id: str
+    user_id: str
+    total_trades: str
+    dominant_mood: Optional[str] = None
+    rule_breaks: Optional[List[str]] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

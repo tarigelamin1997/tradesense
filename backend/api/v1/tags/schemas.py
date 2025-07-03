@@ -1,8 +1,7 @@
-
 """
 Tag schemas for request/response validation
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -13,9 +12,9 @@ class TagBase(BaseModel):
     description: Optional[str] = Field(None, max_length=200, description="Tag description")
     color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$", description="Hex color code")
 
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
-        # Remove extra whitespace and convert to lowercase for consistency
         v = v.strip().lower()
         if not v:
             raise ValueError('Tag name cannot be empty')
@@ -25,14 +24,15 @@ class TagBase(BaseModel):
 class TagCreate(TagBase):
     """Schema for creating new tags"""
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "breakout",
                 "description": "Breakout trading pattern",
                 "color": "#FF5733"
             }
         }
+    }
 
 
 class TagUpdate(BaseModel):
@@ -41,7 +41,8 @@ class TagUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=200)
     color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
 
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if v is not None:
             v = v.strip().lower()
@@ -58,9 +59,9 @@ class TagResponse(TagBase):
     updated_at: datetime = Field(..., description="Last update timestamp")
     trade_count: Optional[int] = Field(None, description="Number of trades with this tag")
     
-    class Config:
-        from_attributes = True
-        schema_extra = {
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
             "example": {
                 "id": "tag_123",
                 "user_id": "user_456",
@@ -72,6 +73,7 @@ class TagResponse(TagBase):
                 "trade_count": 25
             }
         }
+    }
 
 
 class TagListResponse(BaseModel):

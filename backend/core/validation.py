@@ -8,12 +8,12 @@ import logging
 from typing import Any, Dict, List, Optional, Union, Tuple
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from pydantic import BaseModel, validator, ValidationError
+from pydantic import BaseModel, field_validator, ValidationError
 import html
 
 logger = logging.getLogger(__name__)
 
-class ValidationError(Exception):
+class CustomValidationError(Exception):
     """Custom validation error"""
     def __init__(self, message: str, field: str = None):
         self.message = message
@@ -118,43 +118,50 @@ class TradeDataValidator(BaseModel):
     confidence_score: Optional[float] = None
     notes: Optional[str] = None
     
-    @validator('symbol')
+    @field_validator('symbol')
+    @classmethod
     def validate_symbol(cls, v):
         if not validate_symbol(v):
             raise ValueError('Invalid symbol format')
         return v.upper()
     
-    @validator('direction')
+    @field_validator('direction')
+    @classmethod
     def validate_direction(cls, v):
         if v not in ['long', 'short', 'buy', 'sell']:
             raise ValueError('Direction must be long, short, buy, or sell')
         return v.lower()
     
-    @validator('quantity')
+    @field_validator('quantity')
+    @classmethod
     def validate_quantity(cls, v):
         if not validate_quantity(v):
             raise ValueError('Invalid quantity')
         return v
     
-    @validator('entry_price')
+    @field_validator('entry_price')
+    @classmethod
     def validate_entry_price(cls, v):
         if not validate_price(v):
             raise ValueError('Invalid entry price')
         return v
     
-    @validator('exit_price')
+    @field_validator('exit_price')
+    @classmethod
     def validate_exit_price(cls, v):
         if v is not None and not validate_price(v):
             raise ValueError('Invalid exit price')
         return v
     
-    @validator('confidence_score')
+    @field_validator('confidence_score')
+    @classmethod
     def validate_confidence_score(cls, v):
         if v is not None and (v < 0 or v > 100):
             raise ValueError('Confidence score must be between 0 and 100')
         return v
     
-    @validator('notes')
+    @field_validator('notes')
+    @classmethod
     def sanitize_notes(cls, v):
         if v is not None:
             return sanitize_string(v)
@@ -168,13 +175,15 @@ class UserDataValidator(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     
-    @validator('email')
+    @field_validator('email')
+    @classmethod
     def validate_email(cls, v):
         if not validate_email(v):
             raise ValueError('Invalid email format')
         return v.lower()
     
-    @validator('username')
+    @field_validator('username')
+    @classmethod
     def validate_username(cls, v):
         if len(v) < 3 or len(v) > 30:
             raise ValueError('Username must be between 3 and 30 characters')
@@ -182,15 +191,24 @@ class UserDataValidator(BaseModel):
             raise ValueError('Username can only contain letters, numbers, underscores, and hyphens')
         return v
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         is_valid, errors = validate_password_strength(v)
         if not is_valid:
             raise ValueError(f'Password validation failed: {", ".join(errors)}')
         return v
     
-    @validator('first_name', 'last_name')
-    def sanitize_names(cls, v):
+    @field_validator('first_name')
+    @classmethod
+    def sanitize_first_name(cls, v):
+        if v is not None:
+            return sanitize_string(v)
+        return v
+    
+    @field_validator('last_name')
+    @classmethod
+    def sanitize_last_name(cls, v):
         if v is not None:
             return sanitize_string(v)
         return v
@@ -200,7 +218,7 @@ def validate_trade_data(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
     try:
         TradeDataValidator(**data)
         return True, []
-    except ValidationError as e:
+    except CustomValidationError as e:
         errors = [f"{field}: {error}" for field, error in e.errors()]
         return False, errors
 
@@ -209,7 +227,7 @@ def validate_user_data(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
     try:
         UserDataValidator(**data)
         return True, []
-    except ValidationError as e:
+    except CustomValidationError as e:
         errors = [f"{field}: {error}" for field, error in e.errors()]
         return False, errors
 

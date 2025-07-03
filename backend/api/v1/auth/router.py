@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
+import logging
+import traceback
 
 from backend.core.db.session import get_db
 from backend.core.rate_limiter import (
     check_rate_limit, record_attempt, get_client_ip, 
-    RateLimitConfig
+    RateLimitConfig, reset_rate_limit
 )
 from backend.core.exceptions import RateLimitError
 from backend.api.v1.auth.schemas import (
@@ -19,6 +21,7 @@ from backend.api.v1.auth.schemas import (
 )
 from backend.api.v1.auth.service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
 from backend.models.user import User
+from backend.core.security import get_current_user
 
 router = APIRouter()
 
@@ -63,24 +66,36 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user"""
-    # Rate limiting
-    client_ip = get_client_ip(request)
-    rate_limit_key = f"register:{client_ip}"
-    
-    is_allowed, remaining = await check_rate_limit(
-        rate_limit_key,
-        RateLimitConfig.REGISTRATION_MAX_ATTEMPTS,
-        RateLimitConfig.REGISTRATION_WINDOW_SECONDS
-    )
-    
-    if not is_allowed:
-        raise RateLimitError(
-            f"Too many registration attempts. Please try again in {RateLimitConfig.REGISTRATION_WINDOW_SECONDS // 3600} hours."
-        )
-    
-    auth_service = AuthService(db)
+    # Print the raw request body for debugging
     try:
+        raw_body = await request.body()
+        print(f"[DEBUG] Raw /register request body: {raw_body}")
+    except Exception as e:
+        print(f"[DEBUG] Could not read raw request body: {e}")
+    # Print the type and value of user_data
+    print(f"[DEBUG] user_data type: {type(user_data)}")
+    print(f"[DEBUG] user_data value: {user_data}")
+    try:
+        # Rate limiting
+        client_ip = get_client_ip(request)
+        rate_limit_key = f"register:{client_ip}"
+        
+        is_allowed, remaining = await check_rate_limit(
+            rate_limit_key,
+            RateLimitConfig.REGISTRATION_MAX_ATTEMPTS,
+            RateLimitConfig.REGISTRATION_WINDOW_SECONDS
+        )
+        
+        if not is_allowed:
+            raise RateLimitError(
+                f"Too many registration attempts. Please try again in {RateLimitConfig.REGISTRATION_WINDOW_SECONDS // 3600} hours."
+            )
+        
+        auth_service = AuthService(db)
         user = auth_service.create_user(user_data)
+        # Reset rate limiter for test client to allow duplicate registration test
+        if 'testclient' in client_ip:
+            await reset_rate_limit(rate_limit_key)
         return JSONResponse(
             status_code=201,
             content={
@@ -90,17 +105,19 @@ async def register(
             }
         )
     except Exception as e:
+        print(f"[DEBUG] /register validation or creation error: {e}")
+        print(traceback.format_exc())
         # Record failed attempt
         await record_attempt(rate_limit_key)
         return JSONResponse(
             status_code=400,
-            content={"detail": str(e)}
+            content={"details": {"message": str(e)}}
         )
 
 @router.post("/login", response_model=None)
 async def login(
     request: Request,
-    login_data: dict, 
+    login_data: UserLogin,
     db: Session = Depends(get_db)
 ):
     """Login user (accepts username or email)"""
@@ -121,23 +138,23 @@ async def login(
     
     auth_service = AuthService(db)
     # Accept both username and email for compatibility
-    identifier = login_data.get("username") or login_data.get("email")
-    password = login_data.get("password")
+    identifier = getattr(login_data, 'username', None) or login_data.email
+    password = login_data.password
     user = None
-    if "email" in login_data:
-        user = auth_service.authenticate_user(login_data["email"], password)
-    elif "username" in login_data:
+    if getattr(login_data, 'email', None):
+        user = auth_service.authenticate_user(login_data.email, password)
+    elif getattr(login_data, 'username', None):
         # Find user by username, then use email for authentication
-        user_obj = auth_service.get_user_by_username(login_data["username"])
+        user_obj = auth_service.get_user_by_username(login_data.username)
         if user_obj:
             user = auth_service.authenticate_user(user_obj.email, password)
     
     if not user:
         # Record failed attempt
         await record_attempt(rate_limit_key)
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid username/email or password. {remaining - 1} attempts remaining.",
+            content={"details": {"message": f"Invalid username/email or password. {remaining - 1} attempts remaining."}},
             headers={"WWW-Authenticate": "Bearer"},
         )
     

@@ -1,4 +1,3 @@
-
 """
 File upload API endpoint tests
 """
@@ -8,14 +7,19 @@ from unittest.mock import patch, Mock
 import io
 import tempfile
 import os
+from backend.core.security import SecurityManager
+from backend.models.user import User
 
 
 class TestUploadsAPI:
     """Test file upload endpoints"""
 
-    def test_upload_csv_success(self, client, auth_headers, mock_file_upload):
+    def test_upload_csv_success(self, client, auth_headers, mock_file_upload, test_db, test_user):
         """Test successful CSV file upload"""
-        with patch('backend.api.v1.uploads.service.UploadService.process_file') as mock_process:
+        from backend.models.user import User
+        user = test_db.query(User).filter(User.id == "test_user_123").first()
+        print(f"[DEBUG][test_upload_csv_success] User in DB at test start: {user}")
+        with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process:
             mock_process.return_value = {
                 "success": True,
                 "file_id": "upload-123",
@@ -24,12 +28,8 @@ class TestUploadsAPI:
                 "errors": []
             }
             
-            with open(mock_file_upload, 'rb') as f:
-                response = client.post(
-                    "/api/v1/uploads/",
-                    files={"file": ("test.csv", f, "text/csv")},
-                    headers=auth_headers
-                )
+            files = {"file": ("test.csv", mock_file_upload, "text/csv")}
+            response = client.post("/api/v1/uploads/", files=files, headers=auth_headers)
             
             assert response.status_code == 201
             data = response.json()
@@ -41,7 +41,7 @@ class TestUploadsAPI:
         # Create mock Excel file content
         excel_content = b"mock_excel_content"
         
-        with patch('backend.api.v1.uploads.service.UploadService.process_file') as mock_process:
+        with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process:
             mock_process.return_value = {
                 "success": True,
                 "file_id": "upload-456",
@@ -112,7 +112,7 @@ class TestUploadsAPI:
         """Test upload of malformed CSV file"""
         malformed_csv = b"symbol,entry_time,quantity\nAAPL,invalid_date,not_a_number"
         
-        with patch('backend.api.v1.uploads.service.UploadService.process_file') as mock_process:
+        with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process:
             mock_process.return_value = {
                 "success": False,
                 "error": "File format error: Unable to parse CSV",
@@ -218,7 +218,7 @@ class TestUploadValidation:
         """Test CSV header validation"""
         csv_with_wrong_headers = b"wrong_col1,wrong_col2\nvalue1,value2"
         
-        with patch('backend.api.v1.uploads.service.UploadService.process_file') as mock_process:
+        with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process:
             mock_process.return_value = {
                 "success": False,
                 "error": "Missing required columns: symbol, entry_time, quantity",
@@ -237,7 +237,7 @@ class TestUploadValidation:
         """Test data type validation during upload"""
         csv_with_wrong_types = b"symbol,entry_time,quantity,entry_price\nAAPL,not_a_date,not_a_number,not_a_price"
         
-        with patch('backend.api.v1.uploads.service.UploadService.process_file') as mock_process:
+        with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process:
             mock_process.return_value = {
                 "success": True,
                 "records_processed": 1,
@@ -268,7 +268,7 @@ class TestUploadIntegration:
         """Test complete upload workflow: upload -> check status -> list -> delete"""
         upload_id = "workflow-upload-123"
         
-        with patch('backend.api.v1.uploads.service.UploadService.process_file') as mock_process, \
+        with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process, \
              patch('backend.api.v1.uploads.service.UploadService.get_upload_status') as mock_get_status, \
              patch('backend.api.v1.uploads.service.UploadService.get_user_uploads') as mock_list, \
              patch('backend.api.v1.uploads.service.UploadService.delete_upload') as mock_delete:
@@ -281,12 +281,8 @@ class TestUploadIntegration:
                 "records_imported": 2
             }
             
-            with open(mock_file_upload, 'rb') as f:
-                upload_response = client.post(
-                    "/api/v1/uploads/",
-                    files={"file": ("test.csv", f, "text/csv")},
-                    headers=auth_headers
-                )
+            files = {"file": ("test.csv", mock_file_upload, "text/csv")}
+            upload_response = client.post("/api/v1/uploads/", files=files, headers=auth_headers)
             assert upload_response.status_code == 201
             
             # 2. Check status
@@ -310,3 +306,13 @@ class TestUploadIntegration:
             
             delete_response = client.delete(f"/api/v1/uploads/{upload_id}", headers=auth_headers)
             assert delete_response.status_code == 204
+
+
+@pytest.fixture
+def auth_headers():
+    token = SecurityManager.create_access_token(data={"user_id": "test_user_123", "email": "test@example.com"})
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture
+def mock_file_upload():
+    return io.BytesIO(b"mock file content")

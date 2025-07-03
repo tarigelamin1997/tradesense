@@ -1,7 +1,7 @@
 """
 Trade schemas for request/response validation
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -34,8 +34,8 @@ class TradeCreateRequest(BaseModel):
     tag_ids: Optional[List[str]] = Field(None, description="Tag IDs to assign to trade")
     strategy_id: Optional[str] = Field(None, max_length=100, description="Strategy ID reference")
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "symbol": "ES",
                 "direction": "long",
@@ -48,6 +48,7 @@ class TradeCreateRequest(BaseModel):
                 "tags": ["breakout", "high-volume"]
             }
         }
+    }
 
 
 class TradeUpdateRequest(BaseModel):
@@ -60,13 +61,13 @@ class TradeUpdateRequest(BaseModel):
     strategy_tag: Optional[str] = Field(None, max_length=100, description="Strategy identifier")
     strategy_id: Optional[str] = Field(None, max_length=100, description="Strategy ID reference")
 
-    @validator('exit_time')
+    @field_validator('exit_time')
+    @classmethod
     def validate_exit_time(cls, v, values):
-        # Note: In a real scenario, we'd validate against entry_time from database
         return v
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "exit_price": 4525.75,
                 "exit_time": "2024-01-15T14:45:00Z",
@@ -75,6 +76,7 @@ class TradeUpdateRequest(BaseModel):
                 "strategy_tag": "Scalping v2"
             }
         }
+    }
 
 
 class TradeResponse(BaseModel):
@@ -100,8 +102,8 @@ class TradeResponse(BaseModel):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "id": "trade_001",
                 "user_id": "user_123",
@@ -123,6 +125,7 @@ class TradeResponse(BaseModel):
                 "updated_at": "2024-01-15T14:45:00Z"
             }
         }
+    }
 
 
 class TradeQueryParams(BaseModel):
@@ -164,17 +167,20 @@ class PaginatedResponse(BaseModel):
     has_previous: bool
     has_next: bool
 
-    @validator('total_pages', pre=True, always=True)
+    @field_validator('total_pages', mode='before')
+    @classmethod
     def calculate_total_pages(cls, v, values):
         total_count = values.get('total_count', 0)
         per_page = values.get('per_page', 50)
         return max(1, (total_count + per_page - 1) // per_page)
 
-    @validator('has_previous', pre=True, always=True)
+    @field_validator('has_previous', mode='before')
+    @classmethod
     def calculate_has_previous(cls, v, values):
         return values.get('current_page', 1) > 1
 
-    @validator('has_next', pre=True, always=True)
+    @field_validator('has_next', mode='before')
+    @classmethod
     def calculate_has_next(cls, v, values):
         current_page = values.get('current_page', 1)
         total_pages = values.get('total_pages', 1)
@@ -204,14 +210,16 @@ class TradeIngestRequest(BaseModel):
     strategy: Optional[str] = Field(None, max_length=100, description="Strategy name")
     notes: Optional[str] = Field(None, max_length=1000, description="Trade notes")
 
-    @validator('exit_time')
-    def validate_exit_time(cls, v, values):
-        if v and 'entry_time' in values and v <= values['entry_time']:
+    @field_validator('exit_time')
+    @classmethod
+    def validate_exit_time(cls, v, info):
+        entry_time = info.data.get('entry_time') if hasattr(info, 'data') else None
+        if v and entry_time and v <= entry_time:
             raise ValueError('Exit time must be after entry time')
         return v
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "entry_time": "2024-12-18T09:00:00Z",
                 "exit_time": "2024-12-18T09:45:00Z",
@@ -225,6 +233,7 @@ class TradeIngestRequest(BaseModel):
                 "notes": "Strong breakout pattern"
             }
         }
+    }
 
 
 class TradeIngestResponse(BaseModel):
@@ -233,14 +242,15 @@ class TradeIngestResponse(BaseModel):
     trade_id: str = Field(..., description="ID of the created trade")
     message: str = Field(..., description="Success message")
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "status": "ok",
                 "trade_id": "trade_12345",
                 "message": "Trade ingested successfully"
             }
         }
+    }
 
 
 class AnalyticsResponse(BaseModel):

@@ -38,8 +38,9 @@ class FeatureRequestResponse(BaseModel):
     net_votes: int
     user_vote: Optional[str] = None  # Set by service based on current user
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class FeatureVoteCreate(BaseModel):
     vote_type: str = Field(..., pattern="^(upvote|downvote)$")
@@ -53,8 +54,9 @@ class FeatureCommentResponse(BaseModel):
     user_id: str
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class FeatureStatsResponse(BaseModel):
     total_requests: int

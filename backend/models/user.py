@@ -41,7 +41,7 @@ class User(Base):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"
 
 # Pydantic models for API
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 
 class UserBase(BaseModel):
@@ -49,13 +49,15 @@ class UserBase(BaseModel):
     email: EmailStr = Field(..., description="Email address")
     role: str = Field(default="trader", description="User role")
 
-    @validator('username')
+    @field_validator('username')
+    @classmethod
     def validate_username(cls, v):
         if not v.isalnum():
             raise ValueError('Username must contain only alphanumeric characters')
         return v
 
-    @validator('role')
+    @field_validator('role')
+    @classmethod
     def validate_role(cls, v):
         if v not in ["admin", "trader"]:
             raise ValueError('Role must be either "admin" or "trader"')
@@ -64,8 +66,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6, description="Password")
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "username": "trader123",
                 "email": "trader@example.com",
@@ -73,6 +75,7 @@ class UserCreate(UserBase):
                 "role": "trader"
             }
         }
+    }
 
 class UserRead(UserBase):
     id: str = Field(..., description="User ID")
@@ -80,9 +83,9 @@ class UserRead(UserBase):
     created_at: datetime = Field(..., description="Account creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
             "example": {
                 "id": "user_123",
                 "username": "trader123",
@@ -93,13 +96,15 @@ class UserRead(UserBase):
                 "updated_at": "2024-01-15T10:30:00Z"
             }
         }
+    }
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = Field(None, description="Email address")
     role: Optional[str] = Field(None, description="User role")
     is_active: Optional[bool] = Field(None, description="Whether user is active")
 
-    @validator('role')
+    @field_validator('role')
+    @classmethod
     def validate_role(cls, v):
         if v is not None and v not in ["admin", "trader"]:
             raise ValueError('Role must be either "admin" or "trader"')

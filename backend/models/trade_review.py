@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Integer, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 import uuid
@@ -45,7 +45,8 @@ class TradeReviewCreate(BaseModel):
     lesson_learned: Optional[str] = Field(None, max_length=1000, description="Key lesson learned")
     execution_vs_plan: Optional[int] = Field(None, ge=1, le=5, description="Execution vs plan rating")
 
-    @validator('mistakes')
+    @field_validator('mistakes')
+    @classmethod
     def validate_mistakes(cls, v):
         valid_mistakes = {
             'early_entry', 'late_entry', 'no_confirmation', 'wrong_size', 
@@ -58,7 +59,8 @@ class TradeReviewCreate(BaseModel):
                 raise ValueError(f"Invalid mistake tag: {mistake}")
         return v
 
-    @validator('mood')
+    @field_validator('mood')
+    @classmethod
     def validate_mood(cls, v):
         if v is None:
             return v
@@ -88,8 +90,9 @@ class TradeReviewResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class ReviewPatternAnalysis(BaseModel):
     total_reviews: int

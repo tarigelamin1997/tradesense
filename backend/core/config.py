@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     market_data_timeout: int = 10
     market_data_cache_minutes: int = 15
 
-    class Config:
-        env_file = ".env"
+    model_config = {
+        "env_file": ".env"
+    }
 
 settings = Settings()

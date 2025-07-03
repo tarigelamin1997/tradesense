@@ -1,4 +1,3 @@
-
 """
 Strategy schemas for request/response validation
 """
@@ -15,14 +14,14 @@ class StrategyBase(BaseModel):
 
 class StrategyCreate(StrategyBase):
     """Schema for creating a new strategy"""
-    
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "Scalping v2",
                 "description": "Quick scalping strategy focusing on 1-2 point moves"
             }
         }
+    }
 
 
 class StrategyUpdate(BaseModel):
@@ -30,13 +29,14 @@ class StrategyUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="Strategy name")
     description: Optional[str] = Field(None, max_length=500, description="Strategy description")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "Scalping v3",
                 "description": "Updated scalping strategy with better risk management"
             }
         }
+    }
 
 
 class StrategyRead(StrategyBase):
@@ -46,9 +46,9 @@ class StrategyRead(StrategyBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     
-    class Config:
-        from_attributes = True
-        schema_extra = {
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
             "example": {
                 "id": "strategy_123",
                 "user_id": "user_456",
@@ -58,6 +58,7 @@ class StrategyRead(StrategyBase):
                 "updated_at": "2024-01-15T10:30:00Z"
             }
         }
+    }
 
 
 class StrategyListResponse(BaseModel):
@@ -65,8 +66,8 @@ class StrategyListResponse(BaseModel):
     strategies: List[StrategyRead] = Field(..., description="List of strategies")
     total: int = Field(..., description="Total number of strategies")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "strategies": [
                     {
@@ -81,6 +82,7 @@ class StrategyListResponse(BaseModel):
                 "total": 1
             }
         }
+    }
 
 
 class StrategyAnalytics(BaseModel):
@@ -94,8 +96,8 @@ class StrategyAnalytics(BaseModel):
     best_trade: float = Field(..., description="Best single trade")
     worst_trade: float = Field(..., description="Worst single trade")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "strategy_name": "Scalping v2",
                 "total_trades": 45,
@@ -107,6 +109,7 @@ class StrategyAnalytics(BaseModel):
                 "worst_trade": -85.25
             }
         }
+    }
 
 
 class TagAnalytics(BaseModel):
@@ -117,8 +120,8 @@ class TagAnalytics(BaseModel):
     total_pnl: float = Field(..., description="Total P&L")
     avg_pnl: float = Field(..., description="Average P&L per trade")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "tag": "FOMO",
                 "total_trades": 12,
@@ -127,3 +130,4 @@ class TagAnalytics(BaseModel):
                 "avg_pnl": -20.46
             }
         }
+    }

@@ -50,6 +50,7 @@ from backend.api.v1.strategy_lab.router import router as strategy_lab_router
 from backend.api.v1.mental_map.router import router as mental_map_router
 from backend.api.v1.emotions.router import router as emotions_router
 from backend.api.v1.health.performance_router import router as performance_router
+from backend.core.async_manager import task_manager
 
 app = FastAPI()
 
@@ -66,6 +67,11 @@ app.add_middleware(
 setup_middleware(app)
 setup_exception_handlers(app)
 setup_validation_middleware(app)
+
+# Start the async cleanup task on FastAPI startup
+@app.on_event("startup")
+async def start_async_manager_cleanup():
+    task_manager.start_cleanup_task()
 
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1/auth")

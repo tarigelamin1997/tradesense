@@ -14,10 +14,11 @@ class APIResponse(BaseModel):
     timestamp: datetime
     request_id: Optional[str] = None
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ErrorResponse(BaseModel):
@@ -29,10 +30,11 @@ class ErrorResponse(BaseModel):
     timestamp: datetime
     request_id: Optional[str] = None
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ResponseHandler:

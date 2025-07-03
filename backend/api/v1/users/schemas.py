@@ -66,8 +66,9 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserRead(BaseModel):
     id: str
@@ -78,8 +79,9 @@ class UserRead(BaseModel):
     last_name: Optional[str]
     is_verified: Optional[bool]
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserUpdate(BaseModel):
     email: Optional[str]
@@ -88,27 +90,31 @@ class UserUpdate(BaseModel):
     last_name: Optional[str]
     password: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserListResponse(BaseModel):
     users: List[UserRead]
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserFilterParams(BaseModel):
     email: Optional[str]
     username: Optional[str]
     is_verified: Optional[bool]
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserStatsResponse(BaseModel):
     total_users: int
     active_users: Optional[int]
     verified_users: Optional[int]
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

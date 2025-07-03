@@ -45,9 +45,8 @@ class AsyncTaskManager:
         self.process_pool = ProcessPoolExecutor(max_workers=max_workers // 2)
         self.lock = threading.Lock()
         self.running = True
-        
-        # Start cleanup task
-        asyncio.create_task(self._cleanup_old_tasks())
+        # Do NOT start cleanup task here
+        # asyncio.create_task(self._cleanup_old_tasks())
     
     def generate_task_id(self, function_name: str) -> str:
         """Generate unique task ID"""
@@ -198,6 +197,10 @@ class AsyncTaskManager:
         self.running = False
         self.thread_pool.shutdown(wait=True)
         self.process_pool.shutdown(wait=True)
+
+    def start_cleanup_task(self):
+        """Start the async cleanup task. Call this inside a running event loop (e.g., FastAPI startup)."""
+        asyncio.create_task(self._cleanup_old_tasks())
 
 # Global task manager instance
 task_manager = AsyncTaskManager()

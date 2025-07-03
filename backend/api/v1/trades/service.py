@@ -67,10 +67,10 @@ class TradesService:
         self._trades_storage = {}
 
         # Import analytics modules
-        from ...analytics.performance import calculate_risk_reward_metrics
-        from ...analytics.equity import generate_equity_curve
-        from ...analytics.streaks import calculate_win_loss_streaks
-        from ...analytics.filters import apply_trade_filters
+        from backend.analytics.performance import calculate_risk_reward_metrics
+        from backend.analytics.equity import generate_equity_curve
+        from backend.analytics.streaks import calculate_win_loss_streaks
+        from backend.analytics.filters import apply_trade_filters
 
         self.calculate_performance = calculate_risk_reward_metrics
         self.calculate_equity = generate_equity_curve
@@ -337,7 +337,8 @@ class TradesService:
             )
 
         except Exception as e:
-            logger.error(f"Failed to ingest trade via API: {str(e)}")
+            import traceback
+            logger.error(f"Failed to ingest trade via API for user {user_id} with data {trade_data.dict() if hasattr(trade_data, 'dict') else trade_data}: {str(e)}\n{traceback.format_exc()}")
             raise BusinessLogicError(f"Failed to ingest trade: {str(e)}")
 
     async def calculate_analytics(self, user_id: str, request: AnalyticsRequest) -> AnalyticsResponse:
@@ -701,3 +702,29 @@ class TradesService:
                 day_counts[day_name] += 1
 
         return day_counts
+
+    async def get_user_trades(self, user_id: str, limit: int = 100, offset: int = 0, include_journal: bool = False):
+        """Return a list of trades for the user, with pagination."""
+        # In production, this would query the database
+        user_trades = [
+            trade for trade in self._trades_storage.values()
+            if trade["user_id"] == user_id
+        ]
+        # Sort by entry_time descending
+        user_trades.sort(key=lambda x: x["entry_time"], reverse=True)
+        paginated = user_trades[offset:offset+limit]
+        # For now, ignore include_journal
+        return paginated
+
+    async def get_trade_with_journal(self, trade_id: str, user_id: str):
+        """Fetch a trade by ID for a user, including journal entries if available."""
+        from backend.models.trade import Trade
+        from backend.models.trade_note import TradeNote
+        trade = self.db.query(Trade).filter(Trade.id == trade_id, Trade.user_id == user_id).first()
+        if not trade:
+            return None
+        # Fetch related journal entries (if any)
+        journal_entries = self.db.query(TradeNote).filter(TradeNote.trade_id == trade_id).all()
+        trade_dict = trade.__dict__.copy()
+        trade_dict["journal_entries"] = [j.__dict__.copy() for j in journal_entries]
+        return trade_dict

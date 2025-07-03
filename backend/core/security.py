@@ -1,4 +1,3 @@
-
 """
 Security utilities and JWT token handling
 """
@@ -6,18 +5,30 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
 from backend.core.config import settings
 from backend.core.exceptions import AuthenticationError
+from backend.api.v1.auth.service import AuthService
+from backend.core.db.session import get_db
+from backend.models.user import User
 
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+class HTTPBearer401(HTTPBearer):
+    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
+        try:
+            return await super().__call__(request)
+        except HTTPException as exc:
+            # Always return 401 for missing/invalid credentials
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
 # JWT security
-security = HTTPBearer()
+security = HTTPBearer401()
 
 
 class SecurityManager:
@@ -67,21 +78,29 @@ class SecurityManager:
             raise AuthenticationError("Invalid token")
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    """Dependency to get current authenticated user"""
-    try:
-        payload = SecurityManager.verify_token(credentials.credentials)
-        
-        # Validate required fields
-        user_id = payload.get("user_id")
-        if not user_id:
-            raise AuthenticationError("Invalid token payload")
-        
-        return payload
-    except AuthenticationError:
-        raise
-    except Exception as e:
-        raise AuthenticationError(f"Authentication failed: {str(e)}")
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current authenticated user"""
+    auth_service = AuthService(db)
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = SecurityManager.verify_token(credentials.credentials)
+    user_id = payload.get("user_id") or payload.get("sub")
+    print(f"[DEBUG] get_current_user: extracted user_id={user_id} from token payload={payload}")
+    if user_id is None:
+        print("[DEBUG] get_current_user: user_id is None, raising credentials_exception")
+        raise credentials_exception
+    user = auth_service.get_user_by_id(user_id)
+    print(f"[DEBUG] get_current_user: DB lookup for user_id={user_id} returned user={user}")
+    if user is None:
+        print("[DEBUG] get_current_user: user not found, raising credentials_exception")
+        raise credentials_exception
+    return user
 
 
 async def get_current_active_user(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:

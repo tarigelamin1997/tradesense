@@ -31,8 +31,8 @@ class PaginatedResponse(BaseResponse):
     data: List[Any] = Field(..., description="List of items")
     pagination: Dict[str, Any] = Field(..., description="Pagination information")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "message": "Data retrieved successfully",
@@ -48,6 +48,7 @@ class PaginatedResponse(BaseResponse):
                 }
             }
         }
+    }
 
 class HealthResponse(BaseResponse):
     """Health check response"""
@@ -119,4 +120,27 @@ def create_paginated_response(
             "has_next": page < total_pages,
             "has_prev": page > 1
         }
-    ) 
+    )
+
+def error_response(message: str, error: str = None, status_code: int = 400, data: dict = None):
+    """
+    Standardized error response for API endpoints.
+    """
+    return {
+        "success": False,
+        "message": message,
+        "error": error,
+        "data": data or {},
+        "status_code": status_code
+    }
+
+def success_response(data: dict = None, message: str = "Success", status_code: int = 200):
+    """
+    Standardized success response for API endpoints.
+    """
+    return {
+        "success": True,
+        "message": message,
+        "data": data or {},
+        "status_code": status_code
+    } 

@@ -8,8 +8,8 @@ import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
 # Import shared Base
-from core.db.session import Base
-from models.tag import trade_tags
+from backend.core.db.session import Base
+from backend.models.tag import trade_tags
 
 class Trade(Base):
     __tablename__ = "trades"

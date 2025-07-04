@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 
 # Import shared Base
-from core.db.session import Base
+from backend.core.db.session import Base
 
 class User(Base):
     __tablename__ = "users"

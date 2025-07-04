@@ -7,19 +7,7 @@ backend_dir = os.path.join(backend_dir, 'backend')
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-# Initialize database first
-try:
-    print("🚀 Starting TradeSense Backend (Minimal)...")
-    
-    # Import all models first to register them with SQLAlchemy
-    import backend.models  # This ensures all models are registered
-    
-    # Initialize database
-    from backend.initialize_db import *
-
-    print("✅ Database initialized successfully")
-except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
+print("🚀 Starting TradeSense Backend (Minimal)...")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,7 +38,16 @@ from backend.api.v1.strategy_lab.router import router as strategy_lab_router
 from backend.api.v1.mental_map.router import router as mental_map_router
 from backend.api.v1.emotions.router import router as emotions_router
 from backend.api.v1.health.performance_router import router as performance_router
+from backend.api.v1.health.router import router as health_router
 from backend.core.async_manager import task_manager
+
+# Initialize database after all imports (models are imported through API services)
+try:
+    from backend.core.db.session import engine, Base
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database initialized successfully")
+except Exception as e:
+    print(f"⚠️ Database initialization warning: {e}")
 
 app = FastAPI()
 
@@ -96,4 +93,5 @@ app.include_router(critique_router, prefix="/api/v1/critique")
 app.include_router(strategy_lab_router, prefix="/api/v1/strategy-lab")
 app.include_router(mental_map_router, prefix="/api/v1/mental-map")
 app.include_router(emotions_router, prefix="/api/v1/emotions")
-app.include_router(performance_router, prefix="/api/v1/performance", tags=["performance"]) 
+app.include_router(performance_router, prefix="/api/v1/performance", tags=["performance"])
+app.include_router(health_router, tags=["health"]) 

@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
-from core.db.session import Base
+from backend.core.db.session import Base
 
 # Junction table for many-to-many relationship between trades and tags
 trade_tags = Table(

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Text, DateTime, Integer, JSON
 from sqlalchemy.sql import func
-from core.db.session import Base
+from backend.core.db.session import Base
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, date
@@ -9,6 +9,7 @@ import uuid
 
 class DailyEmotionReflection(Base):
     __tablename__ = "daily_emotion_reflections"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, nullable=False)

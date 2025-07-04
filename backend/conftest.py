@@ -10,12 +10,13 @@ from fastapi.testclient import TestClient
 import shutil
 import time
 
-# Add the backend directory to Python path FIRST
+# Add the project root directory to Python path FIRST
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+# Add the backend directory to Python path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
-
-# Now import backend modules
-# from backend.core.db.session import get_db
 
 # Test database URL
 TEST_DATABASE_URL = "sqlite:///./test_tradesense.db"
@@ -67,8 +68,12 @@ def setup_models_and_tables(request):
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False}
     )
-    from core.db.session import Base
-    import models.user, models.trade, models.trading_account, models.feature_request, models.tag, models.portfolio, models.playbook, models.trade_review, models.trade_note, models.strategy, models.mental_map, models.pattern_cluster, models.milestone, models.daily_emotion_reflection
+    from backend.core.db.session import Base
+    # Import all models through the models package to avoid duplicate registration
+    # Only import if not already imported
+    if not hasattr(Base, '_models_imported'):
+        import backend.models
+        Base._models_imported = True
     
     # Drop all tables and indexes more aggressively
     try:
@@ -111,7 +116,7 @@ def test_engine(setup_models_and_tables):
 @pytest.fixture(scope="function")
 def test_db(test_engine):
     """Create test database session (function-scoped)."""
-    from core.db.session import Base
+    from backend.core.db.session import Base
     TestingSessionLocal = sessionmaker(
         autocommit=False,
         autoflush=False,
@@ -126,7 +131,7 @@ def test_db(test_engine):
 @pytest.fixture(scope="function")
 def test_user(test_db):
     """Ensure the test user exists in the test DB with id 'test_user_123'."""
-    from models.user import User
+    from backend.models.user import User
     test_user_id = "test_user_123"
     test_email = "test@example.com"
     test_username = "testuser"
@@ -165,8 +170,10 @@ def test_user(test_db):
 @pytest.fixture(scope="function")
 def client(test_db):
     """Create test client with database override."""
+    # Import main_minimal from the project root
+    sys.path.insert(0, str(project_root))
     import main_minimal
-    from core.db.session import get_db
+    from backend.core.db.session import get_db
     def override_get_db():
         yield test_db
     main_minimal.app.dependency_overrides[get_db] = override_get_db
@@ -198,27 +205,31 @@ def sample_trade_data():
         "quantity": 100,
         "side": "long",
         "entry_time": "2024-01-01T10:00:00",
-        "exit_time": "2024-01-01T15:00:00",
-        "pnl": 500.00
+        "exit_time": "2024-01-02T10:00:00",
+        "strategy": "swing_trading",
+        "notes": "Test trade",
+        "tags": ["tech", "large_cap"]
     }
 
 @pytest.fixture(autouse=True)
 def setup_test_environment():
-    """Setup test environment variables"""
-    os.environ["TESTING"] = "true"
-    os.environ["DATABASE_URL"] = TEST_DATABASE_URL
-    yield
-    os.environ.pop("TESTING", None)
-    os.environ.pop("DATABASE_URL", None)
+    """Setup test environment before each test."""
+    # Ensure we're in a clean state
+    pass
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def set_app_db_override(test_engine):
-    """Set the dependency override for get_db at the start of the test session."""
-    import main_minimal
-    from core.db.session import get_db
+    """Override the database dependency for the entire test session."""
+    from backend.core.db.session import get_db
     def override_get_db():
-        from conftest import test_db
-        yield test_db
-    main_minimal.app.dependency_overrides[get_db] = override_get_db
-    yield
-    main_minimal.app.dependency_overrides.clear()
+        TestingSessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=test_engine
+        )
+        db = TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+    return override_get_db

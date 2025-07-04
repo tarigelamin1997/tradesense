@@ -3,7 +3,7 @@ Strategy model for trade strategy management
 """
 from sqlalchemy import Column, String, Text, DateTime, Index
 from sqlalchemy.sql import func
-from core.db.session import Base
+from backend.core.db.session import Base
 import uuid
 
 
@@ -21,4 +21,5 @@ class Strategy(Base):
     __table_args__ = (
         Index('idx_user_strategy', 'user_id', 'name'),
         Index('idx_user_created', 'user_id', 'created_at'),
+        {'extend_existing': True}
     )

@@ -14,7 +14,7 @@ try:
     print("🚀 Starting TradeSense Backend...")
     
     # Import all models first to register them with SQLAlchemy
-    import models  # This ensures all models are registered
+    import backend.models  # This ensures all models are registered
     
     # Initialize database
     from initialize_db import *

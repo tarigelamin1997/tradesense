@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 
 # Import shared Base
-from core.db.session import Base
+from backend.core.db.session import Base
 
 # Export classes for proper importing
 __all__ = ['MentalMapEntry', 'SessionReplay', 'MentalMapEntryCreate', 'MentalMapEntryResponse', 'SessionReplayCreate', 'SessionReplayResponse', 'MentalMap']

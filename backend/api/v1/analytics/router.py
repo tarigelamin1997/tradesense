@@ -59,7 +59,7 @@ async def get_analytics_summary(
         )
 
         summary = await service.get_analytics_summary(
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             filters=filters
         )
 
@@ -90,7 +90,7 @@ async def get_emotion_impact(
 ):
     """Get emotional impact analysis on trading performance"""
     try:
-        data = await service.get_emotion_impact_analysis(current_user["user_id"])
+        data = await service.get_emotion_impact_analysis(current_user.id)
         return create_success_response(
             data=data,
             message="Emotion impact analysis completed",
@@ -111,7 +111,7 @@ async def get_strategy_performance(
 ):
     """Get detailed strategy performance breakdown"""
     try:
-        data = await service.get_strategy_performance_analysis(current_user["user_id"])
+        data = await service.get_strategy_performance_analysis(current_user.id)
         return create_success_response(
             data=data,
             message="Strategy performance analysis completed",
@@ -132,7 +132,7 @@ async def get_confidence_correlation(
 ):
     """Get confidence score vs performance correlation"""
     try:
-        data = await service.get_confidence_performance_correlation(current_user["user_id"])
+        data = await service.get_confidence_performance_correlation(current_user.id)
         return create_success_response(
             data=data,
             message="Confidence correlation analysis completed",
@@ -160,7 +160,7 @@ async def get_timeline_analysis(
             raise ValidationError("Start date must be before end date")
         
         data = await service.get_timeline_analysis(
-            user_id=current_user["user_id"],
+            user_id=current_user.id,
             start_date=start_date,
             end_date=end_date
         )

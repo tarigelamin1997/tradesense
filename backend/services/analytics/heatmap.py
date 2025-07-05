@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-from models.trade import Trade
+from backend.models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

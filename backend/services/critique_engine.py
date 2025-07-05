@@ -5,7 +5,7 @@ from datetime import datetime
 import asyncio
 from dataclasses import dataclass
 
-from models.trade import Trade
+from backend.models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

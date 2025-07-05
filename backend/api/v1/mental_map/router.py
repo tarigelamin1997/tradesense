@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -183,3 +182,23 @@ async def get_rule_break_analysis(
     """Get rule break pattern analysis"""
     service = MentalMapService(db)
     return service.get_rule_break_analysis(user_id=current_user.id, days=days)
+
+@router.get("/")
+async def get_mental_map_overview(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get overview of mental map features"""
+    return {
+        "status": "available",
+        "features": [
+            "Trading psychology mapping",
+            "Mental state tracking",
+            "Decision pattern analysis",
+            "Cognitive bias detection"
+        ],
+        "endpoints": {
+            "entries": "/api/v1/mental-map/entries",
+            "sessions": "/api/v1/mental-map/sessions",
+            "analysis": "/api/v1/mental-map/analysis"
+        }
+    }

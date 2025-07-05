@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
-from models.trade import Trade
+from backend.models.trade import Trade
 from models.mental_map import MentalMapEntry
 from models.pattern_cluster import PatternCluster, PatternClusterCreate
 

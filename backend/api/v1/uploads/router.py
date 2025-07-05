@@ -19,7 +19,7 @@ from backend.models.user import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/uploads", tags=["File Uploads"])
+router = APIRouter(tags=["File Uploads"])
 uploads_service = UploadsService()
 
 

@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from backend.models.trading_account import TradingAccountCreate, TradingAccountUpdate, TradingAccountResponse
@@ -6,7 +5,7 @@ from backend.api.v1.accounts.service import TradingAccountService
 from backend.api.deps import get_current_user
 from backend.models.user import UserRead
 
-router = APIRouter(prefix="/accounts", tags=["Trading Accounts"])
+router = APIRouter(tags=["Trading Accounts"])
 
 @router.post("/", response_model=TradingAccountResponse, status_code=status.HTTP_201_CREATED)
 async def create_trading_account(

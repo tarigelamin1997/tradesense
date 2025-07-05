@@ -70,20 +70,20 @@ class Trade(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-    # Relationships
-    user = relationship("User", back_populates="trades")
-    account = relationship("TradingAccount", back_populates="trades")
-    mental_entries = relationship("MentalMapEntry", back_populates="trade")
-    playbook = relationship("Playbook", back_populates="trades")
-    review = relationship("TradeReview", back_populates="trade", uselist=False)
-    tags = relationship("Tag", secondary=trade_tags, back_populates="trades")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # user = relationship("backend.models.user.User", back_populates="trades")
+    # account = relationship("backend.models.trading_account.TradingAccount", back_populates="trades")
+    # mental_entries = relationship("backend.models.mental_map.MentalMapEntry", back_populates="trade")
+    # playbook = relationship("backend.models.playbook.Playbook", back_populates="trades")
+    # review = relationship("backend.models.trade_review.TradeReview", back_populates="trade", uselist=False)
+    # tag_objects = relationship("backend.models.tag.Tag", secondary=trade_tags, back_populates="trades")  # Disabled for now
 
     # Indexes for performance
     __table_args__ = (
         Index('idx_user_symbol', 'user_id', 'symbol'),
         Index('idx_user_date', 'user_id', 'entry_time'),
+        Index('idx_user_trade_strategy', 'user_id', 'strategy_tag'),
         Index('idx_pnl_filter', 'user_id', 'pnl'),
-        Index('idx_user_strategy', 'user_id', 'strategy_tag'),
         {"extend_existing": True}
     )
 

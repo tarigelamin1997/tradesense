@@ -27,7 +27,7 @@ from backend.models.user import User, UserCreate
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/users", tags=["User Management"])
+router = APIRouter(tags=["User Management"])
 
 
 @router.post("/", response_model=UserRead, summary="Create New User")

@@ -1,11 +1,10 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 from backend.api.v1.leaderboard.service import LeaderboardService
 from backend.api.deps import get_current_user
 from backend.models.user import UserRead
 
-router = APIRouter(prefix="/leaderboard", tags=["Global Leaderboard"])
+router = APIRouter(tags=["Global Leaderboard"])
 
 @router.get("/global")
 async def get_global_leaderboard(

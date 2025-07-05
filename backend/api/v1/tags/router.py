@@ -1,4 +1,3 @@
-
 """
 Tag management API endpoints
 """
@@ -15,7 +14,7 @@ from backend.api.v1.tags.service import TagService
 from backend.core.exceptions import NotFoundError, ValidationError
 from backend.core.response import create_response
 
-router = APIRouter(prefix="/tags", tags=["Tags"])
+router = APIRouter(tags=["Tags"])
 
 
 @router.post("/", response_model=TagResponse, status_code=201)

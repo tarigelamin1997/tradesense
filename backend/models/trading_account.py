@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Index, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field
@@ -21,8 +20,8 @@ class TradingAccount(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-    # Relationships
-    trades = relationship("Trade", back_populates="account")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # trades = relationship("backend.models.trade.Trade", back_populates="account")
 
     # Indexes for performance
     __table_args__ = (

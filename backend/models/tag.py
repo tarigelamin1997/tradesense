@@ -2,9 +2,10 @@
 Tag model for trade categorization and organization
 """
 from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Index
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from pydantic import BaseModel, Field
+from typing import Optional, List
 import uuid
 from backend.core.db.session import Base
 
@@ -32,12 +33,12 @@ class Tag(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationship to trades through junction table
-    trades = relationship("Trade", secondary=trade_tags, back_populates="tags")
+    # trades = relationship("backend.models.trade.Trade", secondary=trade_tags, back_populates="tag_objects")  # Disabled for now
 
     # Indexes for performance
     __table_args__ = (
         Index('idx_user_tag_name', 'user_id', 'name'),
-        Index('idx_user_created', 'user_id', 'created_at'),
+        Index('idx_tag_user_created', 'user_id', 'created_at'),
         # Ensure unique tag names per user
         Index('idx_unique_user_tag', 'user_id', 'name', unique=True),
         {"extend_existing": True}

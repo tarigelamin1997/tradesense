@@ -14,7 +14,7 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-class User(UserBase):
+class UserModel(UserBase):
     id: int
     hashed_password: str
     is_active: bool = True

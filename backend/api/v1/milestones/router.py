@@ -7,7 +7,7 @@ from backend.api.deps import get_current_user
 from backend.models.milestone import MilestoneResponse, UserProgress
 from backend.services.milestone_engine import MilestoneEngine
 
-router = APIRouter(prefix="/api/v1/milestones", tags=["milestones"])
+router = APIRouter(tags=["milestones"])
 
 def get_milestone_engine(db: Session = Depends(get_db)) -> MilestoneEngine:
     return MilestoneEngine(db)

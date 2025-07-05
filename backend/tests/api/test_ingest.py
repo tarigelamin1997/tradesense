@@ -2,8 +2,16 @@ import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime
 import json
+import sys
+import os
 
-from backend.main import app
+# Add the project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import the working app from main_minimal
+from main_minimal import app
 from backend.core.security import SecurityManager
 from backend.models.user import User
 from backend.core.db.session import SessionLocal

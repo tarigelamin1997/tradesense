@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -10,7 +9,7 @@ from backend.models.trade_note import TradeNote
 from .schemas import JournalEntryCreate, JournalEntryUpdate, JournalEntryResponse
 from .service import JournalService
 
-router = APIRouter(prefix="/journal", tags=["journal"])
+router = APIRouter(tags=["journal"])
 
 @router.get("/entries", response_model=List[JournalEntryResponse])
 async def get_journal_entries(

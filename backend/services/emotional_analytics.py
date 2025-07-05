@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
-from models.trade import Trade
+from backend.models.trade import Trade
 from datetime import datetime, timedelta
 import json
 

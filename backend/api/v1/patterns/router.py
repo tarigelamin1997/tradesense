@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -154,3 +153,30 @@ async def save_cluster_to_playbook(
     if not success:
         raise HTTPException(status_code=404, detail="Pattern cluster not found")
     return {"message": "Pattern saved to playbook successfully"}
+
+@router.get("/")
+async def get_patterns_overview(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get overview of user's pattern analysis"""
+    service = PatternService(db)
+    
+    # Get analysis status
+    status = service.get_analysis_status(current_user.id)
+    
+    # Get basic cluster info
+    clusters = service.get_pattern_clusters(
+        user_id=current_user.id,
+        limit=10
+    )
+    
+    # Get insights if available
+    insights = service.get_pattern_insights(current_user.id)
+    
+    return {
+        "status": status,
+        "cluster_count": len(clusters),
+        "recent_clusters": clusters[:5],
+        "insights": insights
+    }

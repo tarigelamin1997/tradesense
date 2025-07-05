@@ -27,7 +27,7 @@ class FeatureRequest(Base):
     
     # User who created the request
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    user = relationship("User")
+    # user = relationship("backend.models.user.User")  # Disabled temporarily
     
     # Timestamps
     created_at = Column(DateTime, default=func.now())
@@ -41,6 +41,11 @@ class FeatureRequest(Base):
     admin_notes = Column(Text)
     estimated_completion = Column(DateTime)
 
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # user = relationship("backend.models.user.User", back_populates="feature_requests")
+    # votes = relationship("backend.models.feature_request.FeatureVote", back_populates="feature_request", cascade="all, delete-orphan")
+    # comments = relationship("backend.models.feature_request.FeatureComment", back_populates="feature_request", cascade="all, delete-orphan")
+
 class FeatureVote(Base):
     __tablename__ = "feature_votes"
     __table_args__ = ({"extend_existing": True},)
@@ -48,12 +53,12 @@ class FeatureVote(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     feature_request_id = Column(String, ForeignKey("feature_requests.id"), nullable=False)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    vote_type = Column(String(10), nullable=False)  # upvote, downvote
+    vote_type = Column(String, nullable=False)  # 'upvote' or 'downvote'
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
-    feature_request = relationship("FeatureRequest")
-    user = relationship("User")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # feature_request = relationship("backend.models.feature_request.FeatureRequest", back_populates="votes")
+    # user = relationship("backend.models.user.User")
 
 class FeatureComment(Base):
     __tablename__ = "feature_comments"
@@ -65,6 +70,6 @@ class FeatureComment(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
-    feature_request = relationship("FeatureRequest")
-    user = relationship("User")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # feature_request = relationship("backend.models.feature_request.FeatureRequest", back_populates="comments")
+    # user = relationship("backend.models.user.User")

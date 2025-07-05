@@ -9,7 +9,7 @@ from collections import defaultdict
 import logging
 from sqlalchemy.orm import Session
 from models.milestone import Milestone, MilestoneCreate, UserProgress
-from models.trade import Trade
+from backend.models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

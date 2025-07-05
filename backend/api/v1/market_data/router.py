@@ -8,7 +8,7 @@ from backend.services.real_time_market_service import market_service, MarketData
 from backend.api.deps import get_current_user
 from backend.models.user import User
 
-router = APIRouter(prefix="/market-data", tags=["market-data"])
+router = APIRouter(tags=["market-data"])
 
 @router.get("/quotes")
 async def get_market_quotes(symbols: str) -> Dict[str, MarketData]:

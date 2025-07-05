@@ -12,7 +12,7 @@ from .schemas import (
     DailyEmotionReflectionResponse
 )
 
-router = APIRouter(prefix="/api/v1/reflections", tags=["reflections"])
+router = APIRouter(tags=["reflections"])
 
 def get_reflection_service(db: Session = Depends(get_db)) -> DailyReflectionService:
     return DailyReflectionService(db)
@@ -79,3 +79,35 @@ async def delete_daily_reflection(
         return {"message": "Reflection deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete reflection: {str(e)}")
+
+@router.get("/")
+async def get_reflections_overview(
+    current_user: dict = Depends(get_current_user),
+    reflection_service: DailyReflectionService = Depends(get_reflection_service)
+):
+    """Get overview of daily reflections"""
+    try:
+        recent_reflections = reflection_service.get_recent_reflections(current_user.id, limit=5)
+        stats = reflection_service.get_reflection_stats(current_user.id)
+        
+        return {
+            "status": "available",
+            "recent_reflections": recent_reflections,
+            "stats": stats,
+            "features": [
+                "Daily mood tracking",
+                "Performance reflection",
+                "Goal setting and tracking",
+                "Emotional pattern analysis"
+            ]
+        }
+    except Exception as e:
+        return {
+            "status": "available",
+            "message": "Reflections service ready",
+            "features": [
+                "Daily mood tracking", 
+                "Performance reflection",
+                "Goal setting and tracking"
+            ]
+        }

@@ -11,6 +11,7 @@ from .schemas import (
 from .confidence_calibration import ConfidenceCalibrationService
 from pydantic import BaseModel, ValidationError
 from uuid import UUID
+from backend.core.cache import cache_response, invalidate_cache_pattern
 
 router = APIRouter(tags=["trades"])
 
@@ -29,6 +30,10 @@ async def create_trade(
             user_id=current_user.id,
             trade_data=trade_data
         )
+        
+        # Invalidate user-specific cache
+        invalidate_cache_pattern(f"user:{current_user.id}")
+        
         return trade
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to create trade")
@@ -45,6 +50,10 @@ async def ingest_trade(
             user_id=current_user.id,
             trade_data=trade_data
         )
+        
+        # Invalidate user-specific cache
+        invalidate_cache_pattern(f"user:{current_user.id}")
+        
         return result
     except ValidationError as ve:
         raise HTTPException(status_code=422, detail=ve.errors())
@@ -56,6 +65,7 @@ async def ingest_trade(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@cache_response(ttl=60, key_prefix="trades_list")
 @router.get("/", response_model=List[dict])
 async def get_trades(
     limit: int = Query(100, ge=1, le=1000),
@@ -64,14 +74,15 @@ async def get_trades(
     current_user: dict = Depends(get_current_user),
     trade_service: TradesService = Depends(get_trade_service)
 ):
-    """Get all trades for the current user"""
-    return await trade_service.get_user_trades(
+    """Get all trades for the current user with caching"""
+    return await trade_service.get_user_trades_optimized(
         user_id=current_user.id,
         limit=limit,
         offset=offset,
         include_journal=include_journal
     )
 
+@cache_response(ttl=120, key_prefix="trade_detail")
 @router.get("/{trade_id}", response_model=dict)
 async def get_trade_with_journal(
     trade_id: str,
@@ -98,11 +109,17 @@ async def update_trade(
 ):
     """Update a trade"""
     try:
-        return await trade_service.update_trade(
+        result = await trade_service.update_trade(
             trade_id=trade_id,
             user_id=current_user.id,
             update_data=update_data
         )
+        
+        # Invalidate related cache
+        invalidate_cache_pattern(f"user:{current_user.id}")
+        invalidate_cache_pattern(f"trade_detail")
+        
+        return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -120,6 +137,11 @@ async def delete_trade(
             trade_id=trade_id,
             user_id=current_user.id
         )
+        
+        # Invalidate related cache
+        invalidate_cache_pattern(f"user:{current_user.id}")
+        invalidate_cache_pattern(f"trade_detail")
+        
         return {"message": "Trade and journal entries deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -138,16 +160,22 @@ async def attach_playbook_to_trade(
 ):
     """Attach or detach a playbook from a trade."""
     try:
-        return await trade_service.attach_playbook(
+        result = await trade_service.attach_playbook(
             trade_id=trade_id,
             user_id=current_user.id,
             playbook_id=request.playbook_id
         )
+        
+        # Invalidate related cache
+        invalidate_cache_pattern(f"user:{current_user.id}")
+        
+        return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to attach/detach playbook")
 
+@cache_response(ttl=300, key_prefix="confidence_calibration")
 @router.get("/confidence-calibration")
 async def get_confidence_calibration(
     current_user: dict = Depends(get_current_user),
@@ -162,6 +190,7 @@ async def get_confidence_calibration(
             raise HTTPException(status_code=404, detail="No trades with confidence scores found")
         raise HTTPException(status_code=500, detail="Failed to calculate confidence calibration")
 
+@cache_response(ttl=300, key_prefix="confidence_playbook")
 @router.get("/confidence-calibration/by-playbook")
 async def get_confidence_calibration_by_playbook(
     current_user: dict = Depends(get_current_user),
@@ -174,7 +203,7 @@ async def get_confidence_calibration_by_playbook(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to calculate playbook confidence calibration")
 
-# Adding the new route for execution quality analysis
+@cache_response(ttl=180, key_prefix="execution_quality")
 @router.get("/execution-quality")
 async def execution_quality(
     current_user: dict = Depends(get_current_user),

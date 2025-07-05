@@ -43,9 +43,10 @@ from backend.core.async_manager import task_manager
 
 # Initialize database after all imports (models are imported through API services)
 try:
-    from backend.core.db.session import engine, Base
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized successfully")
+    from backend.core.db.session import create_tables
+    print("🗄️ Initializing database...")
+    create_tables()
+    print("✅ Database ready")
 except Exception as e:
     print(f"⚠️ Database initialization warning: {e}")
 
@@ -65,15 +66,20 @@ setup_middleware(app)
 setup_exception_handlers(app)
 setup_validation_middleware(app)
 
-# Start the async cleanup task on FastAPI startup
+# Start the async cleanup task on FastAPI startup (optional for faster startup)
 @app.on_event("startup")
 async def start_async_manager_cleanup():
-    task_manager.start_cleanup_task()
+    # Only start cleanup task in production or when explicitly enabled
+    if os.getenv("ENABLE_TASK_CLEANUP", "false").lower() == "true":
+        task_manager.start_cleanup_task()
+        print("🔄 Background task cleanup enabled")
+    else:
+        print("⚡ Fast startup mode - task cleanup disabled")
 
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1/auth")
 app.include_router(trades_router, prefix="/api/v1/trades")
-app.include_router(analytics_router, prefix="/api/v1")
+app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(uploads_router, prefix="/api/v1")
 app.include_router(features_router, prefix="/api/v1/features", tags=["features"])
 app.include_router(intelligence_router, prefix="/api/v1/intelligence", tags=["intelligence"])
@@ -94,4 +100,14 @@ app.include_router(strategy_lab_router, prefix="/api/v1/strategy-lab")
 app.include_router(mental_map_router, prefix="/api/v1/mental-map")
 app.include_router(emotions_router, prefix="/api/v1/emotions")
 app.include_router(performance_router, prefix="/api/v1/performance", tags=["performance"])
-app.include_router(health_router, tags=["health"]) 
+app.include_router(health_router, tags=["health"])
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main_minimal:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,  # Disable reload for faster startup
+        log_level="info"
+    ) 

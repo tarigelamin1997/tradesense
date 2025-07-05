@@ -1,5 +1,5 @@
 """
-Trades service layer - handles all trade-related business logic
+Trades service layer - handles all trade-related business logic with optimizations
 """
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
@@ -7,9 +7,11 @@ import pandas as pd
 import numpy as np
 import uuid
 import logging
+from functools import lru_cache
 
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, desc, asc, func
+from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import and_, or_, desc, asc, func, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.models.trade import Trade
 from backend.models.tag import Tag
@@ -30,6 +32,7 @@ from backend.models.strategy import Strategy
 from backend.services.critique_engine import CritiqueEngine
 from .schemas import TradeCreateRequest, TradeUpdateRequest, TradeResponse
 from backend.services.milestone_engine import MilestoneEngine
+from backend.core.cache import cache_manager, query_cache
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +60,12 @@ class AnalyticsFilters:
 
 
 class TradesService:
-    """Service for managing trades and analytics"""
+    """Service for managing trades and analytics with optimizations"""
 
     def __init__(self, db: Session):
         self.analytics_service = AnalyticsService()
         self.db = db
         self.critique_engine = CritiqueEngine()
-        # In production, this would be a database connection
         self._trades_storage = {}
 
         # Import analytics modules
@@ -77,8 +79,167 @@ class TradesService:
         self.calculate_streaks = calculate_win_loss_streaks
         self.apply_filters = apply_trade_filters
 
+    @query_cache.cache_query(ttl=300)
+    async def get_user_trades_optimized(self, user_id: str, limit: int = 100, offset: int = 0, include_journal: bool = False):
+        """Optimized method to get user trades with efficient querying"""
+        try:
+            # Build optimized query with eager loading
+            query = self.db.query(Trade).filter(Trade.user_id == user_id)
+            
+            if include_journal:
+                query = query.options(
+                    selectinload(Trade.notes),
+                    selectinload(Trade.tags),
+                    selectinload(Trade.review)
+                )
+            
+            # Add ordering and pagination
+            query = query.order_by(desc(Trade.entry_time)).offset(offset).limit(limit)
+            
+            # Execute query
+            trades = query.all()
+            
+            # Convert to response format
+            result = []
+            for trade in trades:
+                trade_data = {
+                    'id': trade.id,
+                    'symbol': trade.symbol,
+                    'direction': trade.direction,
+                    'quantity': trade.quantity,
+                    'entry_price': trade.entry_price,
+                    'exit_price': trade.exit_price,
+                    'entry_time': trade.entry_time,
+                    'exit_time': trade.exit_time,
+                    'pnl': trade.pnl,
+                    'net_pnl': trade.net_pnl,
+                    'strategy_tag': trade.strategy_tag,
+                    'confidence_score': trade.confidence_score,
+                    'status': 'closed' if trade.exit_price else 'open',
+                    'created_at': trade.created_at,
+                    'updated_at': trade.updated_at
+                }
+                
+                if include_journal and trade.notes:
+                    trade_data['notes'] = [
+                        {
+                            'id': note.id,
+                            'content': note.content,
+                            'created_at': note.created_at
+                        } for note in trade.notes
+                    ]
+                
+                result.append(trade_data)
+            
+            return result
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Database error in get_user_trades_optimized: {e}")
+            raise BusinessLogicError(f"Database error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error in get_user_trades_optimized: {e}")
+            raise BusinessLogicError(f"Failed to retrieve trades: {str(e)}")
+
+    @query_cache.cache_query(ttl=180)
+    async def get_trade_analytics_optimized(self, user_id: str, filters: Optional[AnalyticsFilters] = None) -> Dict[str, Any]:
+        """Optimized analytics calculation with caching"""
+        try:
+            # Build base query
+            query = self.db.query(Trade).filter(Trade.user_id == user_id)
+            
+            # Apply filters
+            if filters:
+                if filters.start_date:
+                    query = query.filter(Trade.entry_time >= filters.start_date)
+                if filters.end_date:
+                    query = query.filter(Trade.entry_time <= filters.end_date)
+                if filters.strategy_tag:
+                    query = query.filter(Trade.strategy_tag == filters.strategy_tag)
+                if filters.confidence_score_min is not None:
+                    query = query.filter(Trade.confidence_score >= filters.confidence_score_min)
+                if filters.confidence_score_max is not None:
+                    query = query.filter(Trade.confidence_score <= filters.confidence_score_max)
+            
+            # Execute query with specific columns for performance
+            trades_data = query.with_entities(
+                Trade.pnl,
+                Trade.net_pnl,
+                Trade.confidence_score,
+                Trade.strategy_tag,
+                Trade.entry_time,
+                Trade.exit_time
+            ).all()
+            
+            if not trades_data:
+                return {
+                    'total_trades': 0,
+                    'win_rate': 0,
+                    'total_pnl': 0,
+                    'avg_pnl': 0,
+                    'max_win': 0,
+                    'max_loss': 0,
+                    'sharpe_ratio': 0,
+                    'strategy_breakdown': {},
+                    'monthly_performance': {}
+                }
+            
+            # Convert to pandas for efficient calculations
+            df = pd.DataFrame([
+                {
+                    'pnl': t.pnl or 0,
+                    'net_pnl': t.net_pnl or 0,
+                    'confidence_score': t.confidence_score,
+                    'strategy_tag': t.strategy_tag,
+                    'entry_time': t.entry_time,
+                    'exit_time': t.exit_time
+                } for t in trades_data
+            ])
+            
+            # Calculate analytics efficiently
+            total_trades = len(df)
+            winning_trades = len(df[df['net_pnl'] > 0])
+            win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
+            
+            total_pnl = df['net_pnl'].sum()
+            avg_pnl = df['net_pnl'].mean()
+            max_win = df['net_pnl'].max()
+            max_loss = df['net_pnl'].min()
+            
+            # Calculate Sharpe ratio (simplified)
+            returns = df['net_pnl'].dropna()
+            sharpe_ratio = (returns.mean() / returns.std()) if len(returns) > 1 and returns.std() > 0 else 0
+            
+            # Strategy breakdown
+            strategy_breakdown = df.groupby('strategy_tag').agg({
+                'net_pnl': ['count', 'sum', 'mean'],
+                'pnl': 'sum'
+            }).round(2).to_dict()
+            
+            # Monthly performance
+            df['month'] = df['entry_time'].dt.to_period('M')
+            monthly_performance = df.groupby('month')['net_pnl'].sum().to_dict()
+            
+            return {
+                'total_trades': total_trades,
+                'win_rate': round(win_rate, 2),
+                'total_pnl': round(total_pnl, 2),
+                'avg_pnl': round(avg_pnl, 2),
+                'max_win': round(max_win, 2),
+                'max_loss': round(max_loss, 2),
+                'sharpe_ratio': round(sharpe_ratio, 2),
+                'strategy_breakdown': strategy_breakdown,
+                'monthly_performance': {str(k): round(v, 2) for k, v in monthly_performance.items()}
+            }
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Database error in get_trade_analytics_optimized: {e}")
+            raise BusinessLogicError(f"Database error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error in get_trade_analytics_optimized: {e}")
+            raise BusinessLogicError(f"Failed to calculate analytics: {str(e)}")
+
     async def create_trade(self, user_id: str, trade_data: TradeCreateRequest) -> TradeResponse:
-        """Create a new trade"""
+        """Create a new trade with cache invalidation"""
         try:
             trade_id = str(uuid.uuid4())
 
@@ -110,6 +271,9 @@ class TradesService:
             self.db.add(trade)
             self.db.commit()
             self.db.refresh(trade)
+
+            # Invalidate user cache
+            query_cache.invalidate_user_cache(user_id)
 
             logger.info(f"Trade {trade_id} created for user {user_id}")
 

@@ -21,7 +21,7 @@ from backend.core.exceptions import TradeSenseException
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/notes", tags=["Trade Notes & Journaling"])
+router = APIRouter(tags=["Trade Notes & Journaling"])
 
 
 @router.post("/", response_model=TradeNoteRead, summary="Create Trade Note")

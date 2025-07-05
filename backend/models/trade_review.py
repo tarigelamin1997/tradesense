@@ -1,12 +1,11 @@
-from backend.core.db.session import Base
-from sqlalchemy import Column, String, Integer, DateTime, Text, JSON, ForeignKey, Index
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, Integer, DateTime, Text, JSON, ForeignKey, Index, Float
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 import uuid
+from backend.core.db.session import Base
 
 class TradeReview(Base):
     __tablename__ = "trade_reviews"
@@ -26,8 +25,8 @@ class TradeReview(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
-    # Relationships
-    trade = relationship("Trade", back_populates="review")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # trade = relationship("backend.models.trade.Trade", back_populates="review")
     
     # Indexes for performance
     __table_args__ = (

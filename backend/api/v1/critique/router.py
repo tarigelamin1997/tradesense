@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Dict, Any
@@ -8,7 +7,7 @@ from backend.api.deps import get_current_user
 from .service import CritiqueService
 from .schemas import CritiqueRequest, CritiqueResponse, CritiqueFeedbackRequest
 
-router = APIRouter(prefix="/critique", tags=["critique"])
+router = APIRouter(tags=["critique"])
 
 @router.get("/trades/{trade_id}", response_model=CritiqueResponse)
 async def get_trade_critique(
@@ -85,3 +84,23 @@ async def regenerate_trade_critique(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error regenerating critique: {str(e)}")
+
+@router.get("/")
+async def get_critique_overview(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get overview of AI critique features"""
+    return {
+        "status": "available",
+        "features": [
+            "AI-powered trade analysis",
+            "Performance critique",
+            "Improvement suggestions",
+            "Risk assessment"
+        ],
+        "endpoints": {
+            "trade_critique": "/api/v1/critique/trades/{trade_id}",
+            "batch_analysis": "/api/v1/critique/batch",
+            "feedback": "/api/v1/critique/feedback"
+        }
+    }

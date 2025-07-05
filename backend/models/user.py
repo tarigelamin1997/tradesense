@@ -31,11 +31,11 @@ class User(Base):
     preferred_markets = Column(Text, nullable=True)  # JSON string of market preferences
     timezone = Column(String, default="UTC")
 
-    # Relationships
-    portfolios = relationship("Portfolio", back_populates="user")
-    trades = relationship("Trade", back_populates="user")
-    playbooks = relationship("Playbook", back_populates="user")
-    feature_requests = relationship("FeatureRequest", back_populates="user")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # portfolios = relationship("backend.models.portfolio.Portfolio", back_populates="user")
+    # trades = relationship("backend.models.trade.Trade", back_populates="user")
+    # playbooks = relationship("backend.models.playbook.Playbook", back_populates="user")
+    # feature_requests = relationship("backend.models.feature_request.FeatureRequest", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

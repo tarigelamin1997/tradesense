@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -87,3 +86,23 @@ def batch_simulate(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Batch simulation failed: {str(e)}")
+
+@router.get("/")
+async def get_strategy_lab_overview(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get overview of strategy lab features"""
+    return {
+        "status": "available",
+        "features": [
+            "Strategy backtesting",
+            "Performance simulation",
+            "Risk analysis",
+            "Strategy optimization"
+        ],
+        "endpoints": {
+            "strategies": "/api/v1/strategy-lab/strategies",
+            "backtest": "/api/v1/strategy-lab/backtest",
+            "optimize": "/api/v1/strategy-lab/optimize"
+        }
+    }

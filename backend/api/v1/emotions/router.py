@@ -16,6 +16,26 @@ class EmotionalTagsUpdate(BaseModel):
     executed_plan: bool = Field(..., description="Did trader follow plan?")
     post_trade_mood: str = Field(..., max_length=50, description="Post-trade mood")
 
+@router.get("/")
+async def get_emotions_overview(
+    current_user: User = Depends(get_current_user)
+):
+    """Get overview of emotion tracking features"""
+    return {
+        "status": "available",
+        "features": [
+            "Daily emotion tracking",
+            "Trade emotion analysis", 
+            "Emotional pattern detection",
+            "Mood impact on performance"
+        ],
+        "endpoints": {
+            "daily_tracking": "/api/v1/emotions/daily",
+            "trade_emotions": "/api/v1/emotions/trades",
+            "patterns": "/api/v1/emotions/patterns"
+        }
+    }
+
 @router.get("/states")
 async def get_emotional_states():
     """Get list of available emotional states"""

@@ -39,7 +39,7 @@ class Milestone(Base):
     __table_args__ = (
         Index('idx_user_type', 'user_id', 'type'),
         Index('idx_user_category', 'user_id', 'category'),
-        Index('idx_user_achieved', 'user_id', 'achieved_at'),
+        Index('idx_milestone_user_achieved', 'user_id', 'achieved_at'),
         {"extend_existing": True}
     )
 

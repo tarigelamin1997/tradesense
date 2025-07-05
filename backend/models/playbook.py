@@ -24,9 +24,9 @@ class Playbook(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
-    trades = relationship("Trade", back_populates="playbook")
-    user = relationship("User", back_populates="playbooks")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # user = relationship("backend.models.user.User", back_populates="playbooks")
+    # trades = relationship("backend.models.trade.Trade", back_populates="playbook")
 
     def __repr__(self):
         return f"<Playbook(name='{self.name}', status='{self.status}')>"

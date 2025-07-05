@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 from sqlalchemy.orm import Session
 from models.portfolio import Portfolio, EquitySnapshot
-from models.trade import Trade
+from backend.models.trade import Trade
 from models.user import User
 
 class PortfolioSimulator:

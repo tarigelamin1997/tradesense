@@ -42,9 +42,9 @@ class MentalMapEntry(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-    # Relationships
-    trade = relationship("Trade", back_populates="mental_entries")
-    session = relationship("SessionReplay", back_populates="mental_entries")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # trade = relationship("backend.models.trade.Trade", back_populates="mental_entries")
+    # session = relationship("backend.models.mental_map.SessionReplay", back_populates="mental_entries")
 
     # Indexes for performance
     __table_args__ = (
@@ -82,8 +82,8 @@ class SessionReplay(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-    # Relationships
-    mental_entries = relationship("MentalMapEntry", back_populates="session")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # mental_entries = relationship("backend.models.mental_map.MentalMapEntry", back_populates="session")
 
 # Pydantic models for API
 class MentalMapEntryBase(BaseModel):

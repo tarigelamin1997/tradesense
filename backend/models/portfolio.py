@@ -22,9 +22,9 @@ class Portfolio(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    user = relationship("User", back_populates="portfolios")
-    equity_snapshots = relationship("EquitySnapshot", back_populates="portfolio", cascade="all, delete-orphan")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # user = relationship("backend.models.user.User", back_populates="portfolios")  # Disabled for now
+    # equity_snapshots = relationship("backend.models.portfolio.EquitySnapshot", back_populates="portfolio", cascade="all, delete-orphan")
     
 class EquitySnapshot(Base):
     __tablename__ = "equity_snapshots"
@@ -38,5 +38,5 @@ class EquitySnapshot(Base):
     total_pnl = Column(Float, default=0.0)
     trade_count = Column(Integer, default=0)
     
-    # Relationships
-    portfolio = relationship("Portfolio", back_populates="equity_snapshots")
+    # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
+    # portfolio = relationship("backend.models.portfolio.Portfolio", back_populates="equity_snapshots")

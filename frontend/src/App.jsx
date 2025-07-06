@@ -1,75 +1,69 @@
-
 import React from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/auth';
+
+// Import components
+import AuthWrapper from './components/AuthWrapper';
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import TradeLog from './components/TradeLog';
 import Journal from './components/Journal';
 import UploadCenter from './components/UploadCenter';
 
-function App() {
-  return (
-    <BrowserRouter>
-      <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-        <Navbar />
-        
-        {/* Navigation Menu */}
-        <nav style={{ 
-          backgroundColor: '#fff', 
-          padding: '10px 20px', 
-          borderBottom: '1px solid #e9ecef',
-          marginBottom: '20px'
-        }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '20px' }}>
-            <Link to="/" style={{ 
-              textDecoration: 'none', 
-              color: '#007bff', 
-              padding: '8px 16px',
-              borderRadius: '4px',
-              backgroundColor: '#f8f9fa'
-            }}>
-              📊 Dashboard
-            </Link>
-            <Link to="/journal" style={{ 
-              textDecoration: 'none', 
-              color: '#007bff', 
-              padding: '8px 16px',
-              borderRadius: '4px',
-              backgroundColor: '#f8f9fa'
-            }}>
-              📘 Journal
-            </Link>
-            <Link to="/upload" style={{ 
-              textDecoration: 'none', 
-              color: '#007bff', 
-              padding: '8px 16px',
-              borderRadius: '4px',
-              backgroundColor: '#f8f9fa'
-            }}>
-              📤 Upload
-            </Link>
-            <Link to="/trades" style={{ 
-              textDecoration: 'none', 
-              color: '#007bff', 
-              padding: '8px 16px',
-              borderRadius: '4px',
-              backgroundColor: '#f8f9fa'
-            }}>
-              📋 Trade Log
-            </Link>
-          </div>
-        </nav>
+// Import auth pages
+import LoginPage from './features/auth/pages/LoginPage';
+import RegisterPage from './features/auth/pages/RegisterPage';
 
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/journal" element={<Journal />} />
-            <Route path="/upload" element={<UploadCenter />} />
-            <Route path="/trades" element={<TradeLog />} />
-          </Routes>
-        </div>
-      </div>
-    </BrowserRouter>
+function App() {
+  const { isAuthenticated, logout } = useAuthStore();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AuthWrapper>
+        <BrowserRouter>
+          <div className="flex">
+            {isAuthenticated && <Navbar onLogout={logout} />}
+            <main className={`flex-1 ${isAuthenticated ? 'ml-64' : ''}`}>
+              <Routes>
+                <Route path="/login" element={
+                  !isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />
+                } />
+                <Route path="/register" element={
+                  !isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" replace />
+                } />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/journal" element={
+                  <ProtectedRoute>
+                    <Journal />
+                  </ProtectedRoute>
+                } />
+                <Route path="/upload" element={
+                  <ProtectedRoute>
+                    <UploadCenter />
+                  </ProtectedRoute>
+                } />
+                <Route path="/trades" element={
+                  <ProtectedRoute>
+                    <TradeLog />
+                  </ProtectedRoute>
+                } />
+                <Route path="/" element={
+                  !isAuthenticated ? <Navigate to="/login" replace /> : <Navigate to="/dashboard" replace />
+                } />
+                <Route path="*" element={
+                  !isAuthenticated ? <Navigate to="/login" replace /> : <Navigate to="/dashboard" replace />
+                } />
+              </Routes>
+            </main>
+          </div>
+        </BrowserRouter>
+      </AuthWrapper>
+    </div>
   );
 }
 

@@ -2,14 +2,14 @@
 API v1 module initialization
 """
 from fastapi import APIRouter
-from backend.api.v1.users.router import router as users_router
-from backend.api.v1.trades import router as trades_router
-from backend.api.v1.notes.router import router as notes_router
-from backend.api.v1.strategies.router import router as strategies_router
-from backend.api.v1.tags.router import router as tags_router
-from backend.api.v1.emotions.router import router as emotions_router
-from backend.api.v1.portfolio.router import router as portfolio_router
-from backend.api.v1.auth.router import router as auth_router
+from .users.router import router as users_router
+from .trades import router as trades_router
+from .notes.router import router as notes_router
+from .strategies.router import router as strategies_router
+from .tags.router import router as tags_router
+from .emotions.router import router as emotions_router
+from .portfolio.router import router as portfolio_router
+from .auth.router import router as auth_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 

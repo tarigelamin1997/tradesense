@@ -7,7 +7,7 @@ from backend.core.db.session import get_db
 from backend.api.deps import get_current_user
 from backend.services.analytics.heatmap import HeatmapAnalyticsService
 
-router = APIRouter(prefix="/api/v1/analytics", tags=["heatmap-analytics"])
+router = APIRouter(tags=["heatmap-analytics"])
 
 def get_heatmap_service(db: Session = Depends(get_db)) -> HeatmapAnalyticsService:
     return HeatmapAnalyticsService(db)

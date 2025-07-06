@@ -1,7 +1,15 @@
-
 import React from 'react';
+import { useAuthStore } from '../store/auth';
 
-function Navbar() {
+function Navbar({ onLogout }) {
+  const { user } = useAuthStore();
+
+  const handleLogout = async () => {
+    if (onLogout) {
+      await onLogout();
+    }
+  };
+
   return (
     <nav style={{ 
       backgroundColor: '#343a40', 
@@ -21,7 +29,16 @@ function Navbar() {
         }}>
           🚀 TradeSense
         </h1>
-        <div style={{ display: 'flex', gap: '20px' }}>
+        
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          {/* User info */}
+          {user && (
+            <div style={{ color: '#fff', fontSize: '14px' }}>
+              Welcome, {user.username || user.email || 'User'}
+            </div>
+          )}
+          
+          {/* Navigation buttons */}
           <button style={{
             backgroundColor: 'transparent',
             color: '#fff',
@@ -54,6 +71,23 @@ function Navbar() {
             fontSize: '14px'
           }}>
             📋 Trades
+          </button>
+          
+          {/* Logout button */}
+          <button 
+            onClick={handleLogout}
+            style={{
+              backgroundColor: '#dc3545',
+              color: '#fff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              marginLeft: '10px'
+            }}
+          >
+            🚪 Logout
           </button>
         </div>
       </div>

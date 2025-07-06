@@ -1,4 +1,3 @@
-
 import { apiClient } from './api';
 import { User } from '../types';
 
@@ -11,6 +10,8 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface TokenResponse {
@@ -32,7 +33,7 @@ class AuthService {
   private userKey = 'currentUser';
 
   async login(credentials: LoginRequest): Promise<TokenResponse> {
-    const response = await apiClient.post<TokenResponse>('/api/auth/login', credentials);
+    const response = await apiClient.post<TokenResponse>('/api/v1/auth/login', credentials);
     const tokenData = response.data;
     
     // Store token and user data
@@ -43,12 +44,12 @@ class AuthService {
   }
 
   async register(userData: RegisterRequest): Promise<ApiResponse> {
-    const response = await apiClient.post<ApiResponse>('/api/auth/register', userData);
+    const response = await apiClient.post<ApiResponse>('/api/v1/auth/register', userData);
     return response.data;
   }
 
   async refreshToken(): Promise<TokenResponse> {
-    const response = await apiClient.post<TokenResponse>('/api/auth/refresh');
+    const response = await apiClient.post<TokenResponse>('/api/v1/auth/refresh');
     const tokenData = response.data;
     
     // Update stored token and user data
@@ -60,7 +61,7 @@ class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/api/auth/logout');
+      await apiClient.post('/api/v1/auth/logout');
     } catch (error) {
       console.warn('Logout API call failed:', error);
     } finally {
@@ -71,7 +72,7 @@ class AuthService {
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>('/api/auth/me');
+    const response = await apiClient.get<User>('/api/v1/auth/me');
     return response.data;
   }
 

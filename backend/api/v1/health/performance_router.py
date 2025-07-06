@@ -20,7 +20,7 @@ router = APIRouter()
 # Performance tracking
 _request_times = {}
 
-@router.get("/performance")
+@router.get("/metrics")
 async def get_performance_metrics():
     """Get system performance metrics"""
     try:

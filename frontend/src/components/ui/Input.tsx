@@ -1,63 +1,25 @@
-import React from 'react';
-import { clsx } from 'clsx';
+import * as React from "react"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  error?: boolean;
-  label?: string;
-  helperText?: string;
-  errorMessage?: string;
-}
+import { cn } from "../../lib/utils"
 
-export const Input: React.FC<InputProps> = ({ 
-  className, 
-  error = false,
-  label,
-  helperText,
-  errorMessage,
-  id,
-  ...props 
-}) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-  const helperTextId = helperText ? `${inputId}-helper` : undefined;
-  const errorId = errorMessage ? `${inputId}-error` : undefined;
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-  return (
-    <div className="w-full">
-      {label && (
-        <label 
-          htmlFor={inputId}
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {label}
-        </label>
-      )}
-
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
       <input
-        id={inputId}
-        className={clsx(
-          'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-          'disabled:bg-gray-50 disabled:cursor-not-allowed',
-          'transition-colors duration-200',
-          error && 'border-red-500 focus:ring-red-500',
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
-        aria-describedby={clsx(helperTextId, errorId)}
-        aria-invalid={error}
+        ref={ref}
         {...props}
       />
+    )
+  }
+)
+Input.displayName = "Input"
 
-      {helperText && !error && (
-        <p id={helperTextId} className="mt-1 text-sm text-gray-500">
-          {helperText}
-        </p>
-      )}
-
-      {error && errorMessage && (
-        <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
-};
+export { Input }

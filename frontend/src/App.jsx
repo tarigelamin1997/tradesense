@@ -15,6 +15,10 @@ import UploadCenter from './components/UploadCenter';
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
 
+// Import new shadcn components
+import { Login1 } from './components/ui/login-1';
+import { DemoOne } from './components/ui/demo';
+
 function App() {
   const { isAuthenticated, logout } = useAuthStore();
 
@@ -32,6 +36,10 @@ function App() {
                 <Route path="/register" element={
                   !isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" replace />
                 } />
+                <Route path="/login-shadcn" element={
+                  !isAuthenticated ? <Login1 heading="Welcome to TradeSense" /> : <Navigate to="/dashboard" replace />
+                } />
+                <Route path="/demo" element={<DemoOne />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />

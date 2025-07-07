@@ -1,11 +1,7 @@
-from fpdf import FPDF, XPos, YPos
+from fpdf import FPDF
 
 pdf = FPDF()
 pdf.add_page()
 pdf.set_font("Helvetica", size=12)
-pdf.cell(200,
-         10,
-         text="fpdf2 is working!",
-         new_x=XPos.LMARGIN,
-         new_y=YPos.NEXT)
+pdf.cell(200, 10, txt="fpdf2 is working!")
 pdf.output("test_output.pdf")

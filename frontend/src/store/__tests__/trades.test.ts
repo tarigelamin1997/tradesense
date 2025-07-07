@@ -1,111 +1,52 @@
+import { configureStore } from '@reduxjs/toolkit';
+import tradesReducer, { fetchTrades, addTrade } from '../trades';
 
-import { renderHook, act } from '@testing-library/react';
-import { useTradesStore } from '../trades';
-
-const mockTrades = [
-  {
-    id: '1',
-    symbol: 'AAPL',
-    quantity: 100,
-    price: 150.00,
-    date: '2024-01-01',
-    type: 'buy' as const,
-    profit: 500.00
-  },
-  {
-    id: '2',
-    symbol: 'GOOGL',
-    quantity: 50,
-    price: 2800.00,
-    date: '2024-01-02',
-    type: 'sell' as const,
-    profit: -200.00
-  }
-];
+const createTestStore = () => {
+  return configureStore({
+    reducer: {
+      trades: tradesReducer
+    }
+  });
+};
 
 describe('Trades Store', () => {
+  let store: ReturnType<typeof createTestStore>;
+
   beforeEach(() => {
-    useTradesStore.getState().clearTrades();
+    store = createTestStore();
   });
 
-  it('should initialize with empty state', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    expect(result.current.trades).toEqual([]);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.analytics).toBeNull();
+  it('should handle initial state', () => {
+    const state = store.getState().trades;
+    expect(state.trades).toEqual([]);
+    expect(state.loading).toBe(false);
+    expect(state.error).toBeNull();
   });
 
-  it('should set trades successfully', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    act(() => {
-      result.current.setTrades(mockTrades);
-    });
-
-    expect(result.current.trades).toEqual(mockTrades);
-    expect(result.current.trades).toHaveLength(2);
+  it('should handle fetch trades pending', () => {
+    store.dispatch(fetchTrades.pending('', undefined));
+    const state = store.getState().trades;
+    expect(state.loading).toBe(true);
   });
 
-  it('should add single trade', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    act(() => {
-      result.current.addTrade(mockTrades[0]);
-    });
+  it('should handle fetch trades fulfilled', () => {
+    const mockTrades = [
+      { id: 1, symbol: 'AAPL', entry_price: 150, exit_price: 155, pnl: 500 }
+    ];
 
-    expect(result.current.trades).toHaveLength(1);
-    expect(result.current.trades[0]).toEqual(mockTrades[0]);
+    store.dispatch(fetchTrades.fulfilled(mockTrades, '', undefined));
+    const state = store.getState().trades;
+
+    expect(state.trades).toEqual(mockTrades);
+    expect(state.loading).toBe(false);
   });
 
-  it('should set loading state', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    act(() => {
-      result.current.setLoading(true);
-    });
+  it('should handle add trade', () => {
+    const newTrade = { id: 2, symbol: 'GOOGL', entry_price: 2500, exit_price: 2600, pnl: 1000 };
 
-    expect(result.current.isLoading).toBe(true);
+    store.dispatch(addTrade.fulfilled(newTrade, '', newTrade));
+    const state = store.getState().trades;
 
-    act(() => {
-      result.current.setLoading(false);
-    });
-
-    expect(result.current.isLoading).toBe(false);
-  });
-
-  it('should clear trades', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    // Add some trades first
-    act(() => {
-      result.current.setTrades(mockTrades);
-    });
-
-    expect(result.current.trades).toHaveLength(2);
-
-    // Clear trades
-    act(() => {
-      result.current.clearTrades();
-    });
-
-    expect(result.current.trades).toEqual([]);
-  });
-
-  it('should set analytics data', () => {
-    const { result } = renderHook(() => useTradesStore());
-    
-    const mockAnalytics = {
-      totalProfit: 300.00,
-      winRate: 0.6,
-      totalTrades: 10,
-      avgProfit: 30.00
-    };
-
-    act(() => {
-      result.current.setAnalytics(mockAnalytics);
-    });
-
-    expect(result.current.analytics).toEqual(mockAnalytics);
+    expect(state.trades).toContain(newTrade);
   });
 });

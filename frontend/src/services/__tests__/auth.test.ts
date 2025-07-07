@@ -1,94 +1,55 @@
-
 import { authService } from '../auth';
-import axios from 'axios';
-
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+import { server } from '../../test/mocks/server';
+import { rest } from 'msw';
 
 describe('Auth Service', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('login', () => {
-    it('should login successfully', async () => {
-      const mockResponse = {
-        data: {
-          user: { id: '1', email: 'test@example.com', name: 'Test User' },
-          token: 'mock-jwt-token'
-        }
-      };
+    it('should login successfully with valid credentials', async () => {
+      const result = await authService.login('test@example.com', 'password');
 
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
-
-      const result = await authService.login('test@example.com', 'password123');
-
-      expect(mockedAxios.post).toHaveBeenCalledWith('/api/auth/login', {
-        email: 'test@example.com',
-        password: 'password123'
+      expect(result).toEqual({
+        access_token: 'mock_token',
+        token_type: 'bearer',
+        user: { id: 1, email: 'test@example.com' }
       });
-      expect(result).toEqual(mockResponse.data);
     });
 
-    it('should handle login error', async () => {
-      const mockError = {
-        response: {
-          data: { message: 'Invalid credentials' },
-          status: 401
-        }
-      };
+    it('should handle login failure', async () => {
+      server.use(
+        rest.post('/api/v1/auth/login', (req, res, ctx) => {
+          return res(ctx.status(401), ctx.json({ detail: 'Invalid credentials' }));
+        })
+      );
 
-      mockedAxios.post.mockRejectedValueOnce(mockError);
-
-      await expect(authService.login('test@example.com', 'wrongpassword'))
-        .rejects.toThrow('Invalid credentials');
-    });
-  });
-
-  describe('register', () => {
-    it('should register successfully', async () => {
-      const mockResponse = {
-        data: {
-          user: { id: '1', email: 'new@example.com', name: 'New User' },
-          token: 'new-jwt-token'
-        }
-      };
-
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
-
-      const result = await authService.register('new@example.com', 'password123', 'New User');
-
-      expect(mockedAxios.post).toHaveBeenCalledWith('/api/auth/register', {
-        email: 'new@example.com',
-        password: 'password123',
-        name: 'New User'
-      });
-      expect(result).toEqual(mockResponse.data);
+      await expect(authService.login('wrong@example.com', 'wrong')).rejects.toThrow();
     });
   });
 
   describe('logout', () => {
     it('should logout successfully', async () => {
-      mockedAxios.post.mockResolvedValueOnce({ data: { message: 'Logged out' } });
+      localStorage.setItem('token', 'mock_token');
 
       await authService.logout();
 
-      expect(mockedAxios.post).toHaveBeenCalledWith('/api/auth/logout');
+      expect(localStorage.getItem('token')).toBeNull();
     });
   });
 
-  describe('refreshToken', () => {
-    it('should refresh token successfully', async () => {
-      const mockResponse = {
-        data: { token: 'new-refreshed-token' }
-      };
+  describe('getCurrentUser', () => {
+    it('should return current user when token exists', async () => {
+      localStorage.setItem('token', 'mock_token');
 
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
+      const user = await authService.getCurrentUser();
 
-      const result = await authService.refreshToken();
+      expect(user).toBeDefined();
+    });
 
-      expect(mockedAxios.post).toHaveBeenCalledWith('/api/auth/refresh');
-      expect(result).toEqual(mockResponse.data);
+    it('should return null when no token exists', async () => {
+      localStorage.removeItem('token');
+
+      const user = await authService.getCurrentUser();
+
+      expect(user).toBeNull();
     });
   });
 });

@@ -32,3 +32,11 @@ python-jose
 python-multipart
 sqlalchemy
 uvicorn
+fastapi
+httpx
+pydantic-settings
+pytest
+pytest-asyncio
+pytest-cov
+sqlalchemy
+uvicorn

@@ -1,6 +1,7 @@
 
 { pkgs }: {
   deps = [
+    pkgs.psmisc
     pkgs.nano
     pkgs.python312
     pkgs.python312Packages.pip

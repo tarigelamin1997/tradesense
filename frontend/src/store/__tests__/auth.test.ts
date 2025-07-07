@@ -1,80 +1,60 @@
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer, { login, logout, setUser } from '../auth';
 
-import { renderHook, act } from '@testing-library/react';
-import { useAuthStore } from '../auth';
-
-// Mock localStorage
-const mockLocalStorage = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { store = {}; }
-  };
-})();
-
-Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
+const createTestStore = () => {
+  return configureStore({
+    reducer: {
+      auth: authReducer
+    }
+  });
+};
 
 describe('Auth Store', () => {
+  let store: ReturnType<typeof createTestStore>;
+
   beforeEach(() => {
-    localStorage.clear();
-    useAuthStore.getState().logout();
+    store = createTestStore();
   });
 
-  it('should initialize with unauthenticated state', () => {
-    const { result } = renderHook(() => useAuthStore());
-    
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
-    expect(result.current.token).toBeNull();
+  it('should handle initial state', () => {
+    const state = store.getState().auth;
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
+    expect(state.token).toBeNull();
+    expect(state.loading).toBe(false);
   });
 
-  it('should login user successfully', async () => {
-    const { result } = renderHook(() => useAuthStore());
-    
-    const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' };
-    const mockToken = 'mock-jwt-token';
-
-    await act(async () => {
-      result.current.login(mockUser, mockToken);
-    });
-
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.token).toBe(mockToken);
-    expect(localStorage.getItem('auth-token')).toBe(mockToken);
+  it('should handle login pending', () => {
+    store.dispatch(login.pending('', { email: 'test@example.com', password: 'password' }));
+    const state = store.getState().auth;
+    expect(state.loading).toBe(true);
   });
 
-  it('should logout user and clear storage', () => {
-    const { result } = renderHook(() => useAuthStore());
-    
+  it('should handle login fulfilled', () => {
+    const mockResponse = {
+      access_token: 'mock_token',
+      user: { id: 1, email: 'test@example.com' }
+    };
+
+    store.dispatch(login.fulfilled(mockResponse, '', { email: 'test@example.com', password: 'password' }));
+    const state = store.getState().auth;
+
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).toEqual(mockResponse.user);
+    expect(state.token).toBe('mock_token');
+    expect(state.loading).toBe(false);
+  });
+
+  it('should handle logout', () => {
     // First login
-    act(() => {
-      result.current.login({ id: '1', email: 'test@example.com', name: 'Test' }, 'token');
-    });
+    store.dispatch(setUser({ id: 1, email: 'test@example.com' }));
 
     // Then logout
-    act(() => {
-      result.current.logout();
-    });
+    store.dispatch(logout());
+    const state = store.getState().auth;
 
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
-    expect(result.current.token).toBeNull();
-    expect(localStorage.getItem('auth-token')).toBeNull();
-  });
-
-  it('should check auth from localStorage on init', () => {
-    localStorage.setItem('auth-token', 'stored-token');
-    localStorage.setItem('auth-user', JSON.stringify({ id: '1', email: 'stored@example.com' }));
-
-    const { result } = renderHook(() => useAuthStore());
-    
-    act(() => {
-      result.current.checkAuth();
-    });
-
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.token).toBe('stored-token');
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
+    expect(state.token).toBeNull();
   });
 });

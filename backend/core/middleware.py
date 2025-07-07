@@ -1,9 +1,8 @@
-
 """
 Custom middleware for error handling, logging, and request tracking
 """
 from fastapi import Request, Response
-from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import time
 import logging
 import json
@@ -59,3 +58,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     "request_id": getattr(request.state, 'request_id', 'unknown')
                 }
             )
+
+def setup_middleware(app):
+    app.add_middleware(LoggingMiddleware)
+    app.add_middleware(ErrorHandlingMiddleware)

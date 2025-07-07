@@ -1,328 +1,287 @@
-
-# API Services Documentation
+# TradeSense API Documentation
 
 ## Overview
-This document outlines all available API services, their methods, inputs, outputs, and usage examples.
 
-## Base Configuration
+TradeSense API provides endpoints for trading analytics, user management, and data processing. All authenticated endpoints require a Bearer token.
 
-All API services use a shared axios instance configured in `services/api.ts`:
-
-```typescript
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+## Base URL
+```
+Production: https://your-repl-name.replit.app/api/v1
+Development: http://localhost:8000/api/v1
 ```
 
-## Authentication Service (`services/auth.ts`)
+## Authentication
 
-### Methods
-
-#### `login(email: string, password: string)`
-Authenticates a user and returns user data with JWT token.
-
-**Input:**
+### Login
 ```typescript
-{
+// POST /auth/login
+interface LoginRequest {
   email: string;
   password: string;
 }
-```
 
-**Output:**
-```typescript
-{
+interface LoginResponse {
+  access_token: string;
+  token_type: "bearer";
   user: {
-    id: string;
+    id: number;
     email: string;
-    name: string;
-    createdAt: string;
+    created_at: string;
   };
-  token: string;
 }
+
+// Usage
+import { authService } from '../services/auth';
+
+const loginResult = await authService.login('user@example.com', 'password');
 ```
 
-**Usage:**
+### Get Current User
 ```typescript
-import { authService } from '@/services/auth';
+// GET /auth/me
+// Headers: Authorization: Bearer <token>
 
-try {
-  const result = await authService.login('user@example.com', 'password123');
-  console.log('User logged in:', result.user);
-  localStorage.setItem('auth-token', result.token);
-} catch (error) {
-  console.error('Login failed:', error.message);
-}
-```
-
-#### `register(email: string, password: string, name: string)`
-Creates a new user account.
-
-**Input:**
-```typescript
-{
+interface UserResponse {
+  id: number;
   email: string;
-  password: string;
-  name: string;
+  created_at: string;
+  preferences?: Record<string, any>;
 }
+
+// Usage
+const user = await authService.getCurrentUser();
 ```
 
-**Output:**
+## Trades API
+
+### Get Trades
 ```typescript
-{
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    createdAt: string;
-  };
-  token: string;
-}
-```
-
-**Usage:**
-```typescript
-const result = await authService.register(
-  'newuser@example.com', 
-  'securepassword', 
-  'John Doe'
-);
-```
-
-#### `logout()`
-Invalidates the current session.
-
-**Input:** None
-
-**Output:**
-```typescript
-{
-  message: string;
-}
-```
-
-#### `refreshToken()`
-Refreshes the current JWT token.
-
-**Input:** None (uses stored token)
-
-**Output:**
-```typescript
-{
-  token: string;
-}
-```
-
-#### `getCurrentUser()`
-Fetches current user information.
-
-**Input:** None (uses stored token)
-
-**Output:**
-```typescript
-{
-  id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-  lastLogin: string;
-}
-```
-
-## Trades Service (`services/trades.ts`)
-
-### Methods
-
-#### `getTrades(filters?: TradeFilters)`
-Fetches user's trade data with optional filtering.
-
-**Input:**
-```typescript
-interface TradeFilters {
-  symbol?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  type?: 'buy' | 'sell';
-  limit?: number;
-  offset?: number;
-}
-```
-
-**Output:**
-```typescript
-{
-  trades: Trade[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
+// GET /trades
+// Headers: Authorization: Bearer <token>
+// Query params: symbol?, start_date?, end_date?, playbook_id?
 
 interface Trade {
-  id: string;
+  id: number;
   symbol: string;
+  entry_price: number;
+  exit_price: number;
   quantity: number;
-  price: number;
-  date: string;
-  type: 'buy' | 'sell';
-  profit?: number;
-  commission?: number;
+  pnl: number;
+  entry_time: string;
+  exit_time: string;
+  playbook_id?: number;
+  confidence_level?: number;
 }
-```
 
-**Usage:**
-```typescript
-import { tradesService } from '@/services/trades';
+// Usage
+import { tradesService } from '../services/trades';
 
-// Get all trades
-const allTrades = await tradesService.getTrades();
-
-// Get filtered trades
-const filteredTrades = await tradesService.getTrades({
+const trades = await tradesService.getTrades({
   symbol: 'AAPL',
-  dateFrom: '2024-01-01',
-  dateTo: '2024-12-31'
+  start_date: '2025-01-01',
+  end_date: '2025-01-31'
 });
 ```
 
-#### `uploadTrades(file: File)`
-Uploads trade data from CSV file.
-
-**Input:**
+### Create Trade
 ```typescript
-file: File // CSV file object
+// POST /trades
+interface CreateTradeRequest {
+  symbol: string;
+  entry_price: number;
+  exit_price?: number;
+  quantity: number;
+  entry_time: string;
+  exit_time?: string;
+  playbook_id?: number;
+  confidence_level?: number;
+  notes?: string;
+}
+
+// Usage
+const newTrade = await tradesService.createTrade({
+  symbol: 'AAPL',
+  entry_price: 150.00,
+  exit_price: 155.00,
+  quantity: 100,
+  entry_time: '2025-01-01T10:00:00Z',
+  exit_time: '2025-01-01T15:00:00Z'
+});
 ```
 
-**Output:**
+## Analytics API
+
+### Performance Metrics
 ```typescript
-{
-  message: string;
-  imported: number;
+// GET /analytics/performance
+// Headers: Authorization: Bearer <token>
+// Query params: start_date?, end_date?, playbook_id?
+
+interface PerformanceMetrics {
+  total_pnl: number;
+  win_rate: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  avg_win: number;
+  avg_loss: number;
+  profit_factor: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
+  avg_trade_duration: number;
+}
+
+// Usage
+import { analyticsService } from '../services/analytics';
+
+const performance = await analyticsService.getPerformance({
+  start_date: '2025-01-01',
+  end_date: '2025-01-31'
+});
+```
+
+### Streak Analysis
+```typescript
+// GET /analytics/streaks
+interface StreakAnalysis {
+  current_streak: {
+    type: 'winning' | 'losing';
+    count: number;
+    pnl: number;
+  };
+  max_winning_streak: number;
+  max_losing_streak: number;
+  avg_winning_streak: number;
+  avg_losing_streak: number;
+}
+
+// Usage
+const streaks = await analyticsService.getStreaks();
+```
+
+## File Upload API
+
+### Upload Trade Data
+```typescript
+// POST /uploads/trades
+// Content-Type: multipart/form-data
+// Headers: Authorization: Bearer <token>
+
+interface UploadResponse {
+  success: boolean;
+  trades_imported: number;
   errors?: string[];
+  preview?: Trade[];
 }
+
+// Usage
+import { uploadsService } from '../services/uploads';
+
+const formData = new FormData();
+formData.append('file', file);
+formData.append('column_mapping', JSON.stringify({
+  symbol: 'Symbol',
+  entry_price: 'Entry Price',
+  exit_price: 'Exit Price'
+}));
+
+const result = await uploadsService.uploadTrades(formData);
 ```
 
-**Usage:**
-```typescript
-const fileInput = document.getElementById('csvFile') as HTMLInputElement;
-const file = fileInput.files[0];
+## Playbooks API
 
-try {
-  const result = await tradesService.uploadTrades(file);
-  console.log(`Imported ${result.imported} trades`);
-} catch (error) {
-  console.error('Upload failed:', error);
+### Get Playbooks
+```typescript
+// GET /playbooks
+interface Playbook {
+  id: number;
+  name: string;
+  description: string;
+  color: string;
+  created_at: string;
+  trade_count: number;
+  win_rate: number;
+  avg_pnl: number;
 }
+
+// Usage
+import { playbooksService } from '../services/playbooks';
+
+const playbooks = await playbooksService.getPlaybooks();
 ```
 
-#### `getAnalytics(dateRange?: string)`
-Retrieves trading analytics and performance metrics.
-
-**Input:**
+### Create Playbook
 ```typescript
-dateRange?: '7d' | '30d' | '90d' | '1y' | 'all'
-```
-
-**Output:**
-```typescript
-{
-  totalProfit: number;
-  totalTrades: number;
-  winRate: number;
-  avgProfit: number;
-  maxDrawdown: number;
-  sharpeRatio: number;
-  profitFactor: number;
-  equityCurve: Array<{
-    date: string;
-    value: number;
-  }>;
-  monthlyReturns: Array<{
-    month: string;
-    profit: number;
-  }>;
+// POST /playbooks
+interface CreatePlaybookRequest {
+  name: string;
+  description?: string;
+  color?: string;
 }
-```
 
-#### `deleteTrade(id: string)`
-Deletes a specific trade.
-
-**Input:**
-```typescript
-id: string
-```
-
-**Output:**
-```typescript
-{
-  message: string;
-}
-```
-
-#### `updateTrade(id: string, data: Partial<Trade>)`
-Updates a specific trade.
-
-**Input:**
-```typescript
-id: string;
-data: Partial<Trade>
-```
-
-**Output:**
-```typescript
-{
-  trade: Trade;
-  message: string;
-}
+// Usage
+const newPlaybook = await playbooksService.createPlaybook({
+  name: 'Momentum Breakouts',
+  description: 'High volume breakout strategy',
+  color: '#3B82F6'
+});
 ```
 
 ## Error Handling
 
-All services implement consistent error handling:
+All API responses follow this error format:
 
 ```typescript
-try {
-  const result = await someService.method();
-} catch (error) {
-  if (error.response) {
-    // Server responded with error status
-    console.error('Server Error:', error.response.data.message);
-  } else if (error.request) {
-    // Network error
-    console.error('Network Error:', error.message);
-  } else {
-    // Other error
-    console.error('Error:', error.message);
-  }
+interface APIError {
+  detail: string;
+  status_code: number;
+  error_code?: string;
 }
-```
 
-## Common HTTP Status Codes
-
-- `200` - Success
-- `201` - Created
-- `400` - Bad Request (validation errors)
-- `401` - Unauthorized (invalid/expired token)
-- `403` - Forbidden (insufficient permissions)
-- `404` - Not Found
-- `422` - Unprocessable Entity (validation failed)
-- `500` - Internal Server Error
-
-## Authentication Headers
-
-Most endpoints require authentication. The token is automatically included in requests:
-
-```typescript
-Authorization: Bearer <jwt_token>
+// HTTP Status Codes:
+// 400 - Bad Request (validation errors)
+// 401 - Unauthorized (missing/invalid token)
+// 403 - Forbidden (insufficient permissions)
+// 404 - Not Found
+// 422 - Validation Error
+// 500 - Internal Server Error
 ```
 
 ## Rate Limiting
 
-API calls are rate-limited:
-- 100 requests per minute for authenticated users
-- 10 requests per minute for unauthenticated users
+- 100 requests per minute per user for most endpoints
+- 10 requests per minute for file upload endpoints
+- Rate limit headers included in responses:
+  - `X-RateLimit-Limit`
+  - `X-RateLimit-Remaining`
+  - `X-RateLimit-Reset`
 
-When rate limited, you'll receive a `429` status code with retry information.
+## Pagination
+
+List endpoints support pagination:
+
+```typescript
+interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+// Query params: page=1&size=50 (default: page=1, size=50, max=100)
+```
+
+## WebSocket Events (Future)
+
+```typescript
+// Connect to /ws/trades
+interface TradeEvent {
+  type: 'trade_created' | 'trade_updated' | 'trade_deleted';
+  data: Trade;
+}
+
+interface AnalyticsEvent {
+  type: 'metrics_updated';
+  data: PerformanceMetrics;
+}

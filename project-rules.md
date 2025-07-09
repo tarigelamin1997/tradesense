@@ -1,115 +1,206 @@
-🔒 **Important:** This project follows strict development rules.  
-Please read [`project-rules.md`](./project-rules.md) before editing anything.
+# 📜 TradeSense Project Development Rules & Guidelines
 
-Put a short banner at the top of each file that should not be refactored or touched lightly — especially:
+> 🔒 **Critical**: This document governs all development on the TradeSense project.  
+> All contributors (human and AI) must read and follow these rules.
 
-app.py
+## 🛡️ Protected Files & Documentation
 
-startup.py
+### Absolute Protection List
+The following files/directories have **MAXIMUM PROTECTION** status:
+- `COMPLETE_SAAS_ARCHITECTURE_GUIDE/` - All 18 architecture documents + subdirectories
+- `PROTECTED_FILES.md` - The protection manifest itself
+- `project-rules.md` - This file
+- `README.md` - Main project documentation
+- `README_DEV.md` - Developer guide
 
-core/app_factory.py (or similar)
+**See `PROTECTED_FILES.md` for the complete list.**
 
-.replit
+### Protection Rules
+1. **NEVER** delete protected files without written approval in an issue/PR
+2. **ALWAYS** check `PROTECTED_FILES.md` before any cleanup operation
+3. **BACKUP** before touching any protected file
+4. **DOCUMENT** any changes to protected files in commit messages
 
-replit.nix
+## 🤖 AI Assistant Guidelines (Claude Code, GitHub Copilot, etc.)
 
+### When Working with AI Assistants
+1. **Always mention protected files** when giving general prompts like "clean up" or "reorganize"
+2. **Be specific** about what can and cannot be touched
+3. **Review changes** before accepting AI suggestions
+4. **Save session context** when switching between AI assistants
+
+### AI Assistant Rules
+- Check `PROTECTED_FILES.md` before any file operations
+- Ask for clarification on ambiguous requests
+- Preserve all documentation unless explicitly told to remove it
+- Focus on code files for cleanup, not documentation
+- Never remove files matching protected patterns (`*architecture*`, `*plan*`, etc.)
+
+## ✅ Core Development Rules
+
+### 1. Respect Existing Structure
+- **DO NOT** restructure, rename, or move files without approval
+- **DO NOT** flatten directory structures (keep `core/`, `app/`, etc.)
+- **KEEP** working files as-is until modularization is agreed upon
+
+### 2. No Auto-Deletions or Mass Overwrites
+Before any deletion:
+- ✓ Get approval in writing
+- ✓ Explain why it's needed
+- ✓ Create a backup branch
+- ✓ Document what was removed
+
+### 3. Gradual & Measured Changes
+```bash
+# ❌ BAD: Big bang refactor
+git add -A && git commit -m "Refactored everything"
+
+# ✅ GOOD: Incremental changes
+git add auth.py && git commit -m "Extract auth logic to separate module"
+git add app.py && git commit -m "Update app.py to use new auth module"
+```
+
+### 4. Every Change Must Be Reversible
+```bash
+# Before major changes
+git checkout -b backup-$(date +%Y%m%d)-feature-name
+git push origin backup-$(date +%Y%m%d)-feature-name
+
+# Quick rollback if needed
+git checkout main
+```
+
+## 📦 Dependency Management
+
+### Rules for Dependencies
+1. **All packages** must be in `requirements.txt` with pinned versions
+2. **No runtime installs** in `.replit` or application code
+3. **Test locally** with `pip install -r requirements.txt` before pushing
+4. **Document** any special installation requirements
+
+### Adding a New Package
+```bash
+# 1. Install and test
+pip install package-name==1.2.3
+
+# 2. Add to requirements.txt with comment
+echo "package-name==1.2.3  # Used for: brief description" >> requirements.txt
+
+# 3. Test clean install
+pip install -r requirements.txt
+
+# 4. Commit with clear message
+git add requirements.txt
+git commit -m "Add package-name==1.2.3 for [feature/purpose]"
+```
+
+## 🔧 Development Workflows
+
+### Feature Development
+1. **Plan** - Document in issue/discussion first
+2. **Branch** - Create feature branch from main
+3. **Develop** - Make incremental commits
+4. **Test** - Ensure nothing breaks
+5. **Document** - Update relevant docs
+6. **Review** - Self-review or peer review
+7. **Merge** - Clean merge to main
+
+### Refactoring Workflow
+1. **Identify** - What needs refactoring and why
+2. **Proposal** - Create refactoring plan
+3. **Backup** - Create backup branch
+4. **Refactor** - Small, testable chunks
+5. **Validate** - Each step must work
+6. **Document** - Update architecture docs if needed
+
+## 🚨 Conflict Resolution
+
+### Git Conflicts
+```bash
+# When conflicts occur
+git status                    # See conflicted files
+git diff                      # Review conflicts
+
+# For protected files - ALWAYS favor preservation
+git checkout --theirs PROTECTED_FILES.md  # Keep existing protected file
+
+# For code conflicts - Review carefully
+# Open file, resolve manually, then:
+git add <resolved-file>
+git commit
+```
+
+### Architecture Conflicts
+1. **Stop** - Don't proceed with conflicting changes
+2. **Document** - Create issue explaining the conflict
+3. **Discuss** - Get team consensus
+4. **Update** - Modify architecture docs FIRST
+5. **Implement** - Then make code changes
+
+### Decision Making
+- **Minor changes** (< 50 lines): Dev discretion with good commit message
+- **Medium changes** (50-500 lines): Create PR for review
+- **Major changes** (> 500 lines or architectural): Require issue + discussion + approval
+
+## 🏗️ Replit-Specific Rules
+
+### Protected Replit Files
+```python
 # ⚠️ WARNING: This file is production-critical.
 # Do not refactor, delete, or modularize without explicit approval.
 # Read project-rules.md before making changes.
+```
 
-# ⚠️ DO NOT MODIFY THIS CONFIG unless you're 100% sure.
-# See project-rules.md for instructions.
+Add this banner to:
+- `app.py`
+- `startup.py`
+- `.replit`
+- `replit.nix`
+- `core/app_factory.py`
 
+### Replit Config Changes
+1. **Never** modify `.replit` or `replit.nix` without testing
+2. **Always** keep a backup of working config
+3. **Document** any config changes in comments
+4. **Test** in a fresh Repl if possible
 
-📜 Replit Development Rules & Instructions
-(For AI agents, team members, or collaborators working inside Replit)
+## 📝 Documentation Standards
 
-✅ 1. Respect the Existing File Structure
-Do not restructure, rename, or flatten files (e.g., app.py, startup.py, core/) unless explicitly instructed.
+### When to Update Docs
+- **ALWAYS** when changing architecture
+- **ALWAYS** when adding/removing features
+- **ALWAYS** when changing APIs
+- **WHEN NEEDED** for bug fixes
 
-If a file like app.py is long but working, it stays that way until we agree on modularizing it.
+### Documentation Hierarchy
+1. `COMPLETE_SAAS_ARCHITECTURE_GUIDE/` - Architecture decisions
+2. `README.md` - User-facing documentation
+3. `README_DEV.md` - Developer documentation
+4. `PROTECTED_FILES.md` - File protection manifest
+5. Code comments - Implementation details
 
-✅ 2. No Auto-Deletions or Mass Overwrites
-Do not delete or "move" critical logic without:
+## 🎯 Final Checklist
 
-Approval
+Before any commit, ask yourself:
+- [ ] Did I check `PROTECTED_FILES.md`?
+- [ ] Are my changes incremental and reversible?
+- [ ] Did I update relevant documentation?
+- [ ] Will this break existing functionality?
+- [ ] Is my commit message clear and descriptive?
+- [ ] Did I test the changes?
 
-Explanation
+## 📌 Golden Rules
 
-A rollback plan
+1. **Preserve** > Refactor
+2. **Document** > Assume
+3. **Ask** > Guess
+4. **Backup** > Regret
+5. **Test** > Hope
 
-If a feature requires multiple file changes — do it gradually, with commit points.
+---
 
-✅ 3. All Changes Must Be Gradual & Measured
-No “big bang” refactors. Break changes into small, testable commits.
+**Remember**: We're building a production system. Every file has a purpose, every line has a history, and every change has consequences. Respect what exists, improve what needs improving, and always leave the codebase better than you found it.
 
-Add new features next to existing logic unless told to fully replace it.
-
-Example:
-Adding auth logic? Don’t move the entire login flow into 5 new modules. Start with one.
-
-✅ 4. Every Change Must Be Reversible
-
-Before major edits, create a backup:
-git checkout -b backup-before-feature-x
-
-If anything breaks, I must be able to:
-git checkout main
-
-Instant rollback — no guessing.
-
-
-### ✅ 5. Dependency Management
-
-- All dependencies must be added to `requirements.txt` **manually and explicitly**.
-- Do **not** run inline `pip install` commands inside `.replit` or during runtime.
-- If you add a new package:
-  - Verify it installs cleanly via `pip install -r requirements.txt`
-  - Lock its version if possible (`package==x.y.z`)
-  - Add a comment in the file if it’s critical or tricky
-
-Example:
-```txt
-fpdf2==2.8.3      # Required for PDF reports
-fpdf              # [⚠️ Consider removing — likely a legacy/duplicate entry]
-
-
-✅ 6. Replit-specific Config Must Be Protected
-Only touch .replit or replit.nix if explicitly requested
-
-Any change must:
-
-Be commented
-
-Not trigger Recovery Mode
-
-Include a backup version
-
-✅ 7. Every Feature or Refactor Must Be Justified
-For each pull request, push, or AI update:
-
-What did you change?
-
-Why was it needed?
-
-Where is the logic now?
-
-What was removed (if anything)?
-
-If that can’t be answered — don’t push it.
-
-✅ 8. Ask Before Acting
-If you're not sure whether to:
-
-Rename a function
-
-Move a file
-
-Strip 3,000 lines from app.py...
-
-Ask. First.
-
-📌 Final Reminder
-The goal is to make the app better — not different for the sake of difference.
-Respect what's already working, and build like you're not the only one reading the code.
-
+**Last Updated**: July 9, 2025  
+**Enforced By**: All TradeSense Contributors  
+**Questions?** Create an issue or check existing documentation first.

@@ -54,3 +54,7 @@
 2025-07-03 19:01:26,458 - tradesense_app - INFO - log_event:199 - Trade Data Sync Engine initialized | {"category": "system_error", "user_id": null, "partner_id": null, "session_id": null, "details": null}
 2025-07-03 19:10:46,757 - tradesense_app - INFO - log_event:199 - Trade Data Sync Engine initialized | {"category": "system_error", "user_id": null, "partner_id": null, "session_id": null, "details": null}
 2025-07-03 19:11:42,096 - tradesense_app - INFO - log_event:199 - Trade Data Sync Engine initialized | {"category": "system_error", "user_id": null, "partner_id": null, "session_id": null, "details": null}
+2025-07-10 15:11:48,424 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-10 15:11:48,598 - __main__ - INFO - Starting TradeSense API server...
+2025-07-10 17:17:04,492 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-10 17:17:04,724 - __main__ - INFO - Starting TradeSense API server...

@@ -27,3 +27,8 @@ temp_uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Git workflow backups
+*.backup
+backup-*
+venv/

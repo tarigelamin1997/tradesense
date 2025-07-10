@@ -5,14 +5,14 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_active_user
-from backend.api.v1.tags.schemas import (
+from core.db.session import get_db
+from api.deps import get_current_active_user
+from api.v1.tags.schemas import (
     TagCreate, TagUpdate, TagResponse, TagListResponse
 )
-from backend.api.v1.tags.service import TagService
-from backend.core.exceptions import NotFoundError, ValidationError
-from backend.core.response import create_response
+from api.v1.tags.service import TagService
+from core.exceptions import NotFoundError, ValidationError
+from core.response import create_response
 
 router = APIRouter(tags=["Tags"])
 

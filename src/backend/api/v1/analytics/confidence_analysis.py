@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-from backend.api.deps import get_db
-from backend.models.trade import Trade
-from backend.models.user import User
+from api.deps import get_db
+from models.trade import Trade
+from models.user import User
 
 router = APIRouter()
 

@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import numpy as np
 
-from backend.analytics.performance import calculate_win_rate, calculate_profit_factor, calculate_expectancy, calculate_risk_reward_metrics, calculate_sharpe_ratio, calculate_performance_by_symbol, calculate_performance_by_strategy
-from backend.models.trade import Trade
+from analytics.performance import calculate_win_rate, calculate_profit_factor, calculate_expectancy, calculate_risk_reward_metrics, calculate_sharpe_ratio, calculate_performance_by_symbol, calculate_performance_by_strategy
+from models.trade import Trade
 
 class TestPerformanceAnalyzer:
 

@@ -68,11 +68,11 @@ def setup_models_and_tables(request):
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False}
     )
-    from backend.core.db.session import Base
+    from core.db.session import Base
     # Import all models through the models package to avoid duplicate registration
     # Only import if not already imported
     if not hasattr(Base, '_models_imported'):
-        import backend.models
+        import models
         Base._models_imported = True
     
     # Drop all tables and indexes more aggressively
@@ -116,7 +116,7 @@ def test_engine(setup_models_and_tables):
 @pytest.fixture(scope="function")
 def test_db(test_engine):
     """Create test database session (function-scoped)."""
-    from backend.core.db.session import Base
+    from core.db.session import Base
     TestingSessionLocal = sessionmaker(
         autocommit=False,
         autoflush=False,
@@ -131,7 +131,7 @@ def test_db(test_engine):
 @pytest.fixture(scope="function")
 def test_user(test_db):
     """Ensure the test user exists in the test DB with id 'test_user_123'."""
-    from backend.models.user import User
+    from models.user import User
     test_user_id = "test_user_123"
     test_email = "test@example.com"
     test_username = "testuser"
@@ -173,7 +173,7 @@ def client(test_db):
     # Import main_minimal from the project root
     sys.path.insert(0, str(project_root))
     import main_minimal
-    from backend.core.db.session import get_db
+    from core.db.session import get_db
     def override_get_db():
         yield test_db
     main_minimal.app.dependency_overrides[get_db] = override_get_db
@@ -220,7 +220,7 @@ def setup_test_environment():
 @pytest.fixture(scope="session")
 def set_app_db_override(test_engine):
     """Override the database dependency for the entire test session."""
-    from backend.core.db.session import get_db
+    from core.db.session import get_db
     def override_get_db():
         TestingSessionLocal = sessionmaker(
             autocommit=False,

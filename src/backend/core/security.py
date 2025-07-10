@@ -9,11 +9,11 @@ from fastapi import HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from backend.core.config import settings
-from backend.core.exceptions import AuthenticationError
-from backend.api.v1.auth.service import AuthService
-from backend.core.db.session import get_db
-from backend.models.user import User
+from core.config import settings
+from core.exceptions import AuthenticationError
+from api.v1.auth.service import AuthService
+from core.db.session import get_db
+from models.user import User
 
 
 # Password hashing

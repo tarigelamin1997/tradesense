@@ -5,8 +5,8 @@ Background task system for periodic analytics and data processing
 from celery import Celery
 from celery.schedules import crontab
 import asyncio
-from backend.services.analytics_service import AnalyticsService
-from backend.db.connection import db_manager
+from services.analytics_service import AnalyticsService
+from db.connection import db_manager
 import logging
 
 logger = logging.getLogger(__name__)

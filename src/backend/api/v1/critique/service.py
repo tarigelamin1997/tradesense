@@ -5,8 +5,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backend.models.trade import Trade
-from backend.services.critique_engine import CritiqueEngine
+from models.trade import Trade
+from services.critique_engine import CritiqueEngine
 from .schemas import CritiqueResponse, CritiqueFeedbackRequest
 
 logger = logging.getLogger(__name__)

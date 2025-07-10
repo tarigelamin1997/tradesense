@@ -12,10 +12,10 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from backend.models.user import User
-from backend.models.trade_note import TradeNote
-from backend.models.portfolio import Portfolio, EquitySnapshot
-from backend.core.db.session import engine
+from models.user import User
+from models.trade_note import TradeNote
+from models.portfolio import Portfolio, EquitySnapshot
+from core.db.session import engine
 
 def add_portfolio_tables():
     """Add portfolio-related tables to the database"""

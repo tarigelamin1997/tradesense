@@ -13,14 +13,14 @@ from starlette.requests import Request as StarletteRequest
 from starlette.datastructures import MutableHeaders
 import json
 
-from backend.core.validation import (
+from core.validation import (
     sanitize_input_data,
     validate_pagination_params,
     validate_date_format,
     validate_uuid,
     ValidationError
 )
-from backend.core.responses import error_response
+from core.responses import error_response
 
 logger = logging.getLogger(__name__)
 

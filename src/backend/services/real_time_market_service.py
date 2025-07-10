@@ -7,8 +7,8 @@ from dataclasses import dataclass
 import aiohttp
 from sqlalchemy.orm import Session
 
-from ..core.db.session import get_db
-from backend.models.trade import Trade
+from core.db.session import get_db
+from models.trade import Trade
 
 logger = logging.getLogger(__name__)
 

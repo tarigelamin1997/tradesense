@@ -283,9 +283,9 @@ def optimize_trade_queries(db: Session, user_id: str, **filters) -> Any:
     Returns:
         Optimized query object
     """
-    from backend.models.trade import Trade
-    from backend.models.trade_note import TradeNote
-    from backend.models.trade_review import TradeReview
+    from models.trade import Trade
+    from models.trade_note import TradeNote
+    from models.trade_review import TradeReview
     
     query = db.query(Trade).filter(Trade.user_id == user_id)
     

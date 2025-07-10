@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
+from core.db.session import get_db
+from api.deps import get_current_user
 from .service import DailyReflectionService
 from .schemas import (
     DailyEmotionReflectionCreate, 

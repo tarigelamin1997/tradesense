@@ -2,7 +2,7 @@
 Migration to add emotion tracking columns to trade_notes table
 """
 from sqlalchemy import text
-from backend.core.db.session import get_db
+from core.db.session import get_db
 
 def migrate_emotion_tracking():
     """Add emotion tracking columns to trade_notes table"""

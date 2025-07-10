@@ -4,7 +4,7 @@ Tests for streaks analytics module
 
 import pytest
 from datetime import datetime, timedelta
-from backend.analytics.streaks import (
+from analytics.streaks import (
     calculate_win_loss_streaks,
     calculate_max_consecutive_wins,
     calculate_max_consecutive_losses,

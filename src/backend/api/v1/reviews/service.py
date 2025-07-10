@@ -5,11 +5,11 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from collections import Counter, defaultdict
 
-from backend.models.trade_review import (
+from models.trade_review import (
     TradeReview, TradeReviewCreate, TradeReviewUpdate, 
     TradeReviewResponse, ReviewPatternAnalysis, ReviewInsights
 )
-from backend.models.trade import Trade
+from models.trade import Trade
 
 class TradeReviewService:
     def __init__(self, db: Session):

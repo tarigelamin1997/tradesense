@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.services.market_context import market_context_service
+from core.db.session import get_db
+from api.deps import get_current_user
+from services.market_context import market_context_service
 
 router = APIRouter(prefix="/market-context", tags=["market-context"])
 
@@ -65,7 +65,7 @@ async def get_market_conditions(
 ):
     """Get available market conditions"""
     try:
-        from backend.services.market_context import MarketCondition
+        from services.market_context import MarketCondition
 
         conditions = [
             {

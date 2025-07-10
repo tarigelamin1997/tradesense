@@ -8,9 +8,9 @@ from datetime import datetime
 import numpy as np
 from collections import defaultdict
 
-from backend.models.trade import Trade
-from backend.analytics.performance import calculate_win_rate, calculate_profit_factor
-from backend.analytics.equity import calculate_max_drawdown
+from models.trade import Trade
+from analytics.performance import calculate_win_rate, calculate_profit_factor
+from analytics.equity import calculate_max_drawdown
 
 
 class EdgeStrengthService:

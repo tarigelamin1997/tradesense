@@ -13,9 +13,9 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, desc, asc, func, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from backend.models.trade import Trade
-from backend.models.tag import Tag
-from backend.api.v1.trades.schemas import (
+from models.trade import Trade
+from models.tag import Tag
+from api.v1.trades.schemas import (
     TradeCreateRequest, 
     TradeUpdateRequest, 
     TradeResponse, 
@@ -25,14 +25,14 @@ from backend.api.v1.trades.schemas import (
     TradeIngestRequest,
     TradeIngestResponse
 )
-from backend.core.exceptions import NotFoundError, ValidationError, BusinessLogicError
-from backend.services.analytics_service import AnalyticsService
-from backend.models.trade_note import TradeNote
-from backend.models.strategy import Strategy
-from backend.services.critique_engine import CritiqueEngine
+from core.exceptions import NotFoundError, ValidationError, BusinessLogicError
+from services.analytics_service import AnalyticsService
+from models.trade_note import TradeNote
+from models.strategy import Strategy
+from services.critique_engine import CritiqueEngine
 from .schemas import TradeCreateRequest, TradeUpdateRequest, TradeResponse
-from backend.services.milestone_engine import MilestoneEngine
-from backend.core.cache import cache_manager, query_cache
+from services.milestone_engine import MilestoneEngine
+from core.cache import cache_manager, query_cache
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +69,10 @@ class TradesService:
         self._trades_storage = {}
 
         # Import analytics modules
-        from backend.analytics.performance import calculate_risk_reward_metrics
-        from backend.analytics.equity import generate_equity_curve
-        from backend.analytics.streaks import calculate_win_loss_streaks
-        from backend.analytics.filters import apply_trade_filters
+        from analytics.performance import calculate_risk_reward_metrics
+        from analytics.equity import generate_equity_curve
+        from analytics.streaks import calculate_win_loss_streaks
+        from analytics.filters import apply_trade_filters
 
         self.calculate_performance = calculate_risk_reward_metrics
         self.calculate_equity = generate_equity_curve

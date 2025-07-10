@@ -7,8 +7,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend.models.trade_note import TradeNote
-from backend.models.trade import Trade
+from models.trade_note import TradeNote
+from models.trade import Trade
 from .schemas import JournalEntryCreate, JournalEntryUpdate, JournalEntryResponse, EmotionAnalytics, PsychologyInsights
 
 class NotesService:
@@ -285,7 +285,7 @@ class NotesService:
 
     async def create_note(self, db: Session, user_id: str, note_data):
         """Create a new trade note or journal entry"""
-        from backend.models.trade_note import TradeNote
+        from models.trade_note import TradeNote
         import json
         
         # Validate note data
@@ -313,7 +313,7 @@ class NotesService:
             # Log the note creation for analytics
             logger.info(f"Note created for user {user_id}, trade {note_data.trade_id}")
             
-            from backend.api.v1.notes.schemas import TradeNoteRead
+            from api.v1.notes.schemas import TradeNoteRead
             return TradeNoteRead.from_orm(note)
             
         except Exception as e:

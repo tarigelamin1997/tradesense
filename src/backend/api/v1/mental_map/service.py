@@ -6,9 +6,9 @@ from datetime import datetime, date, timedelta
 from collections import defaultdict, Counter
 import json
 
-from backend.models.mental_map import MentalMapEntry, SessionReplay
-from backend.models.trade import Trade
-from backend.models.mental_map import (
+from models.mental_map import MentalMapEntry, SessionReplay
+from models.trade import Trade
+from models.mental_map import (
     MentalMapEntryCreate, MentalMapEntryUpdate,
     SessionReplayCreate, SessionReplayUpdate
 )

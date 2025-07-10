@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
-from backend.core.db.session import engine, Base
+from core.db.session import engine, Base
 
 class MarketRegime(Base):
     __tablename__ = 'market_regimes'

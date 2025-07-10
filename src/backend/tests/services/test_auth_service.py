@@ -5,10 +5,10 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 
-from backend.api.v1.auth.service import AuthService
-from backend.core.security import SecurityManager
-from backend.core.exceptions import AuthenticationError, ValidationError
-from backend.api.v1.auth.schemas import UserRegistration, UserUpdate
+from api.v1.auth.service import AuthService
+from core.security import SecurityManager
+from core.exceptions import AuthenticationError, ValidationError
+from api.v1.auth.schemas import UserRegistration, UserUpdate
 
 
 class TestAuthService:

@@ -8,25 +8,25 @@ import pandas as pd
 import numpy as np
 from cachetools import TTLCache
 
-from backend.models.trade import Trade
-from backend.core.db.session import get_db
-from backend.services.behavioral_analytics import BehavioralAnalyticsService
-from backend.core.query_optimizer import optimize_query, optimize_trade_queries, query_optimizer
-from backend.core.async_manager import async_task, run_in_thread_pool
+from models.trade import Trade
+from core.db.session import get_db
+from services.behavioral_analytics import BehavioralAnalyticsService
+from core.query_optimizer import optimize_query, optimize_trade_queries, query_optimizer
+from core.async_manager import async_task, run_in_thread_pool
 
 # Import analytics modules
-from backend.analytics.performance import (
+from analytics.performance import (
     calculate_win_rate,
     calculate_profit_factor,
     calculate_expectancy,
     calculate_sharpe_ratio
 )
-from backend.analytics.equity import calculate_max_drawdown
-from backend.analytics.streaks import (
+from analytics.equity import calculate_max_drawdown
+from analytics.streaks import (
     find_longest_streak
 )
-from backend.analytics.filters import filter_trades_by_symbol
-from backend.analytics.utils import safe_divide, calculate_percentage
+from analytics.filters import filter_trades_by_symbol
+from analytics.utils import safe_divide, calculate_percentage
 
 logger = logging.getLogger(__name__)
 

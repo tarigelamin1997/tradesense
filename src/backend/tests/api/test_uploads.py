@@ -7,8 +7,8 @@ from unittest.mock import patch, Mock
 import io
 import tempfile
 import os
-from backend.core.security import SecurityManager
-from backend.models.user import User
+from core.security import SecurityManager
+from models.user import User
 from fastapi import HTTPException
 
 
@@ -17,7 +17,7 @@ class TestUploadsAPI:
 
     def test_upload_csv_success(self, client, auth_headers, mock_file_upload, test_db, test_user):
         """Test successful CSV file upload"""
-        from backend.models.user import User
+        from models.user import User
         user = test_db.query(User).filter(User.id == "test_user_123").first()
         print(f"[DEBUG][test_upload_csv_success] User in DB at test start: {user}")
         with patch('backend.api.v1.uploads.service.UploadService.process_file_upload') as mock_process:

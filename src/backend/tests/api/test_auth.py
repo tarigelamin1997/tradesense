@@ -73,7 +73,7 @@ class TestAuthAPI:
         from unittest.mock import Mock
         import main_minimal
         from fastapi.testclient import TestClient
-        from backend.core.db.session import get_db
+        from core.db.session import get_db
         mock_user = Mock()
         mock_user.id = "test_user_id"
         mock_user.username = sample_user_data["username"]

@@ -33,7 +33,7 @@ def test_auth_service_basic_functionality():
     
     try:
         # Import the service directly without going through the full import chain
-        from backend.api.v1.auth.service import AuthService
+        from api.v1.auth.service import AuthService
         
         # Create service instance
         service = AuthService(mock_db)
@@ -58,7 +58,7 @@ def test_auth_service_password_hashing():
     
     try:
         # Import the service
-        from backend.api.v1.auth.service import AuthService
+        from api.v1.auth.service import AuthService
         
         # Create service instance
         service = AuthService(mock_db)
@@ -98,8 +98,8 @@ def test_auth_service_user_creation():
     
     try:
         # Import the service and schemas
-        from backend.api.v1.auth.service import AuthService
-        from backend.api.v1.auth.schemas import UserRegistration
+        from api.v1.auth.service import AuthService
+        from api.v1.auth.schemas import UserRegistration
         
         # Create service instance
         service = AuthService(mock_db)
@@ -153,7 +153,7 @@ def test_auth_service_authentication():
     
     try:
         # Import the service
-        from backend.api.v1.auth.service import AuthService
+        from api.v1.auth.service import AuthService
         
         # Create service instance
         service = AuthService(mock_db)
@@ -188,7 +188,7 @@ def test_auth_service_user_lookup():
     
     try:
         # Import the service
-        from backend.api.v1.auth.service import AuthService
+        from api.v1.auth.service import AuthService
         
         # Create service instance
         service = AuthService(mock_db)

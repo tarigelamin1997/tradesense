@@ -4,7 +4,7 @@ Test suite for analytics service
 """
 import pytest
 import asyncio
-from backend.services.analytics_service import AnalyticsService
+from services.analytics_service import AnalyticsService
 import pandas as pd
 from datetime import datetime, timedelta
 

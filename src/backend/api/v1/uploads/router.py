@@ -5,17 +5,17 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Respons
 from typing import Dict, Any, Optional
 import logging
 
-from backend.api.v1.uploads.schemas import (
+from api.v1.uploads.schemas import (
     FileUploadResponse,
     DataValidationResult,
     ColumnMappingRequest,
     BulkImportResponse
 )
-from backend.api.v1.uploads.service import UploadsService
-from backend.api.deps import get_current_active_user
-from backend.core.response import ResponseHandler, APIResponse
-from backend.core.exceptions import TradeSenseException
-from backend.models.user import User
+from api.v1.uploads.service import UploadsService
+from api.deps import get_current_active_user
+from core.response import ResponseHandler, APIResponse
+from core.exceptions import TradeSenseException
+from models.user import User
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from backend.core.db.session import Base
+from core.db.session import Base
 from datetime import datetime
 import uuid
 import enum

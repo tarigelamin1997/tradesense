@@ -6,9 +6,9 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from backend.api.v1.trades.service import TradesService
-from backend.models.trade import TradeCreate, TradeUpdate
-from backend.core.exceptions import ValidationError, NotFoundError
+from api.v1.trades.service import TradesService
+from models.trade import TradeCreate, TradeUpdate
+from core.exceptions import ValidationError, NotFoundError
 
 
 class TestTradesService:

@@ -32,7 +32,7 @@ def test_auth_service_import_without_models():
             
             try:
                 # Import the service
-                from backend.api.v1.auth.service import AuthService
+                from api.v1.auth.service import AuthService
                 assert AuthService is not None
                 print("✅ Successfully imported AuthService without models")
             except Exception as e:
@@ -64,7 +64,7 @@ def test_auth_service_creation_without_models():
             mock_get_db.return_value = mock_db
             
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             service = AuthService(mock_db)
             
             assert service is not None
@@ -97,7 +97,7 @@ def test_auth_service_methods_without_models():
             mock_get_db.return_value = mock_db
             
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             service = AuthService(mock_db)
             
             # Test that the service has the expected methods
@@ -133,7 +133,7 @@ def test_auth_service_password_hashing():
             mock_get_db.return_value = mock_db
             
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             service = AuthService(mock_db)
             
             # Test password hashing

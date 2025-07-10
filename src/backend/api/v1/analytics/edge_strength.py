@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime, date
 
-from backend.core.db.session import get_db
-from backend.models.trade import Trade
-from backend.services.edge_strength import EdgeStrengthService
-from backend.api.deps import get_current_user
+from core.db.session import get_db
+from models.trade import Trade
+from services.edge_strength import EdgeStrengthService
+from api.deps import get_current_user
 
 router = APIRouter(prefix="/edge-strength", tags=["Edge Strength Analytics"])
 

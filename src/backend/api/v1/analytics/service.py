@@ -8,9 +8,9 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-from backend.models.trade import Trade
-from backend.models.trade_note import TradeNote
-from backend.models.daily_emotion_reflection import DailyEmotionReflection
+from models.trade import Trade
+from models.trade_note import TradeNote
+from models.daily_emotion_reflection import DailyEmotionReflection
 from .schemas import (
     AnalyticsSummaryResponse, AnalyticsFilters, StrategyStats, 
     EmotionImpact, TriggerAnalysis, ConfidenceAnalysis, EmotionalLeak,

@@ -8,9 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, desc
 import logging
 
-from backend.models.strategy import Strategy
-from backend.api.v1.strategies.schemas import StrategyCreate, StrategyRead, StrategyUpdate
-from backend.core.exceptions import ValidationError, BusinessLogicError, NotFoundError
+from models.strategy import Strategy
+from api.v1.strategies.schemas import StrategyCreate, StrategyRead, StrategyUpdate
+from core.exceptions import ValidationError, BusinessLogicError, NotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ class StrategyService:
             strategy_name = strategy.name
             
             # Check if strategy is in use by trades
-            from backend.models.trade import Trade
+            from models.trade import Trade
             trades_using_strategy = db.query(Trade).filter(
                 Trade.user_id == user_id,
                 Trade.strategy_tag == strategy_name
@@ -167,7 +167,7 @@ class StrategyService:
     async def get_strategy_analytics(self, db: Session, user_id: str) -> List[Dict[str, Any]]:
         """Get performance analytics by strategy"""
         try:
-            from backend.models.trade import Trade
+            from models.trade import Trade
             from sqlalchemy import case
             
             # Get strategy performance stats
@@ -222,7 +222,7 @@ class StrategyService:
     async def get_tag_analytics(self, db: Session, user_id: str) -> List[Dict[str, Any]]:
         """Get performance analytics by tag"""
         try:
-            from backend.models.trade import Trade
+            from models.trade import Trade
             from sqlalchemy import case, text
             
             # This requires a more complex query to unnest JSON tags

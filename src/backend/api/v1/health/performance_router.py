@@ -10,8 +10,8 @@ import time
 import psutil
 from sqlalchemy.orm import Session
 
-from backend.core.db.session import get_db, engine
-from backend.core.cache import cache_manager
+from core.db.session import get_db, engine
+from core.cache import cache_manager
 
 logger = logging.getLogger(__name__)
 

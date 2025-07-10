@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-from backend.api.deps import get_current_user, get_db
-from backend.services.emotional_analytics import EmotionalAnalyticsService
-from backend.models.user import User
+from api.deps import get_current_user, get_db
+from services.emotional_analytics import EmotionalAnalyticsService
+from models.user import User
 from pydantic import BaseModel, Field
 
 router = APIRouter(tags=["emotions"])
@@ -52,7 +52,7 @@ async def update_trade_reflection(
     current_user: User = Depends(get_current_user)
 ):
     """Update trade with emotional reflection data"""
-    from backend.models.trade import Trade
+    from models.trade import Trade
     from datetime import datetime
     import json
     

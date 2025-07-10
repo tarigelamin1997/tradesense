@@ -21,7 +21,7 @@ def test_auth_service_import():
     with patch('backend.models.user.User', mock_user):
         with patch('backend.core.db.session.get_db', return_value=mock_db):
             try:
-                from backend.api.v1.auth.service import AuthService
+                from api.v1.auth.service import AuthService
                 assert AuthService is not None
                 print("✅ Successfully imported AuthService")
             except Exception as e:
@@ -31,7 +31,7 @@ def test_auth_service_creation():
     """Test creating AuthService instance"""
     with patch('backend.models.user.User', mock_user):
         with patch('backend.core.db.session.get_db', return_value=mock_db):
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             service = AuthService(mock_db)
             assert service is not None
             assert hasattr(service, 'db')
@@ -41,7 +41,7 @@ def test_mock_authentication():
     """Test authentication with mocked dependencies"""
     with patch('backend.models.user.User', mock_user):
         with patch('backend.core.db.session.get_db', return_value=mock_db):
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             
             service = AuthService(mock_db)
             
@@ -62,8 +62,8 @@ def test_mock_user_creation():
     """Test user creation with mocked dependencies"""
     with patch('backend.models.user.User', mock_user):
         with patch('backend.core.db.session.get_db', return_value=mock_db):
-            from backend.api.v1.auth.service import AuthService
-            from backend.api.v1.auth.schemas import UserRegistration
+            from api.v1.auth.service import AuthService
+            from api.v1.auth.schemas import UserRegistration
             
             service = AuthService(mock_db)
             

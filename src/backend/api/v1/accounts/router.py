@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from backend.models.trading_account import TradingAccountCreate, TradingAccountUpdate, TradingAccountResponse
-from backend.api.v1.accounts.service import TradingAccountService
-from backend.api.deps import get_current_user
-from backend.models.user import UserRead
+from models.trading_account import TradingAccountCreate, TradingAccountUpdate, TradingAccountResponse
+from api.v1.accounts.service import TradingAccountService
+from api.deps import get_current_user
+from models.user import UserRead
 
 router = APIRouter(tags=["Trading Accounts"])
 

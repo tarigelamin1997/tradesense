@@ -3,10 +3,10 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc, asc
-from backend.models.user import User
-from backend.models.trade import Trade
-from backend.models.trading_account import TradingAccount
-from backend.api.v1.users.schemas import UserProfileUpdate, TradingStatsResponse, Achievement
+from models.user import User
+from models.trade import Trade
+from models.trading_account import TradingAccount
+from api.v1.users.schemas import UserProfileUpdate, TradingStatsResponse, Achievement
 
 class UserService:
     def __init__(self, db: Session):

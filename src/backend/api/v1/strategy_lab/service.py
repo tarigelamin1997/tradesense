@@ -7,9 +7,9 @@ from uuid import UUID
 import numpy as np
 import statistics
 
-from backend.models.trade import Trade
-from backend.models.playbook import Playbook
-from backend.api.v1.strategy_lab.schemas import (
+from models.trade import Trade
+from models.playbook import Playbook
+from api.v1.strategy_lab.schemas import (
     SimulationFilters, SimulationRequest, SimulationResponse,
     PerformanceMetrics, ComparisonMetrics, TradeSimulationResult,
     PlaybookPerformanceComparison, WhatIfScenario

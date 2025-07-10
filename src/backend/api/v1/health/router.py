@@ -4,7 +4,7 @@ Health check endpoints
 from fastapi import APIRouter, Depends
 from datetime import datetime
 import os
-from backend.core.db.session import get_db
+from core.db.session import get_db
 from sqlalchemy.orm import Session
 
 # Try to import psutil, but make it optional

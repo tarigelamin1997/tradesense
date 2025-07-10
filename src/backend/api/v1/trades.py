@@ -8,9 +8,9 @@ from datetime import datetime
 import pandas as pd
 import io
 
-from backend.models.trade import Trade, TradeCreate, TradeResponse
-from backend.services.analytics_service import AnalyticsService
-from backend.api.deps import get_current_user, get_db
+from models.trade import Trade, TradeCreate, TradeResponse
+from services.analytics_service import AnalyticsService
+from api.deps import get_current_user, get_db
 
 router = APIRouter()
 analytics_service = AnalyticsService()

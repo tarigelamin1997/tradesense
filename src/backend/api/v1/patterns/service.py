@@ -5,10 +5,10 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import json
 
-from backend.models.pattern_cluster import PatternCluster
-from backend.models.trade import Trade
-from backend.models.pattern_cluster import PatternClusterUpdate
-from backend.services.pattern_detection import PatternDetectionEngine
+from models.pattern_cluster import PatternCluster
+from models.trade import Trade
+from models.pattern_cluster import PatternClusterUpdate
+from services.pattern_detection import PatternDetectionEngine
 
 class PatternService:
     def __init__(self, db: Session):

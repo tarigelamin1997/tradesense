@@ -26,7 +26,7 @@ def test_auth_service_direct_import():
         
         try:
             # Import the service directly
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             assert AuthService is not None
             print("✅ Successfully imported AuthService directly")
         except Exception as e:
@@ -46,7 +46,7 @@ def test_auth_service_password_hashing_direct():
         
         try:
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             
             # Create service instance with mock db
             mock_db = Mock()
@@ -80,8 +80,8 @@ def test_auth_service_user_creation_direct():
         
         try:
             # Import the service and schemas
-            from backend.api.v1.auth.service import AuthService
-            from backend.api.v1.auth.schemas import UserRegistration
+            from api.v1.auth.service import AuthService
+            from api.v1.auth.schemas import UserRegistration
             
             # Create service instance with mock db
             mock_db = Mock()
@@ -140,7 +140,7 @@ def test_auth_service_authentication_direct():
         
         try:
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             
             # Create service instance with mock db
             mock_db = Mock()
@@ -186,7 +186,7 @@ def test_auth_service_user_lookup_direct():
         
         try:
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             
             # Create service instance with mock db
             mock_db = Mock()

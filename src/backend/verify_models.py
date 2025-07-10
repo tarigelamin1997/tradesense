@@ -15,11 +15,11 @@ try:
     print("🔍 Verifying TradeSense Model Registry...")
     
     # Import shared Base and engine
-    from backend.core.db.session import Base, engine
+    from core.db.session import Base, engine
     
     # Import all models through centralized registry
-    import backend.models
-    from backend.models import *
+    import models
+    from models import *
     
     print(f"📊 Registered models: {len(Base.registry._class_registry)} classes")
     

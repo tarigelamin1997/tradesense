@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
-from backend.core.db.session import Base
+from core.db.session import Base
 
 class PlaybookStatus(str, enum.Enum):
     ACTIVE = "active"

@@ -2,11 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.services.portfolio_simulator import PortfolioSimulator
-from backend.models.user import User
-from backend.api.v1.portfolio.schemas import PortfolioCreate, PortfolioResponse, EquityCurveResponse
+from core.db.session import get_db
+from api.deps import get_current_user
+from services.portfolio_simulator import PortfolioSimulator
+from models.user import User
+from api.v1.portfolio.schemas import PortfolioCreate, PortfolioResponse, EquityCurveResponse
 
 router = APIRouter()
 

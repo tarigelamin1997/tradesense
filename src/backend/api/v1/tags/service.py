@@ -5,10 +5,10 @@ Tag service for managing trade tags
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from backend.models.tag import Tag
-from backend.models.trade import Trade
-from backend.api.v1.tags.schemas import TagCreate, TagUpdate
-from backend.core.exceptions import NotFoundError, ValidationError
+from models.tag import Tag
+from models.trade import Trade
+from api.v1.tags.schemas import TagCreate, TagUpdate
+from core.exceptions import NotFoundError, ValidationError
 
 
 class TagService:

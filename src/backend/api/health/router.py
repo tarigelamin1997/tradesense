@@ -8,9 +8,9 @@ import sys
 import platform
 import logging
 
-from backend.core.response import ResponseHandler, APIResponse
-from app.config.settings import settings
-from backend.core.db.session import engine
+from core.response import ResponseHandler, APIResponse
+from core.config import settings
+from core.db.session import engine
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ async def root_readiness_probe():
 async def root_version():
     return {
         "data": {
-            "version": settings.version,
+            "version": getattr(settings, 'version', '1.0.0'),
             "build_time": datetime.utcnow().isoformat()
         },
         "timestamp": datetime.utcnow().isoformat()
@@ -83,8 +83,8 @@ async def health_check() -> APIResponse:
         return ResponseHandler.success(
             data={
                 "status": status,
-                "service": settings.app_name,
-                "version": settings.version,
+                "service": getattr(settings, 'app_name', 'TradeSense API'),
+                "version": getattr(settings, 'version', '1.0.0'),
                 "database": "healthy" if db_healthy else "unhealthy",
                 "timestamp": datetime.utcnow()
             },
@@ -121,14 +121,14 @@ async def detailed_health_check() -> APIResponse:
         return ResponseHandler.success(
             data={
                 "status": "healthy" if db_stats["status"] == "connected" else "degraded",
-                "service": settings.app_name,
-                "version": settings.version,
+                "service": getattr(settings, 'app_name', 'TradeSense API'),
+                "version": getattr(settings, 'version', '1.0.0'),
                 "database": db_stats,
                 "system": system_info,
                 "configuration": {
-                    "debug": settings.debug,
-                    "cors_origins": len(settings.allowed_origins),
-                    "max_file_size": settings.max_file_size
+                    "debug": getattr(settings, 'debug', True),
+                    "cors_origins": len(getattr(settings, 'allowed_origins', ['*'])),
+                    "max_file_size": getattr(settings, 'max_file_size', 10485760)
                 },
                 "timestamp": datetime.utcnow()
             },
@@ -152,8 +152,8 @@ async def service_status() -> APIResponse:
     try:
         return ResponseHandler.success(
             data={
-                "service": settings.app_name,
-                "version": settings.version,
+                "service": getattr(settings, 'app_name', 'TradeSense API'),
+                "version": getattr(settings, 'version', '1.0.0'),
                 "status": "running",
                 "timestamp": datetime.utcnow(),
                 "uptime": "Service running"  # In production, calculate actual uptime
@@ -178,9 +178,9 @@ async def get_version() -> APIResponse:
     try:
         return ResponseHandler.success(
             data={
-                "name": settings.app_name,
-                "version": settings.version,
-                "description": settings.description,
+                "name": getattr(settings, 'app_name', 'TradeSense API'),
+                "version": getattr(settings, 'version', '1.0.0'),
+                "description": getattr(settings, 'description', 'TradeSense Trading Journal API'),
                 "api_version": "v1",
                 "build_date": datetime.utcnow().isoformat()
             },

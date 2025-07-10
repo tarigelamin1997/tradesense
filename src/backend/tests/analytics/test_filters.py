@@ -4,7 +4,7 @@ Tests for filters analytics module
 
 import pytest
 from datetime import datetime, timedelta
-from backend.analytics.filters import (
+from analytics.filters import (
     filter_trades_by_symbol,
     apply_trade_filters,
     filter_by_date_range,

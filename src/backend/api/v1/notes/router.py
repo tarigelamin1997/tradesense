@@ -6,18 +6,18 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 import logging
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_active_user
-from backend.api.v1.notes.service import NotesService
-from backend.api.v1.notes.schemas import (
+from core.db.session import get_db
+from api.deps import get_current_active_user
+from api.v1.notes.service import NotesService
+from api.v1.notes.schemas import (
     TradeNoteCreate, 
     TradeNoteRead, 
     TradeNoteUpdate,
     TradeNoteListResponse,
     MoodStatsResponse
 )
-from backend.core.response import ResponseHandler, APIResponse
-from backend.core.exceptions import TradeSenseException
+from core.response import ResponseHandler, APIResponse
+from core.exceptions import TradeSenseException
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ async def list_notes(
         )
         
         # Get total count for pagination
-        from backend.models.trade_note import TradeNote
+        from models.trade_note import TradeNote
         query = db.query(TradeNote).filter(TradeNote.user_id == current_user["user_id"])
         if trade_id:
             query = query.filter(TradeNote.trade_id == trade_id)
@@ -203,7 +203,7 @@ async def delete_note(
         logger.error(f"Delete note endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-from backend.api.v1.notes.schemas import (
+from api.v1.notes.schemas import (
     JournalEntryCreate, 
     JournalEntryUpdate, 
     JournalEntryResponse,

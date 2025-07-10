@@ -47,26 +47,27 @@ def ensure_models_registered():
         # Import all models here to ensure they're registered
         try:
             # Import all model modules to register them
-            from backend.models.user import User
-            from backend.models.trade import Trade
-            from backend.models.portfolio import Portfolio
-            from backend.models.trading_account import TradingAccount
-            from backend.models.playbook import Playbook
-            from backend.models.tag import Tag, trade_tags
-            from backend.models.trade_review import TradeReview
-            from backend.models.trade_note import TradeNote
-            from backend.models.feature_request import FeatureRequest, FeatureVote, FeatureComment
-            from backend.models.strategy import Strategy
-            from backend.models.mental_map import MentalMap, MentalMapEntry
-            from backend.models.pattern_cluster import PatternCluster
-            from backend.models.milestone import Milestone
-            from backend.models.daily_emotion_reflection import DailyEmotionReflection
+            from models.user import User
+            from models.trade import Trade
+            from models.portfolio import Portfolio
+            from models.trading_account import TradingAccount
+            from models.playbook import Playbook
+            from models.tag import Tag, trade_tags
+            from models.trade_review import TradeReview
+            from models.trade_note import TradeNote
+            from models.feature_request import FeatureRequest, FeatureVote, FeatureComment
+            from models.strategy import Strategy
+            from models.mental_map import MentalMap, MentalMapEntry
+            from models.pattern_cluster import PatternCluster
+            from models.milestone import Milestone
+            from models.daily_emotion_reflection import DailyEmotionReflection
             _models_registered = True
         except Exception as e:
             print(f"Warning: Could not register models: {e}")
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tradesense.db")
+from core.config import settings
+DATABASE_URL = settings.database_url
 
 # Create engine with optimized configuration
 if DATABASE_URL.startswith("sqlite"):

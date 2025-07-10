@@ -9,9 +9,9 @@ from collections import defaultdict
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, and_
-from backend.models.trade import Trade
-from backend.models.milestone import Milestone
-from backend.core.db.session import get_db
+from models.trade import Trade
+from models.milestone import Milestone
+from core.db.session import get_db
 import numpy as np
 
 logger = logging.getLogger(__name__)

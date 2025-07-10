@@ -1,7 +1,7 @@
 # Database module
 
 # Database initialization
-from backend.core.db.session import engine, Base
+from core.db.session import engine, Base
 
 # Analytics modules are available for import
 try:
@@ -17,7 +17,7 @@ __all__ = ["get_db"]
 
 # Import behavioral analytics service for dependency injection
 try:
-    from backend.services.behavioral_analytics import BehavioralAnalyticsService
+    from services.behavioral_analytics import BehavioralAnalyticsService
     __all__.append("BehavioralAnalyticsService")
 except ImportError:
     pass

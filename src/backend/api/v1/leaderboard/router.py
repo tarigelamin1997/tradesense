@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
-from backend.api.v1.leaderboard.service import LeaderboardService
-from backend.api.deps import get_current_user
-from backend.models.user import UserRead
+from api.v1.leaderboard.service import LeaderboardService
+from api.deps import get_current_user
+from models.user import UserRead
 
 router = APIRouter(tags=["Global Leaderboard"])
 

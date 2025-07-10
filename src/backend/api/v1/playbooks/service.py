@@ -6,9 +6,9 @@ import json
 import numpy as np
 import pandas as pd
 
-from backend.models.playbook import Playbook
-from backend.api.v1.playbooks.schemas import PlaybookCreate, PlaybookUpdate, PlaybookAnalytics
-from backend.models.trade import Trade
+from models.playbook import Playbook
+from api.v1.playbooks.schemas import PlaybookCreate, PlaybookUpdate, PlaybookAnalytics
+from models.trade import Trade
 
 class PlaybookService:
     def __init__(self, db: Session):

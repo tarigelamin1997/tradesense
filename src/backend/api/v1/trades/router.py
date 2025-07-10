@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.api.v1.trades.service import TradesService
+from core.db.session import get_db
+from api.deps import get_current_user
+from api.v1.trades.service import TradesService
 from .schemas import (
     TradeCreateRequest, TradeUpdateRequest, TradeResponse, TradeIngestRequest, TradeIngestResponse
 )
 from .confidence_calibration import ConfidenceCalibrationService
 from pydantic import BaseModel, ValidationError
 from uuid import UUID
-from backend.core.cache import cache_response, invalidate_cache_pattern
+from core.cache import cache_response, invalidate_cache_pattern
 
 router = APIRouter(tags=["trades"])
 

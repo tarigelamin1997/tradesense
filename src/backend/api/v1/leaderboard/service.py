@@ -1,6 +1,6 @@
 
 from typing import Dict, List, Optional
-from backend.services.cross_account_analytics import CrossAccountAnalyticsService
+from services.cross_account_analytics import CrossAccountAnalyticsService
 from datetime import datetime, timedelta
 
 class LeaderboardService:

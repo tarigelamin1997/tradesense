@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime, timedelta
-from backend.services.behavioral_analytics import BehavioralAnalyticsService
+from services.behavioral_analytics import BehavioralAnalyticsService
 
 def create_sample_trades():
     """Create sample trades for testing"""

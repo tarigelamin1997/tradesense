@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 import logging
 
-from backend.api.v1.strategies.schemas import (
+from api.v1.strategies.schemas import (
     StrategyCreate, 
     StrategyRead, 
     StrategyUpdate,
@@ -14,12 +14,12 @@ from backend.api.v1.strategies.schemas import (
     StrategyAnalytics,
     TagAnalytics
 )
-from backend.api.v1.strategies.service import StrategyService
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.core.response import ResponseHandler, APIResponse
-from backend.core.exceptions import TradeSenseException
-from backend.models.user import User
+from api.v1.strategies.service import StrategyService
+from core.db.session import get_db
+from api.deps import get_current_user
+from core.response import ResponseHandler, APIResponse
+from core.exceptions import TradeSenseException
+from models.user import User
 
 logger = logging.getLogger(__name__)
 

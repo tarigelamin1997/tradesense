@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 
 # Import shared Base
-from backend.core.db.session import Base
+from core.db.session import Base
 
 class Milestone(Base):
     __tablename__ = "milestones"

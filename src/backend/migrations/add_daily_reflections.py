@@ -3,7 +3,7 @@
 Migration to add daily_emotion_reflections table
 """
 from sqlalchemy import text
-from backend.core.db.session import get_db
+from core.db.session import get_db
 
 def migrate_daily_reflections():
     """Create daily_emotion_reflections table"""

@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 
-from backend.api.deps import get_current_user, get_db
-from backend.models.user import User
-from backend.models.trade_note import TradeNote
+from api.deps import get_current_user, get_db
+from models.user import User
+from models.trade_note import TradeNote
 from .schemas import JournalEntryCreate, JournalEntryUpdate, JournalEntryResponse
 from .service import JournalService
 

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 import uuid
-from backend.core.db.session import Base
+from core.db.session import Base
 
 class TradingAccount(Base):
     __tablename__ = "trading_accounts"

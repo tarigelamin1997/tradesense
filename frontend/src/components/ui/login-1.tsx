@@ -54,7 +54,7 @@ const Login1 = ({
     setIsLoading(true);
 
     try {
-      await login({ username: email, password });
+      await login({ email, password });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

@@ -9,19 +9,19 @@ from fastapi.responses import JSONResponse
 import logging
 import traceback
 
-from backend.core.db.session import get_db
-from backend.core.rate_limiter import (
+from core.db.session import get_db
+from core.rate_limiter import (
     check_rate_limit, record_attempt, get_client_ip, 
     RateLimitConfig, reset_rate_limit
 )
-from backend.core.exceptions import RateLimitError
-from backend.api.v1.auth.schemas import (
+from core.exceptions import RateLimitError
+from api.v1.auth.schemas import (
     UserRegistration, UserLogin, UserResponse, Token, 
     PasswordReset, PasswordResetConfirm, ChangePassword, UserUpdate
 )
-from backend.api.v1.auth.service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
-from backend.models.user import User
-from backend.api.deps import get_current_user
+from api.v1.auth.service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
+from models.user import User
+from api.deps import get_current_user
 
 router = APIRouter()
 

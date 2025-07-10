@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 
-from backend.api.deps import get_current_user, get_db
-from backend.models.user import User
-from backend.models.feature_request import FeatureRequest, FeatureVote, FeatureComment
+from api.deps import get_current_user, get_db
+from models.user import User
+from models.feature_request import FeatureRequest, FeatureVote, FeatureComment
 from .schemas import (
     FeatureRequestCreate, FeatureRequestUpdate, FeatureRequestResponse,
     FeatureVoteCreate, FeatureCommentCreate, FeatureCommentResponse

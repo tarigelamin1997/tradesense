@@ -1,6 +1,6 @@
 
 from typing import List, Dict, Optional
-from backend.core.exceptions import ValidationError, NotFoundError
+from core.exceptions import ValidationError, NotFoundError
 from datetime import datetime
 import uuid
 

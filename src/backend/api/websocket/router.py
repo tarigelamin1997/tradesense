@@ -98,8 +98,8 @@ async def handle_websocket_message(message: dict, user_id: str, websocket: WebSo
         # This would integrate with your trade service
         try:
             # Import trade service to get real data
-            from backend.api.v1.trades.service import TradeService
-            from backend.core.db.session import get_db
+            from api.v1.trades.service import TradeService
+            from core.db.session import get_db
             
             db = next(get_db())
             trade_service = TradeService(db)
@@ -145,7 +145,7 @@ async def handle_websocket_message(message: dict, user_id: str, websocket: WebSo
         symbols = message.get("symbols", [])
         if symbols:
             try:
-                from backend.services.real_time_market_service import RealTimeMarketService
+                from services.real_time_market_service import RealTimeMarketService
                 
                 market_service = RealTimeMarketService()
                 market_data = {}

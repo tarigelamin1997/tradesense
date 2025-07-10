@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.services.analytics.heatmap import HeatmapAnalyticsService
+from core.db.session import get_db
+from api.deps import get_current_user
+from services.analytics.heatmap import HeatmapAnalyticsService
 
 router = APIRouter(tags=["heatmap-analytics"])
 

@@ -4,10 +4,10 @@ from pydantic import BaseModel
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from backend.models.trade import Trade
-from backend.models.playbook import Playbook
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
+from models.trade import Trade
+from models.playbook import Playbook
+from core.db.session import get_db
+from api.deps import get_current_user
 
 router = APIRouter()
 

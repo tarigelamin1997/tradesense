@@ -12,9 +12,9 @@ if project_root not in sys.path:
 
 # Import the working app from main_minimal
 from main_minimal import app
-from backend.core.security import SecurityManager
-from backend.models.user import User
-from backend.core.db.session import SessionLocal
+from core.security import SecurityManager
+from models.user import User
+from core.db.session import SessionLocal
 
 client = TestClient(app)
 

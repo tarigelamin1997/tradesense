@@ -5,9 +5,9 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
 
-from backend.core.db.session import get_db
-from backend.models.trade import Trade
-from backend.models.user import User
+from core.db.session import get_db
+from models.trade import Trade
+from models.user import User
 from ..auth.service import get_current_user
 
 logger = logging.getLogger(__name__)

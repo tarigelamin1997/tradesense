@@ -2,9 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
 from datetime import datetime
-from backend.models.user import User
-from backend.core.db.session import SessionLocal
-from backend.core.security import SecurityManager
+from models.user import User
+from core.db.session import SessionLocal
+from core.security import SecurityManager
 
 class TestTradesAPI:
     TEST_USER_ID = "test_user_123"
@@ -16,7 +16,7 @@ class TestTradesAPI:
 
     def test_create_trade_success(self, client, test_db, test_user):
         """Test successful trade creation"""
-        from backend.models.user import User
+        from models.user import User
         user = test_db.query(User).filter(User.id == "test_user_123").first()
         print(f"[DEBUG][test_create_trade_success] User in DB at test start: {user}")
         sample_trade_data = {
@@ -36,7 +36,7 @@ class TestTradesAPI:
 
     def test_get_trades_list(self, client, test_db, test_user):
         """Test getting trades list"""
-        from backend.models.user import User
+        from models.user import User
         user = test_db.query(User).filter(User.id == "test_user_123").first()
         print(f"[DEBUG][test_get_trades_list] User in DB at test start: {user}")
         response = client.get("/api/v1/trades/", headers=self.TEST_USER_HEADERS)
@@ -61,7 +61,7 @@ class TestTradesAPI:
 
     def test_create_trade_invalid_data(self, client, test_db, test_user):
         """Test creating trade with invalid data"""
-        from backend.models.user import User
+        from models.user import User
         user = test_db.query(User).filter(User.id == "test_user_123").first()
         print(f"[DEBUG][test_create_trade_invalid_data] User in DB at test start: {user}")
         invalid_data = {
@@ -77,7 +77,7 @@ class TestTradesAPI:
 
     def test_get_trade_by_id(self, client, test_db, test_user):
         """Test getting specific trade by ID"""
-        from backend.models.user import User
+        from models.user import User
         user = test_db.query(User).filter(User.id == "test_user_123").first()
         print(f"[DEBUG][test_get_trade_by_id] User in DB at test start: {user}")
         sample_trade_data = {

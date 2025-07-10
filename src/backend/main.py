@@ -24,44 +24,49 @@ except Exception as e:
     print(f"⚠️ Database initialization warning: {e}")
 
 # Import routers
-from backend.api.v1.auth.router import router as auth_router
-from backend.api.v1.trades.router import router as trades_router
-from backend.api.v1.analytics.router import router as analytics_router
-from backend.api.v1.uploads.router import router as uploads_router
-from backend.api.v1.features.router import router as features_router
-from backend.api.v1.portfolio.router import router as portfolio_router
-from backend.api.v1.intelligence.router import router as intelligence_router
-from backend.api.v1.market_data.router import router as market_data_router
-from backend.api.v1.leaderboard.router import router as leaderboard_router
-from backend.api.v1.notes.router import router as notes_router
-from backend.api.v1.milestones.router import router as milestones_router
-from backend.api.v1.patterns.router import router as patterns_router
-from backend.api.v1.playbooks.router import router as playbooks_router
-from backend.api.v1.reviews.router import router as reviews_router
-from backend.api.v1.strategies.router import router as strategies_router
-from backend.api.v1.journal.router import router as journal_router
-from backend.api.v1.tags.router import router as tags_router
-from backend.api.v1.reflections.router import router as reflections_router
-from backend.api.v1.critique.router import router as critique_router
-from backend.api.v1.strategy_lab.router import router as strategy_lab_router
-from backend.api.v1.mental_map.router import router as mental_map_router
-from backend.api.v1.emotions.router import router as emotions_router
-from backend.api.v1.health.performance_router import router as performance_router
-from backend.api.v1.health.router import router as health_router
-from backend.api.health.router import router as health_router_legacy, root_router as health_root_router
-from backend.core.middleware import setup_middleware
-from backend.core.exceptions import setup_exception_handlers
-from backend.core.validation_middleware import setup_validation_middleware
-from backend.core.async_manager import task_manager
+from api.v1.auth.router import router as auth_router
+from api.v1.trades.router import router as trades_router
+from api.v1.analytics.router import router as analytics_router
+from api.v1.uploads.router import router as uploads_router
+from api.v1.features.router import router as features_router
+from api.v1.portfolio.router import router as portfolio_router
+from api.v1.intelligence.router import router as intelligence_router
+from api.v1.market_data.router import router as market_data_router
+from api.v1.leaderboard.router import router as leaderboard_router
+from api.v1.notes.router import router as notes_router
+from api.v1.milestones.router import router as milestones_router
+from api.v1.patterns.router import router as patterns_router
+from api.v1.playbooks.router import router as playbooks_router
+from api.v1.reviews.router import router as reviews_router
+from api.v1.strategies.router import router as strategies_router
+from api.v1.journal.router import router as journal_router
+from api.v1.tags.router import router as tags_router
+from api.v1.reflections.router import router as reflections_router
+from api.v1.critique.router import router as critique_router
+from api.v1.strategy_lab.router import router as strategy_lab_router
+from api.v1.mental_map.router import router as mental_map_router
+from api.v1.emotions.router import router as emotions_router
+from api.v1.health.performance_router import router as performance_router
+from api.v1.health.router import router as health_router
+from api.health.router import router as health_router_legacy, root_router as health_root_router
+from core.middleware import setup_middleware
+from core.exceptions import setup_exception_handlers
+from core.validation_middleware import setup_validation_middleware
+from core.async_manager import task_manager
 import logging
-from backend.api.v1.public import public_router
+from api.v1.public import public_router
+
+# Create necessary directories
+os.makedirs('logs', exist_ok=True)
+os.makedirs('uploads', exist_ok=True)
+os.makedirs('temp', exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('backend/logs/tradesense.log'),
+        logging.FileHandler('logs/tradesense.log'),
         logging.StreamHandler()
     ]
 )

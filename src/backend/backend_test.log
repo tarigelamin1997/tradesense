@@ -1,0 +1,31 @@
+/home/tarigelamin/Desktop/tradesense/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:318: UserWarning: Valid config keys have changed in V2:
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+2025-07-10 18:33:14,319 - core.validation_middleware - INFO - Validation middleware configured
+INFO:     Started server process [34036]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-10 18:33:16,680 - core.middleware - INFO - Request dc80859e-a545-4749-ac4a-97505f9524ae: GET http://localhost:8000/api/health
+2025-07-10 18:33:16,682 - core.middleware - INFO - Request dc80859e-a545-4749-ac4a-97505f9524ae completed in 0.0021s - Status: 200
+🚀 Starting TradeSense Backend...
+🗄️ Initializing TradeSense Database...
+✅ Database tables created successfully!
+📍 Database location: postgresql://postgres:***@localhost/tradesense
+📊 Current data: 5 users, 0 trades
+🎉 Database initialization complete!
+✅ Database initialized successfully
+⚡ Fast startup mode - task cleanup disabled
+INFO:     127.0.0.1:42642 - "GET /api/health HTTP/1.1" 200 OK
+2025-07-10 18:33:16,686 - core.middleware - INFO - Request 34b1f68c-a6a5-497b-8726-a3f33bc102a6: POST http://localhost:8000/api/v1/auth/login
+2025-07-10 18:33:16,925 - core.middleware - INFO - Request 34b1f68c-a6a5-497b-8726-a3f33bc102a6 completed in 0.2392s - Status: 200
+INFO:     127.0.0.1:42652 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+2025-07-10 18:33:16,928 - core.middleware - INFO - Request cb1ee8f6-4de4-4a61-9373-234ab84baae7: GET http://localhost:8000/api/v1/auth/me
+2025-07-10 18:33:16,934 - core.middleware - INFO - Request cb1ee8f6-4de4-4a61-9373-234ab84baae7 completed in 0.0053s - Status: 200
+INFO:     127.0.0.1:42664 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+2025-07-10 18:35:28,511 - core.middleware - INFO - Request a9fb0575-d878-4cdc-b866-988a762ee972: GET http://localhost:8000/api/health
+2025-07-10 18:35:28,513 - core.middleware - INFO - Request a9fb0575-d878-4cdc-b866-988a762ee972 completed in 0.0020s - Status: 200
+INFO:     127.0.0.1:49612 - "GET /api/health HTTP/1.1" 200 OK
+2025-07-10 18:35:49,142 - core.middleware - INFO - Request ed877e47-b218-4712-9d35-1db4e4af2bcf: POST http://localhost:8000/api/v1/auth/login
+2025-07-10 18:35:49,370 - core.middleware - INFO - Request ed877e47-b218-4712-9d35-1db4e4af2bcf completed in 0.2275s - Status: 200
+INFO:     127.0.0.1:49748 - "POST /api/v1/auth/login HTTP/1.1" 200 OK

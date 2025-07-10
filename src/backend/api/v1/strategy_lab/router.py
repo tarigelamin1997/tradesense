@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
 
-from backend.api.deps import get_db, get_current_user
-from backend.models.user import User
-from backend.api.v1.strategy_lab.service import StrategyLabService
-from backend.api.v1.strategy_lab.schemas import (
+from api.deps import get_db, get_current_user
+from models.user import User
+from api.v1.strategy_lab.service import StrategyLabService
+from api.v1.strategy_lab.schemas import (
     SimulationRequest, SimulationResponse, PlaybookPerformanceComparison, WhatIfScenario
 )
 

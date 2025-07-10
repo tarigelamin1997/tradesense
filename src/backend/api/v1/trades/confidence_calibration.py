@@ -8,8 +8,8 @@ from sqlalchemy import func
 import statistics
 import numpy as np
 
-from backend.models.trade import Trade
-from backend.core.exceptions import NotFoundError
+from models.trade import Trade
+from core.exceptions import NotFoundError
 
 
 class ConfidenceCalibrationService:

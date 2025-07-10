@@ -4,7 +4,7 @@ from sqlalchemy import and_
 from typing import Optional
 from datetime import date
 
-from backend.models.daily_emotion_reflection import DailyEmotionReflection
+from models.daily_emotion_reflection import DailyEmotionReflection
 from .schemas import DailyEmotionReflectionCreate, DailyEmotionReflectionUpdate
 
 class DailyReflectionService:

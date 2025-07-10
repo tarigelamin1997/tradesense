@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-from backend.api.deps import get_current_user, get_db
-from backend.models.user import User
-from backend.models.trade_review import (
+from api.deps import get_current_user, get_db
+from models.user import User
+from models.trade_review import (
     TradeReviewCreate, TradeReviewUpdate, TradeReviewResponse,
     ReviewPatternAnalysis, ReviewInsights
 )
-from backend.api.v1.reviews.service import TradeReviewService
+from api.v1.reviews.service import TradeReviewService
 
 router = APIRouter(tags=["reviews"])
 

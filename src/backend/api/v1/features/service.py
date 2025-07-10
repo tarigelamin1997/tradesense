@@ -1,9 +1,9 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc
-from backend.models.feature_request import FeatureRequest, FeatureVote, FeatureComment
-from backend.models.user import User
-from backend.api.v1.features.schemas import (
+from models.feature_request import FeatureRequest, FeatureVote, FeatureComment
+from models.user import User
+from api.v1.features.schemas import (
     FeatureRequestCreate, FeatureRequestUpdate, 
     FeatureVoteCreate, FeatureCommentCreate
 )

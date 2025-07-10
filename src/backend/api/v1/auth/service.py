@@ -8,13 +8,13 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
-from backend.core.db.session import get_db
-from backend.models.user import User
+from core.db.session import get_db
+from models.user import User
 from sqlalchemy.exc import IntegrityError
 
-from backend.api.v1.auth.schemas import UserRegistration, UserUpdate
-from backend.core.exceptions import AuthenticationError, ValidationError
-from backend.core.config import settings
+from api.v1.auth.schemas import UserRegistration, UserUpdate
+from core.exceptions import AuthenticationError, ValidationError
+from core.config import settings
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

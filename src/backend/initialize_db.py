@@ -11,10 +11,10 @@ backend_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, backend_dir)
 
 try:
-    from backend.core.db.session import engine, Base
+    from core.db.session import engine, Base
     # Import all models through centralized registry - this ensures proper registration
-    import backend.models  # This triggers all model imports and registration
-    from backend.models import *  # Import all registered models
+    import models  # This triggers all model imports and registration
+    from models import *  # Import all registered models
     
     print("🗄️ Initializing TradeSense Database...")
     
@@ -29,11 +29,13 @@ try:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
     with SessionLocal() as session:
-        # Test query
-        user_count = session.query(User).count()
-        trade_count = session.query(Trade).count()
-        
-        print(f"📊 Current data: {user_count} users, {trade_count} trades")
+        # Test query - wrap in try/except for fresh database
+        try:
+            user_count = session.query(User).count()
+            trade_count = session.query(Trade).count()
+            print(f"📊 Current data: {user_count} users, {trade_count} trades")
+        except Exception as e:
+            print(f"📊 Fresh database created - no data yet")
     
     print("🎉 Database initialization complete!")
     

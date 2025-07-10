@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from backend.core.db.session import Base
+from core.db.session import Base
 
 # Use absolute path for database file
 DATABASE_DIR = os.path.dirname(os.path.abspath(__file__))

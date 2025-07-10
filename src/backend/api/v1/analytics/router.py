@@ -4,13 +4,13 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, date
 import logging
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.core.exceptions import (
+from core.db.session import get_db
+from api.deps import get_current_user
+from core.exceptions import (
     TradeSenseException, NotFoundError, ValidationError, 
     DatabaseError, ExternalServiceError
 )
-from backend.core.responses import (
+from core.responses import (
     create_success_response, create_error_response, 
     AnalyticsResponse
 )

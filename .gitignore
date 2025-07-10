@@ -31,3 +31,4 @@ Thumbs.db
 # Git workflow backups
 *.backup
 backup-*
+venv/

@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
 import logging
 
-from backend.services.analytics.streak_analyzer import streak_analyzer
-from backend.api.deps import get_current_user
-from backend.models.user import User
+from services.analytics.streak_analyzer import streak_analyzer
+from api.deps import get_current_user
+from models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

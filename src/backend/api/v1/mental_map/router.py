@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date
 
-from backend.core.db.session import get_db
-from backend.api.deps import get_current_user
-from backend.models.user import User
-from backend.models.mental_map import (
+from core.db.session import get_db
+from api.deps import get_current_user
+from models.user import User
+from models.mental_map import (
     MentalMapEntryCreate, MentalMapEntryUpdate, MentalMapEntryResponse,
     SessionReplayCreate, SessionReplayUpdate, SessionReplayResponse
 )

@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import logging
-from backend.services.trade_intelligence_engine import TradeIntelligenceEngine
-from backend.services.real_time_market_service import market_service
-from backend.api.deps import get_current_user
-from backend.models.user import User
+from services.trade_intelligence_engine import TradeIntelligenceEngine
+from services.real_time_market_service import market_service
+from api.deps import get_current_user
+from models.user import User
 from pydantic import BaseModel
 
 router = APIRouter()

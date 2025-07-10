@@ -8,14 +8,14 @@ import os
 import logging
 from datetime import datetime
 
-from backend.api.v1.uploads.schemas import (
+from api.v1.uploads.schemas import (
     FileUploadResponse,
     DataValidationResult,
     ColumnMappingRequest,
     BulkImportResponse
 )
-from backend.core.exceptions import ValidationError, BusinessLogicError
-from backend.core.config import settings
+from core.exceptions import ValidationError, BusinessLogicError
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

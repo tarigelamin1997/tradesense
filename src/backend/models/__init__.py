@@ -7,7 +7,7 @@ import sys
 from typing import Set
 
 # Import shared Base first
-from backend.core.db.session import Base, register_model
+from core.db.session import Base, register_model
 
 # Track imported models to prevent duplicates
 _imported_models: Set[str] = set()
@@ -31,25 +31,25 @@ from .tag import trade_tags
 register_model(trade_tags)
 
 # Import core models first
-_safe_import_model('backend.models.user', 'User')
-_safe_import_model('backend.models.trade', 'Trade')
-_safe_import_model('backend.models.portfolio', 'Portfolio')
-_safe_import_model('backend.models.trading_account', 'TradingAccount')
+_safe_import_model('models.user', 'User')
+_safe_import_model('models.trade', 'Trade')
+_safe_import_model('models.portfolio', 'Portfolio')
+_safe_import_model('models.trading_account', 'TradingAccount')
 
 # Import dependent models
-_safe_import_model('backend.models.playbook', 'Playbook')
-_safe_import_model('backend.models.tag', 'Tag')
-_safe_import_model('backend.models.trade_review', 'TradeReview')
-_safe_import_model('backend.models.trade_note', 'TradeNote')
-_safe_import_model('backend.models.feature_request', 'FeatureRequest')
-_safe_import_model('backend.models.feature_request', 'FeatureVote')
-_safe_import_model('backend.models.feature_request', 'FeatureComment')
-_safe_import_model('backend.models.strategy', 'Strategy')
-_safe_import_model('backend.models.mental_map', 'MentalMap')
-_safe_import_model('backend.models.mental_map', 'MentalMapEntry')
-_safe_import_model('backend.models.pattern_cluster', 'PatternCluster')
-_safe_import_model('backend.models.milestone', 'Milestone')
-_safe_import_model('backend.models.daily_emotion_reflection', 'DailyEmotionReflection')
+_safe_import_model('models.playbook', 'Playbook')
+_safe_import_model('models.tag', 'Tag')
+_safe_import_model('models.trade_review', 'TradeReview')
+_safe_import_model('models.trade_note', 'TradeNote')
+_safe_import_model('models.feature_request', 'FeatureRequest')
+_safe_import_model('models.feature_request', 'FeatureVote')
+_safe_import_model('models.feature_request', 'FeatureComment')
+_safe_import_model('models.strategy', 'Strategy')
+_safe_import_model('models.mental_map', 'MentalMap')
+_safe_import_model('models.mental_map', 'MentalMapEntry')
+_safe_import_model('models.pattern_cluster', 'PatternCluster')
+_safe_import_model('models.milestone', 'Milestone')
+_safe_import_model('models.daily_emotion_reflection', 'DailyEmotionReflection')
 
 # Import the actual model classes for direct access
 from .user import User

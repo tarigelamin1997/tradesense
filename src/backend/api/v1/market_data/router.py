@@ -4,9 +4,9 @@ import json
 import asyncio
 from datetime import datetime
 
-from backend.services.real_time_market_service import market_service, MarketData, MarketSentiment
-from backend.api.deps import get_current_user
-from backend.models.user import User
+from services.real_time_market_service import market_service, MarketData, MarketSentiment
+from api.deps import get_current_user
+from models.user import User
 
 router = APIRouter(tags=["market-data"])
 

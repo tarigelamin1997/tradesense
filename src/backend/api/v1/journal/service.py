@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
-from backend.models.trade_note import TradeNote
+from models.trade_note import TradeNote
 from .schemas import JournalEntryCreate, JournalEntryUpdate
 
 class JournalService:

@@ -9,8 +9,8 @@ import statistics
 import numpy as np
 from datetime import datetime, timedelta
 
-from backend.models.trade import Trade
-from backend.core.exceptions import NotFoundError
+from models.trade import Trade
+from core.exceptions import NotFoundError
 
 
 class ExecutionQualityService:
@@ -469,8 +469,8 @@ from datetime import datetime, timedelta
 import statistics
 from uuid import UUID
 
-from backend.models.trade import Trade
-from backend.models.playbook import Playbook
+from models.trade import Trade
+from models.playbook import Playbook
 
 class ExecutionQualityService:
     """Service for analyzing trade execution quality"""

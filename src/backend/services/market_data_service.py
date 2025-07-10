@@ -3,8 +3,8 @@ import httpx
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
-from backend.core.db.session import engine
-from backend.models.trade import Trade
+from core.db.session import engine
+from models.trade import Trade
 
 class MarketDataService:
     """Service for fetching and integrating real-time market data"""

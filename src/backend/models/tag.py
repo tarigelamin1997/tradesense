@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field
 from typing import Optional, List
 import uuid
-from backend.core.db.session import Base
+from core.db.session import Base
 
 # Junction table for many-to-many relationship between trades and tags
 trade_tags = Table(

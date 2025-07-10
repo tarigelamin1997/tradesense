@@ -19,7 +19,7 @@ def test_auth_service_import_isolated():
             
             try:
                 # Import the service only when needed
-                from backend.api.v1.auth.service import AuthService
+                from api.v1.auth.service import AuthService
                 assert AuthService is not None
                 print("✅ Successfully imported AuthService in isolation")
             except Exception as e:
@@ -38,7 +38,7 @@ def test_auth_service_creation_isolated():
             mock_user_class.return_value = mock_user
             
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             service = AuthService(mock_db)
             
             assert service is not None
@@ -63,7 +63,7 @@ def test_auth_service_methods_isolated():
             mock_user_class.return_value = mock_user
             
             # Import the service
-            from backend.api.v1.auth.service import AuthService
+            from api.v1.auth.service import AuthService
             service = AuthService(mock_db)
             
             # Test authentication method
@@ -92,8 +92,8 @@ def test_auth_service_user_creation_isolated():
             mock_user_class.return_value = mock_user
             
             # Import the service and schemas
-            from backend.api.v1.auth.service import AuthService
-            from backend.api.v1.auth.schemas import UserRegistration
+            from api.v1.auth.service import AuthService
+            from api.v1.auth.schemas import UserRegistration
             
             service = AuthService(mock_db)
             

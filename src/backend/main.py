@@ -85,9 +85,12 @@ def create_app() -> FastAPI:
     )
 
     # Setup CORS
+    from core.config import settings
+    # Split the comma-separated origins string into a list
+    cors_origins = [origin.strip() for origin in settings.cors_origins_str.split(",")]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:5173", "*"],
+        allow_origins=cors_origins,  # From environment
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

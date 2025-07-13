@@ -32,7 +32,7 @@ from models.strategy import Strategy
 from services.critique_engine import CritiqueEngine
 from .schemas import TradeCreateRequest, TradeUpdateRequest, TradeResponse
 from services.milestone_engine import MilestoneEngine
-from core.cache import cache_manager, query_cache
+from core.cache import cache_manager, query_cache, invalidate_user_cache, invalidate_analytics_cache, invalidate_trades_cache
 
 logger = logging.getLogger(__name__)
 
@@ -272,8 +272,10 @@ class TradesService:
             self.db.commit()
             self.db.refresh(trade)
 
-            # Invalidate user cache
-            query_cache.invalidate_user_cache(user_id)
+            # Invalidate relevant caches
+            invalidate_trades_cache(user_id)
+            invalidate_analytics_cache(user_id)
+            invalidate_user_cache(user_id, "trades")
 
             logger.info(f"Trade {trade_id} created for user {user_id}")
 
@@ -339,6 +341,11 @@ class TradesService:
                 trade["tags"] = update_data.tags
 
             trade["updated_at"] = datetime.utcnow()
+            
+            # Invalidate relevant caches
+            invalidate_trades_cache(user_id)
+            invalidate_analytics_cache(user_id)
+            invalidate_user_cache(user_id, "trades")
 
             logger.info(f"Trade {trade_id} updated for user {user_id}")
 
@@ -454,6 +461,11 @@ class TradesService:
                 raise ValidationError("Access denied to this trade")
 
             del self._trades_storage[trade_id]
+            
+            # Invalidate relevant caches
+            invalidate_trades_cache(user_id)
+            invalidate_analytics_cache(user_id)
+            invalidate_user_cache(user_id, "trades")
 
             logger.info(f"Trade {trade_id} deleted for user {user_id}")
 

@@ -4,8 +4,10 @@ Health check endpoints
 from fastapi import APIRouter, Depends
 from datetime import datetime
 import os
-from core.db.session import get_db
+from core.db.session import get_db, engine
 from sqlalchemy.orm import Session
+from sqlalchemy import text
+from core.cache import cache_manager
 
 # Try to import psutil, but make it optional
 try:
@@ -91,4 +93,47 @@ async def get_version():
             "environment": os.getenv("ENVIRONMENT", "development")
         },
         "message": "Version information retrieved successfully"
-    } 
+    }
+
+
+@router.get("/health/db")
+async def database_health():
+    """Check database connection pool health"""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))
+            result.fetchone()
+        
+        pool = engine.pool
+        return {
+            "status": "healthy",
+            "pool_size": pool.size(),
+            "checked_out_connections": pool.checkedout(),
+            "overflow": pool.overflow(),
+            "total": pool.total(),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+
+@router.get("/health/cache-stats")
+async def cache_stats():
+    """Get cache statistics"""
+    try:
+        stats = cache_manager.get_stats()
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "cache_stats": stats
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }

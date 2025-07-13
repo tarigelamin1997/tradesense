@@ -18,8 +18,8 @@ sys.path.insert(0, str(project_root))
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-# Test database URL
-TEST_DATABASE_URL = "sqlite:///./test_tradesense.db"
+# Test database URL - use PostgreSQL for tests
+TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost/tradesense_test"
 
 # Patch event loop policy for Windows compatibility (RuntimeError: no running event loop)
 if sys.platform.startswith("win"):
@@ -64,10 +64,19 @@ def cleanup_test_db():
 @pytest.fixture(scope="session")
 def setup_models_and_tables(request):
     """Import models and create/drop tables only once per session."""
-    engine = create_engine(
-        TEST_DATABASE_URL,
-        connect_args={"check_same_thread": False}
-    )
+    # Create engine with appropriate configuration based on database type
+    if TEST_DATABASE_URL.startswith("sqlite"):
+        engine = create_engine(
+            TEST_DATABASE_URL,
+            connect_args={"check_same_thread": False}
+        )
+    else:
+        # PostgreSQL configuration
+        engine = create_engine(
+            TEST_DATABASE_URL,
+            pool_pre_ping=True,
+            pool_recycle=3600
+        )
     from core.db.session import Base
     # Import all models through the models package to avoid duplicate registration
     # Only import if not already imported

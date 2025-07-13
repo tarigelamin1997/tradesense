@@ -9,6 +9,7 @@ import logging
 import time
 import psutil
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from core.db.session import get_db, engine
 from core.cache import cache_manager
@@ -103,11 +104,11 @@ async def get_database_health(db: Session = Depends(get_db)):
         start_time = time.time()
         
         # Test database connection
-        result = db.execute("SELECT 1").scalar()
+        result = db.execute(text("SELECT 1")).scalar()
         
         # Test query performance
         query_start = time.time()
-        db.execute("SELECT COUNT(*) FROM trades LIMIT 1")
+        db.execute(text("SELECT COUNT(*) FROM trades LIMIT 1"))
         query_time = time.time() - query_start
         
         total_time = time.time() - start_time

@@ -1,34 +1,128 @@
+# Python
 __pycache__/
-.venv/
+*.py[cod]
+*$py.class
+*.so
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+develop-eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+test_venv/
+*_venv/
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/build/
 frontend/.env
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
 
 # Backend
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
 logs/
 temp_uploads/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.pydevproject
+*.iml
+.settings/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Git workflow backups
+# Backups and temporary files
 *.backup
+*.bak
 backup-*
-venv/
+backups/
+*.tmp
+*.temp
+tmp/
+temp/
+*~
+
+# Documentation build
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Database dumps
+*.dump
+*.sql.gz
+
+# Environment files
+.env
+.env.*
+
+# Package lock files (optional, some prefer to commit these)
+# package-lock.json
+# yarn.lock
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Coverage reports
+coverage.xml
+*.cover
+.coverage.*
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/

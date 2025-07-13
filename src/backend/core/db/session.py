@@ -86,15 +86,22 @@ else:
     engine = create_engine(
         DATABASE_URL,
         poolclass=QueuePool,
-        pool_size=20,
-        max_overflow=30,
-        pool_pre_ping=True,
-        pool_recycle=3600,
+        pool_size=20,              # Number of persistent connections
+        max_overflow=40,           # Maximum overflow connections (increased from 30)
+        pool_timeout=30,           # Timeout for getting connection from pool
+        pool_pre_ping=True,        # Test connections before use
+        pool_recycle=1800,         # Recycle connections after 30 min (reduced from 3600)
         echo=False,
+        echo_pool=settings.debug,  # Log pool checkouts in debug mode
         # Additional optimizations for production databases
         connect_args={
             "connect_timeout": 10,
-            "application_name": "tradesense_backend"
+            "application_name": "tradesense_backend",
+            "options": "-c timezone=utc",
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5
         }
     )
 
@@ -150,3 +157,16 @@ def receive_checkout(dbapi_connection, connection_record, connection_proxy):
 def receive_checkin(dbapi_connection, connection_record):
     """Log connection checkin for monitoring"""
     logger.debug("Database connection checked in")
+
+
+def get_pool_status():
+    """Get current database connection pool status"""
+    pool = engine.pool
+    return {
+        "size": pool.size(),
+        "checked_in": pool.checkedin(),
+        "checked_out": pool.checkedout(),
+        "overflow": pool.overflow(),
+        "total": pool.total(),
+        "max_overflow": pool._max_overflow
+    }

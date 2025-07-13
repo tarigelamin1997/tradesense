@@ -64,7 +64,7 @@ async def get_analytics_summary(
         )
 
         return create_success_response(
-            data=summary,
+            data=summary.dict() if hasattr(summary, 'dict') else summary,
             message="Analytics summary retrieved successfully",
             request_id=request.headers.get("x-request-id")
         )

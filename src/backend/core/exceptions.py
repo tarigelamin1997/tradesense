@@ -89,7 +89,8 @@ def setup_exception_handlers(app):
                 "error": exc.__class__.__name__,
                 "message": exc.message,
                 "details": exc.details,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": getattr(request.state, 'request_id', None)
             }
         )
     
@@ -118,7 +119,8 @@ def setup_exception_handlers(app):
                 "details": {
                     "validation_errors": make_serializable(exc.errors())
                 },
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": getattr(request.state, 'request_id', None)
             }
         )
     
@@ -136,6 +138,7 @@ def setup_exception_handlers(app):
                 "details": {
                     "error_type": exc.__class__.__name__
                 },
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": getattr(request.state, 'request_id', None)
             }
         )

@@ -1,0 +1,26 @@
+WARNING:  Current configuration will not reload as not all conditions are met, please refer to documentation.
+/home/tarigelamin/Desktop/tradesense/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:318: UserWarning: Valid config keys have changed in V2:
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+2025-07-12 16:10:47,037 - core.validation_middleware - INFO - Validation middleware configured
+INFO:     Started server process [17892]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-12 16:10:57,469 - core.middleware - INFO - Request 8d04baee-22ce-4285-9317-2d4b80e318c7: POST http://localhost:8000/api/v1/auth/login
+2025-07-12 16:10:57,480 - core.middleware - INFO - Request 8d04baee-22ce-4285-9317-2d4b80e318c7 completed in 0.0111s - Status: 401
+🚀 Starting TradeSense Backend...
+🗄️ Initializing TradeSense Database...
+✅ Database tables created successfully!
+📍 Database location: postgresql://postgres:***@localhost/tradesense
+📊 Current data: 5 users, 100 trades
+🎉 Database initialization complete!
+✅ Database initialized successfully
+⚡ Fast startup mode - task cleanup disabled
+INFO:     127.0.0.1:45724 - "POST /api/v1/auth/login HTTP/1.1" 401 Unauthorized
+2025-07-12 21:08:08,525 - core.middleware - INFO - Request f9af1578-0f67-4639-99c0-3e82f630ae01: POST http://localhost:8000/api/v1/auth/login
+2025-07-12 21:10:09,151 - core.middleware - INFO - Request f9af1578-0f67-4639-99c0-3e82f630ae01 completed in 120.6267s - Status: 400
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [17892]

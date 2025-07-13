@@ -119,3 +119,9 @@ class TradesService {
 }
 
 export const tradesService = new TradesService();
+
+// Simple helper function for TradeLog component
+export async function getTrades(params?: TradeQueryParams) {
+  const response = await tradesService.getTrades(params);
+  return response.data.items;
+}

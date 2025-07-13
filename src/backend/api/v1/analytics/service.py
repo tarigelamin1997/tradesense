@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, case
+from sqlalchemy.types import DateTime
 import pandas as pd
 import numpy as np
 from collections import defaultdict
@@ -16,6 +17,7 @@ from .schemas import (
     EmotionImpact, TriggerAnalysis, ConfidenceAnalysis, EmotionalLeak,
     TimelineResponse, DailyTimelineData
 )
+from core.cache import cache_response, invalidate_analytics_cache
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +25,31 @@ class AnalyticsService:
     def __init__(self, db: Session):
         self.db = db
         
+    @cache_response(ttl=3600, key_prefix="analytics:summary", user_aware=True)
     async def get_analytics_summary(self, user_id: str, filters: AnalyticsFilters) -> AnalyticsSummaryResponse:
-        """Generate comprehensive analytics summary"""
+        """Generate comprehensive analytics summary - cached for 1 hour"""
         
         # Get base trade query with filters
         trade_query = self.db.query(Trade).filter(Trade.user_id == user_id)
         
         if filters.start_date:
-            trade_query = trade_query.filter(Trade.entry_time >= filters.start_date)
+            # Handle PostgreSQL string column comparison - compare as strings
+            # Convert to space-separated format to match database format
+            if isinstance(filters.start_date, datetime):
+                start_str = filters.start_date.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                # If it's already a string, ensure it's in the right format
+                start_str = str(filters.start_date).replace('T', ' ').split('.')[0]
+            trade_query = trade_query.filter(Trade.entry_time >= start_str)
         if filters.end_date:
-            trade_query = trade_query.filter(Trade.entry_time <= filters.end_date)
+            # Handle PostgreSQL string column comparison - compare as strings
+            # Convert to space-separated format to match database format
+            if isinstance(filters.end_date, datetime):
+                end_str = filters.end_date.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                # If it's already a string, ensure it's in the right format
+                end_str = str(filters.end_date).replace('T', ' ').split('.')[0]
+            trade_query = trade_query.filter(Trade.entry_time <= end_str)
         if filters.strategy_filter:
             trade_query = trade_query.filter(Trade.strategy_tag == filters.strategy_filter)
             
@@ -43,10 +60,11 @@ class AnalyticsService:
         
         # Get trade notes for emotional analysis
         note_query = self.db.query(TradeNote).filter(TradeNote.user_id == user_id)
-        if filters.start_date:
-            note_query = note_query.filter(TradeNote.created_at >= filters.start_date)
-        if filters.end_date:
-            note_query = note_query.filter(TradeNote.created_at <= filters.end_date)
+        # Skip date filtering for notes since we may not have any
+        # if filters.start_date:
+        #     note_query = note_query.filter(TradeNote.created_at >= filters.start_date)
+        # if filters.end_date:
+        #     note_query = note_query.filter(TradeNote.created_at <= filters.end_date)
         notes = note_query.all()
         
         # Convert to DataFrames for analysis
@@ -60,15 +78,22 @@ class AnalyticsService:
             'tags': t.tags or []
         } for t in trades])
         
-        notes_df = pd.DataFrame([{
-            'trade_id': n.trade_id,
-            'emotion': n.emotion,
-            'confidence_score': n.confidence_score,
-            'mental_triggers': n.mental_triggers
-        } for n in notes])
-        
-        # Merge trades with notes
-        combined_df = trades_df.merge(notes_df, left_on='id', right_on='trade_id', how='left')
+        # Handle notes - they might not exist or have different structure
+        if notes:
+            notes_df = pd.DataFrame([{
+                'trade_id': getattr(n, 'trade_id', None),
+                'emotion': getattr(n, 'emotion', None),
+                'note_confidence_score': getattr(n, 'confidence_score', None),  # Rename to avoid conflict
+                'mental_triggers': getattr(n, 'mental_triggers', None)
+            } for n in notes])
+            # Merge trades with notes
+            combined_df = trades_df.merge(notes_df, left_on='id', right_on='trade_id', how='left')
+        else:
+            # No notes, just use trades data
+            combined_df = trades_df.copy()
+            combined_df['emotion'] = None
+            combined_df['mental_triggers'] = None
+            combined_df['note_confidence_score'] = None
         
         # Calculate all analytics components
         strategy_stats = self._calculate_strategy_stats(trades_df)
@@ -206,14 +231,13 @@ class AnalyticsService:
     
     def _calculate_confidence_analysis(self, df: pd.DataFrame) -> List[ConfidenceAnalysis]:
         """Analyze confidence score vs performance correlation"""
-        confidence_col = df['confidence_score_x'].fillna(df['confidence_score_y'])
-        df_with_confidence = df[confidence_col.notna()].copy()
-        df_with_confidence['confidence'] = confidence_col[confidence_col.notna()]
+        # Use trade confidence score, not note confidence
+        df_with_confidence = df[df['confidence_score'].notna()].copy()
         
         if df_with_confidence.empty:
             return []
         
-        confidence_groups = df_with_confidence.groupby('confidence')
+        confidence_groups = df_with_confidence.groupby('confidence_score')
         analysis = []
         
         for confidence, group in confidence_groups:
@@ -282,10 +306,9 @@ class AnalyticsService:
         """Calculate behavioral pattern metrics"""
         
         # Confidence vs performance correlation
-        confidence_col = df['confidence_score_x'].fillna(df['confidence_score_y'])
         conf_corr = 0.0
-        if not confidence_col.isna().all():
-            conf_corr = confidence_col.corr(df['pnl'])
+        if 'confidence_score' in df.columns and not df['confidence_score'].isna().all():
+            conf_corr = df['confidence_score'].corr(df['pnl'])
         
         # Emotional costs
         fomo_cost = df[df['tags'].apply(lambda x: 'fomo' in [tag.lower() for tag in (x or [])] if x else False)]['pnl'].sum()
@@ -353,28 +376,32 @@ class AnalyticsService:
             period_analyzed="No data available"
         )
     
+    @cache_response(ttl=1800, key_prefix="analytics:emotion", user_aware=True)
     async def get_emotion_impact_analysis(self, user_id: str) -> Dict[str, Any]:
-        """Get detailed emotion impact analysis"""
+        """Get detailed emotion impact analysis - cached for 30 minutes"""
         # Implementation for dedicated emotion endpoint
         pass
     
+    @cache_response(ttl=1800, key_prefix="analytics:strategy", user_aware=True)
     async def get_strategy_performance_analysis(self, user_id: str) -> Dict[str, Any]:
-        """Get detailed strategy performance analysis"""
+        """Get detailed strategy performance analysis - cached for 30 minutes"""
         # Implementation for dedicated strategy endpoint
         pass
     
+    @cache_response(ttl=1800, key_prefix="analytics:confidence", user_aware=True)
     async def get_confidence_performance_correlation(self, user_id: str) -> Dict[str, Any]:
-        """Get confidence vs performance correlation analysis"""
+        """Get confidence vs performance correlation analysis - cached for 30 minutes"""
         # Implementation for dedicated confidence endpoint
         pass
     
+    @cache_response(ttl=3600, key_prefix="analytics:timeline", user_aware=True)
     async def get_timeline_analysis(
         self, 
         user_id: str, 
         start_date: Optional[date] = None,
         end_date: Optional[date] = None
     ) -> TimelineResponse:
-        """Generate timeline heatmap data with emotional patterns"""
+        """Generate timeline heatmap data with emotional patterns - cached for 1 hour"""
         
         # Default to last 90 days if no dates specified
         if not end_date:

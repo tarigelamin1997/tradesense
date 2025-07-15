@@ -36,12 +36,11 @@ export interface ExecutionQualityAnalysis {
 }
 
 export const executionQualityService = {
-  getExecutionQuality: async (): Promise<ExecutionQualityAnalysis> => {
+  getExecutionQuality: async (): Promise<ExecutionQualityResponse> => {
     const response = await api.get('/trades/execution-quality');
     return response.data;
   }
 };
-import { api } from './api';
 
 export interface ExecutionQualityMetrics {
   entry_score: number;
@@ -89,6 +88,40 @@ export interface PlaybookExecutionStats {
   };
 }
 
+// For market execution quality dashboard
+export interface SummaryData {
+  avg_fill_rate: number;
+  avg_slippage: number;
+  avg_price_impact: number;
+  total_trades: number;
+}
+
+export interface PriceImpactBySize {
+  size_category: string;
+  avg_impact: number;
+  trade_count: number;
+}
+
+export interface TimingAnalysis {
+  hour: number;
+  avg_fill_time: number;
+  avg_slippage: number;
+}
+
+export interface VenueAnalysis {
+  venue: string;
+  trade_count: number;
+  percentage: number;
+  avg_fill_rate: number;
+  avg_slippage: number;
+  avg_fill_time: number;
+}
+
+export interface SlippagePattern {
+  volume: number;
+  slippage: number;
+}
+
 export interface ExecutionQualityResponse {
   total_trades_analyzed: number;
   overall_stats: OverallExecutionStats;
@@ -96,11 +129,10 @@ export interface ExecutionQualityResponse {
   playbook_analysis: PlaybookExecutionStats;
   insights: string[];
   generated_at: string;
+  // Additional fields for ExecutionQualityDashboard
+  summary: SummaryData;
+  price_impact_by_size: PriceImpactBySize[];
+  timing_analysis: TimingAnalysis[];
+  venue_analysis: VenueAnalysis[];
+  slippage_patterns: SlippagePattern[];
 }
-
-export const executionQualityService = {
-  async getExecutionQuality(): Promise<ExecutionQualityResponse> {
-    const response = await api.get('/trades/execution-quality');
-    return response.data;
-  }
-};

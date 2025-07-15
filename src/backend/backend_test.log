@@ -1,31 +1,71 @@
-/home/tarigelamin/Desktop/tradesense/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:318: UserWarning: Valid config keys have changed in V2:
+/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
 * 'schema_extra' has been renamed to 'json_schema_extra'
   warnings.warn(message, UserWarning)
-2025-07-10 18:33:14,319 - core.validation_middleware - INFO - Validation middleware configured
-INFO:     Started server process [34036]
+2025-07-14 11:53:54,347 - core.validation_middleware - INFO - Validation middleware configured
+INFO:     Started server process [13430]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-2025-07-10 18:33:16,680 - core.middleware - INFO - Request dc80859e-a545-4749-ac4a-97505f9524ae: GET http://localhost:8000/api/health
-2025-07-10 18:33:16,682 - core.middleware - INFO - Request dc80859e-a545-4749-ac4a-97505f9524ae completed in 0.0021s - Status: 200
+2025-07-14 11:54:08,341 - core.middleware - INFO - Request 4ef58dd5-bddb-482d-b687-d53efb707877: GET http://localhost:8000/api/docs
+2025-07-14 11:54:08,341 - core.middleware - ERROR - Request 4ef58dd5-bddb-482d-b687-d53efb707877 failed in 0.0007s - Error: 'MutableHeaders' object has no attribute 'pop'
+2025-07-14 11:54:08,341 - core.middleware - ERROR - Unhandled error in http://localhost:8000/api/docs: 'MutableHeaders' object has no attribute 'pop'
+Traceback (most recent call last):
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/anyio/streams/memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/tarigelamin/Desktop/tradesense/src/backend/core/middleware.py", line 47, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 159, in call_next
+    raise app_exc
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 182, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+    raise exc
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 184, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tarigelamin/Desktop/tradesense/src/backend/core/middleware.py", line 27, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 159, in call_next
+    raise app_exc
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 182, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+    raise exc
+  File "/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 184, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tarigelamin/Desktop/tradesense/src/backend/core/middleware.py", line 77, in dispatch
+    response.headers.pop("X-Powered-By", None)
+    ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'MutableHeaders' object has no attribute 'pop'
 🚀 Starting TradeSense Backend...
 🗄️ Initializing TradeSense Database...
 ✅ Database tables created successfully!
 📍 Database location: postgresql://postgres:***@localhost/tradesense
-📊 Current data: 5 users, 0 trades
+📊 Fresh database created - no data yet
 🎉 Database initialization complete!
 ✅ Database initialized successfully
 ⚡ Fast startup mode - task cleanup disabled
-INFO:     127.0.0.1:42642 - "GET /api/health HTTP/1.1" 200 OK
-2025-07-10 18:33:16,686 - core.middleware - INFO - Request 34b1f68c-a6a5-497b-8726-a3f33bc102a6: POST http://localhost:8000/api/v1/auth/login
-2025-07-10 18:33:16,925 - core.middleware - INFO - Request 34b1f68c-a6a5-497b-8726-a3f33bc102a6 completed in 0.2392s - Status: 200
-INFO:     127.0.0.1:42652 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
-2025-07-10 18:33:16,928 - core.middleware - INFO - Request cb1ee8f6-4de4-4a61-9373-234ab84baae7: GET http://localhost:8000/api/v1/auth/me
-2025-07-10 18:33:16,934 - core.middleware - INFO - Request cb1ee8f6-4de4-4a61-9373-234ab84baae7 completed in 0.0053s - Status: 200
-INFO:     127.0.0.1:42664 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-2025-07-10 18:35:28,511 - core.middleware - INFO - Request a9fb0575-d878-4cdc-b866-988a762ee972: GET http://localhost:8000/api/health
-2025-07-10 18:35:28,513 - core.middleware - INFO - Request a9fb0575-d878-4cdc-b866-988a762ee972 completed in 0.0020s - Status: 200
-INFO:     127.0.0.1:49612 - "GET /api/health HTTP/1.1" 200 OK
-2025-07-10 18:35:49,142 - core.middleware - INFO - Request ed877e47-b218-4712-9d35-1db4e4af2bcf: POST http://localhost:8000/api/v1/auth/login
-2025-07-10 18:35:49,370 - core.middleware - INFO - Request ed877e47-b218-4712-9d35-1db4e4af2bcf completed in 0.2275s - Status: 200
-INFO:     127.0.0.1:49748 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43604 - "GET /api/docs HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13430]

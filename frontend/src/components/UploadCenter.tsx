@@ -7,8 +7,6 @@ import {
   XCircle, 
   AlertCircle, 
   Loader,
-  FileText,
-  Download,
   Trash2
 } from 'lucide-react';
 

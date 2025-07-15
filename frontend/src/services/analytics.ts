@@ -13,6 +13,7 @@ export interface AnalyticsSummary {
     profit_factor: number;
     best_trade: number;
     worst_trade: number;
+    trade_count?: number; // Add this for strategy breakdown
   }>;
   emotion_impact: Array<{
     emotion: string;
@@ -47,6 +48,15 @@ export interface AnalyticsSummary {
   fomo_impact: number;
   revenge_trading_cost: number;
   confidence_vs_performance_correlation: number;
+  performance_over_time?: {
+    dates: string[];
+    cumulative_pnl: number[];
+  };
+  monthly_stats?: Array<{
+    month: string;
+    trade_count: number;
+    total_pnl: number;
+  }>;
 }
 
 interface AnalyticsFilters {

@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { journalService, TradeWithJournal } from '../services/journal';
 import { JournalTimeline } from '../components/journal/JournalTimeline';
 
-export const TradeDetailPage: React.FC = () => {
+const TradeDetail: React.FC = () => {
   const { tradeId } = useParams<{ tradeId: string }>();
   const [trade, setTrade] = useState<TradeWithJournal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,3 +138,5 @@ export const TradeDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export default TradeDetail;

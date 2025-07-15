@@ -25,6 +25,12 @@ import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPag
 import TradeDetail from './pages/TradeDetail';
 import { MobileIntelligencePage } from './pages/MobileIntelligencePage';
 
+// Import billing pages
+import Pricing from './pages/Pricing';
+import Checkout from './pages/Checkout';
+import PaymentSuccess from './pages/PaymentSuccess';
+import BillingPortal from './pages/BillingPortal';
+
 function App() {
   const { isAuthenticated, logout } = useAuthStore();
 
@@ -92,6 +98,22 @@ function App() {
                 <Route path="/intelligence" element={
                   <ProtectedRoute>
                     <MobileIntelligencePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/checkout" element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payment-success" element={
+                  <ProtectedRoute>
+                    <PaymentSuccess />
+                  </ProtectedRoute>
+                } />
+                <Route path="/billing" element={
+                  <ProtectedRoute>
+                    <BillingPortal />
                   </ProtectedRoute>
                 } />
                 <Route path="/" element={

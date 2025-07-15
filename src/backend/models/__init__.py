@@ -36,6 +36,11 @@ _safe_import_model('models.trade', 'Trade')
 _safe_import_model('models.portfolio', 'Portfolio')
 _safe_import_model('models.trading_account', 'TradingAccount')
 
+# Import billing models before other dependent models
+_safe_import_model('models.billing', 'Subscription')
+_safe_import_model('models.billing', 'Invoice')
+_safe_import_model('models.billing', 'UsageRecord')
+
 # Import dependent models
 _safe_import_model('models.playbook', 'Playbook')
 _safe_import_model('models.tag', 'Tag')
@@ -56,6 +61,7 @@ from .user import User
 from .trade import Trade
 from .portfolio import Portfolio
 from .trading_account import TradingAccount
+from .billing import Subscription, Invoice, UsageRecord
 from .playbook import Playbook
 from .tag import Tag
 from .trade_review import TradeReview
@@ -74,6 +80,9 @@ __all__ = [
     "Trade", 
     "Portfolio",
     "TradingAccount",
+    "Subscription",
+    "Invoice",
+    "UsageRecord",
     "Playbook",
     "Tag",
     "TradeReview",

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import Navbar from './Navbar';
+import Navbar from '../Navbar';
 import { accessibility } from '../../utils/accessibility';
 
 interface AppLayoutProps {

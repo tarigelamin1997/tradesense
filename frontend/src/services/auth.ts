@@ -2,7 +2,8 @@ import { apiClient } from './api';
 import { User } from '../types';
 
 export interface LoginRequest {
-  username: string;
+  email?: string;
+  username?: string;
   password: string;
 }
 
@@ -33,19 +34,89 @@ class AuthService {
   private userKey = 'currentUser';
 
   async login(credentials: LoginRequest): Promise<TokenResponse> {
-    const response = await apiClient.post<TokenResponse>('/api/v1/auth/login', credentials);
-    const tokenData = response.data;
+    console.log('=== AUTH DEBUG START ===');
+    console.log('1. Login function called with:', credentials);
+    console.log('2. About to make API call');
     
-    // Store token and user data
-    localStorage.setItem(this.tokenKey, tokenData.access_token);
-    localStorage.setItem(this.userKey, JSON.stringify(tokenData.user));
-    
-    return tokenData;
+    try {
+      const response = await apiClient.post<TokenResponse>('/api/v1/auth/login', credentials);
+      console.log('3. API call completed');
+      console.log('4. Response status:', response.status);
+      console.log('5. Response data:', response.data);
+      console.log('6. Response headers:', response.headers);
+      
+      const tokenData = response.data;
+      console.log('7. tokenData:', tokenData);
+      console.log('8. tokenData.user:', tokenData.user);
+      console.log('9. tokenData.user_id:', (tokenData as any).user_id);
+      console.log('10. tokenData.username:', (tokenData as any).username);
+      console.log('11. tokenData.email:', (tokenData as any).email);
+      
+      // FIX: Backend doesn't return a 'user' object, it returns user data as separate fields
+      // Create the user object from the response data
+      const user = {
+        id: (tokenData as any).user_id,
+        username: (tokenData as any).username,
+        email: (tokenData as any).email
+      };
+      
+      console.log('12. Created user object:', user);
+      
+      // Store token and user data
+      localStorage.setItem(this.tokenKey, tokenData.access_token);
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      
+      console.log('13. Data stored in localStorage');
+      
+      // Return the data in the format the frontend expects
+      const fixedTokenData = {
+        ...tokenData,
+        user: user
+      };
+      
+      console.log('14. Returning fixed token data:', fixedTokenData);
+      console.log('=== AUTH DEBUG END ===');
+      
+      return fixedTokenData as TokenResponse;
+    } catch (error: any) {
+      console.log('=== AUTH ERROR ===');
+      console.log('15. ERROR CAUGHT:', error);
+      console.log('16. Error type:', error.constructor.name);
+      console.log('17. Error response:', error.response);
+      console.log('18. Error message:', error.message);
+      console.log('=== AUTH ERROR END ===');
+      throw error;
+    }
   }
 
   async register(userData: RegisterRequest): Promise<ApiResponse> {
-    const response = await apiClient.post<ApiResponse>('/api/v1/auth/register', userData);
-    return response.data;
+    console.log('=== REGISTER DEBUG START ===');
+    console.log('1. Register function called with:', userData);
+    
+    try {
+      const response = await apiClient.post<ApiResponse>('/api/v1/auth/register', userData);
+      console.log('2. Response status:', response.status);
+      console.log('3. Response data:', response.data);
+      
+      // Backend returns user data directly, not wrapped in ApiResponse format
+      // Fix the response to match expected format
+      const fixedResponse = {
+        success: true,
+        data: response.data,
+        message: 'Registration successful'
+      };
+      
+      console.log('4. Fixed response:', fixedResponse);
+      console.log('=== REGISTER DEBUG END ===');
+      
+      return fixedResponse;
+    } catch (error: any) {
+      console.log('=== REGISTER ERROR ===');
+      console.log('5. ERROR CAUGHT:', error);
+      console.log('6. Error response:', error.response);
+      console.log('=== REGISTER ERROR END ===');
+      throw error;
+    }
   }
 
   async refreshToken(): Promise<TokenResponse> {

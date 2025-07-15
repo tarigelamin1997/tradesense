@@ -1,0 +1,19 @@
+/home/tarigelamin/Desktop/tradesense/test_venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+2025-07-14 12:41:25,756 - core.validation_middleware - INFO - Validation middleware configured
+INFO:     Started server process [15287]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-14 12:41:27,992 - core.middleware - INFO - Request 9f23c4b1-908f-4ed1-9d4c-83bb22adbff7: GET http://localhost:8000/health
+2025-07-14 12:41:27,993 - core.middleware - INFO - Request 9f23c4b1-908f-4ed1-9d4c-83bb22adbff7 completed in 0.0009s - Status: 200
+🚀 Starting TradeSense Backend...
+🗄️ Initializing TradeSense Database...
+✅ Database tables created successfully!
+📍 Database location: postgresql://postgres:***@localhost/tradesense
+📊 Current data: 7 users, 100 trades
+🎉 Database initialization complete!
+✅ Database initialized successfully
+⚡ Fast startup mode - task cleanup disabled
+INFO:     127.0.0.1:50150 - "GET /health HTTP/1.1" 200 OK

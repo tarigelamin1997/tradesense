@@ -61,7 +61,7 @@ interface AnalyticsSummary {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export const AnalyticsPage: React.FC = () => {
+const AnalyticsPage: React.FC = () => {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -308,3 +308,5 @@ export const AnalyticsPage: React.FC = () => {
     </div>
   );
 };
+
+export default AnalyticsPage;

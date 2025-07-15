@@ -1,0 +1,2 @@
+redis==5.0.1
+fakeredis==2.20.1

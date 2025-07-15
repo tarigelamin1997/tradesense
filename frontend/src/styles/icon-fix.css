@@ -1,0 +1,33 @@
+/* Emergency Icon Size Fix */
+
+/* Default SVG sizing - prevent huge icons */
+svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Ensure SVGs without explicit size classes don't explode */
+svg:not([class*="w-"]):not([class*="h-"]) {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Fix for inline SVGs in flex containers */
+.text-center svg {
+  width: auto;
+  height: auto;
+  max-width: 3rem;
+  max-height: 3rem;
+}
+
+/* Specific size classes should override */
+svg.w-4 { width: 1rem !important; height: 1rem !important; }
+svg.w-6 { width: 1.5rem !important; height: 1.5rem !important; }
+svg.w-8 { width: 2rem !important; height: 2rem !important; }
+svg.w-12 { width: 3rem !important; height: 3rem !important; }
+
+/* Fix for Lucide React icons */
+[data-lucide] {
+  width: 1.5rem;
+  height: 1.5rem;
+}

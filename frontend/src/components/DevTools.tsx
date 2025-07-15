@@ -2,15 +2,11 @@ import React, { Suspense } from 'react';
 
 const ReactQueryDevtools = React.lazy(() =>
   import('@tanstack/react-query-devtools').then(module => ({
-    default: module.ReactQueryDevtools
+    default: (module as any).ReactQueryDevtools
   }))
 );
 
-const ReduxDevTools = React.lazy(() =>
-  import('@reduxjs/toolkit/query/react').then(module => ({
-    default: module.ApiProvider
-  }))
-);
+// Redux DevTools are built into Redux Toolkit - no separate import needed
 
 export const DevTools: React.FC = () => {
   if (process.env.NODE_ENV !== 'development') {
@@ -19,8 +15,8 @@ export const DevTools: React.FC = () => {
 
   return (
     <Suspense fallback={null}>
-      <ReactQueryDevtools initialIsOpen={false} />
-      {/* Add Redux DevTools if needed */}
+      <ReactQueryDevtools />
+      {/* Redux DevTools are automatically enabled in development */}
     </Suspense>
   );
 };

@@ -10,14 +10,26 @@ import Dashboard from './components/Dashboard';
 import TradeLog from './components/TradeLog';
 import Journal from './components/Journal';
 import UploadCenter from './components/UploadCenter';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Import auth pages
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
 
-// Import new shadcn components
-import { Login1 } from './components/ui/login-1';
-import { DemoOne } from './components/ui/demo';
+
+// Import analytics pages
+import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
+import PlaybookManagerPage from './features/analytics/pages/PlaybookManagerPage';
+import PatternExplorerPage from './features/analytics/pages/PatternExplorerPage';
+import ExecutionQualityPage from './features/analytics/pages/ExecutionQualityPage';
+import TradeDetail from './pages/TradeDetail';
+import { MobileIntelligencePage } from './pages/MobileIntelligencePage';
+
+// Import billing pages
+import Pricing from './pages/Pricing';
+import Checkout from './pages/Checkout';
+import PaymentSuccess from './pages/PaymentSuccess';
+import BillingPortal from './pages/BillingPortal';
 
 function App() {
   const { isAuthenticated, logout } = useAuthStore();
@@ -26,9 +38,9 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <AuthWrapper>
         <BrowserRouter>
-          <div className="flex">
+          <div className="flex flex-col">
             {isAuthenticated && <Navbar onLogout={logout} />}
-            <main className={`flex-1 ${isAuthenticated ? 'ml-64' : ''}`}>
+            <main className="flex-1">
               <Routes>
                 <Route path="/login" element={
                   !isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />
@@ -36,13 +48,11 @@ function App() {
                 <Route path="/register" element={
                   !isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" replace />
                 } />
-                <Route path="/login-shadcn" element={
-                  !isAuthenticated ? <Login1 heading="Welcome to TradeSense" /> : <Navigate to="/dashboard" replace />
-                } />
-                <Route path="/demo" element={<DemoOne />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    <ErrorBoundary>
+                      <Dashboard />
+                    </ErrorBoundary>
                   </ProtectedRoute>
                 } />
                 <Route path="/journal" element={
@@ -58,6 +68,52 @@ function App() {
                 <Route path="/trades" element={
                   <ProtectedRoute>
                     <TradeLog />
+                  </ProtectedRoute>
+                } />
+                <Route path="/trades/:id" element={
+                  <ProtectedRoute>
+                    <TradeDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute>
+                    <AnalyticsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics/playbooks" element={
+                  <ProtectedRoute>
+                    <PlaybookManagerPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics/patterns" element={
+                  <ProtectedRoute>
+                    <PatternExplorerPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics/execution" element={
+                  <ProtectedRoute>
+                    <ExecutionQualityPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/intelligence" element={
+                  <ProtectedRoute>
+                    <MobileIntelligencePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/checkout" element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payment-success" element={
+                  <ProtectedRoute>
+                    <PaymentSuccess />
+                  </ProtectedRoute>
+                } />
+                <Route path="/billing" element={
+                  <ProtectedRoute>
+                    <BillingPortal />
                   </ProtectedRoute>
                 } />
                 <Route path="/" element={

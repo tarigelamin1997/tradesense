@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { 
   LayoutDashboard, 
   TrendingUp, 
-  FileText, 
   Upload, 
   BarChart3, 
   ChevronDown,
@@ -14,7 +13,9 @@ import {
   Activity,
   LogOut,
   Menu,
-  X
+  X,
+  CreditCard,
+  Zap
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -126,10 +127,30 @@ function Navbar({ onLogout }: NavbarProps) {
           
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            {/* Pricing Link */}
+            <Link
+              to="/pricing"
+              className="hidden md:flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Pricing
+            </Link>
+            
+            {/* Billing Link (for logged-in users) */}
             {user && (
-              <div className="hidden md:block text-sm text-gray-300">
-                {user.username || user.email || 'User'}
-              </div>
+              <>
+                <Link
+                  to="/billing"
+                  className="hidden md:flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Billing
+                </Link>
+                
+                <div className="hidden md:block text-sm text-gray-300">
+                  {user.email || 'User'}
+                </div>
+              </>
             )}
             
             {/* Desktop Logout */}
@@ -204,10 +225,28 @@ function Navbar({ onLogout }: NavbarProps) {
             </div>
             
             <div className="border-t border-gray-700 mt-2 pt-2">
+              <Link
+                to="/pricing"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                <Zap className="w-5 h-5 mr-3" />
+                Pricing
+              </Link>
               {user && (
-                <div className="px-3 py-2 text-sm text-gray-300">
-                  {user.username || user.email || 'User'}
-                </div>
+                <>
+                  <Link
+                    to="/billing"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+                  >
+                    <CreditCard className="w-5 h-5 mr-3" />
+                    Billing
+                  </Link>
+                  <div className="px-3 py-2 text-sm text-gray-300">
+                    {user.email || 'User'}
+                  </div>
+                </>
               )}
               <button
                 onClick={handleLogout}

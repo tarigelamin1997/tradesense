@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     debug: bool = True
     
     # CORS - We'll handle parsing in main.py to avoid pydantic parsing issues
-    cors_origins_str: str = "http://localhost:8000,http://localhost:3000,http://localhost:5173"
+    cors_origins_str: str = "http://localhost:8000,http://localhost:3000,http://localhost:3001,http://localhost:5173"
     
     # Frontend
     vite_api_base_url: Optional[str] = None

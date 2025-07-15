@@ -30,12 +30,17 @@ class User(Base):
     trading_experience = Column(String, nullable=True)  # beginner, intermediate, advanced
     preferred_markets = Column(Text, nullable=True)  # JSON string of market preferences
     timezone = Column(String, default="UTC")
+    
+    # Billing
+    stripe_customer_id = Column(String, nullable=True, unique=True, index=True)
 
     # Relationships - temporarily disabled to resolve SQLAlchemy conflicts
     # portfolios = relationship("backend.models.portfolio.Portfolio", back_populates="user")
     # trades = relationship("backend.models.trade.Trade", back_populates="user")
     # playbooks = relationship("backend.models.playbook.Playbook", back_populates="user")
     # feature_requests = relationship("backend.models.feature_request.FeatureRequest", back_populates="user")
+    subscription = relationship("models.billing.Subscription", back_populates="user", uselist=False)
+    usage_records = relationship("models.billing.UsageRecord", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

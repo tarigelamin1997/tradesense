@@ -48,6 +48,7 @@ from api.v1.mental_map.router import router as mental_map_router
 from api.v1.emotions.router import router as emotions_router
 from api.v1.health.performance_router import router as performance_router
 from api.v1.health.router import router as health_router
+from api.v1.billing.router import router as billing_router
 from api.health.router import router as health_router_legacy, root_router as health_root_router
 from core.middleware import setup_middleware
 from core.exceptions import setup_exception_handlers
@@ -137,6 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(emotions_router, prefix="/api/v1/emotions")
     app.include_router(performance_router, prefix="/api/v1/performance", tags=["performance"])
     app.include_router(health_router, tags=["health"])
+    app.include_router(billing_router, prefix="/api/v1/billing", tags=["billing"])
     
     # Legacy health router for backward compatibility
     app.include_router(health_router_legacy, prefix="/api")

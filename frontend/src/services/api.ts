@@ -91,3 +91,6 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export const api = apiClient;
+
+// Legacy compatibility export
+export const apiRequest = api;

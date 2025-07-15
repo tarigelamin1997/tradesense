@@ -85,3 +85,29 @@ def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
             detail="Admin access required"
         )
     return current_user
+
+
+async def get_current_user_ws(websocket, token: str, db: Session) -> User:
+    """
+    Get current user from WebSocket connection
+    """
+    try:
+        payload = verify_token(token)
+        if not payload:
+            await websocket.close(code=1008)
+            return None
+        
+        user_id = payload.get("sub") or payload.get("user_id")
+        if not user_id:
+            await websocket.close(code=1008)
+            return None
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.is_active:
+            await websocket.close(code=1008)
+            return None
+        
+        return user
+    except Exception:
+        await websocket.close(code=1008)
+        return None

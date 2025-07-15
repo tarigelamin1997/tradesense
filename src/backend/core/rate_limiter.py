@@ -115,8 +115,8 @@ async def check_rate_limit(
     window_seconds: int
 ) -> Tuple[bool, Optional[int]]:
     """Check rate limit for a given key"""
-    # Allow unlimited attempts for test client and localhost
-    if "testclient" in key or "127.0.0.1" in key:
+    # Allow unlimited attempts only for test client (for unit tests)
+    if "testclient" in key:
         return True, max_attempts
     return await rate_limiter.is_allowed(key, max_attempts, window_seconds)
 

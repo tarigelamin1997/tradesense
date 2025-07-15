@@ -57,7 +57,8 @@ class ConfigurationError(TradeSenseException):
 def setup_exception_handlers(app):
     from fastapi.responses import JSONResponse
     from fastapi import Request, status
-    from fastapi.exceptions import RequestValidationError
+    from fastapi.exceptions import RequestValidationError, HTTPException
+    from starlette.exceptions import HTTPException as StarletteHTTPException
     import logging
     
     logger = logging.getLogger(__name__)
@@ -119,6 +120,46 @@ def setup_exception_handlers(app):
                 "details": {
                     "validation_errors": make_serializable(exc.errors())
                 },
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": getattr(request.state, 'request_id', None)
+            }
+        )
+    
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        """Handle HTTP exceptions including 404 and 405"""
+        # For 405 errors, check if the path exists at all
+        if exc.status_code == 405:
+            # Check if any route matches this path
+            route_exists = False
+            for route in app.routes:
+                if hasattr(route, 'path_regex') and route.path_regex.match(request.url.path):
+                    route_exists = True
+                    break
+            
+            # If no route matches at all, return 404 instead
+            if not route_exists:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "success": False,
+                        "error": "NotFound",
+                        "message": "The requested endpoint does not exist",
+                        "details": {
+                            "path": request.url.path
+                        },
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": getattr(request.state, 'request_id', None)
+                    }
+                )
+        
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "error": HTTPException.__name__,
+                "message": exc.detail,
+                "details": {},
                 "timestamp": datetime.utcnow().isoformat(),
                 "request_id": getattr(request.state, 'request_id', None)
             }

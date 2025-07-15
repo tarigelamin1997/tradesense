@@ -1,0 +1,5 @@
+symbol,side
+AAPL,long
+TSLA
+NVDA,short,100,110,100,2024-01-01,2024-01-02,Extra columns that shouldn't be here
+,,,,,,,,,,,,,,,,,,,,

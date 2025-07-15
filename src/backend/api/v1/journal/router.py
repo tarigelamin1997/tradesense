@@ -16,11 +16,17 @@ async def get_journal_entries(
     skip: int = 0,
     limit: int = 50,
     trade_id: Optional[UUID] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get journal entries for the current user"""
     service = JournalService(db)
+    
+    # If search query is provided, use search method
+    if search:
+        return service.search_entries(user_id=current_user.id, search_query=search)
+    
     return service.get_user_entries(
         user_id=current_user.id,
         skip=skip,

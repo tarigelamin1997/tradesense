@@ -1,0 +1,431 @@
+{
+  ".svelte-kit/generated/server/internal.js": {
+    "file": "internal.js",
+    "name": "internal",
+    "src": ".svelte-kit/generated/server/internal.js",
+    "isEntry": true,
+    "imports": [
+      "_internal.js"
+    ]
+  },
+  "_FeatureGate.svelte_svelte_type_style_lang.js": {
+    "file": "_app/immutable/assets/FeatureGate.wNN5YLQ8.css",
+    "src": "_FeatureGate.svelte_svelte_type_style_lang.js"
+  },
+  "_Icon.js": {
+    "file": "chunks/Icon.js",
+    "name": "Icon",
+    "imports": [
+      "_utils.js",
+      "_ssr.js"
+    ]
+  },
+  "_auth.js": {
+    "file": "chunks/auth.js",
+    "name": "auth",
+    "imports": [
+      "_client2.js",
+      "_index.js"
+    ]
+  },
+  "_circle-check-big.js": {
+    "file": "chunks/circle-check-big.js",
+    "name": "circle-check-big",
+    "imports": [
+      "_ssr.js",
+      "_Icon.js"
+    ]
+  },
+  "_client.js": {
+    "file": "chunks/client.js",
+    "name": "client",
+    "imports": [
+      "_exports.js",
+      "_ssr2.js"
+    ]
+  },
+  "_client2.js": {
+    "file": "chunks/client2.js",
+    "name": "client",
+    "imports": [
+      "_client.js"
+    ]
+  },
+  "_exports.js": {
+    "file": "chunks/exports.js",
+    "name": "exports"
+  },
+  "_file-text.js": {
+    "file": "chunks/file-text.js",
+    "name": "file-text",
+    "imports": [
+      "_ssr.js",
+      "_Icon.js"
+    ]
+  },
+  "_index.js": {
+    "file": "chunks/index.js",
+    "name": "index",
+    "imports": [
+      "_utils.js"
+    ]
+  },
+  "_internal.js": {
+    "file": "chunks/internal.js",
+    "name": "internal",
+    "imports": [
+      "_ssr.js",
+      "_ssr2.js"
+    ]
+  },
+  "_ssr.js": {
+    "file": "chunks/ssr.js",
+    "name": "ssr",
+    "imports": [
+      "_utils.js"
+    ]
+  },
+  "_ssr2.js": {
+    "file": "chunks/ssr2.js",
+    "name": "ssr"
+  },
+  "_stores.js": {
+    "file": "chunks/stores.js",
+    "name": "stores",
+    "imports": [
+      "_ssr.js",
+      "_client.js"
+    ]
+  },
+  "_trades.js": {
+    "file": "chunks/trades.js",
+    "name": "trades",
+    "imports": [
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/trades.CbSTnkLr.css"
+    ]
+  },
+  "_trending-up.js": {
+    "file": "chunks/trending-up.js",
+    "name": "trending-up",
+    "imports": [
+      "_ssr.js",
+      "_Icon.js"
+    ]
+  },
+  "_utils.js": {
+    "file": "chunks/utils.js",
+    "name": "utils"
+  },
+  "_websocket.js": {
+    "file": "chunks/websocket.js",
+    "name": "websocket",
+    "imports": [
+      "_index.js"
+    ]
+  },
+  "_x.js": {
+    "file": "chunks/x.js",
+    "name": "x",
+    "imports": [
+      "_ssr.js",
+      "_Icon.js"
+    ]
+  },
+  "node_modules/@sveltejs/kit/src/runtime/components/svelte-4/layout.svelte": {
+    "file": "entries/fallbacks/layout.svelte.js",
+    "name": "entries/fallbacks/layout.svelte",
+    "src": "node_modules/@sveltejs/kit/src/runtime/components/svelte-4/layout.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ]
+  },
+  "node_modules/@sveltejs/kit/src/runtime/server/index.js": {
+    "file": "index.js",
+    "name": "index",
+    "src": "node_modules/@sveltejs/kit/src/runtime/server/index.js",
+    "isEntry": true,
+    "imports": [
+      "_internal.js",
+      "_exports.js",
+      "_index.js"
+    ]
+  },
+  "src/routes/+error.svelte": {
+    "file": "entries/pages/_error.svelte.js",
+    "name": "entries/pages/_error.svelte",
+    "src": "src/routes/+error.svelte",
+    "isEntry": true,
+    "imports": [
+      "_utils.js",
+      "_ssr.js",
+      "_stores.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_error.DjDCCf0x.css"
+    ]
+  },
+  "src/routes/+layout.svelte": {
+    "file": "entries/pages/_layout.svelte.js",
+    "name": "entries/pages/_layout.svelte",
+    "src": "src/routes/+layout.svelte",
+    "isEntry": true,
+    "imports": [
+      "_utils.js",
+      "_ssr.js",
+      "_auth.js",
+      "_client.js",
+      "_websocket.js",
+      "_Icon.js",
+      "_file-text.js",
+      "_stores.js",
+      "_trending-up.js",
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_layout.CYW55eLx.css"
+    ]
+  },
+  "src/routes/+layout.ts": {
+    "file": "entries/pages/_layout.ts.js",
+    "name": "entries/pages/_layout.ts",
+    "src": "src/routes/+layout.ts",
+    "isEntry": true,
+    "imports": [
+      "_auth.js"
+    ]
+  },
+  "src/routes/+page.svelte": {
+    "file": "entries/pages/_page.svelte.js",
+    "name": "entries/pages/_page.svelte",
+    "src": "src/routes/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_websocket.js",
+      "_client2.js",
+      "_trades.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.--hMr0lz.css",
+      "_app/immutable/assets/FeatureGate.wNN5YLQ8.css"
+    ]
+  },
+  "src/routes/analytics/+page.svelte": {
+    "file": "entries/pages/analytics/_page.svelte.js",
+    "name": "entries/pages/analytics/_page.svelte",
+    "src": "src/routes/analytics/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_auth.js",
+      "_trades.js",
+      "_client2.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.B7wb5pyr.css",
+      "_app/immutable/assets/FeatureGate.wNN5YLQ8.css"
+    ]
+  },
+  "src/routes/billing/+page.svelte": {
+    "file": "entries/pages/billing/_page.svelte.js",
+    "name": "entries/pages/billing/_page.svelte",
+    "src": "src/routes/billing/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_client2.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.Da1TwEtI.css"
+    ]
+  },
+  "src/routes/debug/+page.svelte": {
+    "file": "entries/pages/debug/_page.svelte.js",
+    "name": "entries/pages/debug/_page.svelte",
+    "src": "src/routes/debug/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ]
+  },
+  "src/routes/journal/+page.svelte": {
+    "file": "entries/pages/journal/_page.svelte.js",
+    "name": "entries/pages/journal/_page.svelte",
+    "src": "src/routes/journal/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_auth.js",
+      "_client2.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.Cpv8yNos.css",
+      "_app/immutable/assets/FeatureGate.wNN5YLQ8.css"
+    ]
+  },
+  "src/routes/login/+layout.ts": {
+    "file": "entries/pages/login/_layout.ts.js",
+    "name": "entries/pages/login/_layout.ts",
+    "src": "src/routes/login/+layout.ts",
+    "isEntry": true
+  },
+  "src/routes/login/+page.svelte": {
+    "file": "entries/pages/login/_page.svelte.js",
+    "name": "entries/pages/login/_page.svelte",
+    "src": "src/routes/login/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.Br04dzim.css"
+    ]
+  },
+  "src/routes/payment-success/+page.svelte": {
+    "file": "entries/pages/payment-success/_page.svelte.js",
+    "name": "entries/pages/payment-success/_page.svelte",
+    "src": "src/routes/payment-success/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_circle-check-big.js",
+      "_Icon.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.B-NdzV42.css"
+    ]
+  },
+  "src/routes/playbook/+page.svelte": {
+    "file": "entries/pages/playbook/_page.svelte.js",
+    "name": "entries/pages/playbook/_page.svelte",
+    "src": "src/routes/playbook/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_auth.js",
+      "_Icon.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.54iFRG3S.css"
+    ]
+  },
+  "src/routes/pricing/+page.svelte": {
+    "file": "entries/pages/pricing/_page.svelte.js",
+    "name": "entries/pages/pricing/_page.svelte",
+    "src": "src/routes/pricing/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_client2.js",
+      "_auth.js",
+      "_Icon.js",
+      "_x.js",
+      "_trending-up.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DwlRM_rT.css"
+    ]
+  },
+  "src/routes/register/+layout.ts": {
+    "file": "entries/pages/register/_layout.ts.js",
+    "name": "entries/pages/register/_layout.ts",
+    "src": "src/routes/register/+layout.ts",
+    "isEntry": true
+  },
+  "src/routes/register/+page.svelte": {
+    "file": "entries/pages/register/_page.svelte.js",
+    "name": "entries/pages/register/_page.svelte",
+    "src": "src/routes/register/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DPXyjGyD.css"
+    ]
+  },
+  "src/routes/test-insights/+page.svelte": {
+    "file": "entries/pages/test-insights/_page.svelte.js",
+    "name": "entries/pages/test-insights/_page.svelte",
+    "src": "src/routes/test-insights/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client2.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DXNJp5pQ.css"
+    ]
+  },
+  "src/routes/test/+page.svelte": {
+    "file": "entries/pages/test/_page.svelte.js",
+    "name": "entries/pages/test/_page.svelte",
+    "src": "src/routes/test/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js"
+    ]
+  },
+  "src/routes/tradelog/+page.svelte": {
+    "file": "entries/pages/tradelog/_page.svelte.js",
+    "name": "entries/pages/tradelog/_page.svelte",
+    "src": "src/routes/tradelog/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js",
+      "_auth.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.DRcMgsjQ.css"
+    ]
+  },
+  "src/routes/trades/+page.svelte": {
+    "file": "entries/pages/trades/_page.svelte.js",
+    "name": "entries/pages/trades/_page.svelte",
+    "src": "src/routes/trades/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_client.js"
+    ]
+  },
+  "src/routes/upload/+page.svelte": {
+    "file": "entries/pages/upload/_page.svelte.js",
+    "name": "entries/pages/upload/_page.svelte",
+    "src": "src/routes/upload/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_utils.js",
+      "_ssr.js",
+      "_client.js",
+      "_auth.js",
+      "_client2.js",
+      "_index.js",
+      "_Icon.js",
+      "_file-text.js",
+      "_x.js",
+      "_circle-check-big.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.BMxD_vt8.css"
+    ]
+  }
+}

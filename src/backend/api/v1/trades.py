@@ -25,11 +25,23 @@ async def get_trades(
     end_date: Optional[datetime] = Query(None),
     min_pnl: Optional[float] = Query(None),
     max_pnl: Optional[float] = Query(None),
+    search: Optional[str] = Query(None, description="Search in symbol, strategy, and notes"),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get trades with advanced filtering and pagination"""
     query = db.query(Trade).filter(Trade.user_id == current_user["user_id"])
+    
+    # Apply search filter
+    if search:
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                Trade.symbol.ilike(f"%{search}%"),
+                Trade.strategy_tag.ilike(f"%{search}%"),
+                Trade.notes.ilike(f"%{search}%") if hasattr(Trade, 'notes') else False
+            )
+        )
     
     # Apply filters
     if symbol:
@@ -44,6 +56,9 @@ async def get_trades(
         query = query.filter(Trade.pnl >= min_pnl)
     if max_pnl is not None:
         query = query.filter(Trade.pnl <= max_pnl)
+    
+    # Order by entry time descending (most recent first)
+    query = query.order_by(Trade.entry_time.desc())
     
     trades = query.offset(skip).limit(limit).all()
     return trades

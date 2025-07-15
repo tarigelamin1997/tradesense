@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -22,18 +22,33 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('authToken');
+        console.log('Interceptor - Token:', token ? 'exists' : 'missing');
+        console.log('Interceptor - Request URL:', config.url);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => {
+        console.error('Request interceptor error:', error);
+        return Promise.reject(error);
+      }
     );
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('Response interceptor - Success:', response.config.url);
+        return response;
+      },
       (error) => {
+        console.error('Response interceptor - Error:', {
+          message: error.message,
+          response: error.response,
+          request: error.request,
+          config: error.config
+        });
+        
         if (error.response?.status === 401) {
           localStorage.removeItem('authToken');
           window.location.href = '/login';
@@ -75,3 +90,7 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+export const api = apiClient;
+
+// Legacy compatibility export
+export const apiRequest = api;

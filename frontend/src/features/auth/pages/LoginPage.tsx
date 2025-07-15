@@ -34,7 +34,8 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      await login({ username: email, password });
+      // Send email in the email field, not username
+      await login({ email, password });
     } catch (err) {
       setError('Login failed. Please check your credentials.');
     }

@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { getCLS, getFCP, getFID, getLCP, getTTFB } from 'web-vitals';
 
 interface PerformanceMonitorProps {
   children: React.ReactNode;
@@ -53,12 +52,14 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => 
   };
 
   useEffect(() => {
-    // Measure Core Web Vitals
-    getCLS(logMetric);
-    getFCP(logMetric);
-    getFID(logMetric);
-    getLCP(logMetric);
-    getTTFB(logMetric);
+    // Dynamically import web-vitals to measure Core Web Vitals
+    import('web-vitals').then(({ onCLS, onFCP, onINP, onLCP, onTTFB }) => {
+      onCLS(logMetric);
+      onFCP(logMetric);
+      onINP(logMetric); // INP replaced FID in web-vitals v5
+      onLCP(logMetric);
+      onTTFB(logMetric);
+    });
 
     // Monitor resource loading
     const observer = new PerformanceObserver((list) => {
@@ -66,9 +67,9 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children }) => 
         if (entry.entryType === 'navigation') {
           const navigation = entry as PerformanceNavigationTiming;
           console.log('🚀 Navigation Timing:', {
-            domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.navigationStart),
-            loadComplete: Math.round(navigation.loadEventEnd - navigation.navigationStart),
-            firstByte: Math.round(navigation.responseStart - navigation.navigationStart),
+            domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart),
+            loadComplete: Math.round(navigation.loadEventEnd - navigation.fetchStart),
+            firstByte: Math.round(navigation.responseStart - navigation.fetchStart),
           });
         }
       });

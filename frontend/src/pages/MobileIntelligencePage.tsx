@@ -39,15 +39,21 @@ export const MobileIntelligencePage: React.FC = () => {
 
   const fetchIntelligenceData = async () => {
     try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
       // Fetch trade signals
-      const signalsResponse = await fetch('/api/v1/intelligence/signals');
+      const signalsResponse = await fetch('/api/v1/intelligence/signals', { headers });
       const signalsData = await signalsResponse.json();
-      setSignals(signalsData.signals || []);
+      setSignals(signalsData.data?.signals || []);
 
       // Fetch market alerts
-      const alertsResponse = await fetch('/api/v1/intelligence/alerts');
+      const alertsResponse = await fetch('/api/v1/intelligence/alerts', { headers });
       const alertsData = await alertsResponse.json();
-      setAlerts(alertsData.alerts || []);
+      setAlerts(alertsData.data?.alerts || []);
 
       setIsLoading(false);
     } catch (error) {
@@ -76,7 +82,7 @@ export const MobileIntelligencePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading intelligence data...</p>
         </div>
       </div>

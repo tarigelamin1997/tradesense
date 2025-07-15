@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { journalService, TradeWithJournal } from '../services/journal';
 import { JournalTimeline } from '../components/journal/JournalTimeline';
 
-export const TradeDetailPage: React.FC = () => {
+const TradeDetail: React.FC = () => {
   const { tradeId } = useParams<{ tradeId: string }>();
   const [trade, setTrade] = useState<TradeWithJournal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,7 @@ export const TradeDetailPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -138,3 +138,5 @@ export const TradeDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export default TradeDetail;

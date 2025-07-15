@@ -1,42 +1,57 @@
+# Core FastAPI
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
 
-streamlit==1.29.0
+# Database
+sqlalchemy==2.0.23
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+cryptography>=41.0.0,<43.0.0
+pyjwt==2.8.0
+
+# Configuration
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+
+# Payment Processing
+stripe==11.1.0
+
+# Data Processing
 pandas==2.2.2
 numpy==1.26.4
+
+# Utilities
+httpx==0.25.2
+python-dateutil==2.8.2
+bleach==6.1.0
+
+# Visualization (TODO: Verify if still needed for backend)
+plotly==5.17.0
+
+# PDF Generation (TODO: Verify if still needed)
+fpdf2==2.8.3
+
+# Scheduling (TODO: Verify if still needed)
+schedule==1.2.0
+apscheduler==3.10.4
+
+# System Monitoring (TODO: Verify if still needed)
+psutil==5.9.6
+
+# Google APIs (TODO: Verify if still needed for Google Sheets integration)
 google-auth==2.23.4
 google-auth-oauthlib==1.1.0
 google-api-python-client==2.103.0
-bcrypt==4.0.1
-cryptography>=41.0.0,<43.0.0
-flask==2.3.3
-python-dateutil==2.8.2
-schedule==1.2.0
-psutil==5.9.6
-apscheduler==3.10.4
-bleach==6.1.0
-flask-cors==4.0.0
-fpdf2==2.8.3
-passlib==1.7.4
-plotly==5.17.0
-pyjwt==2.8.0
-streamlit-aggrid==0.3.4
-#fpdf
-fpdf
-python-multipart
-python-multipart
-uvicorn
-bcrypt
-fastapi
-passlib
-pydantic
-python-jose
-python-multipart
-sqlalchemy
-uvicorn
-fastapi
-httpx
-pydantic-settings
-pytest
-pytest-asyncio
-pytest-cov
-sqlalchemy
-uvicorn
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0

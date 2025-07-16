@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tradesense-backend
+  namespace: tradesense-staging
+  labels:
+    app: tradesense-backend
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tradesense-backend
+      environment: staging
+  template:
+    metadata:
+      labels:
+        app: tradesense-backend
+        environment: staging
+    spec:
+      containers:
+      - name: backend
+        image: staging-registry.tradesense.com/tradesense-backend-staging:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: APP_ENV
+          value: "staging"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: tradesense-staging-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: tradesense-staging-secrets
+              key: redis-url
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tradesense-staging-secrets
+              key: secret-key
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tradesense-staging-secrets
+              key: jwt-secret
+        envFrom:
+        - configMapRef:
+            name: tradesense-staging-config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: uploads
+          mountPath: /app/uploads
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: tradesense-staging-logs-pvc
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: tradesense-staging-uploads-pvc
+      imagePullSecrets:
+      - name: registry-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tradesense-backend
+  namespace: tradesense-staging
+  labels:
+    app: tradesense-backend
+    environment: staging
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: tradesense-backend
+    environment: staging
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tradesense-backend-hpa
+  namespace: tradesense-staging
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tradesense-backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

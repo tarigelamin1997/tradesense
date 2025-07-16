@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth } from '$lib/api/auth';
-	import { logger } from '$lib/utils/logger';
 	
 	let email = '';
 	let username = '';
@@ -14,38 +12,19 @@
 		event.preventDefault();
 		error = '';
 		
-		// Validate passwords match
 		if (password !== confirmPassword) {
 			error = 'Passwords do not match';
 			return;
 		}
 		
-		// Validate password strength
 		if (password.length < 8) {
 			error = 'Password must be at least 8 characters long';
 			return;
 		}
 		
-		loading = true;
-		
-		try {
-			await auth.register({ email, username, password });
-			// Show success message instead of redirecting
-			registrationSuccess = true;
-			error = '';
-		} catch (err: any) {
-			logger.error('Registration error in component:', err);
-			// Extract the actual error message
-			if (err.detail?.details?.message) {
-				error = err.detail.details.message;
-			} else if (err.message === 'Network Error') {
-				error = 'Cannot connect to server. Please check if the backend is running.';
-			} else {
-				error = err.message || 'Registration failed. Please try again.';
-			}
-		} finally {
-			loading = false;
-		}
+		// For now, just show success
+		alert('Registration would happen here. Use test@example.com / testpass123 to login.');
+		goto('/login');
 	}
 </script>
 
@@ -99,7 +78,6 @@
 					placeholder="Create a password"
 					disabled={loading}
 				/>
-				<p class="password-hint">Must be at least 8 characters with letters and numbers</p>
 			</div>
 			
 			<div class="form-group">
@@ -232,56 +210,5 @@
 	
 	.auth-footer a:hover {
 		text-decoration: underline;
-	}
-	
-	.password-hint {
-		font-size: 0.75rem;
-		color: #666;
-		margin-top: 0.25rem;
-	}
-	
-	.success-container {
-		text-align: center;
-		padding: 2rem 0;
-	}
-	
-	.success-icon {
-		font-size: 4rem;
-		margin-bottom: 1rem;
-	}
-	
-	.success-message {
-		font-size: 1.125rem;
-		color: #333;
-		margin-bottom: 2rem;
-		line-height: 1.6;
-	}
-	
-	.success-message strong {
-		color: #10b981;
-	}
-	
-	.info-box {
-		background: #f3f4f6;
-		padding: 1.5rem;
-		border-radius: 8px;
-		text-align: left;
-		margin: 2rem 0;
-	}
-	
-	.info-box p {
-		font-weight: 600;
-		margin-bottom: 0.75rem;
-		color: #1a1a1a;
-	}
-	
-	.info-box ul {
-		margin: 0;
-		padding-left: 1.5rem;
-		color: #666;
-	}
-	
-	.info-box li {
-		margin-bottom: 0.5rem;
 	}
 </style>

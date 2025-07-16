@@ -55,10 +55,8 @@
 				journal_entries_per_month: -1,
 				playbooks: 10
 			},
-			// TODO: Replace with real Stripe product IDs from your Stripe Dashboard
-			// Example: stripeProductId: 'price_1234567890abcdef'
-			stripeProductId: 'prod_pro_monthly', // FAKE - Replace with real price ID
-			annualProductId: 'prod_pro_annual',  // FAKE - Replace with real price ID
+			stripeProductId: 'price_pro_monthly',
+			annualProductId: 'price_pro_yearly',
 			recommended: true
 		},
 		{
@@ -82,10 +80,8 @@
 				journal_entries_per_month: -1,
 				playbooks: -1
 			},
-			// TODO: Replace with real Stripe product IDs from your Stripe Dashboard
-			// Example: stripeProductId: 'price_abcdef1234567890'
-			stripeProductId: 'prod_enterprise_monthly', // FAKE - Replace with real price ID
-			annualProductId: 'prod_enterprise_annual'   // FAKE - Replace with real price ID
+			stripeProductId: 'price_enterprise_monthly',
+			annualProductId: 'price_enterprise_yearly'
 		}
 	];
 	

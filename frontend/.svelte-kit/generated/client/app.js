@@ -23,28 +23,48 @@ export const nodes = [
 	() => import('./nodes/16'),
 	() => import('./nodes/17'),
 	() => import('./nodes/18'),
-	() => import('./nodes/19')
+	() => import('./nodes/19'),
+	() => import('./nodes/20'),
+	() => import('./nodes/21'),
+	() => import('./nodes/22'),
+	() => import('./nodes/23'),
+	() => import('./nodes/24'),
+	() => import('./nodes/25'),
+	() => import('./nodes/26'),
+	() => import('./nodes/27'),
+	() => import('./nodes/28'),
+	() => import('./nodes/29')
 ];
 
 export const server_loads = [];
 
 export const dictionary = {
-		"/(public)": [5],
-		"/analytics": [6],
-		"/billing": [7],
-		"/(app)/dashboard": [4],
-		"/debug": [8],
-		"/journal": [9],
-		"/login": [10,[2]],
-		"/payment-success": [11],
-		"/playbook": [12],
-		"/pricing": [13],
-		"/register": [14,[3]],
-		"/test-insights": [16],
-		"/test": [15],
-		"/tradelog": [17],
-		"/trades": [18],
-		"/upload": [19]
+		"/": [4],
+		"/analytics": [5],
+		"/billing": [6],
+		"/change-password": [7],
+		"/dashboard": [8],
+		"/debug": [9],
+		"/forgot-password": [10],
+		"/journal": [11],
+		"/login": [12,[2]],
+		"/payment-success": [13],
+		"/playbook": [14],
+		"/portfolio": [15],
+		"/pricing": [16],
+		"/privacy": [17],
+		"/register": [18,[3]],
+		"/reset-password": [19],
+		"/security": [20],
+		"/settings": [21],
+		"/terms": [22],
+		"/test-insights": [24],
+		"/test": [23],
+		"/tradelog": [25],
+		"/trades": [26],
+		"/trades/new": [27],
+		"/upload": [28],
+		"/verify-email": [29]
 	};
 
 export const hooks = {

@@ -1,0 +1,148 @@
+global:
+  # ResolveTimeout is the time after which an alert is declared resolved
+  # if it has not been updated.
+  resolve_timeout: 5m
+
+  # Slack configuration
+  slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'
+
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'smtp.sendgrid.net:587'
+  smtp_from: 'alerts@tradesense.com'
+  smtp_auth_username: 'apikey'
+  smtp_auth_password: 'YOUR_SENDGRID_API_KEY'
+  smtp_require_tls: true
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# The root route on which each incoming alert enters.
+route:
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # Wait before sending a notification
+  group_wait: 10s
+  
+  # Wait before sending a notification about new alerts
+  group_interval: 10s
+  
+  # Wait before sending a notification again
+  repeat_interval: 12h
+  
+  # Default receiver
+  receiver: 'default-receiver'
+  
+  # Child routes
+  routes:
+    # Critical alerts go to PagerDuty and Slack
+    - match:
+        severity: critical
+      receiver: critical-receiver
+      continue: true
+      
+    # Database alerts go to database team
+    - match:
+        team: database
+      receiver: database-team
+      
+    # Business alerts go to business team
+    - match:
+        team: business
+      receiver: business-team
+      
+    # Infrastructure alerts
+    - match:
+        team: infrastructure
+      receiver: infrastructure-team
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit less severe alerts if a more severe alert is already firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+# Receivers
+receivers:
+  # Default receiver
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'ops@tradesense.com'
+        headers:
+          Subject: '[TradeSense Alert] {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>Alert: {{ .GroupLabels.alertname }}</h2>
+          <p><b>Status:</b> {{ .Status }}</p>
+          {{ range .Alerts }}
+          <h3>{{ .Labels.alertname }}</h3>
+          <p><b>Instance:</b> {{ .Labels.instance }}</p>
+          <p><b>Severity:</b> {{ .Labels.severity }}</p>
+          <p><b>Summary:</b> {{ .Annotations.summary }}</p>
+          <p><b>Description:</b> {{ .Annotations.description }}</p>
+          <p><b>Started:</b> {{ .StartsAt }}</p>
+          {{ end }}
+    
+    slack_configs:
+      - channel: '#alerts'
+        title: 'TradeSense Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        send_resolved: true
+
+  # Critical alerts receiver
+  - name: 'critical-receiver'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+        description: '{{ .GroupLabels.alertname }}: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'danger'
+        send_resolved: true
+        
+    email_configs:
+      - to: 'oncall@tradesense.com'
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+          Priority: 'urgent'
+
+  # Database team receiver
+  - name: 'database-team'
+    email_configs:
+      - to: 'database@tradesense.com'
+        headers:
+          Subject: '[DB Alert] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#database-alerts'
+        title: 'Database Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  # Business team receiver
+  - name: 'business-team'
+    email_configs:
+      - to: 'business@tradesense.com'
+        headers:
+          Subject: '[Business Alert] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#business-metrics'
+        title: 'Business Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  # Infrastructure team receiver
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure@tradesense.com'
+        headers:
+          Subject: '[Infra Alert] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - channel: '#infrastructure'
+        title: 'Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'

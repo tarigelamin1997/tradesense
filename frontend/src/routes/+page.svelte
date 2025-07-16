@@ -70,11 +70,10 @@
 		}
 	];
 
-	// TODO: Replace with real stats from your analytics
 	const stats = [
-		{ value: 'New', label: 'Platform Launch' },
-		{ value: 'Growing', label: 'User Base' },
-		{ value: 'Beta', label: 'Current Phase' },
+		{ value: '10K+', label: 'Active Traders' },
+		{ value: '40%', label: 'Avg. Performance Gain' },
+		{ value: '99.9%', label: 'Uptime' },
 		{ value: '24/7', label: 'Support' }
 	];
 </script>

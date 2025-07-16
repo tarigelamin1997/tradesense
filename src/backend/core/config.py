@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     
     # API
     api_title: str = "TradeSense API"
-    api_version: str = "1.0.0"
+    api_version: str = "2.0.0"
     api_v1_str: str = "/api/v1"
     project_name: str = "TradeSense API"
     debug: bool = True

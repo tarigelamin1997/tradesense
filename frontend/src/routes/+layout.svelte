@@ -2,6 +2,8 @@
 	import './styles.css';
 	import { auth, isAuthenticated } from '$lib/api/auth';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import WebSocketStatus from '$lib/components/WebSocketStatus.svelte';
 	import MobileNav from '$lib/components/MobileNav.svelte';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
@@ -9,6 +11,8 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import EmailVerificationBanner from '$lib/components/EmailVerificationBanner.svelte';
 	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
+	import FeedbackButton from '$lib/components/FeedbackButton.svelte';
+	import { trackPageVisit } from '$lib/utils/feedbackContext';
 	
 	let authState: any = { user: null, loading: true, error: null };
 	
@@ -20,6 +24,11 @@
 		await auth.logout();
 		goto('/login');
 	}
+	
+	// Track page visits for feedback context
+	$: if ($page.url.pathname) {
+		trackPageVisit($page.url.pathname);
+	}
 </script>
 
 <div class="app" class:authenticated={$isAuthenticated}>
@@ -29,11 +38,13 @@
 			<div class="nav-links">
 				{#if $isAuthenticated}
 					<a href="/dashboard">Dashboard</a>
+					<a href="/dashboards">Custom Dashboards</a>
 					<a href="/tradelog">Trade Log</a>
 					<a href="/portfolio">Portfolio</a>
 					<a href="/upload">Import</a>
 					<a href="/journal">Journal</a>
 					<a href="/analytics">Analytics</a>
+					<a href="/ai-insights">AI Insights</a>
 					<a href="/playbook">Playbook</a>
 					<div class="nav-divider"></div>
 					<GlobalSearch />
@@ -66,6 +77,7 @@
 	
 	<MobileNav />
 	<PWAInstallPrompt />
+	<FeedbackButton />
 </div>
 
 <style>

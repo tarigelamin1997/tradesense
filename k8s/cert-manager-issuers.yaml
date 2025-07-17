@@ -1,0 +1,82 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@tradesense.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+    - selector:
+        dnsZones:
+        - "tradesense.com"
+      dns01:
+        cloudflare:
+          email: admin@tradesense.com
+          apiKeySecretRef:
+            name: cloudflare-api-key
+            key: api-key
+    - http01:
+        ingress:
+          class: nginx
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@tradesense.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-key
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tradesense-tls
+  namespace: tradesense
+spec:
+  secretName: tradesense-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: tradesense.com
+  dnsNames:
+  - tradesense.com
+  - www.tradesense.com
+  - api.tradesense.com
+  acme:
+    config:
+    - http01:
+        ingress:
+          class: nginx
+      domains:
+      - tradesense.com
+      - www.tradesense.com
+    - dns01:
+        cloudflare:
+          email: admin@tradesense.com
+          apiKeySecretRef:
+            name: cloudflare-api-key
+            key: api-key
+      domains:
+      - '*.tradesense.com'
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-key
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-key: YOUR_CLOUDFLARE_API_KEY_HERE

@@ -27,21 +27,6 @@
  */
 declare module '$env/static/private' {
 	export const VITE_API_URL: string;
-	export const VITE_API_BASE_URL: string;
-	export const VITE_APP_URL: string;
-	export const VITE_STRIPE_PUBLISHABLE_KEY: string;
-	export const VITE_GA_TRACKING_ID: string;
-	export const VITE_MIXPANEL_TOKEN: string;
-	export const VITE_SENTRY_DSN: string;
-	export const VITE_SENTRY_ENVIRONMENT: string;
-	export const VITE_FEATURE_AI_INSIGHTS: string;
-	export const VITE_FEATURE_SOCIAL_TRADING: string;
-	export const VITE_FEATURE_PAPER_TRADING: string;
-	export const VITE_APP_VERSION: string;
-	export const VITE_APP_NAME: string;
-	export const VITE_SUPPORT_EMAIL: string;
-	export const VITE_CONTACT_EMAIL: string;
-	export const NODE_ENV: string;
 	export const npm_config_user_agent: string;
 	export const NODE_VERSION: string;
 	export const HOSTNAME: string;
@@ -62,6 +47,7 @@ declare module '$env/static/private' {
 	export const NODE: string;
 	export const npm_package_name: string;
 	export const npm_lifecycle_script: string;
+	export const VITE_API_BASE_URL: string;
 	export const npm_package_version: string;
 	export const npm_lifecycle_event: string;
 	export const npm_config_globalconfig: string;
@@ -72,7 +58,7 @@ declare module '$env/static/private' {
 	export const npm_command: string;
 	export const INIT_CWD: string;
 	export const EDITOR: string;
-	export const VITE_USER_NODE_ENV: string;
+	export const NODE_ENV: string;
 }
 
 /**
@@ -105,21 +91,6 @@ declare module '$env/static/public' {
 declare module '$env/dynamic/private' {
 	export const env: {
 		VITE_API_URL: string;
-		VITE_API_BASE_URL: string;
-		VITE_APP_URL: string;
-		VITE_STRIPE_PUBLISHABLE_KEY: string;
-		VITE_GA_TRACKING_ID: string;
-		VITE_MIXPANEL_TOKEN: string;
-		VITE_SENTRY_DSN: string;
-		VITE_SENTRY_ENVIRONMENT: string;
-		VITE_FEATURE_AI_INSIGHTS: string;
-		VITE_FEATURE_SOCIAL_TRADING: string;
-		VITE_FEATURE_PAPER_TRADING: string;
-		VITE_APP_VERSION: string;
-		VITE_APP_NAME: string;
-		VITE_SUPPORT_EMAIL: string;
-		VITE_CONTACT_EMAIL: string;
-		NODE_ENV: string;
 		npm_config_user_agent: string;
 		NODE_VERSION: string;
 		HOSTNAME: string;
@@ -140,6 +111,7 @@ declare module '$env/dynamic/private' {
 		NODE: string;
 		npm_package_name: string;
 		npm_lifecycle_script: string;
+		VITE_API_BASE_URL: string;
 		npm_package_version: string;
 		npm_lifecycle_event: string;
 		npm_config_globalconfig: string;
@@ -150,7 +122,7 @@ declare module '$env/dynamic/private' {
 		npm_command: string;
 		INIT_CWD: string;
 		EDITOR: string;
-		VITE_USER_NODE_ENV: string;
+		NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;
 		[key: `${string}`]: string | undefined;
 	}

@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # Backup service for PostgreSQL
+  postgres-backup:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tradesense}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-tradesense}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backup
+      - ./scripts/backup-system.sh:/usr/local/bin/backup.sh:ro
+    command: /bin/bash -c "chmod +x /usr/local/bin/backup.sh && /usr/local/bin/backup.sh postgres"
+    networks:
+      - tradesense-network
+    profiles:
+      - backup
+
+  # Backup service for Redis
+  redis-backup:
+    image: redis:7-alpine
+    volumes:
+      - ./backups:/backup
+      - redis-data:/data:ro
+    command: /bin/sh -c "redis-cli -h redis BGSAVE && sleep 5 && cp /data/dump.rdb /backup/redis_$(date +%Y%m%d_%H%M%S).rdb"
+    networks:
+      - tradesense-network
+    profiles:
+      - backup
+
+  # Automated backup scheduler
+  backup-scheduler:
+    image: mcuadros/ofelia:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/backup-schedule.ini:/etc/ofelia/config.ini:ro
+    networks:
+      - tradesense-network
+    profiles:
+      - scheduler
+
+  # Backup UI for manual operations
+  backup-ui:
+    build:
+      context: ./tools/backup-ui
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8080"
+    environment:
+      BACKUP_DIR: /backups
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-tradesense}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-tradesense}
+      REDIS_HOST: redis
+      S3_BUCKET: ${S3_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    networks:
+      - tradesense-network
+    profiles:
+      - backup-ui
+
+  # S3 sync service
+  s3-sync:
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-tradesense-backups}
+    volumes:
+      - ./backups:/backups:ro
+    command: |
+      sh -c "
+        while true; do
+          echo 'Syncing backups to S3...'
+          aws s3 sync /backups s3://$$S3_BUCKET/backups/ \
+            --storage-class STANDARD_IA \
+            --exclude '*.tmp' \
+            --exclude '*.log'
+          echo 'Sync completed. Sleeping for 1 hour...'
+          sleep 3600
+        done
+      "
+    networks:
+      - tradesense-network
+    profiles:
+      - s3-sync
+
+  # Backup monitoring
+  backup-monitor:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager-backup.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - tradesense-network
+    profiles:
+      - monitoring
+
+volumes:
+  redis-data:
+    external: true
+    name: tradesense_redis-data
+  alertmanager-data:
+
+networks:
+  tradesense-network:
+    external: true
+    name: tradesense_default

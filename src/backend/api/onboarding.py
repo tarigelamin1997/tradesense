@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user
-from app.core.db.session import get_db
-from app.models.user import User
+from core.auth import get_current_user
+from core.db.session import get_db
+from models.user import User
 from src.backend.onboarding.onboarding_service import onboarding_service, OnboardingStep
 
 router = APIRouter(prefix="/api/v1/onboarding", tags=["onboarding"])

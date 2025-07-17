@@ -9,8 +9,8 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 
-from app.core.db.session import get_db
-from app.models.user import User
+from core.db.session import get_db
+from models.user import User
 from src.backend.api.mobile.base import (
     MobileResponse, RequireAuth, format_currency, format_percentage
 )

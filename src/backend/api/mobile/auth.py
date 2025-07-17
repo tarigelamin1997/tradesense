@@ -11,14 +11,14 @@ from datetime import datetime, timedelta
 import secrets
 import uuid
 
-from app.core.db.session import get_db
-from app.core.auth import get_current_user, create_access_token, verify_password
-from app.models.user import User
+from core.db.session import get_db
+from core.auth import get_current_user, create_access_token, verify_password
+from models.user import User
 from src.backend.api.mobile.base import (
     MobileResponse, MobileErrorResponse, DeviceInfo,
     get_device_info, RequireAuth, OptionalAuth
 )
-from app.services.auth_service import AuthService
+from services.auth_service import AuthService
 from sqlalchemy import text
 
 
@@ -592,7 +592,7 @@ async def _verify_biometric_login(
 
 async def _create_mfa_session(user: User, device_info: DeviceInfo, db: AsyncSession) -> str:
     """Create MFA session for mobile."""
-    from app.core.cache import redis_client
+    from core.cache import redis_client
     
     session_id = str(uuid.uuid4())
     session_data = {

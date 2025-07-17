@@ -21,5 +21,8 @@ WORKDIR /app/src/backend
 # Expose the port
 EXPOSE 8000
 
+# Set default environment variable to skip database initialization if not configured
+ENV SKIP_DB_INIT=true
+
 # Run the application using Railway's PORT environment variable
 CMD uvicorn main:app --host 0.0.0.0 --port $PORT

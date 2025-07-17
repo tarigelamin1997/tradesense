@@ -9,9 +9,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user
-from app.core.db.session import get_db
-from app.models.user import User
+from core.auth import get_current_user
+from core.db.session import get_db
+from models.user import User
 from src.backend.gdpr.data_export_service import data_export_service
 from src.backend.analytics import track_gdpr_event
 
@@ -117,7 +117,7 @@ async def request_account_deletion(
             )
         
         # Verify password
-        from app.services.auth_service import auth_service
+        from services.auth_service import auth_service
         if not await auth_service.verify_password(current_user, request.password):
             raise HTTPException(
                 status_code=401,

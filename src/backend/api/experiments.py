@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from app.core.auth import get_current_user
-from app.models.user import User
+from core.auth import get_current_user
+from models.user import User
 from src.backend.experiments.ab_testing import (
     ab_testing_service,
     Experiment,

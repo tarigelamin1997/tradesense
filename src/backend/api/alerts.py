@@ -8,9 +8,9 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 
-from app.core.db.session import get_db
-from app.core.auth import get_current_user
-from app.models.user import User
+from core.db.session import get_db
+from core.auth import get_current_user
+from models.user import User
 from src.backend.alerts.alert_service import (
     alert_service, AlertConfig, AlertCondition, 
     AlertType, AlertChannel, AlertPriority, AlertStatus

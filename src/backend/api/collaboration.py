@@ -9,9 +9,9 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
 
-from app.core.db.session import get_db
-from app.core.auth import get_current_user
-from app.models.user import User
+from core.db.session import get_db
+from core.auth import get_current_user
+from models.user import User
 from src.backend.collaboration.collaboration_service import (
     collaboration_service, TeamRole, ResourceType, PermissionLevel
 )
@@ -537,7 +537,7 @@ async def collaboration_websocket(
     # Get user from token
     try:
         token = websocket.headers.get("Authorization", "").replace("Bearer ", "")
-        from app.core.auth import decode_access_token
+        from core.auth import decode_access_token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         
@@ -546,7 +546,7 @@ async def collaboration_websocket(
             return
         
         # Get user
-        from app.services.auth_service import AuthService
+        from services.auth_service import AuthService
         auth_service = AuthService(db)
         user = await auth_service.get_user_by_id(user_id)
         
@@ -610,7 +610,7 @@ async def webrtc_websocket(
     # Get user from token
     try:
         token = websocket.headers.get("Authorization", "").replace("Bearer ", "")
-        from app.core.auth import decode_access_token
+        from core.auth import decode_access_token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         
@@ -619,7 +619,7 @@ async def webrtc_websocket(
             return
         
         # Get user
-        from app.services.auth_service import AuthService
+        from services.auth_service import AuthService
         auth_service = AuthService(db)
         user = await auth_service.get_user_by_id(user_id)
         

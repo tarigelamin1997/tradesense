@@ -13,10 +13,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import json
 
-from app.core.config import settings
-from app.core.db.session import get_db
-from app.core.cache import redis_client
-from app.services.email_service import email_service
+from core.config import settings
+from core.db.session import get_db
+from core.cache import redis_client
+from services.email_service import email_service
 from sqlalchemy import text
 
 

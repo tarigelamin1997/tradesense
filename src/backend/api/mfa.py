@@ -8,9 +8,9 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, validator
 import re
 
-from app.core.db.session import get_db
-from app.core.auth import get_current_user
-from app.models.user import User
+from core.db.session import get_db
+from core.auth import get_current_user
+from models.user import User
 from src.backend.auth.mfa_service import mfa_service, MFAMethod
 from src.backend.monitoring.metrics import security_metrics
 import hashlib
@@ -188,7 +188,7 @@ async def send_mfa_challenge(
 ) -> Dict[str, Any]:
     """Send MFA challenge during login."""
     # Get user from session
-    from app.core.cache import redis_client
+    from core.cache import redis_client
     user_data = await redis_client.get(f"mfa_session:{session_id}")
     if not user_data:
         raise HTTPException(401, "Invalid session")
@@ -213,7 +213,7 @@ async def verify_mfa(
 ) -> Dict[str, Any]:
     """Verify MFA code during login."""
     # Get user from session
-    from app.core.cache import redis_client
+    from core.cache import redis_client
     user_data = await redis_client.get(f"mfa_session:{session_id}")
     if not user_data:
         raise HTTPException(401, "Invalid session")
@@ -285,7 +285,7 @@ async def verify_mfa(
     await redis_client.delete(f"mfa_session:{session_id}")
     
     # Generate auth token
-    from app.core.auth import create_access_token
+    from core.auth import create_access_token
     access_token = create_access_token(data={"sub": str(user.id)})
     
     return {
@@ -331,7 +331,7 @@ async def disable_mfa(
 ) -> Dict[str, Any]:
     """Disable all MFA for user."""
     # Verify password
-    from app.core.auth import verify_password
+    from core.auth import verify_password
     if not verify_password(password, current_user.hashed_password):
         raise HTTPException(400, "Invalid password")
     
@@ -354,7 +354,7 @@ async def remove_mfa_device(
 ) -> Dict[str, Any]:
     """Remove a specific MFA device."""
     # Verify password
-    from app.core.auth import verify_password
+    from core.auth import verify_password
     if not verify_password(request.password, current_user.hashed_password):
         raise HTTPException(400, "Invalid password")
     

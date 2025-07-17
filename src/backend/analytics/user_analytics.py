@@ -14,10 +14,10 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db.session import get_db
-from app.core.cache import redis_client
-from app.core.config import settings
-from app.models.user import User
+from core.db.session import get_db
+from core.cache import redis_client
+from core.config import settings
+from models.user import User
 
 
 class EventType(str, Enum):

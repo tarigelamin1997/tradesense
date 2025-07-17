@@ -11,9 +11,9 @@ import aiohttp
 import psutil
 from sqlalchemy import text
 
-from app.core.db.session import get_db, engine
-from app.core.cache import redis_client
-from app.core.config import settings
+from core.db.session import get_db, engine
+from core.cache import redis_client
+from core.config import settings
 
 
 class HealthStatus(str, Enum):

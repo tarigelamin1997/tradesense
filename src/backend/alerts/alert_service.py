@@ -14,11 +14,11 @@ import aiohttp
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.models.user import User
-from app.services.email_service import email_service
+from core.config import settings
+from models.user import User
+from services.email_service import email_service
 from src.backend.monitoring.metrics import alert_metrics
-from app.core.cache import redis_client
+from core.cache import redis_client
 
 
 class AlertType(str, Enum):

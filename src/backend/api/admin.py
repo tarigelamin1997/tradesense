@@ -10,10 +10,10 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import text, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_admin
-from app.core.db.session import get_db
-from app.models.user import User
-from app.services.email_service import email_service
+from core.auth import get_current_user, require_admin
+from core.db.session import get_db
+from models.user import User
+from services.email_service import email_service
 from src.backend.analytics import user_analytics, track_feature_usage
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -469,7 +469,7 @@ async def create_user(
 ):
     """Create a new user."""
     try:
-        from app.services.auth_service import auth_service
+        from services.auth_service import auth_service
         
         # Check if user exists
         existing = await db.execute(
@@ -669,7 +669,7 @@ async def impersonate_user(
 ):
     """Generate a temporary token to impersonate a user (for support)."""
     try:
-        from app.services.auth_service import auth_service
+        from services.auth_service import auth_service
         
         # Get target user
         user_result = await db.execute(

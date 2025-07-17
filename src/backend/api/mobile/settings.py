@@ -10,12 +10,12 @@ from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
 from enum import Enum
 
-from app.core.db.session import get_db
-from app.models.user import User
+from core.db.session import get_db
+from models.user import User
 from src.backend.api.mobile.base import (
     MobileResponse, RequireAuth, DeviceInfo, get_device_info
 )
-from app.services.auth_service import AuthService
+from services.auth_service import AuthService
 from sqlalchemy import text
 import json
 
@@ -201,7 +201,7 @@ async def update_app_settings(
     await db.commit()
     
     # Clear cache for user
-    from app.core.cache import redis_client
+    from core.cache import redis_client
     await redis_client.delete(f"user_settings:{current_user.id}")
     
     return MobileResponse(data={"message": "Settings updated successfully"})
@@ -426,12 +426,12 @@ async def change_password(
     auth_service = AuthService(db)
     
     # Verify current password
-    from app.core.auth import verify_password
+    from core.auth import verify_password
     if not verify_password(request.current_password, current_user.hashed_password):
         raise HTTPException(400, "Current password is incorrect")
     
     # Update password
-    from app.core.auth import get_password_hash
+    from core.auth import get_password_hash
     hashed_password = get_password_hash(request.new_password)
     
     await db.execute(
@@ -629,7 +629,7 @@ async def export_data(
     await db.commit()
     
     # Queue export job
-    from app.core.celery_app import celery_app
+    from core.celery_app import celery_app
     celery_app.send_task(
         "app.tasks.export_user_data",
         args=[str(job_id), current_user.id, request.dict()]
@@ -651,7 +651,7 @@ async def delete_account(
 ) -> MobileResponse[Dict[str, str]]:
     """Delete user account (soft delete)."""
     # Verify password
-    from app.core.auth import verify_password
+    from core.auth import verify_password
     if not verify_password(password, current_user.hashed_password):
         raise HTTPException(400, "Incorrect password")
     

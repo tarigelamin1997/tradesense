@@ -10,9 +10,9 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import Response
 from sqlalchemy import text
 
-from app.core.auth import get_current_user, require_admin
-from app.core.db.session import get_db
-from app.models.user import User
+from core.auth import get_current_user, require_admin
+from core.db.session import get_db
+from models.user import User
 from src.backend.monitoring import health_checker, alerting_system
 from src.backend.monitoring.metrics import (
     active_users, system_info, memory_usage, cpu_usage
@@ -47,7 +47,7 @@ async def readiness_probe():
             await db.execute(text("SELECT 1"))
         
         # Check Redis
-        from app.core.cache import redis_client
+        from core.cache import redis_client
         await redis_client.ping()
         
         return {"status": "ready"}

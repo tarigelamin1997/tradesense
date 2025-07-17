@@ -9,10 +9,10 @@ import stripe
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.db.session import get_db
-from app.models.user import User
-from app.services.email_service import email_service
+from core.config import settings
+from core.db.session import get_db
+from models.user import User
+from services.email_service import email_service
 from src.backend.analytics import track_subscription_event
 
 stripe.api_key = settings.STRIPE_SECRET_KEY

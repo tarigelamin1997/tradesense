@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from datetime import datetime
 
-from app.core.auth import get_current_user
-from app.models.user import User
+from core.auth import get_current_user
+from models.user import User
 from src.backend.api.admin import require_admin
 from src.backend.backup.backup_service import backup_service, BackupType
 
@@ -112,7 +112,7 @@ async def list_backups(
     """List all backups with optional filters."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         query = """
             SELECT id, backup_name, backup_type, status, file_size,
@@ -242,7 +242,7 @@ async def list_backup_schedules():
     """List all backup schedules."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         async with get_db() as db:
             result = await db.execute(
@@ -280,7 +280,7 @@ async def create_backup_schedule(schedule: BackupScheduleCreate):
     """Create a new backup schedule."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         async with get_db() as db:
             result = await db.execute(
@@ -324,7 +324,7 @@ async def update_backup_schedule(
     """Update a backup schedule."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         # Build update query
         updates = []
@@ -378,7 +378,7 @@ async def delete_backup_schedule(schedule_id: str):
     """Delete a backup schedule."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         async with get_db() as db:
             result = await db.execute(
@@ -407,7 +407,7 @@ async def get_backup_statistics(days: int = 30):
     """Get backup statistics for the specified period."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         async with get_db() as db:
             result = await db.execute(
@@ -438,7 +438,7 @@ async def get_backup_dashboard():
     """Get backup status dashboard data."""
     try:
         from sqlalchemy import text
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         
         async with get_db() as db:
             # Recent backups

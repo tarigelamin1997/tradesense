@@ -15,12 +15,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 
-from app.core.config import settings
-from app.models.user import User
-from app.core.db.session import get_db
+from core.config import settings
+from models.user import User
+from core.db.session import get_db
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services.email_service import email_service
+from services.email_service import email_service
 from src.backend.monitoring.metrics import security_metrics
 
 

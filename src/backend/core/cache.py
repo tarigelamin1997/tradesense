@@ -41,7 +41,8 @@ class CacheManager:
         """Initialize Redis connection"""
         try:
             # Try to get Redis URL from environment or config
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            # Railway provides REDIS_URL or sometimes REDIS_PRIVATE_URL
+            redis_url = os.getenv("REDIS_URL", os.getenv("REDIS_PRIVATE_URL", "redis://localhost:6379/0"))
             
             # Try real Redis first
             try:
@@ -383,4 +384,7 @@ class QueryCache:
         invalidate_cache_pattern(f"analytics:{user_id}")
 
 # Global query cache instance
-query_cache = QueryCache(cache_manager) 
+query_cache = QueryCache(cache_manager)
+
+# Export redis_client for backward compatibility
+redis_client = cache_manager._redis_client if cache_manager._redis_client else None 

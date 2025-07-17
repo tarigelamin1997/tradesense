@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.db.session import get_db
 from models.user import User
-from analytics import track_feature_event
+from analytics import track_feature_usage
 
 
 class FeatureFlagType(str, Enum):
@@ -281,7 +281,7 @@ class FeatureFlagService:
         
         # Track evaluation
         if user:
-            await track_feature_event(
+            await track_feature_usage(
                 user_id=str(user.id),
                 event="flag_evaluated",
                 flag_key=flag_key,

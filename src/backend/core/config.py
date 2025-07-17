@@ -5,9 +5,31 @@ import os
 from pydantic_settings import BaseSettings
 from typing import Optional, List
 
+# Helper function to construct database URL
+def get_database_url():
+    # First check for explicit DATABASE_URL
+    if os.getenv("DATABASE_URL"):
+        return os.getenv("DATABASE_URL")
+    
+    # Check for Railway's DATABASE_PRIVATE_URL
+    if os.getenv("DATABASE_PRIVATE_URL"):
+        return os.getenv("DATABASE_PRIVATE_URL")
+    
+    # Construct from individual PG variables (Railway style)
+    if os.getenv("PGHOST"):
+        user = os.getenv("PGUSER", "postgres")
+        password = os.getenv("PGPASSWORD", "postgres")
+        host = os.getenv("PGHOST", "localhost")
+        port = os.getenv("PGPORT", "5432")
+        database = os.getenv("PGDATABASE", "railway")
+        return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+    
+    # Default local database
+    return "postgresql://postgres:postgres@localhost/tradesense"
+
 class Settings(BaseSettings):
     # Database
-    database_url: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost/tradesense")
+    database_url: str = get_database_url()
     test_database_url: Optional[str] = None
     sqlite_database_url: Optional[str] = "sqlite:///./tradesense.db"  # Keep SQLite as fallback
     

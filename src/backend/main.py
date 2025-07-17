@@ -16,12 +16,20 @@ try:
     # Import all models first to register them with SQLAlchemy
     import models  # This ensures all models are registered
     
-    # Initialize database
-    from initialize_db import *
-
-    print("✅ Database initialized successfully")
+    # Only initialize database if we have a valid connection
+    from core.config import settings
+    if settings.database_url and not settings.database_url.startswith("postgresql://postgres:postgres@localhost"):
+        try:
+            from core.db.session import create_tables
+            create_tables()
+            print("✅ Database initialized successfully")
+        except Exception as db_error:
+            print(f"⚠️ Database initialization skipped: {db_error}")
+            print("ℹ️ The app will connect to the database when it becomes available")
+    else:
+        print("⚠️ Database not configured yet - waiting for Railway PostgreSQL")
 except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
+    print(f"⚠️ Startup warning: {e}")
 
 # Import routers
 from api.v1.auth.router import router as auth_router
@@ -62,11 +70,11 @@ import logging
 from api.v1.public import public_router
 
 # Import post-deployment routers
-from src.backend.api.admin import router as admin_router
-from src.backend.api.subscription import router as subscription_router
-from src.backend.api.support import router as support_router
-from src.backend.api.feature_flags import router as feature_flags_router
-from src.backend.api.reporting import router as reporting_router
+from api.admin import router as admin_router
+from api.subscription import router as subscription_router
+from api.support import router as support_router
+from api.feature_flags import router as feature_flags_router
+from api.reporting import router as reporting_router
 
 # Create necessary directories
 os.makedirs('logs', exist_ok=True)

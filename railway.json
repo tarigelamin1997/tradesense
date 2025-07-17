@@ -2,20 +2,20 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd src/backend && pip install -r requirements.txt -r requirements-prod.txt"
+    "buildCommand": "cd backend && pip install -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "cd src/backend && python -m alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT",
+    "startCommand": "cd backend && cd src && uvicorn main:app --host 0.0.0.0 --port $PORT",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   },
   "environments": {
     "production": {
       "build": {
-        "buildCommand": "cd src/backend && pip install -r requirements.txt -r requirements-prod.txt"
+        "buildCommand": "cd backend && pip install -r requirements.txt"
       },
       "deploy": {
-        "startCommand": "cd src/backend && python -m alembic upgrade head && gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+        "startCommand": "cd backend && cd src && uvicorn main:app --host 0.0.0.0 --port $PORT"
       }
     }
   }

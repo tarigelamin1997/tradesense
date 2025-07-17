@@ -37,14 +37,14 @@ from schemas.ai import (
 
 router = APIRouter(prefix="/ai", tags=["AI Intelligence"])
 
-# Initialize services
+# Initialize services that don't require dependencies
 trade_intelligence = TradeIntelligenceEngine()
 ai_analyzer = AITradeAnalyzer()
 behavioral_service = BehavioralAnalyticsService()
 edge_analyzer = EdgeStrengthAnalyzer()
-pattern_service = PatternDetectionService()
 emotional_service = EmotionalAnalyticsService()
 market_service = MarketContextService()
+# Note: PatternDetectionService requires db session, initialized in routes
 
 
 @router.get("/trades/{trade_id}/score", response_model=TradeScoreResponse)
@@ -117,7 +117,7 @@ async def get_trade_scores_bulk(
 
 @router.get("/behavioral/insights", response_model=BehavioralInsightsResponse)
 async def get_behavioral_insights(
-    timeframe: str = Query("month", regex="^(week|month|quarter|year)$"),
+    timeframe: str = Query("month", pattern="^(week|month|quarter|year)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -148,7 +148,7 @@ async def get_behavioral_insights(
 
 @router.get("/patterns/detect", response_model=List[PatternDetectionResponse])
 async def detect_patterns(
-    timeframe: str = Query("month", regex="^(week|month|all)$"),
+    timeframe: str = Query("month", pattern="^(week|month|all)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -156,6 +156,8 @@ async def detect_patterns(
     if not FeatureFlagService.is_enabled("ai_trade_insights", current_user):
         raise HTTPException(status_code=403, detail="AI insights not available in your plan")
     
+    # Initialize pattern service with db session
+    pattern_service = PatternDetectionService(db)
     patterns = pattern_service.detect_patterns(
         user_id=current_user.id,
         timeframe=timeframe,
@@ -226,7 +228,7 @@ async def get_market_regime(
 
 @router.get("/emotional/analytics", response_model=EmotionalAnalyticsResponse)
 async def get_emotional_analytics(
-    timeframe: str = Query("month", regex="^(week|month|quarter)$"),
+    timeframe: str = Query("month", pattern="^(week|month|quarter)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

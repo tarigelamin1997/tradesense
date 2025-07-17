@@ -33,13 +33,13 @@ class SubscriptionService:
             "pro": {
                 "name": "Pro",
                 "price": 49.99,
-                "stripe_price_id": settings.STRIPE_PRO_PRICE_ID,
+                "stripe_price_id": os.getenv('STRIPE_PRO_PRICE_ID', 'price_test_pro'),
                 "features": ["Unlimited trades", "Advanced analytics", "Priority support", "API access"]
             },
             "premium": {
                 "name": "Premium",
                 "price": 99.99,
-                "stripe_price_id": settings.STRIPE_PREMIUM_PRICE_ID,
+                "stripe_price_id": os.getenv('STRIPE_PREMIUM_PRICE_ID', 'price_test_premium'),
                 "features": ["Everything in Pro", "Real-time alerts", "Custom reports", "Phone support"]
             }
         }

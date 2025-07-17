@@ -6,7 +6,7 @@ import json
 import hashlib
 
 from api.deps import get_current_user, get_db
-from api.v1.users.schemas import User
+from models.user import User
 from .schemas import (
     FeedbackSubmit,
     FeedbackResponse,

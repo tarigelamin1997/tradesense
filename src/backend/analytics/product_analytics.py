@@ -666,5 +666,23 @@ async def track_subscription_event(
     )
 
 
+async def track_support_event(
+    user_id: str,
+    event: str,
+    ticket_id: Optional[str] = None,
+    properties: Optional[Dict[str, Any]] = None
+):
+    """Track support-related events."""
+    await user_analytics.track_event(
+        user_id=user_id,
+        event_type=EventType.CUSTOM,
+        properties={
+            "event": f"support_{event}",
+            "ticket_id": ticket_id,
+            **(properties or {})
+        }
+    )
+
+
 # Initialize product analytics
 product_analytics = ProductAnalytics()

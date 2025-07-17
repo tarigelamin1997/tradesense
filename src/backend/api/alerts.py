@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, validator
 from datetime import datetime
 
 from core.db.session import get_db
-from core.auth import get_current_user
+from api.deps import get_current_user
 from models.user import User
 from alerts.alert_service import (
     alert_service, AlertConfig, AlertCondition, 

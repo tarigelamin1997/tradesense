@@ -185,8 +185,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router, tags=["health"])
     app.include_router(billing_router, prefix="/api/v1/billing", tags=["billing"])
     app.include_router(websocket_router, tags=["websocket"])
-    # AI router - temporarily disabled due to deployment issues
-    # app.include_router(ai_router, prefix="/api/v1", tags=["AI Intelligence"])
+    app.include_router(ai_router, prefix="/api/v1", tags=["AI Intelligence"])
     app.include_router(feedback_router, prefix="/api/v1", tags=["feedback"])
     
     # Post-deployment routers

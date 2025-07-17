@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel
 
-from core.auth import get_current_user, require_admin
+from api.deps import get_current_user, require_admin
 from models.user import User
 from analytics import (
     user_analytics,

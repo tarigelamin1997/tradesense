@@ -10,7 +10,7 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import Response
 from sqlalchemy import text
 
-from core.auth import get_current_user, require_admin
+from api.deps import get_current_user, require_admin
 from core.db.session import get_db
 from models.user import User
 from monitoring import health_checker, alerting_system

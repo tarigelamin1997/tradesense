@@ -426,12 +426,12 @@ async def change_password(
     auth_service = AuthService(db)
     
     # Verify current password
-    from core.auth import verify_password
+    from api.deps import verify_password
     if not verify_password(request.current_password, current_user.hashed_password):
         raise HTTPException(400, "Current password is incorrect")
     
     # Update password
-    from core.auth import get_password_hash
+    from api.deps import get_password_hash
     hashed_password = get_password_hash(request.new_password)
     
     await db.execute(
@@ -651,7 +651,7 @@ async def delete_account(
 ) -> MobileResponse[Dict[str, str]]:
     """Delete user account (soft delete)."""
     # Verify password
-    from core.auth import verify_password
+    from api.deps import verify_password
     if not verify_password(password, current_user.hashed_password):
         raise HTTPException(400, "Incorrect password")
     

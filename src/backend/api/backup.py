@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from datetime import datetime
 
-from core.auth import get_current_user
+from api.deps import get_current_user
 from models.user import User
 from api.admin import require_admin
 from backup.backup_service import backup_service, BackupType

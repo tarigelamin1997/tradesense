@@ -774,7 +774,7 @@ async def market_stream(
     # Get user from token
     try:
         token = websocket.headers.get("Authorization", "").replace("Bearer ", "")
-        from core.auth import decode_access_token
+        from api.deps import decode_access_token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.auth import get_current_user
+from api.deps import get_current_user
 from core.db.session import get_db
 from models.user import User
 from services.subscription_service import subscription_service

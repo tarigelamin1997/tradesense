@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, validator
 import re
 
 from core.db.session import get_db
-from core.auth import get_current_user
+from api.deps import get_current_user
 from models.user import User
 from auth.mfa_service import mfa_service, MFAMethod
 from monitoring.metrics import security_metrics
@@ -285,7 +285,7 @@ async def verify_mfa(
     await redis_client.delete(f"mfa_session:{session_id}")
     
     # Generate auth token
-    from core.auth import create_access_token
+    from api.deps import create_access_token
     access_token = create_access_token(data={"sub": str(user.id)})
     
     return {
@@ -331,7 +331,7 @@ async def disable_mfa(
 ) -> Dict[str, Any]:
     """Disable all MFA for user."""
     # Verify password
-    from core.auth import verify_password
+    from api.deps import verify_password
     if not verify_password(password, current_user.hashed_password):
         raise HTTPException(400, "Invalid password")
     
@@ -354,7 +354,7 @@ async def remove_mfa_device(
 ) -> Dict[str, Any]:
     """Remove a specific MFA device."""
     # Verify password
-    from core.auth import verify_password
+    from api.deps import verify_password
     if not verify_password(request.password, current_user.hashed_password):
         raise HTTPException(400, "Invalid password")
     

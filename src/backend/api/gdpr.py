@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.auth import get_current_user
+from api.deps import get_current_user
 from core.db.session import get_db
 from models.user import User
 from gdpr.data_export_service import data_export_service

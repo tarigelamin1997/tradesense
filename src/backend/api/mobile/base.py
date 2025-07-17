@@ -11,7 +11,7 @@ import hashlib
 import json
 from enum import Enum
 
-from core.auth import get_current_user
+from api.deps import get_current_user
 from models.user import User
 
 

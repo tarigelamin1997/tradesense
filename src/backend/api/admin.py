@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import text, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.auth import get_current_user, require_admin
+from api.deps import get_current_user, require_admin
 from core.db.session import get_db
 from models.user import User
 from services.email_service import email_service

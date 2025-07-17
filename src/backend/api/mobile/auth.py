@@ -12,7 +12,7 @@ import secrets
 import uuid
 
 from core.db.session import get_db
-from core.auth import get_current_user, create_access_token, verify_password
+from api.deps import get_current_user, create_access_token, verify_password
 from models.user import User
 from api.mobile.base import (
     MobileResponse, MobileErrorResponse, DeviceInfo,

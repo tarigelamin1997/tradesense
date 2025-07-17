@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 import asyncio
 import json
 
-from core.auth import get_current_user
+from api.deps import get_current_user
 from core.db.session import get_db
 from core.redis import get_redis
 from models.user import User

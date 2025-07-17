@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from core.db.session import get_db
-from core.auth import get_current_user
+from api.deps import get_current_user
 from models.user import User
 from models.trade import Trade
 from services.trade_intelligence_engine import TradeIntelligenceEngine

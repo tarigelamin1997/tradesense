@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
 
 from core.db.session import get_db
-from core.auth import get_current_user
+from api.deps import get_current_user
 from models.user import User
 from collaboration.collaboration_service import (
     collaboration_service, TeamRole, ResourceType, PermissionLevel
@@ -537,7 +537,7 @@ async def collaboration_websocket(
     # Get user from token
     try:
         token = websocket.headers.get("Authorization", "").replace("Bearer ", "")
-        from core.auth import decode_access_token
+        from api.deps import decode_access_token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         
@@ -610,7 +610,7 @@ async def webrtc_websocket(
     # Get user from token
     try:
         token = websocket.headers.get("Authorization", "").replace("Bearer ", "")
-        from core.auth import decode_access_token
+        from api.deps import decode_access_token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         

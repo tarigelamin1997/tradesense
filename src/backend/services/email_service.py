@@ -369,3 +369,6 @@ class EmailService:
         
         subject = f"✅ Issue Resolved: {title[:50]}..."
         return self._send_email(email, subject, html_content)
+
+# Create singleton instance
+email_service = EmailService()

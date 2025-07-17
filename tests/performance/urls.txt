@@ -1,0 +1,10 @@
+http://backend:8000/api/v1/analytics/dashboard
+http://backend:8000/api/v1/trades
+http://backend:8000/api/v1/trades?limit=50
+http://backend:8000/api/v1/analytics/performance
+http://backend:8000/api/v1/analytics/win-rate
+http://backend:8000/api/v1/analytics/streaks
+http://backend:8000/api/v1/analytics/profit-loss
+http://backend:8000/api/v1/journal/entries
+http://backend:8000/api/v1/portfolio/summary
+http://backend:8000/api/v1/monitoring/health

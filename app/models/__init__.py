@@ -1,2 +1,0 @@
-
-"""TradeSense Data Models"""

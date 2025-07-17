@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     allowed_file_extensions: list = [".csv", ".xlsx", ".xls"]
     max_file_size: int = 10 * 1024 * 1024  # 10MB in bytes
     
+    # Reports Directory
+    reports_directory: str = "reports"
+    
     # Email
     smtp_server: Optional[str] = None
     smtp_port: Optional[int] = None

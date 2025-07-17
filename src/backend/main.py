@@ -50,18 +50,29 @@ from api.v1.health.performance_router import router as performance_router
 from api.v1.health.router import router as health_router
 from api.v1.billing.router import router as billing_router
 from api.v1.websocket.router import router as websocket_router
+from api.v1.ai.router import router as ai_router
+from api.v1.feedback.router import router as feedback_router
 from api.health.router import router as health_router_legacy, root_router as health_root_router
 from core.middleware import setup_middleware
 from core.exceptions import setup_exception_handlers
 from core.validation_middleware import setup_validation_middleware
 from core.async_manager import task_manager
+from core.security_headers import security_headers_middleware
 import logging
 from api.v1.public import public_router
+
+# Import post-deployment routers
+from src.backend.api.admin import router as admin_router
+from src.backend.api.subscription import router as subscription_router
+from src.backend.api.support import router as support_router
+from src.backend.api.feature_flags import router as feature_flags_router
+from src.backend.api.reporting import router as reporting_router
 
 # Create necessary directories
 os.makedirs('logs', exist_ok=True)
 os.makedirs('uploads', exist_ok=True)
 os.makedirs('temp', exist_ok=True)
+os.makedirs('reports', exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
@@ -111,12 +122,22 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=[
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining", 
+            "X-RateLimit-Reset",
+            "ETag",
+            "X-Total-Count"
+        ]
     )
 
     # Setup middleware and exception handlers
     setup_middleware(app)
     setup_exception_handlers(app)
     setup_validation_middleware(app)
+    
+    # Add security headers middleware
+    app.middleware("http")(security_headers_middleware)
 
     # Start the async cleanup task on FastAPI startup (optional for faster startup)
     @app.on_event("startup")
@@ -156,6 +177,39 @@ def create_app() -> FastAPI:
     app.include_router(health_router, tags=["health"])
     app.include_router(billing_router, prefix="/api/v1/billing", tags=["billing"])
     app.include_router(websocket_router, tags=["websocket"])
+    app.include_router(ai_router, prefix="/api/v1", tags=["AI Intelligence"])
+    app.include_router(feedback_router, prefix="/api/v1", tags=["feedback"])
+    
+    # Post-deployment routers
+    app.include_router(admin_router, tags=["admin"])
+    app.include_router(subscription_router, tags=["subscription"])
+    app.include_router(support_router, tags=["support"])
+    app.include_router(feature_flags_router, tags=["feature-flags"])
+    app.include_router(reporting_router, tags=["reporting"])
+    
+    # A/B Testing router
+    from src.backend.api.experiments import router as experiments_router
+    app.include_router(experiments_router, tags=["experiments"])
+    
+    # Backup router
+    from src.backend.api.backup import router as backup_router
+    app.include_router(backup_router, tags=["backup"])
+    
+    # MFA router
+    from src.backend.api.mfa import router as mfa_router
+    app.include_router(mfa_router, tags=["mfa"])
+    
+    # Alerts router
+    from src.backend.api.alerts import router as alerts_router
+    app.include_router(alerts_router, tags=["alerts"])
+    
+    # Mobile API router
+    from src.backend.api.mobile import mobile_router
+    app.include_router(mobile_router, tags=["mobile"])
+    
+    # Collaboration router
+    from src.backend.api.collaboration import router as collaboration_router
+    app.include_router(collaboration_router, tags=["collaboration"])
     
     # Legacy health router for backward compatibility
     app.include_router(health_router_legacy, prefix="/api")

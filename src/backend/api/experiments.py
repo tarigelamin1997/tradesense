@@ -10,7 +10,7 @@ from datetime import datetime
 
 from core.auth import get_current_user
 from models.user import User
-from src.backend.experiments.ab_testing import (
+from experiments.ab_testing import (
     ab_testing_service,
     Experiment,
     Variant,
@@ -20,7 +20,7 @@ from src.backend.experiments.ab_testing import (
     MetricType,
     ExperimentLibrary
 )
-from src.backend.api.admin import require_admin
+from api.admin import require_admin
 
 router = APIRouter(prefix="/api/v1/experiments", tags=["experiments"])
 

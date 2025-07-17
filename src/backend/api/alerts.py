@@ -11,11 +11,11 @@ from datetime import datetime
 from core.db.session import get_db
 from core.auth import get_current_user
 from models.user import User
-from src.backend.alerts.alert_service import (
+from alerts.alert_service import (
     alert_service, AlertConfig, AlertCondition, 
     AlertType, AlertChannel, AlertPriority, AlertStatus
 )
-from src.backend.monitoring.metrics import feature_usage
+from monitoring.metrics import feature_usage
 
 
 router = APIRouter(prefix="/api/v1/alerts")
@@ -533,7 +533,7 @@ def feature_usage(feature: str):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             # Track usage metric
-            from src.backend.monitoring.metrics import feature_usage as usage_metric
+            from monitoring.metrics import feature_usage as usage_metric
             user = kwargs.get('current_user')
             if user:
                 usage_metric.labels(

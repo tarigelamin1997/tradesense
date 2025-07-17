@@ -14,7 +14,7 @@ from core.auth import get_current_user, require_admin
 from core.db.session import get_db
 from models.user import User
 from services.email_service import email_service
-from src.backend.analytics import user_analytics, track_feature_usage
+from analytics import user_analytics, track_feature_usage
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 

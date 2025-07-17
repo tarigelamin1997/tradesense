@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.db.session import get_db
 from models.user import User
 from services.email_service import email_service
-from src.backend.analytics import track_support_event
+from analytics import track_support_event
 
 
 class TicketStatus(str, Enum):

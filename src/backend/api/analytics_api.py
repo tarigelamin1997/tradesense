@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from core.auth import get_current_user, require_admin
 from models.user import User
-from src.backend.analytics import (
+from analytics import (
     user_analytics,
     product_analytics,
     EventType,

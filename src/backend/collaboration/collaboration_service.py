@@ -14,7 +14,7 @@ from enum import Enum
 from core.db.session import get_db
 from models.user import User
 from core.cache import redis_client
-from src.backend.websocket.manager import manager as websocket_manager
+from websocket.manager import manager as websocket_manager
 
 
 class TeamRole(str, Enum):

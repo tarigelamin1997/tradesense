@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user
 from core.db.session import get_db
 from models.user import User
-from src.backend.gdpr.data_export_service import data_export_service
-from src.backend.analytics import track_gdpr_event
+from gdpr.data_export_service import data_export_service
+from analytics import track_gdpr_event
 
 router = APIRouter(prefix="/api/v1/gdpr", tags=["gdpr"])
 

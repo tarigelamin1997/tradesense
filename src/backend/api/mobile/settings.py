@@ -12,7 +12,7 @@ from enum import Enum
 
 from core.db.session import get_db
 from models.user import User
-from src.backend.api.mobile.base import (
+from api.mobile.base import (
     MobileResponse, RequireAuth, DeviceInfo, get_device_info
 )
 from services.auth_service import AuthService

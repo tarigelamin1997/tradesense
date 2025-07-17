@@ -12,7 +12,7 @@ from datetime import datetime
 from core.db.session import get_db
 from core.auth import get_current_user
 from models.user import User
-from src.backend.collaboration.collaboration_service import (
+from collaboration.collaboration_service import (
     collaboration_service, TeamRole, ResourceType, PermissionLevel
 )
 from sqlalchemy import text
@@ -628,7 +628,7 @@ async def webrtc_websocket(
             return
         
         # Handle WebRTC signaling
-        from src.backend.collaboration.webrtc_signaling import webrtc_server
+        from collaboration.webrtc_signaling import webrtc_server
         await webrtc_server.handle_connection(
             websocket,
             workspace_id,

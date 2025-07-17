@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.user import User
 from services.email_service import email_service
-from src.backend.analytics import track_onboarding_event
-from src.backend.features.feature_flags import feature_flag_service
+from analytics import track_onboarding_event
+from features.feature_flags import feature_flag_service
 
 
 class OnboardingStep(str, Enum):

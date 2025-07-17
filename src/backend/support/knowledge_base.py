@@ -12,7 +12,7 @@ import markdown
 from bs4 import BeautifulSoup
 
 from core.db.session import get_db
-from src.backend.analytics import track_kb_event
+from analytics import track_kb_event
 
 
 class KnowledgeBase:

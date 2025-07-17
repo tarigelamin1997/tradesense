@@ -10,8 +10,8 @@ from datetime import datetime
 
 from core.auth import get_current_user
 from models.user import User
-from src.backend.api.admin import require_admin
-from src.backend.backup.backup_service import backup_service, BackupType
+from api.admin import require_admin
+from backup.backup_service import backup_service, BackupType
 
 router = APIRouter(prefix="/api/v1/backup", tags=["backup"])
 

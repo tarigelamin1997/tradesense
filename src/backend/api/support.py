@@ -11,11 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user, require_admin
 from core.db.session import get_db
 from models.user import User
-from src.backend.support.ticket_system import (
+from support.ticket_system import (
     ticket_system, TicketStatus, TicketPriority, TicketCategory
 )
-from src.backend.support.knowledge_base import knowledge_base
-from src.backend.analytics import track_feature_usage
+from support.knowledge_base import knowledge_base
+from analytics import track_feature_usage
 
 router = APIRouter(prefix="/api/v1/support", tags=["support"])
 

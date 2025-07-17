@@ -6,6 +6,7 @@ Handles Stripe subscriptions, billing, and payment processing.
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 import stripe
+import os
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +16,7 @@ from models.user import User
 from services.email_service import email_service
 from analytics import track_subscription_event
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+stripe.api_key = settings.stripe_api_key or os.getenv('STRIPE_SECRET_KEY')
 
 
 class SubscriptionService:

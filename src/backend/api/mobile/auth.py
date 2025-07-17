@@ -14,7 +14,7 @@ import uuid
 from core.db.session import get_db
 from core.auth import get_current_user, create_access_token, verify_password
 from models.user import User
-from src.backend.api.mobile.base import (
+from api.mobile.base import (
     MobileResponse, MobileErrorResponse, DeviceInfo,
     get_device_info, RequireAuth, OptionalAuth
 )
@@ -613,7 +613,7 @@ async def _create_mfa_session(user: User, device_info: DeviceInfo, db: AsyncSess
 
 async def _get_user_features(user: User) -> Dict[str, bool]:
     """Get enabled features for user."""
-    from src.backend.api.mobile.base import MobileFeatureFlags
+    from api.mobile.base import MobileFeatureFlags
     
     features = {}
     for feature in [

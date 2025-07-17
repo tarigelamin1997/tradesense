@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user
 from core.db.session import get_db
 from models.user import User
-from src.backend.services.subscription_service import subscription_service
-from src.backend.analytics import track_feature_usage
+from services.subscription_service import subscription_service
+from analytics import track_feature_usage
 
 router = APIRouter(prefix="/api/v1/subscription", tags=["subscription"])
 

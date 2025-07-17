@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user, require_admin
 from core.db.session import get_db
 from models.user import User
-from src.backend.features.feature_flags import (
+from features.feature_flags import (
     feature_flag_service, FeatureFlagType, FeatureFlagStatus
 )
 

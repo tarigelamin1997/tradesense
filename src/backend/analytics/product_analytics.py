@@ -11,7 +11,7 @@ import statistics
 from sqlalchemy import text
 from core.db.session import get_db
 from core.cache import redis_client
-from src.backend.analytics.user_analytics import user_analytics, EventType
+from analytics.user_analytics import user_analytics, EventType
 
 
 class ProductAnalytics:

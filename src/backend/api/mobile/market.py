@@ -14,7 +14,7 @@ import asyncio
 
 from core.db.session import get_db
 from models.user import User
-from src.backend.api.mobile.base import (
+from api.mobile.base import (
     MobileResponse, MobilePaginatedResponse, MobilePaginationParams,
     get_pagination_params, create_paginated_response, RequireAuth,
     format_currency, format_percentage, create_etag, check_etag

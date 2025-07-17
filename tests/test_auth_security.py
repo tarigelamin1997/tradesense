@@ -5,7 +5,7 @@ Tests fixes for BUG-001, BUG-002, BUG-003
 import pytest
 import asyncio
 from fastapi.testclient import TestClient
-from src.backend.main import app
+from main import app
 
 client = TestClient(app)
 

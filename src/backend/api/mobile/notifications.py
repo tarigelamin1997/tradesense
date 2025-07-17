@@ -11,7 +11,7 @@ from enum import Enum
 
 from core.db.session import get_db
 from models.user import User
-from src.backend.api.mobile.base import (
+from api.mobile.base import (
     MobileResponse, MobilePaginatedResponse, MobilePaginationParams,
     get_pagination_params, create_paginated_response, RequireAuth,
     DeviceInfo, get_device_info
@@ -524,7 +524,7 @@ async def _send_push_notification(
     await redis_client.expire(redis_key, 604800)  # 7 days
     
     # Send through WebSocket if connected
-    from src.backend.websocket.manager import manager
+    from websocket.manager import manager
     await manager.send_personal_message(
         json.dumps({
             "type": "notification",

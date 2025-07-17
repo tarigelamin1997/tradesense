@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from models.user import User
 from services.email_service import email_service
-from src.backend.monitoring.metrics import alert_metrics
+from monitoring.metrics import alert_metrics
 from core.cache import redis_client
 
 
@@ -694,7 +694,7 @@ class AlertService:
         await redis_client.expire(f"notifications:{alert_row.user_id}", 604800)
         
         # Send through WebSocket if connected
-        from src.backend.websocket.manager import manager
+        from websocket.manager import manager
         await manager.send_personal_message(
             json.dumps({
                 "type": "notification",

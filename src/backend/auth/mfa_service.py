@@ -21,7 +21,7 @@ from core.db.session import get_db
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.email_service import email_service
-from src.backend.monitoring.metrics import security_metrics
+from monitoring.metrics import security_metrics
 
 
 class MFAMethod:

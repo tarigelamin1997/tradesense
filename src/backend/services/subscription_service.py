@@ -13,7 +13,7 @@ from core.config import settings
 from core.db.session import get_db
 from models.user import User
 from services.email_service import email_service
-from src.backend.analytics import track_subscription_event
+from analytics import track_subscription_event
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 

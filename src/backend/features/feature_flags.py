@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.db.session import get_db
 from models.user import User
-from src.backend.analytics import track_feature_event
+from analytics import track_feature_event
 
 
 class FeatureFlagType(str, Enum):

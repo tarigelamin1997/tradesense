@@ -11,8 +11,8 @@ import re
 from core.db.session import get_db
 from core.auth import get_current_user
 from models.user import User
-from src.backend.auth.mfa_service import mfa_service, MFAMethod
-from src.backend.monitoring.metrics import security_metrics
+from auth.mfa_service import mfa_service, MFAMethod
+from monitoring.metrics import security_metrics
 import hashlib
 import secrets
 

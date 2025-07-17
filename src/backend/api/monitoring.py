@@ -13,8 +13,8 @@ from sqlalchemy import text
 from core.auth import get_current_user, require_admin
 from core.db.session import get_db
 from models.user import User
-from src.backend.monitoring import health_checker, alerting_system
-from src.backend.monitoring.metrics import (
+from monitoring import health_checker, alerting_system
+from monitoring.metrics import (
     active_users, system_info, memory_usage, cpu_usage
 )
 
@@ -390,7 +390,7 @@ async def test_alert(
     current_user: User = Depends(require_admin)
 ):
     """Send a test alert."""
-    from src.backend.monitoring.alerting import Alert, AlertSeverity, AlertStatus
+    from monitoring.alerting import Alert, AlertSeverity, AlertStatus
     
     alert = Alert(
         id=f"test-{datetime.utcnow().timestamp()}",

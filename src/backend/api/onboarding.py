@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user
 from core.db.session import get_db
 from models.user import User
-from src.backend.onboarding.onboarding_service import onboarding_service, OnboardingStep
+from onboarding.onboarding_service import onboarding_service, OnboardingStep
 
 router = APIRouter(prefix="/api/v1/onboarding", tags=["onboarding"])
 
@@ -369,7 +369,7 @@ async def dismiss_onboarding(
         await db.commit()
         
         # Track dismissal
-        from src.backend.analytics import track_onboarding_event
+        from analytics import track_onboarding_event
         await track_onboarding_event(
             user_id=str(current_user.id),
             event="onboarding_dismissed",

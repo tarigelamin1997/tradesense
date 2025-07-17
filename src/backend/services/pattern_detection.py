@@ -383,3 +383,6 @@ class PatternDetectionEngine:
             summary_parts.append("High confidence pattern - potential edge identified.")
         
         return " ".join(summary_parts)
+
+# Alias for compatibility
+PatternDetectionService = PatternDetectionEngine

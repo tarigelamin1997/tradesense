@@ -11,8 +11,8 @@ import hashlib
 import json
 from enum import Enum
 
-from app.core.auth import get_current_user
-from app.models.user import User
+from core.auth import get_current_user
+from models.user import User
 
 
 T = TypeVar('T')

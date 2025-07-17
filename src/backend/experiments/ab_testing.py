@@ -13,8 +13,8 @@ from dataclasses import dataclass, asdict
 import numpy as np
 from scipy import stats
 
-from app.models.user import User
-from app.core.config import settings
+from models.user import User
+from core.config import settings
 from src.backend.analytics import track_experiment_event
 
 

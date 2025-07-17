@@ -10,8 +10,8 @@ import json
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
-from app.services.email_service import email_service
+from models.user import User
+from services.email_service import email_service
 from src.backend.analytics import track_onboarding_event
 from src.backend.features.feature_flags import feature_flag_service
 

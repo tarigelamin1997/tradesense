@@ -12,8 +12,8 @@ import psutil
 import asyncio
 from sqlalchemy import text
 
-from app.core.db.session import get_db
-from app.core.cache import redis_client
+from core.db.session import get_db
+from core.cache import redis_client
 
 
 # Business Metrics

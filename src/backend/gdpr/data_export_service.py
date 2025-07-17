@@ -13,9 +13,9 @@ import asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
-from app.services.email_service import email_service
-from app.core.config import settings
+from models.user import User
+from services.email_service import email_service
+from core.config import settings
 
 
 class DataExportService:

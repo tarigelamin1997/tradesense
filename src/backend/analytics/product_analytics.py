@@ -9,8 +9,8 @@ from collections import defaultdict
 import statistics
 
 from sqlalchemy import text
-from app.core.db.session import get_db
-from app.core.cache import redis_client
+from core.db.session import get_db
+from core.cache import redis_client
 from src.backend.analytics.user_analytics import user_analytics, EventType
 
 

@@ -10,9 +10,9 @@ import uuid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db.session import get_db
-from app.models.user import User
-from app.services.email_service import email_service
+from core.db.session import get_db
+from models.user import User
+from services.email_service import email_service
 from src.backend.analytics import track_support_event
 
 

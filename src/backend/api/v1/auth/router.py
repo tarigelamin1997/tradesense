@@ -220,7 +220,7 @@ async def login(
     if user.mfa_enabled:
         # Create MFA session
         import secrets
-        from app.core.cache import redis_client
+        from core.cache import redis_client
         
         session_id = secrets.token_urlsafe(32)
         session_data = {

@@ -15,9 +15,9 @@ import uuid
 from io import BytesIO
 import asyncio
 
-from app.core.db.session import get_db
-from app.models.user import User
-from app.core.cache import redis_client
+from core.db.session import get_db
+from models.user import User
+from core.cache import redis_client
 
 
 class ReportType(str, Enum):

@@ -12,8 +12,8 @@ from enum import Enum
 import json
 import asyncio
 
-from app.core.db.session import get_db
-from app.models.user import User
+from core.db.session import get_db
+from models.user import User
 from src.backend.api.mobile.base import (
     MobileResponse, MobilePaginatedResponse, MobilePaginationParams,
     get_pagination_params, create_paginated_response, RequireAuth,
@@ -774,7 +774,7 @@ async def market_stream(
     # Get user from token
     try:
         token = websocket.headers.get("Authorization", "").replace("Bearer ", "")
-        from app.core.auth import decode_access_token
+        from core.auth import decode_access_token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         

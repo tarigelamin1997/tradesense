@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body, File, Upload
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_admin
-from app.core.db.session import get_db
-from app.models.user import User
+from core.auth import get_current_user, require_admin
+from core.db.session import get_db
+from models.user import User
 from src.backend.support.ticket_system import (
     ticket_system, TicketStatus, TicketPriority, TicketCategory
 )

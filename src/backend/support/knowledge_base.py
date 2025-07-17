@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import markdown
 from bs4 import BeautifulSoup
 
-from app.core.db.session import get_db
+from core.db.session import get_db
 from src.backend.analytics import track_kb_event
 
 

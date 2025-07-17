@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel
 
-from app.core.auth import get_current_user, require_admin
-from app.models.user import User
+from core.auth import get_current_user, require_admin
+from models.user import User
 from src.backend.analytics import (
     user_analytics,
     product_analytics,
@@ -292,7 +292,7 @@ async def get_realtime_activity(
 ):
     """Get real-time activity data (admin only)."""
     try:
-        from app.core.cache import redis_client
+        from core.cache import redis_client
         
         # Get recent events
         recent_events_raw = await redis_client.lrange(
@@ -382,7 +382,7 @@ async def export_events(
         from fastapi.responses import StreamingResponse
         
         # Query events
-        from app.core.db.session import get_db
+        from core.db.session import get_db
         from sqlalchemy import text
         
         async with get_db() as db:

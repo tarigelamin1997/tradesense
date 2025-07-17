@@ -87,6 +87,10 @@ def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+# Alias for backward compatibility
+require_admin = get_admin_user
+
+
 async def get_current_user_ws(websocket, token: str, db: Session) -> User:
     """
     Get current user from WebSocket connection

@@ -63,6 +63,6 @@ scikit-learn==1.5.1
 pydantic-settings
 websockets==12.0
 firebase-admin==6.4.0
-apns2==0.7.2
+# apns2==0.7.2  # Commented out due to pyjwt version conflict with firebase-admin
 pyotp==2.9.0
 qrcode==7.4.2

@@ -40,7 +40,7 @@ class PatternDetection(BaseModel):
 
 class StreakAnalysis(BaseModel):
     current_streak: int
-    streak_type: str = Field(..., regex="^(winning|losing|neutral)$")
+    streak_type: str = Field(..., pattern="^(winning|losing|neutral)$")
     best_streak: int
     worst_streak: int
     average_streak_length: float
@@ -77,8 +77,8 @@ class PatternDetectionResponse(BaseModel):
 
 
 class MarketContextResponse(BaseModel):
-    regime: str = Field(..., regex="^(bull|bear|sideways)$")
-    volatility: str = Field(..., regex="^(low|medium|high)$")
+    regime: str = Field(..., pattern="^(bull|bear|sideways)$")
+    volatility: str = Field(..., pattern="^(low|medium|high)$")
     trend_strength: float
     support_levels: List[float]
     resistance_levels: List[float]
@@ -107,7 +107,7 @@ class PatternMatch(BaseModel):
 
 class PreTradeAnalysisRequest(BaseModel):
     symbol: str
-    side: str = Field(..., regex="^(long|short)$")
+    side: str = Field(..., pattern="^(long|short)$")
     entry_price: float
     quantity: int
     stop_loss: Optional[float] = None

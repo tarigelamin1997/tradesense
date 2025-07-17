@@ -42,9 +42,8 @@ trade_intelligence = TradeIntelligenceEngine()
 ai_analyzer = AITradeAnalyzer()
 behavioral_service = BehavioralAnalyticsService()
 edge_analyzer = EdgeStrengthAnalyzer()
-emotional_service = EmotionalAnalyticsService()
 market_service = MarketContextService()
-# Note: PatternDetectionService requires db session, initialized in routes
+# Note: PatternDetectionService and EmotionalAnalyticsService require db session/user_id, initialized in routes
 
 
 @router.get("/trades/{trade_id}/score", response_model=TradeScoreResponse)
@@ -236,6 +235,8 @@ async def get_emotional_analytics(
     if not FeatureFlagService.is_enabled("ai_trade_insights", current_user):
         raise HTTPException(status_code=403, detail="AI insights not available in your plan")
     
+    # Initialize emotional service with db and user_id
+    emotional_service = EmotionalAnalyticsService(db, str(current_user.id))
     analytics = emotional_service.analyze_emotional_impact(
         user_id=current_user.id,
         timeframe=timeframe,
@@ -254,6 +255,8 @@ async def get_emotional_impact(
     if not FeatureFlagService.is_enabled("ai_trade_insights", current_user):
         raise HTTPException(status_code=403, detail="AI insights not available in your plan")
     
+    # Initialize emotional service with db and user_id
+    emotional_service = EmotionalAnalyticsService(db, str(current_user.id))
     impact = emotional_service.calculate_emotion_performance_impact(
         user_id=current_user.id,
         db=db
@@ -327,6 +330,8 @@ async def get_ai_insights_summary(
     
     market_context = market_service.analyze_market_context(latest_trade.symbol)
     
+    # Initialize emotional service with db and user_id
+    emotional_service = EmotionalAnalyticsService(db, str(current_user.id))
     emotional_analytics = emotional_service.analyze_emotional_impact(
         user_id=current_user.id,
         timeframe="month",

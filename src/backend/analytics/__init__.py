@@ -15,7 +15,8 @@ from .product_analytics import (
     ProductAnalytics,
     track_trade_analytics,
     track_feature_usage,
-    track_subscription_event
+    track_subscription_event,
+    track_support_event
 )
 
 __all__ = [
@@ -28,5 +29,6 @@ __all__ = [
     "ProductAnalytics",
     "track_trade_analytics",
     "track_feature_usage",
-    "track_subscription_event"
+    "track_subscription_event",
+    "track_support_event"
 ]

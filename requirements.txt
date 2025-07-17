@@ -34,6 +34,7 @@ httpx==0.25.2
 python-dateutil==2.8.2
 bleach==6.1.0
 jinja2==3.1.2
+aiohttp==3.9.1
 
 # Visualization (TODO: Verify if still needed for backend)
 plotly==5.17.0

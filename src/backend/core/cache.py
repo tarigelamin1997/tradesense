@@ -40,19 +40,6 @@ class CacheManager:
     def _init_redis(self):
         """Initialize Redis connection"""
         try:
-            # Debug: Print Redis environment variables
-            import sys
-            print("=== Redis Environment Variables ===", file=sys.stderr)
-            for key in ["REDIS_URL", "REDIS_PRIVATE_URL", "REDISHOST", "REDISPORT", "REDISUSER", "REDISPASSWORD"]:
-                value = os.getenv(key)
-                if value:
-                    if "PASSWORD" in key or "URL" in key:
-                        masked_value = value[:10] + "..." if len(value) > 10 else "***"
-                        print(f"{key}: {masked_value}", file=sys.stderr)
-                    else:
-                        print(f"{key}: {value}", file=sys.stderr)
-            print("==================================", file=sys.stderr)
-            
             # Try to get Redis URL from environment or config
             # Railway provides REDIS_URL or sometimes REDIS_PRIVATE_URL
             redis_url = os.getenv("REDIS_URL", os.getenv("REDIS_PRIVATE_URL", "redis://localhost:6379/0"))

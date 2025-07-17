@@ -196,27 +196,27 @@ def create_app() -> FastAPI:
     app.include_router(reporting_router, tags=["reporting"])
     
     # A/B Testing router
-    from src.backend.api.experiments import router as experiments_router
+    from api.experiments import router as experiments_router
     app.include_router(experiments_router, tags=["experiments"])
     
     # Backup router
-    from src.backend.api.backup import router as backup_router
+    from api.backup import router as backup_router
     app.include_router(backup_router, tags=["backup"])
     
     # MFA router
-    from src.backend.api.mfa import router as mfa_router
+    from api.mfa import router as mfa_router
     app.include_router(mfa_router, tags=["mfa"])
     
     # Alerts router
-    from src.backend.api.alerts import router as alerts_router
+    from api.alerts import router as alerts_router
     app.include_router(alerts_router, tags=["alerts"])
     
     # Mobile API router
-    from src.backend.api.mobile import mobile_router
+    from api.mobile import mobile_router
     app.include_router(mobile_router, tags=["mobile"])
     
     # Collaboration router
-    from src.backend.api.collaboration import router as collaboration_router
+    from api.collaboration import router as collaboration_router
     app.include_router(collaboration_router, tags=["collaboration"])
     
     # Legacy health router for backward compatibility

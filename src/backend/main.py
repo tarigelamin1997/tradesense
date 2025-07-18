@@ -9,9 +9,16 @@ if backend_dir not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Run startup validation
+from core.startup_validation import run_startup_validation
+
 # Initialize database first
 try:
     print("🚀 Starting TradeSense Backend...")
+    
+    # Run validation checks
+    if not run_startup_validation():
+        print("⚠️ Starting with validation warnings - some features may be limited")
     
     # Import all models first to register them with SQLAlchemy
     import models  # This ensures all models are registered

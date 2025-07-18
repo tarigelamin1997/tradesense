@@ -21,8 +21,8 @@ NC='\033[0m' # No Color
 # Project settings
 VENV_NAME="test_venv"
 BACKEND_PORT=8000
-FRONTEND_PORT=5173
-FRONTEND_ALT_PORT=3001
+FRONTEND_PORT=3001
+FRONTEND_ALT_PORT=5173
 
 # Files and directories
 LOG_DIR="logs"

@@ -1429,3 +1429,36 @@
 2025-07-12 16:10:57,480 - core.middleware - INFO - Request 8d04baee-22ce-4285-9317-2d4b80e318c7 completed in 0.0111s - Status: 401
 2025-07-12 21:08:08,525 - core.middleware - INFO - Request f9af1578-0f67-4639-99c0-3e82f630ae01: POST http://localhost:8000/api/v1/auth/login
 2025-07-12 21:10:09,151 - core.middleware - INFO - Request f9af1578-0f67-4639-99c0-3e82f630ae01 completed in 120.6267s - Status: 400
+2025-07-15 22:23:11,494 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:25:47,103 - core.middleware - INFO - Request 7af5f282-8a9b-4d34-a2dc-57bcbe5b37f3: POST http://localhost:8000/api/v1/auth/login
+2025-07-15 22:25:47,122 - core.exceptions - WARNING - Validation error: [{'type': 'value_error', 'loc': ('body', 'password'), 'msg': 'Value error, Either email or username must be provided', 'input': '', 'ctx': {'error': ValueError('Either email or username must be provided')}}]
+2025-07-15 22:25:47,123 - core.middleware - INFO - Request 7af5f282-8a9b-4d34-a2dc-57bcbe5b37f3 completed in 0.0206s - Status: 422
+2025-07-15 22:26:00,493 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:26:06,313 - core.middleware - INFO - Request d4641d88-600c-4c99-b029-60c6d3ed50cc: POST http://localhost:8000/api/v1/auth/login
+2025-07-15 22:26:06,320 - core.middleware - INFO - Request d4641d88-600c-4c99-b029-60c6d3ed50cc completed in 0.0069s - Status: 401
+2025-07-15 22:26:15,480 - core.middleware - INFO - Request 5afb4186-71b1-41f3-85ed-42572db6b219: POST http://localhost:8000/api/v1/auth/login
+2025-07-15 22:26:15,506 - core.middleware - INFO - Request 5afb4186-71b1-41f3-85ed-42572db6b219 completed in 0.0259s - Status: 401
+2025-07-15 22:26:49,442 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:26:59,810 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:27:07,903 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:27:17,565 - core.middleware - INFO - Request 9339ed9d-d62c-44da-a31d-b7527c81ee83: POST http://localhost:8000/api/v1/auth/register
+2025-07-15 22:27:17,578 - core.exceptions - WARNING - Validation error: [{'type': 'string_too_short', 'loc': ('body', 'password'), 'msg': 'String should have at least 8 characters', 'input': '🔥💀🚀', 'ctx': {'min_length': 8}}]
+2025-07-15 22:27:17,578 - core.middleware - INFO - Request 9339ed9d-d62c-44da-a31d-b7527c81ee83 completed in 0.0132s - Status: 422
+2025-07-15 22:27:32,536 - core.middleware - INFO - Request 18437bda-b0bc-4481-9345-309799f9d1fd: POST http://localhost:8000/api/v1/auth/register
+2025-07-15 22:27:32,538 - core.exceptions - WARNING - Validation error: [{'type': 'value_error', 'loc': ('body', 'password'), 'msg': 'Value error, Password must contain only standard keyboard characters', 'input': '🔥💀🚀🎯🌟💰🎸🎮', 'ctx': {'error': ValueError('Password must contain only standard keyboard characters')}}]
+2025-07-15 22:27:32,539 - core.middleware - INFO - Request 18437bda-b0bc-4481-9345-309799f9d1fd completed in 0.0028s - Status: 422
+2025-07-15 22:27:42,546 - core.middleware - INFO - Request 9d463466-2c4e-49dd-bed5-f107ea8fade6: POST http://localhost:8000/api/v1/auth/register
+2025-07-15 22:27:42,553 - core.exceptions - WARNING - Validation error: [{'type': 'value_error', 'loc': ('body', 'password'), 'msg': 'Value error, Password must contain at least one number', 'input': 'onlyletters', 'ctx': {'error': ValueError('Password must contain at least one number')}}]
+2025-07-15 22:27:42,554 - core.middleware - INFO - Request 9d463466-2c4e-49dd-bed5-f107ea8fade6 completed in 0.0072s - Status: 422
+2025-07-15 22:27:57,270 - core.middleware - INFO - Request f7dc6ba1-6df1-4f7f-a113-8df2638ae14e: POST http://localhost:8000/api/v1/auth/register
+2025-07-15 22:27:57,280 - core.middleware - INFO - Request f7dc6ba1-6df1-4f7f-a113-8df2638ae14e completed in 0.0096s - Status: 400
+2025-07-15 22:28:14,078 - core.middleware - INFO - Request dfa9eb3c-8936-4009-b08f-11850a887f2f: POST http://localhost:8000/api/v1/auth/register
+2025-07-15 22:28:14,104 - core.middleware - INFO - Request dfa9eb3c-8936-4009-b08f-11850a887f2f completed in 0.0260s - Status: 400
+2025-07-15 22:28:54,363 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:29:02,108 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:29:10,091 - core.middleware - INFO - Request 14282032-51d5-4a96-a34d-81cadc4b2dff: POST http://localhost:8000/api/v1/auth/register
+2025-07-15 22:29:10,461 - core.middleware - INFO - Request 14282032-51d5-4a96-a34d-81cadc4b2dff completed in 0.3696s - Status: 201
+2025-07-15 22:30:08,203 - core.validation_middleware - INFO - Validation middleware configured
+2025-07-15 22:30:26,644 - core.middleware - INFO - Request 569c6189-a45e-47a9-98e8-c3f7aae495ab: GET http://localhost:8000/api/v1/auth/me
+2025-07-15 22:30:26,658 - core.middleware - INFO - Request 569c6189-a45e-47a9-98e8-c3f7aae495ab completed in 0.0144s - Status: 401
+2025-07-15 23:06:15,351 - core.validation_middleware - INFO - Validation middleware configured

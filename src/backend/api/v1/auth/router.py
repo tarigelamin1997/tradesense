@@ -22,6 +22,7 @@ from api.v1.auth.schemas import (
 from api.v1.auth.service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
 from models.user import User
 from api.deps import get_current_user
+from services.email_service import EmailService
 
 router = APIRouter()
 
@@ -66,15 +67,34 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user"""
-    # Print the raw request body for debugging
-    try:
-        raw_body = await request.body()
-        print(f"[DEBUG] Raw /register request body: {raw_body}")
-    except Exception as e:
-        print(f"[DEBUG] Could not read raw request body: {e}")
-    # Print the type and value of user_data
-    print(f"[DEBUG] user_data type: {type(user_data)}")
-    print(f"[DEBUG] user_data value: {user_data}")
+    # Input validation to prevent DoS
+    if not user_data.email or not user_data.username or not user_data.password:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": "Email, username and password are required"}
+        )
+    
+    # Validate input length to prevent DoS
+    if len(user_data.password) > 1000 or len(user_data.username) > 50 or len(user_data.email) > 255:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": "Invalid input length"}
+        )
+    
+    # Validate username format to prevent SQL injection
+    if any(char in user_data.username for char in ["'", '"', ';', '--', '\x00', '\n', '\r']):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": "Invalid characters in username"}
+        )
+    
+    # Validate email format to prevent SQL injection  
+    if any(char in user_data.email for char in ["'", '"', ';', '--', '\x00', '\n', '\r']):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": "Invalid characters in email"}
+        )
+    
     try:
         # Rate limiting
         client_ip = get_client_ip(request)
@@ -93,6 +113,15 @@ async def register(
         
         auth_service = AuthService(db)
         user = auth_service.create_user(user_data)
+        
+        # Send verification email
+        try:
+            email_service = EmailService()
+            email_service.send_verification_email(user.id, user.email, user.username)
+        except Exception as e:
+            logging.error(f"Failed to send verification email: {str(e)}")
+            # Don't fail registration if email fails
+        
         # Reset rate limiter for test client to allow duplicate registration test
         if 'testclient' in client_ip:
             await reset_rate_limit(rate_limit_key)
@@ -101,12 +130,11 @@ async def register(
             content={
                 "user_id": user.id,
                 "username": user.username,
-                "email": user.email
+                "email": user.email,
+                "message": "Registration successful. Please check your email to verify your account."
             }
         )
     except Exception as e:
-        print(f"[DEBUG] /register validation or creation error: {e}")
-        print(traceback.format_exc())
         # Record failed attempt
         await record_attempt(rate_limit_key)
         return JSONResponse(
@@ -121,6 +149,36 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """Login user (accepts username or email)"""
+    # Input validation - prevent empty credentials or malicious input
+    # Return same error as invalid credentials to prevent enumeration
+    if not login_data.password or (not login_data.email and not login_data.username):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"details": {"message": "Invalid username/email or password."}},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Validate input length to prevent DoS
+    if len(login_data.password) > 1000:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": "Invalid input"}
+        )
+    
+    # Validate username/email format to prevent SQL injection
+    # Return same error as invalid credentials to prevent enumeration
+    if login_data.username and (
+        "'" in login_data.username or 
+        '"' in login_data.username or 
+        ';' in login_data.username or
+        '--' in login_data.username
+    ):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"details": {"message": "Invalid username/email or password."}},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     # Rate limiting
     client_ip = get_client_ip(request)
     rate_limit_key = f"login:{client_ip}"
@@ -154,7 +212,7 @@ async def login(
         await record_attempt(rate_limit_key)
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"details": {"message": f"Invalid username/email or password. {remaining - 1} attempts remaining."}},
+            content={"details": {"message": "Invalid username/email or password."}},
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -260,3 +318,84 @@ async def change_password(
 async def logout(current_user: User = Depends(get_current_user)):
     """Logout user (client should remove token)"""
     return {"message": "Successfully logged out"}
+
+@router.post("/verify-email")
+async def verify_email(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Verify user email with token"""
+    email_service = EmailService()
+    payload = email_service.verify_token(token)
+    
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token"
+        )
+    
+    # Update user verification status
+    user = db.query(User).filter(User.id == payload['user_id']).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if user.is_verified:
+        return {"message": "Email already verified"}
+    
+    user.is_verified = True
+    db.commit()
+    
+    # Send welcome email
+    try:
+        email_service.send_welcome_email(user.email, user.username)
+    except Exception as e:
+        logging.error(f"Failed to send welcome email: {str(e)}")
+    
+    return {"message": "Email verified successfully"}
+
+@router.post("/resend-verification")
+async def resend_verification(
+    request: Request,
+    email: str,
+    db: Session = Depends(get_db)
+):
+    """Resend verification email"""
+    # Rate limiting
+    client_ip = get_client_ip(request)
+    rate_limit_key = f"resend_verification:{client_ip}:{email}"
+    
+    is_allowed, remaining = await check_rate_limit(
+        rate_limit_key,
+        5,  # Max 5 resends
+        3600  # Per hour
+    )
+    
+    if not is_allowed:
+        raise RateLimitError(
+            "Too many verification email requests. Please try again later."
+        )
+    
+    # Find user
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        # Don't reveal if email exists
+        return {"message": "If the email exists, a verification link has been sent"}
+    
+    if user.is_verified:
+        return {"message": "Email already verified"}
+    
+    # Send verification email
+    try:
+        email_service = EmailService()
+        email_service.send_verification_email(user.id, user.email, user.username)
+    except Exception as e:
+        logging.error(f"Failed to send verification email: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email"
+        )
+    
+    return {"message": "Verification email sent"}

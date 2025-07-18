@@ -49,6 +49,7 @@ from api.v1.emotions.router import router as emotions_router
 from api.v1.health.performance_router import router as performance_router
 from api.v1.health.router import router as health_router
 from api.v1.billing.router import router as billing_router
+from api.v1.websocket.router import router as websocket_router
 from api.health.router import router as health_router_legacy, root_router as health_root_router
 from core.middleware import setup_middleware
 from core.exceptions import setup_exception_handlers
@@ -89,6 +90,21 @@ def create_app() -> FastAPI:
     from core.config import settings
     # Split the comma-separated origins string into a list
     cors_origins = [origin.strip() for origin in settings.cors_origins_str.split(",")]
+    # Add common localhost variations for development
+    if os.getenv("ENVIRONMENT", "development") != "production":
+        cors_origins.extend([
+            "http://localhost:3000",
+            "http://localhost:3001", 
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+            "http://127.0.0.1:5173",
+            "http://0.0.0.0:3000",
+            "http://0.0.0.0:3001",
+        ])
+        # Remove duplicates
+        cors_origins = list(set(cors_origins))
+    print(f"CORS Origins configured: {cors_origins}")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,  # From environment
@@ -117,7 +133,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1/auth")
     app.include_router(trades_router, prefix="/api/v1/trades")
     app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["analytics"])
-    app.include_router(uploads_router, prefix="/api/v1")
+    app.include_router(uploads_router, prefix="/api/v1/uploads")
     app.include_router(features_router, prefix="/api/v1/features", tags=["features"])
     app.include_router(intelligence_router, prefix="/api/v1/intelligence", tags=["intelligence"])
     app.include_router(market_data_router, prefix="/api/v1/market-data", tags=["market-data"])
@@ -139,6 +155,7 @@ def create_app() -> FastAPI:
     app.include_router(performance_router, prefix="/api/v1/performance", tags=["performance"])
     app.include_router(health_router, tags=["health"])
     app.include_router(billing_router, prefix="/api/v1/billing", tags=["billing"])
+    app.include_router(websocket_router, tags=["websocket"])
     
     # Legacy health router for backward compatibility
     app.include_router(health_router_legacy, prefix="/api")

@@ -1,177 +1,111 @@
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
-from core.db.session import get_db
-from api.deps import get_current_user
-from services.portfolio_simulator import PortfolioSimulator
+from typing import Optional, List
+from datetime import datetime, timedelta
+import pandas as pd
+import io
+
+from api.deps import get_current_user, get_db
 from models.user import User
-from api.v1.portfolio.schemas import PortfolioCreate, PortfolioResponse, EquityCurveResponse
+from models.trade import Trade
+from .schemas import PortfolioResponse, PositionResponse, AllocationResponse, PerformanceResponse
+from .service import PortfolioService
 
-router = APIRouter()
+router = APIRouter(tags=["portfolio"])
 
-@router.post("/", response_model=Dict[str, Any])
-async def create_portfolio(
-    portfolio_data: PortfolioCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Create a new virtual portfolio"""
-    simulator = PortfolioSimulator(db)
-    result = simulator.create_portfolio(
-        user_id=current_user.id,
-        name=portfolio_data.name,
-        initial_balance=portfolio_data.initial_balance
-    )
-    
-    if not result["success"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["error"]
-        )
-    
-    return result
-
-@router.get("/", response_model=List[PortfolioResponse])
-async def get_portfolios(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get all portfolios for the current user"""
-    simulator = PortfolioSimulator(db)
-    portfolios = simulator.get_user_portfolios(current_user.id)
-    return portfolios
-
-@router.get("/{portfolio_id}", response_model=PortfolioResponse)
+@router.get("", response_model=PortfolioResponse)
 async def get_portfolio(
-    portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    timeframe: str = Query("30d", description="Timeframe: 7d, 30d, 90d, 1y, all"),
+    asset_class: Optional[str] = Query(None, description="Filter by asset class"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Get a specific portfolio"""
-    simulator = PortfolioSimulator(db)
-    portfolio = simulator.get_portfolio(portfolio_id, current_user.id)
-    
-    if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found"
-        )
-    
-    return portfolio
+    """Get portfolio overview with positions and performance"""
+    service = PortfolioService(db)
+    return service.get_portfolio(
+        user_id=current_user.id,
+        timeframe=timeframe,
+        asset_class=asset_class
+    )
 
-@router.get("/{portfolio_id}/equity-curve", response_model=List[EquityCurveResponse])
-async def get_equity_curve(
-    portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.get("/positions", response_model=List[PositionResponse])
+async def get_positions(
+    asset_class: Optional[str] = Query(None),
+    sort_by: str = Query("value", description="Sort by: value, pnl, allocation"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Get equity curve data for a portfolio"""
-    simulator = PortfolioSimulator(db)
-    
-    # Verify portfolio ownership
-    portfolio = simulator.get_portfolio(portfolio_id, current_user.id)
-    if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found"
-        )
-    
-    equity_data = simulator.get_equity_curve(portfolio_id)
-    return equity_data
+    """Get current positions"""
+    service = PortfolioService(db)
+    return service.get_positions(
+        user_id=current_user.id,
+        asset_class=asset_class,
+        sort_by=sort_by
+    )
 
-@router.post("/{portfolio_id}/simulate-trade", response_model=Dict[str, Any])
-async def simulate_trade(
-    portfolio_id: str,
-    trade_data: Dict[str, Any],
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.get("/performance", response_model=List[PerformanceResponse])
+async def get_performance(
+    timeframe: str = Query("30d"),
+    interval: str = Query("daily", description="Interval: daily, weekly, monthly"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Simulate a trade in the portfolio"""
-    simulator = PortfolioSimulator(db)
-    
-    # Verify portfolio ownership
-    portfolio = simulator.get_portfolio(portfolio_id, current_user.id)
-    if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found"
-        )
-    
-    result = simulator.simulate_trade(portfolio_id, trade_data)
-    return result
+    """Get portfolio performance over time"""
+    service = PortfolioService(db)
+    return service.get_performance(
+        user_id=current_user.id,
+        timeframe=timeframe,
+        interval=interval
+    )
 
-@router.post("/{portfolio_id}/reset", response_model=PortfolioResponse)
-async def reset_portfolio(
-    portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.get("/allocations", response_model=List[AllocationResponse])
+async def get_allocations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Reset portfolio to initial state"""
-    simulator = PortfolioSimulator(db)
-    
-    # Verify portfolio ownership
-    portfolio = simulator.get_portfolio(portfolio_id, current_user.id)
-    if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found"
-        )
-    
-    result = simulator.reset_portfolio(portfolio_id)
-    return result
+    """Get asset allocation breakdown"""
+    service = PortfolioService(db)
+    return service.get_allocations(user_id=current_user.id)
 
-@router.post("/{portfolio_id}/simulate")
-async def simulate_trades(
-    portfolio_id: str,
-    trade_ids: List[str],
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.get("/export")
+async def export_portfolio(
+    format: str = Query("csv", description="Export format: csv, excel"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Simulate trades on a portfolio"""
-    simulator = PortfolioSimulator(db)
-    result = simulator.simulate_trades_on_portfolio(portfolio_id, trade_ids)
+    """Export portfolio data"""
+    service = PortfolioService(db)
+    positions = service.get_positions(user_id=current_user.id)
     
-    if not result["success"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["error"]
-        )
+    # Convert to DataFrame
+    df = pd.DataFrame([p.dict() for p in positions])
     
-    return result
+    if format == "csv":
+        output = io.StringIO()
+        df.to_csv(output, index=False)
+        content = output.getvalue()
+        media_type = "text/csv"
+        filename = f"portfolio_{datetime.now().strftime('%Y%m%d')}.csv"
+    else:  # excel
+        output = io.BytesIO()
+        df.to_excel(output, index=False)
+        content = output.getvalue()
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"portfolio_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
 
-@router.get("/{portfolio_id}/equity-curve", response_model=EquityCurveResponse)
-async def get_equity_curve(
-    portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.get("/risk-metrics")
+async def get_risk_metrics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Get equity curve data for a portfolio"""
-    simulator = PortfolioSimulator(db)
-    result = simulator.get_equity_curve(portfolio_id)
-    
-    if not result["success"]:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=result["error"]
-        )
-    
-    return result
-
-@router.delete("/{portfolio_id}")
-async def delete_portfolio(
-    portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Delete a portfolio"""
-    simulator = PortfolioSimulator(db)
-    result = simulator.delete_portfolio(portfolio_id, current_user.id)
-    
-    if not result["success"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["error"]
-        )
-    
-    return result
+    """Get portfolio risk metrics"""
+    service = PortfolioService(db)
+    return service.calculate_risk_metrics(user_id=current_user.id)

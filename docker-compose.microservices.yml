@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    build: ./services/gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE_URL=http://auth:8000
+      - TRADING_SERVICE_URL=http://trading:8000
+      - ANALYTICS_SERVICE_URL=http://analytics:8000
+      - MARKET_DATA_SERVICE_URL=http://market-data:8000
+      - BILLING_SERVICE_URL=http://billing:8000
+      - AI_SERVICE_URL=http://ai:8000
+    depends_on:
+      - auth
+      - trading
+    networks:
+      - tradesense-network
+
+  # Auth Service
+  auth:
+    build: ./services/auth
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://postgres:postgres@auth-db:5432/auth_db
+      - JWT_SECRET_KEY=your-secret-key-change-in-production
+    depends_on:
+      - auth-db
+    networks:
+      - tradesense-network
+
+  # Trading Service
+  trading:
+    build: ./services/trading
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://postgres:postgres@trading-db:5432/trading_db
+      - AUTH_SERVICE_URL=http://auth:8000
+    depends_on:
+      - trading-db
+      - auth
+    networks:
+      - tradesense-network
+
+  # Auth Database
+  auth-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth_db
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - tradesense-network
+
+  # Trading Database
+  trading-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=trading_db
+    volumes:
+      - trading-db-data:/var/lib/postgresql/data
+    networks:
+      - tradesense-network
+
+networks:
+  tradesense-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  trading-db-data:

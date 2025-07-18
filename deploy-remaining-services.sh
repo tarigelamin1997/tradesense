@@ -1,0 +1,67 @@
+#!/bin/bash
+
+echo "🚀 Deploying Remaining Microservices"
+echo "===================================="
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "\n${YELLOW}Analytics Service${NC}"
+echo "1. Initialize and deploy:"
+echo "   cd services/analytics"
+echo "   git init && git add -A && git commit -m 'Initial Analytics service'"
+echo "   railway init --name tradesense-analytics"
+echo "   # Add PostgreSQL in Railway UI"
+echo "   railway up"
+echo ""
+
+echo -e "${YELLOW}Market Data Service${NC}"
+echo "2. Initialize and deploy:"
+echo "   cd services/market-data"
+echo "   git init && git add -A && git commit -m 'Initial Market Data service'"
+echo "   railway init --name tradesense-market-data"
+echo "   # Add Redis in Railway UI"
+echo "   railway up"
+echo ""
+
+echo -e "${YELLOW}Billing Service${NC}"
+echo "3. Initialize and deploy:"
+echo "   cd services/billing"
+echo "   git init && git add -A && git commit -m 'Initial Billing service'"
+echo "   railway init --name tradesense-billing"
+echo "   # Add PostgreSQL in Railway UI"
+echo "   railway up"
+echo ""
+
+echo -e "${YELLOW}AI Service${NC}"
+echo "4. Initialize and deploy:"
+echo "   cd services/ai"
+echo "   git init && git add -A && git commit -m 'Initial AI service'"
+echo "   railway init --name tradesense-ai"
+echo "   # Add PostgreSQL in Railway UI"
+echo "   railway up"
+echo ""
+
+echo -e "${GREEN}Environment Variables to Set:${NC}"
+echo ""
+echo "Analytics Service:"
+echo "  AUTH_SERVICE_URL=https://tradesense-auth-production.up.railway.app"
+echo "  TRADING_SERVICE_URL=https://tradesense-trading-production.up.railway.app"
+echo ""
+echo "Market Data Service:"
+echo "  REDIS_URL=(auto-set by Railway when you add Redis)"
+echo ""
+echo "Billing Service:"
+echo "  AUTH_SERVICE_URL=https://tradesense-auth-production.up.railway.app"
+echo "  STRIPE_SECRET_KEY=sk_test_..."
+echo "  STRIPE_PRICE_BASIC=price_..."
+echo "  STRIPE_PRICE_PRO=price_..."
+echo "  STRIPE_PRICE_PREMIUM=price_..."
+echo ""
+echo "AI Service:"
+echo "  AUTH_SERVICE_URL=https://tradesense-auth-production.up.railway.app"
+echo "  TRADING_SERVICE_URL=https://tradesense-trading-production.up.railway.app"
+echo "  ANALYTICS_SERVICE_URL=https://tradesense-analytics-production.up.railway.app"
+echo "  OPENAI_API_KEY=sk-..."

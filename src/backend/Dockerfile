@@ -8,8 +8,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy the entire backend directory structure
+COPY . /app/
+
+# Set working directory to where main.py actually is
+WORKDIR /app/src/backend
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -30,11 +33,8 @@ RUN pip install --no-cache-dir \
     pandas \
     numpy
 
-# Copy application code
-COPY . .
-
 # Set Python path to include current directory
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src/backend
 
 # Set environment variable for port (Railway provides this)
 ENV PORT=8000

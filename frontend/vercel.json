@@ -39,7 +39,7 @@
     }
   ],
   "env": {
-    "VITE_API_BASE_URL": "https://tradesense-production.up.railway.app",
+    "VITE_API_URL": "https://tradesense-gateway-production.up.railway.app",
     "VITE_APP_URL": "https://tradesense.vercel.app"
   }
 }

@@ -39,5 +39,9 @@ ENV PYTHONPATH=/app/src/backend
 # Set environment variable for port (Railway provides this)
 ENV PORT=8000
 
+# Copy start script
+COPY src/backend/start.sh /app/src/backend/start.sh
+RUN chmod +x /app/src/backend/start.sh
+
 # Run the application (no --reload in production)
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["/app/src/backend/start.sh"]

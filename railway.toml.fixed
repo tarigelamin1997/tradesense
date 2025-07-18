@@ -1,12 +1,11 @@
 # Railway configuration for TradeSense Backend
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "src/backend/Dockerfile"
+dockerfilePath = "Dockerfile"
 dockerContext = "."
 watchPatterns = ["src/backend/**"]
 
 [deploy]
-# Using Dockerfile CMD instead of startCommand
 # Health check configuration
 healthcheckPath = "/health"
 healthcheckTimeout = 30
@@ -32,9 +31,9 @@ PYTHONDONTWRITEBYTECODE = "1"
 ENVIRONMENT = "production"
 DEBUG = "false"
 
-# Uvicorn worker settings (start with 1 for stability)
+# Uvicorn worker settings (reduced for stability)
 WEB_CONCURRENCY = "1"
 UVICORN_WORKERS = "1"
 
-# Skip database init for faster startup
+# Skip DB initialization on startup to prevent failures
 SKIP_DB_INIT = "true"

@@ -8,7 +8,7 @@ watchPatterns = ["src/backend/**"]
 [deploy]
 # Using Dockerfile CMD instead of startCommand
 # Health check configuration
-healthcheckPath = "/api/health"
+healthcheckPath = "/health"
 healthcheckTimeout = 30
 healthcheckInterval = 30
 

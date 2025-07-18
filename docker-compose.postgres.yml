@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend-init:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./src/backend:/app
+      - ./requirements.txt:/app/requirements.txt
+    environment:
+      DATABASE_URL: postgresql://tradesense_user:2ca9bfcf1a40257caa7b4be903c7fe22@172.17.0.1:5433/tradesense
+      JWT_SECRET_KEY: 3f8b7e2a1d6c9e4f7a2b5d8e1c4f7a9b2e5d8c1f4a7b9e2d5c8f1a4b7e9d2c5f
+    command: |
+      bash -c "
+        echo 'Installing dependencies...' &&
+        pip install -r requirements.txt &&
+        pip install psycopg2-binary &&
+        echo 'Initializing database...' &&
+        python init_postgres_db.py
+      "
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

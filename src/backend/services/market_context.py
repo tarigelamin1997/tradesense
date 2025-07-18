@@ -185,3 +185,5 @@ class MarketContextEngine:
 
 # Global instance
 market_context_engine = MarketContextEngine()
+# Alias for compatibility
+MarketContextService = MarketContextEngine

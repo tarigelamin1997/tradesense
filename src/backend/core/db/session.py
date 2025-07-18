@@ -83,26 +83,35 @@ if DATABASE_URL.startswith("sqlite"):
     )
 else:
     # PostgreSQL/MySQL optimized configuration
+    connect_args = {
+        "connect_timeout": 10,
+        "application_name": "tradesense_backend",
+        "options": "-c timezone=utc",
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5
+    }
+    
+    # Add SSL configuration for Railway (production)
+    if os.getenv("ENVIRONMENT") == "production" or "railway" in DATABASE_URL:
+        connect_args["sslmode"] = "require"  # Railway requires SSL
+    
+    # Adjust pool size for Railway's smaller containers
+    pool_size = 5 if os.getenv("ENVIRONMENT") == "production" else 20
+    max_overflow = 10 if os.getenv("ENVIRONMENT") == "production" else 40
+    
     engine = create_engine(
         DATABASE_URL,
         poolclass=QueuePool,
-        pool_size=20,              # Number of persistent connections
-        max_overflow=40,           # Maximum overflow connections (increased from 30)
-        pool_timeout=30,           # Timeout for getting connection from pool
-        pool_pre_ping=True,        # Test connections before use
-        pool_recycle=1800,         # Recycle connections after 30 min (reduced from 3600)
+        pool_size=pool_size,              # Reduced for Railway
+        max_overflow=max_overflow,        # Reduced for Railway
+        pool_timeout=30,                  # Timeout for getting connection from pool
+        pool_pre_ping=True,               # Test connections before use
+        pool_recycle=1800,                # Recycle connections after 30 min
         echo=False,
-        echo_pool=settings.debug,  # Log pool checkouts in debug mode
-        # Additional optimizations for production databases
-        connect_args={
-            "connect_timeout": 10,
-            "application_name": "tradesense_backend",
-            "options": "-c timezone=utc",
-            "keepalives": 1,
-            "keepalives_idle": 30,
-            "keepalives_interval": 10,
-            "keepalives_count": 5
-        }
+        echo_pool=settings.debug,         # Log pool checkouts in debug mode
+        connect_args=connect_args
     )
 
 # Create session factory with optimized settings

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tradesense-config
+  namespace: tradesense
+data:
+  # Backend configuration
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  CORS_ORIGINS: "https://tradesense.com,https://www.tradesense.com"
+  
+  # Frontend configuration
+  NODE_ENV: "production"
+  VITE_API_BASE_URL: "/api"
+  
+  # Database configuration (non-sensitive)
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "tradesense"
+  
+  # Redis configuration (non-sensitive)
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  
+  # Monitoring
+  PROMETHEUS_ENABLED: "true"
+  SENTRY_ENABLED: "true"

@@ -163,8 +163,15 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
 
 def setup_middleware(app):
     """Setup all middleware in the correct order"""
+    # Import rate limiting middleware
+    from core.rate_limit_middleware import RateLimitMiddleware, PerUserRateLimitMiddleware
+    
     # Timeout protection should be innermost (closest to the actual handlers)
     app.add_middleware(TimeoutMiddleware, timeout_seconds=30.0)
+    # Per-user rate limiting based on subscription tier
+    app.add_middleware(PerUserRateLimitMiddleware)
+    # General rate limiting for all endpoints
+    app.add_middleware(RateLimitMiddleware)
     # Request size limit middleware
     app.add_middleware(RequestSizeLimitMiddleware, max_size=100 * 1024)  # 100KB limit
     # Security headers should be applied to all responses

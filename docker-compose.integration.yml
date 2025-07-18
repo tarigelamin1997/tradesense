@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: tradesense_test
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: tradesense_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradesense_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-test:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend-test:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile.production
+    environment:
+      DATABASE_URL: postgresql://tradesense_test:test_password@postgres-test:5432/tradesense_test
+      REDIS_URL: redis://redis-test:6379/0
+      JWT_SECRET_KEY: test-secret-key-for-integration-testing
+      STRIPE_API_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_test_dummy
+      ENVIRONMENT: test
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/monitoring/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+    environment:
+      NODE_ENV: test
+      VITE_API_BASE_URL: http://backend-test:8000
+    depends_on:
+      backend-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  integration-tests:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile.integration
+    environment:
+      BACKEND_URL: http://backend-test:8000
+      FRONTEND_URL: http://frontend-test:3000
+      DATABASE_URL: postgresql://tradesense_test:test_password@postgres-test:5432/tradesense_test
+      REDIS_URL: redis://redis-test:6379/0
+    depends_on:
+      backend-test:
+        condition: service_healthy
+      frontend-test:
+        condition: service_healthy
+    command: pytest -v --tb=short integration/
+    
+  nginx-test:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./tests/nginx.test.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend-test
+      - frontend-test
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-test-data:
+  redis-test-data:

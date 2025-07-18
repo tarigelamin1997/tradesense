@@ -1,0 +1,379 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "tradesense-monitoring",
+    "title": "TradeSense Application Monitoring",
+    "tags": ["tradesense", "monitoring", "application"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Health Status",
+        "targets": [
+          {
+            "expr": "up{job=\"tradesense-backend\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"type": "value", "value": 1, "text": "Healthy", "color": "green"},
+              {"type": "value", "value": 0, "text": "Unhealthy", "color": "red"}
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Active Users",
+        "targets": [
+          {
+            "expr": "tradesense_active_users{period=\"1h\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 500}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "rate(tradesense_http_requests_total{status=~\"5..\"}[5m]) / rate(tradesense_http_requests_total[5m])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "custom": {
+              "decimals": 2
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 0.01},
+                {"color": "red", "value": 0.05}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Response Time (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(tradesense_http_request_duration_seconds_bucket[5m])) by (le))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "decimals": 3
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 0.5},
+                {"color": "red", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+        "type": "graph",
+        "title": "Request Rate",
+        "targets": [
+          {
+            "expr": "sum(rate(tradesense_http_requests_total[5m])) by (status)",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+        "type": "graph",
+        "title": "Response Time Percentiles",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(tradesense_http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(tradesense_http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(tradesense_http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Response Time"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "gridPos": {"x": 0, "y": 12, "w": 8, "h": 8},
+        "type": "graph",
+        "title": "Database Performance",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(tradesense_db_query_duration_seconds_bucket[5m])) by (le, query_type))",
+            "legendFormat": "{{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Query Time"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "gridPos": {"x": 8, "y": 12, "w": 8, "h": 8},
+        "type": "graph",
+        "title": "Cache Hit Rate",
+        "targets": [
+          {
+            "expr": "sum(rate(tradesense_cache_operations_total{result=\"hit\"}[5m])) / sum(rate(tradesense_cache_operations_total[5m]))",
+            "legendFormat": "Hit Rate",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Hit Rate",
+            "min": 0,
+            "max": 1
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "gridPos": {"x": 16, "y": 12, "w": 8, "h": 8},
+        "type": "graph",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "tradesense_memory_usage_bytes{type=\"used\"} / 1024 / 1024 / 1024",
+            "legendFormat": "Used",
+            "refId": "A"
+          },
+          {
+            "expr": "tradesense_memory_usage_bytes{type=\"available\"} / 1024 / 1024 / 1024",
+            "legendFormat": "Available",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "GB",
+            "label": "Memory"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "gridPos": {"x": 0, "y": 20, "w": 12, "h": 8},
+        "type": "graph",
+        "title": "Business Metrics - Trades",
+        "targets": [
+          {
+            "expr": "sum(rate(tradesense_trades_created_total[1h])) by (trade_type)",
+            "legendFormat": "{{trade_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Trades/hour"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "gridPos": {"x": 12, "y": 20, "w": 12, "h": 8},
+        "type": "graph",
+        "title": "API Usage by Endpoint",
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(tradesense_api_usage_total[5m])) by (endpoint))",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "gridPos": {"x": 0, "y": 28, "w": 8, "h": 6},
+        "type": "stat",
+        "title": "Total Trades Today",
+        "targets": [
+          {
+            "expr": "sum(increase(tradesense_trades_created_total[24h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 13,
+        "gridPos": {"x": 8, "y": 28, "w": 8, "h": 6},
+        "type": "stat",
+        "title": "Revenue Today",
+        "targets": [
+          {
+            "expr": "sum(increase(tradesense_subscription_revenue_total[24h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 14,
+        "gridPos": {"x": 16, "y": 28, "w": 8, "h": 6},
+        "type": "stat",
+        "title": "Failed Background Tasks",
+        "targets": [
+          {
+            "expr": "sum(increase(tradesense_background_task_duration_seconds_count{status=\"error\"}[24h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 10},
+                {"color": "red", "value": 50}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 15,
+        "gridPos": {"x": 0, "y": 34, "w": 24, "h": 8},
+        "type": "table",
+        "title": "Active Alerts",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\",alertname=~\"tradesense.*\"}",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "severity"},
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {"type": "value", "value": "critical", "color": "red"},
+                    {"type": "value", "value": "high", "color": "orange"},
+                    {"type": "value", "value": "medium", "color": "yellow"},
+                    {"type": "value", "value": "low", "color": "blue"}
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

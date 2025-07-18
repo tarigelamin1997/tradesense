@@ -684,5 +684,23 @@ async def track_support_event(
     )
 
 
+async def track_kb_event(
+    user_id: str,
+    event: str,
+    article_id: Optional[str] = None,
+    properties: Optional[Dict[str, Any]] = None
+):
+    """Track knowledge base related events."""
+    await user_analytics.track_event(
+        user_id=user_id,
+        event_type=EventType.CUSTOM,
+        properties={
+            "event": f"kb_{event}",
+            "article_id": article_id,
+            **(properties or {})
+        }
+    )
+
+
 # Initialize product analytics
 product_analytics = ProductAnalytics()

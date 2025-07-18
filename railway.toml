@@ -1,7 +1,7 @@
 # Railway configuration for TradeSense Backend
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.railway"
+dockerfilePath = "src/backend/Dockerfile"
 dockerContext = "."
 watchPatterns = ["src/backend/**"]
 
@@ -32,6 +32,9 @@ PYTHONDONTWRITEBYTECODE = "1"
 ENVIRONMENT = "production"
 DEBUG = "false"
 
-# Uvicorn worker settings
-WEB_CONCURRENCY = "4"
-UVICORN_WORKERS = "4"
+# Uvicorn worker settings (start with 1 for stability)
+WEB_CONCURRENCY = "1"
+UVICORN_WORKERS = "1"
+
+# Skip database init for faster startup
+SKIP_DB_INIT = "true"

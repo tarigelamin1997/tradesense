@@ -1,0 +1,35 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire project
+COPY . .
+
+# Set the working directory to where main.py is located
+WORKDIR /app/src/backend
+
+# Make the start script executable
+RUN chmod +x start.sh
+
+# Expose the port (informational only)
+EXPOSE 8000
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Default to skip DB init if not configured
+ENV SKIP_DB_INIT=true
+
+# Use the startup script which properly handles PORT
+CMD ["./start.sh"]

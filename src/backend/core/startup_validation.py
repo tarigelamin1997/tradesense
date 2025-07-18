@@ -4,8 +4,14 @@ Startup validation to ensure all required dependencies and environment variables
 import os
 import sys
 import importlib
-from typing import List, Tuple, Dict, Any
-from core.config import settings
+import time
+import asyncio
+from typing import List, Tuple, Dict, Any, Optional
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class StartupValidator:
@@ -22,6 +28,10 @@ class StartupValidator:
         self._validate_database_url()
         self._validate_directories()
         
+        # Test database connection if in production
+        if os.getenv("ENVIRONMENT") == "production":
+            self._test_database_connection()
+        
         is_valid = len(self.errors) == 0
         
         return is_valid, {
@@ -32,7 +42,8 @@ class StartupValidator:
                 "environment_variables",
                 "module_imports", 
                 "database_config",
-                "directory_structure"
+                "directory_structure",
+                "database_connection" if os.getenv("ENVIRONMENT") == "production" else None
             ]
         }
     
@@ -112,6 +123,46 @@ class StartupValidator:
                     self.errors.append(f"Failed to create directory {dir_name}: {str(e)}")
 
 
+    def _test_database_connection(self) -> bool:
+        """Test database connection with retry logic"""
+        from core.config import get_database_url
+        
+        db_url = get_database_url()
+        if not db_url:
+            self.errors.append("No database URL configured")
+            return False
+            
+        max_retries = 5
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Testing database connection (attempt {attempt + 1}/{max_retries})...")
+                engine = create_engine(db_url, pool_pre_ping=True)
+                
+                with engine.connect() as conn:
+                    result = conn.execute(text("SELECT 1"))
+                    result.fetchone()
+                    
+                logger.info("✅ Database connection successful")
+                return True
+                
+            except OperationalError as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Database connection failed (attempt {attempt + 1}): {str(e)}")
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    self.errors.append(f"Database connection failed after {max_retries} attempts: {str(e)}")
+                    return False
+            except Exception as e:
+                self.errors.append(f"Unexpected database error: {str(e)}")
+                return False
+                
+        return False
+
+
 # Singleton instance
 startup_validator = StartupValidator()
 
@@ -139,3 +190,46 @@ def run_startup_validation():
         print("Fix the errors above before deployment.")
         
     return is_valid
+
+
+async def wait_for_database(max_wait_time: int = 60) -> bool:
+    """Wait for database to be ready with exponential backoff"""
+    from core.config import get_database_url
+    
+    db_url = get_database_url()
+    if not db_url:
+        logger.error("No database URL configured")
+        return False
+        
+    start_time = time.time()
+    retry_delay = 1
+    attempt = 0
+    
+    while time.time() - start_time < max_wait_time:
+        attempt += 1
+        try:
+            logger.info(f"Checking database availability (attempt {attempt})...")
+            engine = create_engine(db_url, pool_pre_ping=True)
+            
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+                
+            logger.info("✅ Database is ready!")
+            return True
+            
+        except OperationalError as e:
+            elapsed = int(time.time() - start_time)
+            remaining = max_wait_time - elapsed
+            
+            if remaining > 0:
+                logger.warning(f"Database not ready yet ({elapsed}s elapsed, {remaining}s remaining)")
+                await asyncio.sleep(min(retry_delay, remaining))
+                retry_delay = min(retry_delay * 2, 10)  # Cap at 10 seconds
+            else:
+                logger.error(f"Database did not become ready within {max_wait_time} seconds")
+                return False
+        except Exception as e:
+            logger.error(f"Unexpected error waiting for database: {str(e)}")
+            return False
+            
+    return False

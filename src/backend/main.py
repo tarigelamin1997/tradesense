@@ -233,7 +233,9 @@ def create_app() -> FastAPI:
     @app.get("/", include_in_schema=False)
     async def redirect_to_frontend():
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="http://0.0.0.0:3000")
+        # Use frontend URL from environment or default to API docs
+        frontend_url = os.getenv("FRONTEND_URL", "/docs")
+        return RedirectResponse(url=frontend_url)
 
     @app.get("/api", include_in_schema=False)  
     async def api_root():
@@ -253,11 +255,23 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting TradeSense API server...")
+    import os
+    
+    # Get port from Railway or default to 8000 for local dev
+    port = int(os.getenv("PORT", 8000))
+    
+    # Check if we're in production
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
+    
+    logger.info(f"Starting TradeSense API server on port {port} (production={is_production})...")
+    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        port=port,
+        reload=not is_production,  # Only reload in development
+        log_level="info",
+        # Production optimizations
+        workers=1 if not is_production else None,  # Let Railway handle workers
+        access_log=not is_production  # Disable access logs in production
     )

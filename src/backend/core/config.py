@@ -7,13 +7,24 @@ from typing import Optional, List
 
 # Helper function to construct database URL
 def get_database_url():
+    """
+    Get database URL with proper handling for Railway's postgres:// format
+    """
     # First check for explicit DATABASE_URL
-    if os.getenv("DATABASE_URL"):
-        return os.getenv("DATABASE_URL")
+    db_url = os.getenv("DATABASE_URL")
+    
+    if db_url:
+        # Railway uses postgres:// but SQLAlchemy needs postgresql://
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        return db_url
     
     # Check for Railway's DATABASE_PRIVATE_URL
-    if os.getenv("DATABASE_PRIVATE_URL"):
-        return os.getenv("DATABASE_PRIVATE_URL")
+    private_url = os.getenv("DATABASE_PRIVATE_URL")
+    if private_url:
+        if private_url.startswith("postgres://"):
+            private_url = private_url.replace("postgres://", "postgresql://", 1)
+        return private_url
     
     # Check for Railway's POSTGRES_* variables (new format)
     if os.getenv("POSTGRES_HOST"):
@@ -33,7 +44,11 @@ def get_database_url():
         database = os.getenv("PGDATABASE", "railway")
         return f"postgresql://{user}:{password}@{host}:{port}/{database}"
     
-    # Default local database
+    # In production, we should not have a default
+    if os.getenv("ENVIRONMENT") == "production":
+        raise ValueError("DATABASE_URL must be set in production!")
+    
+    # Default local database for development only
     return "postgresql://postgres:postgres@localhost/tradesense"
 
 class Settings(BaseSettings):

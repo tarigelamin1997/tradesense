@@ -1,0 +1,216 @@
+groups:
+  - name: tradesense_application
+    interval: 30s
+    rules:
+      # API Health
+      - alert: TradesenseAPIDown
+        expr: up{job="tradesense-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "TradeSense API is down"
+          description: "TradeSense backend API has been down for more than 2 minutes."
+          runbook_url: "https://docs.tradesense.com/runbook#api-down"
+
+      # High Error Rate
+      - alert: TradesenseHighErrorRate
+        expr: |
+          (
+            sum(rate(tradesense_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(tradesense_http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: high
+          team: backend
+        annotations:
+          summary: "High API error rate"
+          description: "API error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.tradesense.com/runbook#high-error-rate"
+
+      # Slow Response Times
+      - alert: TradesenseSlowResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(tradesense_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: medium
+          team: backend
+        annotations:
+          summary: "API response time is slow"
+          description: "95th percentile response time is {{ $value | humanizeDuration }} (threshold: 500ms)"
+          runbook_url: "https://docs.tradesense.com/runbook#slow-response"
+
+      # Database Connection Pool
+      - alert: TradesenseDatabaseConnectionPoolExhausted
+        expr: tradesense_db_connections_active / tradesense_db_connections_max > 0.9
+        for: 5m
+        labels:
+          severity: high
+          team: backend
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool is {{ $value | humanizePercentage }} full"
+          runbook_url: "https://docs.tradesense.com/runbook#db-connections"
+
+      # High Memory Usage
+      - alert: TradesenseHighMemoryUsage
+        expr: |
+          (
+            tradesense_memory_usage_bytes{type="used"}
+            /
+            (tradesense_memory_usage_bytes{type="used"} + tradesense_memory_usage_bytes{type="available"})
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: medium
+          team: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 85%)"
+          runbook_url: "https://docs.tradesense.com/runbook#high-memory"
+
+      # Low Cache Hit Rate
+      - alert: TradesenseLowCacheHitRate
+        expr: |
+          sum(rate(tradesense_cache_operations_total{result="hit"}[5m]))
+          /
+          sum(rate(tradesense_cache_operations_total[5m]))
+          < 0.8
+        for: 15m
+        labels:
+          severity: medium
+          team: backend
+        annotations:
+          summary: "Cache hit rate is low"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://docs.tradesense.com/runbook#cache-hit-rate"
+
+      # Failed Background Tasks
+      - alert: TradesenseBackgroundTaskFailures
+        expr: |
+          sum(increase(tradesense_background_task_duration_seconds_count{status="error"}[1h])) > 10
+        for: 5m
+        labels:
+          severity: medium
+          team: backend
+        annotations:
+          summary: "High number of failed background tasks"
+          description: "{{ $value }} background tasks failed in the last hour"
+          runbook_url: "https://docs.tradesense.com/runbook#background-tasks"
+
+      # Payment Failures
+      - alert: TradesensePaymentFailures
+        expr: |
+          sum(rate(tradesense_payment_failures_total[15m])) > 0.1
+        for: 5m
+        labels:
+          severity: high
+          team: payments
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is {{ $value | humanize }} per second"
+          runbook_url: "https://docs.tradesense.com/runbook#payment-failures"
+
+      # User Activity Drop
+      - alert: TradesenseUserActivityDrop
+        expr: |
+          (
+            tradesense_active_users{period="1h"}
+            /
+            tradesense_active_users{period="1h"} offset 1h
+          ) < 0.7
+        for: 30m
+        labels:
+          severity: high
+          team: product
+        annotations:
+          summary: "Significant drop in user activity"
+          description: "User activity dropped by {{ printf \"%.0f\" (100 - $value * 100) }}% compared to 1 hour ago"
+          runbook_url: "https://docs.tradesense.com/runbook#user-activity"
+
+      # SSL Certificate Expiry
+      - alert: TradesenseSSLCertificateExpiringSoon
+        expr: tradesense_ssl_certificate_expiry_days < 30
+        for: 1h
+        labels:
+          severity: high
+          team: infrastructure
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate expires in {{ $value }} days"
+          runbook_url: "https://docs.tradesense.com/runbook#ssl-expiry"
+
+      # Disk Space
+      - alert: TradesenseLowDiskSpace
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/"}
+            /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.15
+        for: 10m
+        labels:
+          severity: high
+          team: infrastructure
+        annotations:
+          summary: "Low disk space on root partition"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+          runbook_url: "https://docs.tradesense.com/runbook#disk-space"
+
+      # Database Replication Lag
+      - alert: TradesenseDatabaseReplicationLag
+        expr: tradesense_database_replication_lag_seconds > 10
+        for: 5m
+        labels:
+          severity: high
+          team: database
+        annotations:
+          summary: "Database replication lag detected"
+          description: "Database replication lag is {{ $value | humanizeDuration }}"
+          runbook_url: "https://docs.tradesense.com/runbook#replication-lag"
+
+      # API Rate Limiting
+      - alert: TradesenseHighRateLimitRejections
+        expr: |
+          sum(rate(tradesense_rate_limit_rejections_total[5m])) > 10
+        for: 5m
+        labels:
+          severity: medium
+          team: backend
+        annotations:
+          summary: "High number of rate limit rejections"
+          description: "{{ $value | humanize }} requests per second are being rate limited"
+          runbook_url: "https://docs.tradesense.com/runbook#rate-limiting"
+
+      # Long Running Queries
+      - alert: TradesenseLongRunningQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(tradesense_db_query_duration_seconds_bucket[5m])) by (le, query_type)
+          ) > 1
+        for: 10m
+        labels:
+          severity: medium
+          team: backend
+        annotations:
+          summary: "Database queries are running slowly"
+          description: "95th percentile query time for {{ $labels.query_type }} is {{ $value | humanizeDuration }}"
+          runbook_url: "https://docs.tradesense.com/runbook#slow-queries"
+
+      # Queue Buildup
+      - alert: TradesenseQueueBuildup
+        expr: tradesense_queue_size > 1000
+        for: 10m
+        labels:
+          severity: medium
+          team: backend
+        annotations:
+          summary: "Task queue buildup detected"
+          description: "{{ $labels.queue_name }} queue has {{ $value }} pending tasks"
+          runbook_url: "https://docs.tradesense.com/runbook#queue-buildup"

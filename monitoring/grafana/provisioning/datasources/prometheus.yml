@@ -1,0 +1,41 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: tradesense_production
+    user: $__env{POSTGRES_USER}
+    secureJsonData:
+      password: $__env{POSTGRES_PASSWORD}
+    jsonData:
+      sslmode: require
+      postgresVersion: 1500
+      timescaledb: false
+
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    editable: false
+    secureJsonData:
+      password: $__env{REDIS_PASSWORD}

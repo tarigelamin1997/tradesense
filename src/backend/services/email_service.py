@@ -242,3 +242,133 @@ class EmailService:
         
         subject = f"Reset your {self.app_name} password"
         return self._send_email(email, subject, html_content)
+    
+    async def send_critical_feedback_alert(
+        self, 
+        feedback_id: str, 
+        title: str, 
+        description: str, 
+        url: str,
+        user_email: Optional[str] = None
+    ) -> bool:
+        """Send alert for critical feedback to admin"""
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@tradesense.io")
+        
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .alert { background-color: #ff4444; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+                .details { background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+                .button { display: inline-block; padding: 10px 20px; background-color: #ff4444; color: white; text-decoration: none; border-radius: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="alert">
+                    <h2>🚨 Critical Feedback Received</h2>
+                    <p>A critical issue has been reported and requires immediate attention.</p>
+                </div>
+                
+                <div class="details">
+                    <h3>Issue Details</h3>
+                    <p><strong>Tracking ID:</strong> #{{ feedback_id }}</p>
+                    <p><strong>Title:</strong> {{ title }}</p>
+                    <p><strong>Description:</strong> {{ description }}</p>
+                    <p><strong>Affected Page:</strong> {{ url }}</p>
+                    {% if user_email %}
+                    <p><strong>Reported by:</strong> {{ user_email }}</p>
+                    {% endif %}
+                </div>
+                
+                <p>
+                    <a href="{{ app_url }}/admin/feedback/{{ feedback_id }}" class="button">View Feedback</a>
+                </p>
+                
+                <p>This is an automated alert. Please investigate this issue as soon as possible.</p>
+            </div>
+        </body>
+        </html>
+        """)
+        
+        html_content = html_template.render(
+            feedback_id=feedback_id,
+            title=title,
+            description=description[:200] + "..." if len(description) > 200 else description,
+            url=url,
+            user_email=user_email,
+            app_url=self.app_url
+        )
+        
+        subject = f"🚨 Critical Issue: {title[:50]}..."
+        return self._send_email(admin_email, subject, html_content)
+    
+    async def send_feedback_resolved(
+        self, 
+        email: str, 
+        feedback_id: str, 
+        title: str,
+        resolution_notes: Optional[str] = None
+    ) -> bool:
+        """Send notification when feedback is resolved"""
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4CAF50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+                .footer { text-align: center; color: #666; font-size: 14px; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>✅ Your Feedback Has Been Resolved!</h2>
+                </div>
+                
+                <div class="content">
+                    <p>Hi there,</p>
+                    
+                    <p>Great news! The issue you reported has been resolved:</p>
+                    
+                    <p><strong>Issue:</strong> {{ title }}</p>
+                    <p><strong>Tracking ID:</strong> #{{ feedback_id }}</p>
+                    
+                    {% if resolution_notes %}
+                    <h3>Resolution Details:</h3>
+                    <p>{{ resolution_notes }}</p>
+                    {% endif %}
+                    
+                    <p>Thank you for helping us improve {{ app_name }}. Your feedback is invaluable in making our platform better for everyone.</p>
+                    
+                    <p>If you experience any further issues, please don't hesitate to report them.</p>
+                </div>
+                
+                <div class="footer">
+                    <p>Best regards,<br>The {{ app_name }} Team</p>
+                    <p>&copy; {{ year }} {{ app_name }}. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+        
+        html_content = html_template.render(
+            title=title,
+            feedback_id=feedback_id,
+            resolution_notes=resolution_notes,
+            app_name=self.app_name,
+            year=datetime.now().year
+        )
+        
+        subject = f"✅ Issue Resolved: {title[:50]}..."
+        return self._send_email(email, subject, html_content)
+
+# Create singleton instance
+email_service = EmailService()

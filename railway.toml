@@ -1,0 +1,40 @@
+# Railway configuration for TradeSense Backend
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "src/backend/Dockerfile"
+dockerContext = "."
+watchPatterns = ["src/backend/**"]
+
+[deploy]
+# Using Dockerfile CMD instead of startCommand
+# Health check configuration
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+healthcheckInterval = 30
+
+# Restart policy
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Deployment region (us-west1 is fastest for most users)
+region = "us-west1"
+
+# Resource limits
+sleepDelaySeconds = 300  # Sleep after 5 minutes of inactivity
+numReplicas = 1
+
+[deploy.environmentVariables]
+# Python optimizations for production
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+
+# FastAPI production settings
+ENVIRONMENT = "production"
+DEBUG = "false"
+
+# Uvicorn worker settings (start with 1 for stability)
+WEB_CONCURRENCY = "1"
+UVICORN_WORKERS = "1"
+
+# Skip database init for faster startup
+SKIP_DB_INIT = "true"

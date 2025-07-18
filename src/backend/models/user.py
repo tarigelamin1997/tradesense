@@ -41,6 +41,13 @@ class User(Base):
     # feature_requests = relationship("backend.models.feature_request.FeatureRequest", back_populates="user")
     subscription = relationship("models.billing.Subscription", back_populates="user", uselist=False)
     usage_records = relationship("models.billing.UsageRecord", back_populates="user")
+    feedback_submissions = relationship("models.feedback.Feedback", back_populates="user")
+
+    @property
+    def is_admin(self):
+        """Check if user is admin (you can modify this based on your role system)"""
+        # For now, check if username is 'admin' or email contains 'admin'
+        return self.username == 'admin' or 'admin' in self.email.lower()
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

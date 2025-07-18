@@ -335,3 +335,6 @@ class EdgeStrengthService:
             return "Needs improvement"
         else:
             return "Consider stopping"
+
+# Alias for compatibility
+EdgeStrengthAnalyzer = EdgeStrengthService

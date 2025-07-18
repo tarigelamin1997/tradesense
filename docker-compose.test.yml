@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: tradesense
+      POSTGRES_PASSWORD: tradesense123
+      POSTGRES_DB: tradesense_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradesense"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass tradesense123
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://tradesense:tradesense123@postgres:5432/tradesense_test
+      - REDIS_URL=redis://:tradesense123@redis:6379/0
+      - SECRET_KEY=test-secret-key-for-development-only
+      - JWT_SECRET_KEY=test-jwt-secret-key
+      - APP_ENV=development
+      - DEBUG=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src/backend:/app
+      - ./logs:/app/logs
+    command: python main.py
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - NODE_ENV=development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+    depends_on:
+      - backend
+
+volumes:
+  postgres_test_data:

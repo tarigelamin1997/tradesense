@@ -1,0 +1,223 @@
+groups:
+  - name: tradesense_alerts
+    interval: 30s
+    rules:
+      # Instance down alerts
+      - alert: InstanceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+      # API endpoint alerts
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(fastapi_requests_total{status=~"5.."}[5m])) by (job, instance)
+            /
+            sum(rate(fastapi_requests_total[5m])) by (job, instance)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High error rate on {{ $labels.instance }}"
+          description: "Error rate is above 5% (current value: {{ $value | humanizePercentage }})"
+
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(fastapi_request_duration_seconds_bucket[5m])) by (le, job, instance)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High response time on {{ $labels.instance }}"
+          description: "95th percentile response time is above 1s (current value: {{ $value | humanizeDuration }})"
+
+      # Database alerts
+      - alert: DatabaseConnectionsHigh
+        expr: |
+          (
+            pg_stat_database_numbackends{datname="tradesense_production"}
+            /
+            pg_settings_max_connections
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "Database connections near limit"
+          description: "PostgreSQL connections are at {{ $value | humanizePercentage }} of max_connections"
+
+      - alert: DatabaseDeadlocks
+        expr: |
+          rate(pg_stat_database_deadlocks{datname="tradesense_production"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "Database deadlocks detected"
+          description: "PostgreSQL has {{ $value }} deadlocks per second"
+
+      - alert: DatabaseReplicationLag
+        expr: |
+          pg_replication_lag > 10
+        for: 5m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "Database replication lag high"
+          description: "Replication lag is {{ $value | humanizeDuration }}"
+
+      # Redis alerts
+      - alert: RedisDown
+        expr: |
+          redis_up == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance {{ $labels.instance }} has been down for more than 5 minutes"
+
+      - alert: RedisMemoryHigh
+        expr: |
+          (
+            redis_memory_used_bytes
+            /
+            redis_memory_max_bytes
+          ) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage is at {{ $value | humanizePercentage }} of max memory"
+
+      # Disk space alerts
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/"}
+            /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space is below 10% ({{ $value | humanizePercentage }} remaining)"
+
+      # CPU alerts
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% (current value: {{ $value | humanize }}%)"
+
+      # Memory alerts
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            1 - (
+              node_memory_MemAvailable_bytes
+              /
+              node_memory_MemTotal_bytes
+            )
+          ) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 90% (current value: {{ $value | humanizePercentage }})"
+
+      # SSL certificate expiry
+      - alert: SSLCertificateExpiringSoon
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "SSL certificate expiring soon for {{ $labels.instance }}"
+          description: "SSL certificate will expire in {{ $value | humanizeDuration }}"
+
+      - alert: SSLCertificateExpired
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "SSL certificate expired for {{ $labels.instance }}"
+          description: "SSL certificate has expired {{ $value | humanizeDuration }} ago"
+
+      # Business metrics alerts
+      - alert: LowActiveUsers
+        expr: |
+          tradesense_active_users_total < 10
+        for: 1h
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "Low active users"
+          description: "Active users count is below 10 (current: {{ $value }})"
+
+      - alert: PaymentProcessingFailures
+        expr: |
+          rate(tradesense_payment_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: business
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is {{ $value }} per second"
+
+      # Queue alerts
+      - alert: HighQueueSize
+        expr: |
+          tradesense_celery_queue_length > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High queue size"
+          description: "Celery queue has {{ $value }} pending tasks"
+
+      - alert: WorkerOffline
+        expr: |
+          tradesense_celery_workers_online == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "No Celery workers online"
+          description: "All Celery workers are offline"

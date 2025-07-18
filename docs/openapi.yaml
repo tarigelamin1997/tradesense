@@ -1,0 +1,692 @@
+openapi: 3.0.3
+info:
+  title: TradeSense API
+  description: |
+    Official API for TradeSense - Advanced Trade Intelligence Platform.
+    
+    ## Authentication
+    All endpoints require API key authentication via Bearer token in the Authorization header.
+    
+    ## Rate Limits
+    - Free: 100 requests/hour
+    - Basic: 1,000 requests/hour  
+    - Pro: 10,000 requests/hour
+  version: 2.0.0
+  contact:
+    name: TradeSense API Support
+    email: api-support@tradesense.com
+    url: https://docs.tradesense.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.tradesense.com
+    description: Production server
+  - url: https://staging-api.tradesense.com
+    description: Staging server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: trades
+    description: Trade management operations
+  - name: analytics
+    description: Analytics and reporting
+  - name: journal
+    description: Trading journal entries
+  - name: account
+    description: Account management
+  - name: experiments
+    description: A/B testing and experiments
+
+paths:
+  /api/v1/trades:
+    get:
+      tags: [trades]
+      summary: List trades
+      description: Retrieve a paginated list of trades with optional filters
+      operationId: listTrades
+      parameters:
+        - name: start_date
+          in: query
+          description: Filter by start date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Filter by end date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: symbol
+          in: query
+          description: Filter by symbol
+          schema:
+            type: string
+        - name: trade_type
+          in: query
+          description: Filter by trade type
+          schema:
+            type: string
+            enum: [long, short]
+        - name: limit
+          in: query
+          description: Number of results per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTrades'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    
+    post:
+      tags: [trades]
+      summary: Create trade
+      description: Create a new trade record
+      operationId: createTrade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeCreate'
+      responses:
+        '201':
+          description: Trade created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/trades/{trade_id}:
+    get:
+      tags: [trades]
+      summary: Get trade
+      description: Retrieve a specific trade by ID
+      operationId: getTrade
+      parameters:
+        - name: trade_id
+          in: path
+          required: true
+          description: Trade ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags: [trades]
+      summary: Update trade
+      description: Update an existing trade
+      operationId: updateTrade
+      parameters:
+        - name: trade_id
+          in: path
+          required: true
+          description: Trade ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeUpdate'
+      responses:
+        '200':
+          description: Trade updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    delete:
+      tags: [trades]
+      summary: Delete trade
+      description: Delete a trade record
+      operationId: deleteTrade
+      parameters:
+        - name: trade_id
+          in: path
+          required: true
+          description: Trade ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Trade deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/trades/bulk:
+    post:
+      tags: [trades]
+      summary: Bulk create trades
+      description: Create multiple trades in a single request
+      operationId: bulkCreateTrades
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trades:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TradeCreate'
+                  maxItems: 100
+              required:
+                - trades
+      responses:
+        '200':
+          description: Bulk operation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created:
+                    type: integer
+                    description: Number of trades created
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                        error:
+                          type: string
+
+  /api/v1/analytics/overview:
+    get:
+      tags: [analytics]
+      summary: Get analytics overview
+      description: Retrieve comprehensive analytics overview
+      operationId: getAnalyticsOverview
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date for analysis
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date for analysis
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverview'
+
+  /api/v1/journal:
+    get:
+      tags: [journal]
+      summary: List journal entries
+      description: Retrieve journal entries
+      operationId: listJournalEntries
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedJournalEntries'
+    
+    post:
+      tags: [journal]
+      summary: Create journal entry
+      description: Create a new journal entry
+      operationId: createJournalEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JournalEntryCreate'
+      responses:
+        '201':
+          description: Entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntry'
+
+  /api/v1/experiments/assignments:
+    get:
+      tags: [experiments]
+      summary: Get experiment assignments
+      description: Get all active experiment assignments for the current user
+      operationId: getExperimentAssignments
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExperimentAssignment'
+
+  /api/v1/experiments/track:
+    post:
+      tags: [experiments]
+      summary: Track conversion
+      description: Track a conversion event for an experiment
+      operationId: trackConversion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionEvent'
+      responses:
+        '200':
+          description: Event tracked successfully
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication
+  
+  schemas:
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique trade identifier
+        symbol:
+          type: string
+          description: Trading symbol
+          example: AAPL
+        entry_date:
+          type: string
+          format: date
+          description: Entry date
+        exit_date:
+          type: string
+          format: date
+          nullable: true
+          description: Exit date
+        entry_price:
+          type: number
+          format: double
+          description: Entry price
+          example: 150.50
+        exit_price:
+          type: number
+          format: double
+          nullable: true
+          description: Exit price
+        quantity:
+          type: integer
+          description: Number of shares/contracts
+          example: 100
+        trade_type:
+          type: string
+          enum: [long, short]
+          description: Trade direction
+        profit_loss:
+          type: number
+          format: double
+          description: Calculated profit/loss
+        commission:
+          type: number
+          format: double
+          description: Commission paid
+        notes:
+          type: string
+          nullable: true
+          description: Trade notes
+        tags:
+          type: array
+          items:
+            type: string
+          description: Trade tags
+        strategy:
+          type: string
+          nullable: true
+          description: Trading strategy used
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+      required:
+        - id
+        - symbol
+        - entry_date
+        - entry_price
+        - quantity
+        - trade_type
+    
+    TradeCreate:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: Trading symbol
+        entry_date:
+          type: string
+          format: date
+        exit_date:
+          type: string
+          format: date
+          nullable: true
+        entry_price:
+          type: number
+          format: double
+        exit_price:
+          type: number
+          format: double
+          nullable: true
+        quantity:
+          type: integer
+        trade_type:
+          type: string
+          enum: [long, short]
+        commission:
+          type: number
+          format: double
+          default: 0
+        notes:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        strategy:
+          type: string
+          nullable: true
+      required:
+        - symbol
+        - entry_date
+        - entry_price
+        - quantity
+        - trade_type
+    
+    TradeUpdate:
+      type: object
+      properties:
+        exit_date:
+          type: string
+          format: date
+        exit_price:
+          type: number
+          format: double
+        commission:
+          type: number
+          format: double
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        strategy:
+          type: string
+    
+    PaginatedTrades:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Trade'
+        total:
+          type: integer
+          description: Total number of trades
+        limit:
+          type: integer
+          description: Results per page
+        offset:
+          type: integer
+          description: Number of results skipped
+    
+    AnalyticsOverview:
+      type: object
+      properties:
+        total_trades:
+          type: integer
+        total_pnl:
+          type: number
+          format: double
+        win_rate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        profit_factor:
+          type: number
+          format: double
+        average_win:
+          type: number
+          format: double
+        average_loss:
+          type: number
+          format: double
+        best_trade:
+          type: number
+          format: double
+        worst_trade:
+          type: number
+          format: double
+        total_commission:
+          type: number
+          format: double
+        net_pnl:
+          type: number
+          format: double
+        sharpe_ratio:
+          type: number
+          format: double
+        max_drawdown:
+          type: number
+          format: double
+        average_hold_time_days:
+          type: number
+          format: double
+    
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        mood:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    JournalEntryCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        mood:
+          type: string
+          enum: [confident, neutral, anxious, frustrated, excited]
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - content
+    
+    PaginatedJournalEntries:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalEntry'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+    
+    ExperimentAssignment:
+      type: object
+      properties:
+        experiment_id:
+          type: string
+        variant_id:
+          type: string
+        variant_name:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+    
+    ConversionEvent:
+      type: object
+      properties:
+        experiment_id:
+          type: string
+        metric_id:
+          type: string
+        value:
+          type: number
+          format: double
+          default: 1.0
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - experiment_id
+        - metric_id
+    
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+        status_code:
+          type: integer
+          description: HTTP status code
+        error_code:
+          type: string
+          description: Application-specific error code
+  
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

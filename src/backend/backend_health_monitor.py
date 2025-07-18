@@ -161,12 +161,19 @@ class HealthMonitor:
                 # Get approximate row counts
                 row_counts = {}
                 if self.is_postgres:
+                    # Whitelist of allowed tables to prevent SQL injection
+                    ALLOWED_TABLES = {'users', 'trades', 'portfolios'}
                     tables = ['users', 'trades', 'portfolios']
                     for table in tables:
+                        if table not in ALLOWED_TABLES:
+                            self.logger.warning(f"Attempted to query non-whitelisted table: {table}")
+                            continue
                         try:
+                            # Use parameterized query for safety, even though tables are whitelisted
                             result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
                             row_counts[table] = result.scalar()
-                        except:
+                        except Exception as e:
+                            self.logger.debug(f"Could not get count for table {table}: {e}")
                             row_counts[table] = "N/A"
                 
                 response_time = time.time() - start_time

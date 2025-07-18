@@ -1,11 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/api/auth';
+	import MFAVerification from '$lib/components/MFAVerification.svelte';
 	
 	let username = '';
 	let password = '';
 	let loading = false;
 	let error = '';
+	
+	// MFA state
+	let showMFA = false;
+	let mfaSessionId = '';
+	let mfaMethods: string[] = [];
 	
 	async function handleLogin(event: Event) {
 		event.preventDefault();
@@ -13,13 +19,36 @@
 		loading = true;
 		
 		try {
-			await auth.login({ username, password });
-			goto('/');
+			const result = await auth.login({ username, password });
+			
+			// Check if MFA is required
+			if (result.mfa_required) {
+				showMFA = true;
+				mfaSessionId = result.session_id;
+				mfaMethods = result.methods;
+			} else {
+				// Direct login successful
+				goto('/');
+			}
 		} catch (err: any) {
 			error = err.message || 'Login failed. Please try again.';
 		} finally {
 			loading = false;
 		}
+	}
+	
+	function handleMFASuccess(authData: any) {
+		// MFA verification successful, store auth token and redirect
+		auth.setToken(authData.access_token);
+		goto('/');
+	}
+	
+	function handleMFACancel() {
+		// User cancelled MFA, reset to login form
+		showMFA = false;
+		mfaSessionId = '';
+		mfaMethods = [];
+		password = '';
 	}
 </script>
 
@@ -27,56 +56,65 @@
 	<title>Login - TradeSense</title>
 </svelte:head>
 
-<div class="auth-container">
-	<div class="auth-card">
-		<h1>Welcome Back</h1>
-		<p class="subtitle">Sign in to your TradeSense account</p>
-		
-		{#if error}
-			<div class="error-message">
-				{error}
-			</div>
-		{/if}
-		
-		<form on:submit={handleLogin}>
-			<div class="form-group">
-				<label for="username">Username</label>
-				<input
-					id="username"
-					type="text"
-					bind:value={username}
-					required
-					placeholder="Enter your username"
-					disabled={loading}
-				/>
-			</div>
+{#if showMFA}
+	<MFAVerification
+		sessionId={mfaSessionId}
+		methods={mfaMethods}
+		onSuccess={handleMFASuccess}
+		onCancel={handleMFACancel}
+	/>
+{:else}
+	<div class="auth-container">
+		<div class="auth-card">
+			<h1>Welcome Back</h1>
+			<p class="subtitle">Sign in to your TradeSense account</p>
 			
-			<div class="form-group">
-				<label for="password">Password</label>
-				<input
-					id="password"
-					type="password"
-					bind:value={password}
-					required
-					placeholder="Enter your password"
-					disabled={loading}
-				/>
-			</div>
+			{#if error}
+				<div class="error-message">
+					{error}
+				</div>
+			{/if}
 			
-			<div class="form-footer">
-				<a href="/forgot-password" class="forgot-password">Forgot password?</a>
-			</div>
+			<form on:submit={handleLogin}>
+				<div class="form-group">
+					<label for="username">Username</label>
+					<input
+						id="username"
+						type="text"
+						bind:value={username}
+						required
+						placeholder="Enter your username"
+						disabled={loading}
+					/>
+				</div>
+				
+				<div class="form-group">
+					<label for="password">Password</label>
+					<input
+						id="password"
+						type="password"
+						bind:value={password}
+						required
+						placeholder="Enter your password"
+						disabled={loading}
+					/>
+				</div>
+				
+				<div class="form-footer">
+					<a href="/forgot-password" class="forgot-password">Forgot password?</a>
+				</div>
+				
+				<button type="submit" class="submit-button" disabled={loading}>
+					{loading ? 'Signing in...' : 'Sign In'}
+				</button>
+			</form>
 			
-			<button type="submit" class="submit-button" disabled={loading}>
-				{loading ? 'Signing in...' : 'Sign In'}
-			</button>
-		</form>
-		
-		<div class="auth-footer">
-			<p>Don't have an account? <a href="/register">Sign up</a></p>
+			<div class="auth-footer">
+				<p>Don't have an account? <a href="/register">Sign up</a></p>
+			</div>
 		</div>
 	</div>
-</div>
+{/if}
 
 <style>
 	.auth-container {

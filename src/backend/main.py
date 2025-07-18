@@ -9,19 +9,40 @@ if backend_dir not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Run startup validation
+from core.startup_validation import run_startup_validation
+
 # Initialize database first
 try:
     print("🚀 Starting TradeSense Backend...")
+    print(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(f"Railway Project: {os.getenv('RAILWAY_PROJECT_NAME', 'Unknown')}")
+    
+    # Run validation checks
+    if not run_startup_validation():
+        print("⚠️ Starting with validation warnings - some features may be limited")
     
     # Import all models first to register them with SQLAlchemy
     import models  # This ensures all models are registered
     
-    # Initialize database
-    from initialize_db import *
-
-    print("✅ Database initialized successfully")
+    # Only initialize database if we have a valid connection
+    from core.config import settings
+    print(f"Database URL configured: {'Yes' if settings.database_url else 'No'}")
+    
+    if settings.database_url and not settings.database_url.startswith("postgresql://postgres:postgres@localhost"):
+        try:
+            from core.db.session import create_tables
+            create_tables()
+            print("✅ Database initialized successfully")
+        except Exception as db_error:
+            print(f"⚠️ Database initialization failed: {type(db_error).__name__}: {str(db_error)}")
+            print("ℹ️ The app will connect to the database when it becomes available")
+    else:
+        print("⚠️ Database not configured yet - waiting for Railway PostgreSQL")
 except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
+    print(f"❌ Startup error: {type(e).__name__}: {str(e)}")
+    import traceback
+    traceback.print_exc()
 
 # Import routers
 from api.v1.auth.router import router as auth_router
@@ -50,18 +71,29 @@ from api.v1.health.performance_router import router as performance_router
 from api.v1.health.router import router as health_router
 from api.v1.billing.router import router as billing_router
 from api.v1.websocket.router import router as websocket_router
+from api.v1.ai.router import router as ai_router
+from api.v1.feedback.router import router as feedback_router
 from api.health.router import router as health_router_legacy, root_router as health_root_router
 from core.middleware import setup_middleware
 from core.exceptions import setup_exception_handlers
 from core.validation_middleware import setup_validation_middleware
 from core.async_manager import task_manager
+from core.security_headers import security_headers_middleware
 import logging
 from api.v1.public import public_router
+
+# Import post-deployment routers
+from api.admin import router as admin_router
+from api.subscription import router as subscription_router
+from api.support import router as support_router
+from api.feature_flags import router as feature_flags_router
+from api.reporting import router as reporting_router
 
 # Create necessary directories
 os.makedirs('logs', exist_ok=True)
 os.makedirs('uploads', exist_ok=True)
 os.makedirs('temp', exist_ok=True)
+os.makedirs('reports', exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
@@ -111,12 +143,22 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=[
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining", 
+            "X-RateLimit-Reset",
+            "ETag",
+            "X-Total-Count"
+        ]
     )
 
     # Setup middleware and exception handlers
     setup_middleware(app)
     setup_exception_handlers(app)
     setup_validation_middleware(app)
+    
+    # Add security headers middleware
+    app.middleware("http")(security_headers_middleware)
 
     # Start the async cleanup task on FastAPI startup (optional for faster startup)
     @app.on_event("startup")
@@ -156,6 +198,39 @@ def create_app() -> FastAPI:
     app.include_router(health_router, tags=["health"])
     app.include_router(billing_router, prefix="/api/v1/billing", tags=["billing"])
     app.include_router(websocket_router, tags=["websocket"])
+    app.include_router(ai_router, prefix="/api/v1", tags=["AI Intelligence"])
+    app.include_router(feedback_router, prefix="/api/v1", tags=["feedback"])
+    
+    # Post-deployment routers
+    app.include_router(admin_router, tags=["admin"])
+    app.include_router(subscription_router, tags=["subscription"])
+    app.include_router(support_router, tags=["support"])
+    app.include_router(feature_flags_router, tags=["feature-flags"])
+    app.include_router(reporting_router, tags=["reporting"])
+    
+    # A/B Testing router
+    from api.experiments import router as experiments_router
+    app.include_router(experiments_router, tags=["experiments"])
+    
+    # Backup router
+    from api.backup import router as backup_router
+    app.include_router(backup_router, tags=["backup"])
+    
+    # MFA router
+    from api.mfa import router as mfa_router
+    app.include_router(mfa_router, tags=["mfa"])
+    
+    # Alerts router
+    from api.alerts import router as alerts_router
+    app.include_router(alerts_router, tags=["alerts"])
+    
+    # Mobile API router
+    from api.mobile import mobile_router
+    app.include_router(mobile_router, tags=["mobile"])
+    
+    # Collaboration router
+    from api.collaboration import router as collaboration_router
+    app.include_router(collaboration_router, tags=["collaboration"])
     
     # Legacy health router for backward compatibility
     app.include_router(health_router_legacy, prefix="/api")
@@ -164,7 +239,9 @@ def create_app() -> FastAPI:
     @app.get("/", include_in_schema=False)
     async def redirect_to_frontend():
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="http://0.0.0.0:3000")
+        # Use frontend URL from environment or default to API docs
+        frontend_url = os.getenv("FRONTEND_URL", "/docs")
+        return RedirectResponse(url=frontend_url)
 
     @app.get("/api", include_in_schema=False)  
     async def api_root():
@@ -184,11 +261,23 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting TradeSense API server...")
+    import os
+    
+    # Get port from Railway or default to 8000 for local dev
+    port = int(os.getenv("PORT", 8000))
+    
+    # Check if we're in production
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
+    
+    logger.info(f"Starting TradeSense API server on port {port} (production={is_production})...")
+    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        port=port,
+        reload=not is_production,  # Only reload in development
+        log_level="info",
+        # Production optimizations
+        workers=1 if not is_production else None,  # Let Railway handle workers
+        access_log=not is_production  # Disable access logs in production
     )

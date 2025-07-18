@@ -44,3 +44,42 @@ class TradeSimulation(BaseModel):
     exit_time: Optional[datetime] = None
     strategy: Optional[str] = None
     notes: Optional[str] = None
+
+class PositionResponse(BaseModel):
+    symbol: str
+    quantity: float
+    average_price: float
+    current_price: float
+    market_value: float
+    unrealized_pnl: float
+    unrealized_pnl_pct: float
+    realized_pnl: float
+    total_pnl: float
+    allocation_pct: float
+    asset_class: Optional[str] = None
+    
+    model_config = {
+        "from_attributes": True
+    }
+
+class AllocationResponse(BaseModel):
+    category: str
+    value: float
+    percentage: float
+    count: int
+    
+    model_config = {
+        "from_attributes": True
+    }
+
+class PerformanceResponse(BaseModel):
+    date: datetime
+    portfolio_value: float
+    daily_return: float
+    cumulative_return: float
+    trades_count: int
+    win_rate: float
+    
+    model_config = {
+        "from_attributes": True
+    }

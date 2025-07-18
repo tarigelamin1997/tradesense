@@ -22,9 +22,13 @@
 				{ text: 'Basic analytics', included: true },
 				{ text: 'Trade journal', included: true },
 				{ text: 'CSV export', included: true },
+				{ text: '1 basic dashboard', included: true },
+				{ text: 'Custom dashboard builder', included: false },
 				{ text: 'Advanced analytics', included: false },
 				{ text: 'Real-time data', included: false },
-				{ text: 'AI insights', included: false },
+				{ text: 'Basic AI risk scores', included: false },
+				{ text: 'AI pattern detection', included: false },
+				{ text: 'Behavioral analytics', included: false },
 				{ text: 'Priority support', included: false }
 			],
 			limits: {
@@ -45,9 +49,16 @@
 				{ text: 'Advanced analytics', included: true },
 				{ text: 'Real-time data', included: true },
 				{ text: 'Performance metrics', included: true },
+				{ text: '5 custom dashboards', included: true },
+				{ text: 'Drag & drop dashboard builder', included: true },
+				{ text: '10+ widget types', included: true },
 				{ text: 'Multiple strategies', included: true },
 				{ text: 'API access', included: true },
-				{ text: 'AI insights', included: false },
+				{ text: 'AI trading coach', included: true },
+				{ text: 'Pattern detection', included: true },
+				{ text: 'Behavioral analytics', included: true },
+				{ text: 'Pre-trade analysis', included: true },
+				{ text: 'Market regime detection', included: true },
 				{ text: 'Priority support', included: false }
 			],
 			limits: {
@@ -55,10 +66,8 @@
 				journal_entries_per_month: -1,
 				playbooks: 10
 			},
-			// TODO: Replace with real Stripe product IDs from your Stripe Dashboard
-			// Example: stripeProductId: 'price_1234567890abcdef'
-			stripeProductId: 'prod_pro_monthly', // FAKE - Replace with real price ID
-			annualProductId: 'prod_pro_annual',  // FAKE - Replace with real price ID
+			stripeProductId: 'price_pro_monthly',
+			annualProductId: 'price_pro_yearly',
 			recommended: true
 		},
 		{
@@ -69,6 +78,8 @@
 			description: 'For professional traders',
 			features: [
 				{ text: 'Everything in Pro', included: true },
+				{ text: 'Unlimited custom dashboards', included: true },
+				{ text: 'Dashboard sharing & collaboration', included: true },
 				{ text: 'AI-powered insights', included: true },
 				{ text: 'Advanced risk analytics', included: true },
 				{ text: 'Custom integrations', included: true },
@@ -82,10 +93,8 @@
 				journal_entries_per_month: -1,
 				playbooks: -1
 			},
-			// TODO: Replace with real Stripe product IDs from your Stripe Dashboard
-			// Example: stripeProductId: 'price_abcdef1234567890'
-			stripeProductId: 'prod_enterprise_monthly', // FAKE - Replace with real price ID
-			annualProductId: 'prod_enterprise_annual'   // FAKE - Replace with real price ID
+			stripeProductId: 'price_enterprise_monthly',
+			annualProductId: 'price_enterprise_yearly'
 		}
 	];
 	

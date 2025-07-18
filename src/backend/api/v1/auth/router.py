@@ -1,7 +1,7 @@
 """
 Authentication API routes
 """
-from datetime import timedelta
+from datetime import timedelta, datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -215,6 +215,33 @@ async def login(
             content={"details": {"message": "Invalid username/email or password."}},
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Check if user has MFA enabled
+    if user.mfa_enabled:
+        # Create MFA session
+        import secrets
+        from core.cache import redis_client
+        
+        session_id = secrets.token_urlsafe(32)
+        session_data = {
+            "user_id": user.id,
+            "created_at": datetime.utcnow().isoformat(),
+            "ip_address": client_ip
+        }
+        
+        # Store session for 10 minutes
+        await redis_client.setex(
+            f"mfa_session:{session_id}",
+            600,  # 10 minutes
+            session_data
+        )
+        
+        return {
+            "mfa_required": True,
+            "session_id": session_id,
+            "methods": user.mfa_methods or [],
+            "message": "Please complete multi-factor authentication"
+        }
     
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

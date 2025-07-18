@@ -20,6 +20,7 @@ pyjwt==2.8.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
+email-validator==2.1.0
 
 # Payment Processing
 stripe==11.1.0
@@ -32,6 +33,8 @@ numpy==1.26.4
 httpx==0.25.2
 python-dateutil==2.8.2
 bleach==6.1.0
+jinja2==3.1.2
+aiohttp==3.9.1
 
 # Visualization (TODO: Verify if still needed for backend)
 plotly==5.17.0
@@ -55,3 +58,15 @@ google-api-python-client==2.103.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
+
+# Additional Backend Dependencies
+redis==5.0.1
+fakeredis==2.20.1
+scikit-learn==1.5.1
+pydantic-settings
+websockets==12.0
+firebase-admin==6.4.0
+# apns2==0.7.2  # Commented out due to pyjwt version conflict with firebase-admin
+pyotp==2.9.0
+qrcode==7.4.2
+yfinance==0.2.33

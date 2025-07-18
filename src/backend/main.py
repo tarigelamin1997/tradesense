@@ -15,6 +15,8 @@ from core.startup_validation import run_startup_validation
 # Initialize database first
 try:
     print("🚀 Starting TradeSense Backend...")
+    print(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    print(f"Railway Project: {os.getenv('RAILWAY_PROJECT_NAME', 'Unknown')}")
     
     # Run validation checks
     if not run_startup_validation():
@@ -25,18 +27,22 @@ try:
     
     # Only initialize database if we have a valid connection
     from core.config import settings
+    print(f"Database URL configured: {'Yes' if settings.database_url else 'No'}")
+    
     if settings.database_url and not settings.database_url.startswith("postgresql://postgres:postgres@localhost"):
         try:
             from core.db.session import create_tables
             create_tables()
             print("✅ Database initialized successfully")
         except Exception as db_error:
-            print(f"⚠️ Database initialization skipped: {db_error}")
+            print(f"⚠️ Database initialization failed: {type(db_error).__name__}: {str(db_error)}")
             print("ℹ️ The app will connect to the database when it becomes available")
     else:
         print("⚠️ Database not configured yet - waiting for Railway PostgreSQL")
 except Exception as e:
-    print(f"⚠️ Startup warning: {e}")
+    print(f"❌ Startup error: {type(e).__name__}: {str(e)}")
+    import traceback
+    traceback.print_exc()
 
 # Import routers
 from api.v1.auth.router import router as auth_router

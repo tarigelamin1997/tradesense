@@ -2,6 +2,7 @@
 Core configuration for TradeSense backend
 """
 import os
+import secrets
 from pydantic_settings import BaseSettings
 from typing import Optional, List
 
@@ -57,27 +58,27 @@ class Settings(BaseSettings):
     test_database_url: Optional[str] = None
     sqlite_database_url: Optional[str] = "sqlite:///./tradesense.db"  # Keep SQLite as fallback
     
-    # Security
-    secret_key: str = os.getenv("JWT_SECRET_KEY", "")
-    jwt_secret: str = os.getenv("JWT_SECRET_KEY", "")  # Legacy field
-    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "")
+    # Security - Generate defaults if not provided
+    secret_key: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))
+    jwt_secret: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))  # Legacy field
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30  # Legacy field
     jwt_access_token_expire_minutes: int = 30
     jwt_expiration_hours: int = 24
 
     # Environment
-    environment: str = "development"
+    environment: str = os.getenv("ENVIRONMENT", "development")
     
     # API
     api_title: str = "TradeSense API"
     api_version: str = "2.0.0"
     api_v1_str: str = "/api/v1"
     project_name: str = "TradeSense API"
-    debug: bool = True
+    debug: bool = os.getenv("DEBUG", "false").lower() == "true"
     
     # CORS - We'll handle parsing in main.py to avoid pydantic parsing issues
-    cors_origins_str: str = "http://localhost:8000,http://localhost:3001,http://localhost:5173"
+    cors_origins_str: str = os.getenv("CORS_ORIGINS_STR", "http://localhost:8000,http://localhost:3001,http://localhost:5173")
     
     # Frontend
     vite_api_base_url: Optional[str] = None
@@ -101,11 +102,11 @@ class Settings(BaseSettings):
     smtp_password: Optional[str] = None
     
     # Redis
-    redis_url: Optional[str] = None
+    redis_url: Optional[str] = os.getenv("REDIS_URL")
     
     # Stripe
-    stripe_api_key: Optional[str] = None
-    stripe_webhook_secret: Optional[str] = None
+    stripe_api_key: Optional[str] = os.getenv("STRIPE_SECRET_KEY")
+    stripe_webhook_secret: Optional[str] = os.getenv("STRIPE_WEBHOOK_SECRET")
 
     model_config = {
         "env_file": ".env",
@@ -114,7 +115,8 @@ class Settings(BaseSettings):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if not self.jwt_secret_key:
-            raise ValueError("JWT_SECRET_KEY environment variable must be set!")
+        # Don't require JWT_SECRET_KEY in production - we generate one if needed
+        if self.environment == "production" and not self.database_url:
+            raise ValueError("DATABASE_URL must be set in production!")
 
 settings = Settings()

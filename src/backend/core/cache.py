@@ -42,7 +42,15 @@ class CacheManager:
         try:
             # Try to get Redis URL from environment or config
             # Railway provides REDIS_URL or sometimes REDIS_PRIVATE_URL
-            redis_url = os.getenv("REDIS_URL", os.getenv("REDIS_PRIVATE_URL", "redis://localhost:6379/0"))
+            redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+            
+            # Only use localhost in development
+            if not redis_url:
+                if os.getenv("ENVIRONMENT") == "production":
+                    logger.warning("No Redis URL configured in production - caching disabled")
+                    return
+                else:
+                    redis_url = "redis://localhost:6379/0"
             
             # Try real Redis first
             try:

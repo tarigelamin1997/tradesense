@@ -11,7 +11,7 @@ class UserRegistration(BaseModel):
     """User registration request schema"""
     email: EmailStr = Field(..., description="User email address")
     username: str = Field(..., min_length=3, max_length=50, description="Username")
-    password: str = Field(..., min_length=8, description="Password")
+    password: str = Field(..., min_length=8, max_length=128, description="Password")
     first_name: Optional[str] = Field(None, max_length=100, description="First name")
     last_name: Optional[str] = Field(None, max_length=100, description="Last name")
     trading_experience: Optional[str] = Field(None, description="Trading experience level")
@@ -23,6 +23,19 @@ class UserRegistration(BaseModel):
     def validate_username(cls, v):
         if not v.replace('_', '').replace('-', '').isalnum():
             raise ValueError('Username can only contain letters, numbers, hyphens, and underscores')
+        return v
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        # Check for ASCII printable characters only (32-126)
+        if not all(32 <= ord(char) <= 126 for char in v):
+            raise ValueError('Password must contain only standard keyboard characters')
+        # Require at least one letter and one number
+        if not any(c.isalpha() for c in v):
+            raise ValueError('Password must contain at least one letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
         return v
     
     @field_validator('trading_experience')
@@ -49,17 +62,14 @@ class UserRegistration(BaseModel):
 
 class UserLogin(BaseModel):
     """User login request schema"""
-    email: Optional[EmailStr] = Field(None, description="User email address")
+    email: Optional[str] = Field(None, description="User email address")  # Changed from EmailStr to prevent early validation
     username: Optional[str] = Field(None, description="Username")
-    password: str = Field(..., description="Password")
+    password: str = Field(..., max_length=128, description="Password")
 
     @field_validator('password', mode='after')
     @classmethod
     def check_email_or_username(cls, v, info):
-        email = info.data.get('email')
-        username = info.data.get('username')
-        if not email and not username:
-            raise ValueError('Either email or username must be provided')
+        # Don't validate here - let the endpoint handle it to provide consistent error messages
         return v
 
     model_config = {
@@ -192,7 +202,20 @@ class PasswordReset(BaseModel):
 class PasswordResetConfirm(BaseModel):
     """Password reset confirmation schema"""
     token: str = Field(..., description="Password reset token")
-    new_password: str = Field(..., min_length=8, description="New password")
+    new_password: str = Field(..., min_length=8, max_length=128, description="New password")
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_password(cls, v):
+        # Check for ASCII printable characters only (32-126)
+        if not all(32 <= ord(char) <= 126 for char in v):
+            raise ValueError('Password must contain only standard keyboard characters')
+        # Require at least one letter and one number
+        if not any(c.isalpha() for c in v):
+            raise ValueError('Password must contain at least one letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
+        return v
     
     model_config = {
         "json_schema_extra": {
@@ -205,8 +228,21 @@ class PasswordResetConfirm(BaseModel):
 
 class ChangePassword(BaseModel):
     """Change password request schema"""
-    current_password: str = Field(..., description="Current password")
-    new_password: str = Field(..., min_length=8, description="New password")
+    current_password: str = Field(..., max_length=128, description="Current password")
+    new_password: str = Field(..., min_length=8, max_length=128, description="New password")
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_password(cls, v):
+        # Check for ASCII printable characters only (32-126)
+        if not all(32 <= ord(char) <= 126 for char in v):
+            raise ValueError('Password must contain only standard keyboard characters')
+        # Require at least one letter and one number
+        if not any(c.isalpha() for c in v):
+            raise ValueError('Password must contain at least one letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
+        return v
     
     model_config = {
         "json_schema_extra": {

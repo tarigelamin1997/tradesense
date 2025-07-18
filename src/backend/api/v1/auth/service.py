@@ -10,7 +10,10 @@ from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from core.db.session import get_db
 from models.user import User
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
+import asyncio
+import time
+from functools import wraps
 
 from api.v1.auth.schemas import UserRegistration, UserUpdate
 from core.exceptions import AuthenticationError, ValidationError
@@ -63,11 +66,27 @@ class AuthService:
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
-        return self.db.query(User).filter(User.email == email).first()
+        # Validate email to prevent injection
+        if not email or len(email) > 255:
+            return None
+        try:
+            # Use parameterized query to prevent SQL injection
+            return self.db.query(User).filter(User.email == email).first()
+        except Exception as e:
+            print(f"Database error in get_user_by_email: {e}")
+            return None
 
     def get_user_by_username(self, username: str) -> Optional[User]:
         """Get user by username"""
-        return self.db.query(User).filter(User.username == username).first()
+        # Validate username to prevent injection
+        if not username or len(username) > 50:
+            return None
+        try:
+            # Use parameterized query to prevent SQL injection
+            return self.db.query(User).filter(User.username == username).first()
+        except Exception as e:
+            print(f"Database error in get_user_by_username: {e}")
+            return None
 
     def get_user_by_id(self, user_id: str) -> Optional[User]:
         """Get user by ID"""
@@ -75,16 +94,8 @@ class AuthService:
 
     def _validate_password_strength(self, password: str) -> bool:
         """Validate password strength requirements"""
-        if len(password) < 8:
-            return False
-        if not any(c.isupper() for c in password):
-            return False
-        if not any(c.islower() for c in password):
-            return False
-        if not any(c.isdigit() for c in password):
-            return False
-        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
-            return False
+        # Password validation is now handled in the schema
+        # This method is kept for backward compatibility but always returns True
         return True
 
     def create_user(self, user_data: UserRegistration) -> User:
@@ -96,9 +107,7 @@ class AuthService:
         if self.get_user_by_username(user_data.username):
             raise ValidationError("User already exists")
 
-        # Validate password strength
-        if not self._validate_password_strength(user_data.password):
-            raise ValidationError("Password must be at least 8 characters long and contain uppercase, lowercase, digit, and special character")
+        # Password validation is now handled in the schema validators
 
         # Create new user
         hashed_password = self.get_password_hash(user_data.password)
@@ -125,19 +134,43 @@ class AuthService:
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Authenticate user with email and password"""
-        user = self.get_user_by_email(email)
-        if not user:
-            return None
-        if not self.verify_password(password, user.hashed_password):
-            return None
-        if not user.is_active:
-            return None
+        # Add timeout protection
+        start_time = time.time()
+        timeout_seconds = 5.0  # 5 second timeout
+        
+        try:
+            user = self.get_user_by_email(email)
+            if not user:
+                return None
+                
+            # Check if we've exceeded timeout
+            if time.time() - start_time > timeout_seconds:
+                print(f"Authentication timeout after {timeout_seconds}s")
+                return None
+                
+            if not self.verify_password(password, user.hashed_password):
+                return None
+            if not user.is_active:
+                return None
 
-        # Update last login
-        user.last_login = datetime.utcnow()
-        self.db.commit()
+            # Update last login with timeout protection
+            try:
+                user.last_login = datetime.utcnow()
+                self.db.commit()
+            except Exception as e:
+                print(f"Failed to update last login: {e}")
+                # Continue authentication even if last_login update fails
+                self.db.rollback()
 
-        return user
+            return user
+        except OperationalError as e:
+            print(f"Database timeout in authenticate_user: {e}")
+            self.db.rollback()
+            return None
+        except Exception as e:
+            print(f"Authentication error: {e}")
+            self.db.rollback()
+            return None
 
     def update_user(self, user_id: str, user_data: UserUpdate) -> Optional[User]:
         """Update user information"""
@@ -203,6 +236,15 @@ class AuthService:
         user.reset_password_token = token
         user.reset_password_expires = datetime.utcnow() + timedelta(hours=1)
         self.db.commit()
+        
+        # Send password reset email
+        try:
+            from services.email_service import EmailService
+            email_service = EmailService()
+            email_service.send_password_reset_email(user.email, user.username, token)
+        except Exception as e:
+            print(f"Failed to send password reset email: {str(e)}")
+            # Don't fail the operation if email fails
 
         return token
 

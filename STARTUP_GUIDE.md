@@ -1,175 +1,192 @@
-# 🚀 TradeSense Startup Guide
+# TradeSense Startup Guide
+
+## Prerequisites
+
+1. **Python 3.8+** installed
+2. **Node.js 16+** and npm installed
+3. **PostgreSQL** or SQLite (default) for database
+4. **Virtual environment** activated (optional but recommended)
+
+## Frontend Technology
+
+TradeSense now uses **SvelteKit** for the frontend, providing:
+- ⚡ 50-70% less code than React
+- 🚀 Blazing fast performance with no virtual DOM
+- 📊 Clean, minimal UI with custom CSS
+- 🔄 Simple state management with Svelte stores
 
 ## Quick Start
 
-There is now **ONE** unified way to start TradeSense:
+### Option 1: Using the startup script (Recommended)
 
 ```bash
+# Make sure the script is executable
+chmod +x start.sh
+
+# Run the startup script
 ./start.sh
 ```
 
-To stop everything:
+### Option 2: Manual startup
+
+#### 1. Start Backend
 
 ```bash
-./stop.sh
+# Navigate to backend directory
+cd src/backend
+
+# Install Python dependencies (if not already done)
+pip install -r ../../requirements.txt
+
+# Run the backend
+python main.py
+
+# Or with uvicorn for better performance
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-That's it! The script handles everything automatically.
+The backend will start on http://localhost:8000
+- API Documentation: http://localhost:8000/api/docs
+- Alternative API Docs: http://localhost:8000/api/redoc
 
-## Features of the Unified Script
+#### 2. Start Frontend
 
-### ✅ Automatic Setup
-- Creates virtual environment if missing
-- Installs dependencies if needed
-- Creates necessary directories
-- Cleans up old processes
+In a new terminal:
 
-### ✅ Smart Port Management
-- Kills processes on required ports
-- Detects actual frontend port (3000, 3001, etc.)
-- Tracks PIDs for clean shutdown
+```bash
+# Navigate to frontend directory
+cd frontend
 
-### ✅ Professional Output
-- Color-coded status messages
-- Progress indicators
-- Clear error messages
-- Success summary with all URLs
+# Install dependencies (first time only)
+npm install
 
-### ✅ Comprehensive Information
-- Shows all access URLs
-- Displays test credentials
-- Lists test credit card numbers
-- Provides useful commands
-
-### ✅ Error Recovery
-- Validates directory structure
-- Checks service health
-- Shows logs on failure
-- Handles corrupted environments
-
-### ✅ Browser Integration
-- Automatically opens frontend in browser
-- Works on Linux and macOS
-
-## What You'll See
-
-When you run `./start.sh`, you'll see:
-
+# Start development server
+npm run dev
 ```
-🚀 TradeSense Startup Script v2.0
-=================================
 
-📧 Cleaning up previous sessions...
-✓ Stopped previous backend (PID: 12345)
-ℹ Cleared port 8000
+The frontend will start on http://localhost:3001
 
-🐍 Setting up Python environment...
-✓ Activated virtual environment
+## Default Test Credentials
 
-🔧 Starting Backend Server...
-✓ Backend is running! (PID: 12456)
+After starting the app, you can use these test credentials:
 
-🎨 Starting Frontend Server...
-✓ Frontend is running! (PID: 12567)
+**Regular User:**
+- Email: john.trader@example.com
+- Password: SecurePass123!
 
-✨ TradeSense is running!
-========================
-
-📍 Access URLs:
-  Frontend: http://localhost:3001
-  Backend API: http://localhost:8000
-  API Documentation: http://localhost:8000/api/docs
-
-👤 Test Credentials:
-  Email: demouser@test.com
-  Password: Demo@123456
-
-🔗 Quick Links:
-  Home: http://localhost:3001
-  Pricing: http://localhost:3001/pricing
-  Login: http://localhost:3001/login
-  Billing: http://localhost:3001/billing (after login)
-
-💳 Test Credit Cards:
-  Success: 4242 4242 4242 4242
-  3D Secure: 4000 0025 0000 3155
-  Declined: 4000 0000 0000 9995
-
-📝 Useful Commands:
-  View logs: tail -f logs/backend.log
-  Stop all: ./stop.sh
-  Check health: curl http://localhost:8000/health
-
-🎉 Enjoy using TradeSense!
-```
+**Admin User:**
+- Email: admin@tradesense.com
+- Password: AdminPass123!
 
 ## Troubleshooting
 
-### If the script fails:
+### Backend Issues
 
-1. **Check logs:**
-   - Backend: `tail -50 logs/backend.log`
-   - Frontend: `tail -50 logs/frontend.log`
+1. **Import Error for WebSocket**
+   - Already fixed! The `get_current_user_ws` function has been added.
 
-2. **Manual cleanup:**
+2. **Database Connection Error**
+   - Check if PostgreSQL is running (if using PostgreSQL)
+   - For SQLite, ensure write permissions in the project directory
+   - Check `.env` file for correct DATABASE_URL
+
+3. **Port Already in Use**
    ```bash
-   pkill -f uvicorn
-   pkill -f "npm run dev"
+   # Kill process on port 8000
+   lsof -ti:8000 | xargs kill -9
+   
+   # Kill process on port 3001
+   lsof -ti:3001 | xargs kill -9
    ```
 
-3. **Port conflicts:**
+### Frontend Issues
+
+1. **npm install fails**
    ```bash
-   lsof -i:8000  # Check what's using backend port
-   lsof -i:5173  # Check what's using frontend port
+   # Clear npm cache
+   npm cache clean --force
+   
+   # Delete node_modules and reinstall
+   rm -rf node_modules package-lock.json
+   npm install
    ```
 
-4. **Virtual environment issues:**
+2. **Vite errors**
+   - Make sure you're using Node.js 16+
+   - Check that all environment variables are set
+
+## Environment Configuration
+
+Create a `.env` file in the project root:
+
+```bash
+# Database
+DATABASE_URL=sqlite:///./tradesense.db
+# For PostgreSQL: DATABASE_URL=postgresql://user:password@localhost/tradesense
+
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key-here-change-in-production
+JWT_ALGORITHM=HS256
+
+# CORS Origins
+CORS_ORIGINS=http://localhost:3001,http://localhost:5173
+
+# Environment
+ENVIRONMENT=development
+```
+
+## Testing the Application
+
+1. **Health Check**
    ```bash
-   rm -rf test_venv
-   ./start.sh  # Will recreate it
+   curl http://localhost:8000/health
    ```
 
-## Advanced Usage
+2. **Login Test**
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email": "john.trader@example.com", "password": "SecurePass123!"}'
+   ```
 
-### Stripe Webhook Testing
-If you have Stripe CLI installed:
-```bash
-# In another terminal after starting TradeSense
-stripe listen --forward-to localhost:8000/api/v1/billing/webhook
-```
+3. **Frontend Access**
+   - Open http://localhost:3001 in your browser
+   - Try logging in with the test credentials
 
-### Direct Log Monitoring
-```bash
-# Watch backend logs
-tail -f logs/backend.log
+## Security Notes
 
-# Watch frontend logs
-tail -f logs/frontend.log
-```
+- All critical security vulnerabilities have been fixed
+- Rate limiting is active (5 login attempts per 5 minutes)
+- Input validation prevents SQL injection
+- Timeout protection prevents DoS attacks
+- CORS is properly configured for localhost only
 
-### Health Checks
-```bash
-# Check backend health
-curl http://localhost:8000/health
+## Production Deployment
 
-# Check API docs
-open http://localhost:8000/api/docs
-```
+Before deploying to production:
 
-## Notes
+1. Set `ENVIRONMENT=production` in `.env`
+2. Use a strong `JWT_SECRET_KEY`
+3. Configure proper CORS origins
+4. Use PostgreSQL instead of SQLite
+5. Build frontend for production: `npm run build`
+6. Use a process manager like PM2 or systemd
+7. Set up HTTPS with SSL certificates
+8. Configure a reverse proxy (nginx/Apache)
 
-- The script uses `test_venv` as the virtual environment
-- Logs are stored in the `logs/` directory
-- PIDs are tracked in `.pids/` directory
-- The `stop.sh` script is auto-generated each time
+## Need Help?
 
-## Migration from Old Scripts
+1. Check the logs:
+   - Backend: `logs/backend.log`
+   - Frontend: Browser console
 
-All previous startup scripts have been removed:
-- ~~startup-fixed.sh~~
-- ~~start-tradesense.sh~~
-- ~~start_servers.sh~~
-- ~~start_dev.sh~~
-- ~~quick-start.sh~~
+2. Verify all dependencies are installed:
+   ```bash
+   pip list | grep -E "fastapi|sqlalchemy|pydantic"
+   npm list | grep -E "react|vite|axios"
+   ```
 
-Use only `./start.sh` going forward!
+3. Make sure all services are running:
+   - Backend on http://localhost:8000
+   - Frontend on http://localhost:3001
+   - Database connection is active

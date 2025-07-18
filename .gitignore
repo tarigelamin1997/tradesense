@@ -58,6 +58,10 @@ htmlcov/
 .tox/
 .hypothesis/
 
+# Security audit reports
+frontend/security-audit-report.json
+frontend/security-audit-summary.md
+
 # IDE
 .vscode/
 .idea/

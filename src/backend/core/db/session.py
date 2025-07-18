@@ -119,8 +119,11 @@ def get_db():
     try:
         yield db
     except Exception as e:
-        logger.error(f"Database session error: {e}")
-        db.rollback()
+        # Don't log HTTPExceptions (like 401, 403) as database errors
+        from fastapi import HTTPException
+        if not isinstance(e, HTTPException):
+            logger.error(f"Database session error: {e}")
+            db.rollback()
         raise
     finally:
         db.close()

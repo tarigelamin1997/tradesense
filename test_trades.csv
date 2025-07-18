@@ -1,0 +1,4 @@
+symbol,side,entry_price,exit_price,quantity,entry_date,exit_date,strategy,notes
+AAPL,long,150.00,155.00,100,2024-01-01,2024-01-02,Momentum,Test trade 1
+TSLA,short,250.00,245.00,50,2024-01-02,2024-01-03,Mean Reversion,Test trade 2
+GOOGL,long,120.00,125.00,75,2024-01-03,2024-01-04,Breakout,Test trade 3

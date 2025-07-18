@@ -33,6 +33,9 @@ RUN pip install --no-cache-dir \
 # Copy application code
 COPY . .
 
+# Set Python path to include current directory
+ENV PYTHONPATH=/app
+
 # Set environment variable for port (Railway provides this)
 ENV PORT=8000
 

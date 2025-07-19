@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd frontend && ls -la src/ && ls -la src/lib/ && npm run build",
+  "buildCommand": "cd frontend && npm run build",
   "installCommand": "cd frontend && npm install"
 }

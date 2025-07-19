@@ -347,34 +347,70 @@
 
 <style>
     .spinner {
-        width: 2rem; height: 2rem; border-width: 4px; border-color: #c7d2fe; border-top-color: #4f46e5; border-radius: 9999px; animation: spin 1s linear infinite;
+        width: 2rem;
+        height: 2rem;
+        border-width: 4px;
+        border-color: #c7d2fe;
+        border-top-color: #4f46e5;
+        border-radius: 9999px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
     
     .btn {
-        padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.2s, color 0.2s; display: inline-flex; align-items: center; justify-content: center;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: background-color 0.2s, color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .btn-primary {
-        background-color: #4f46e5; color: white; @apply bg-indigo-600 text-white hover:bg-indigo-700;:hover { background-color: #4338ca; }
+        background-color: #4f46e5;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
     }
     
     .btn-secondary {
-        background-color: #e5e7eb; color: #1f2937; @apply bg-gray-200 text-gray-800 hover:bg-gray-300;:hover { background-color: #d1d5db; }
+        background-color: #e5e7eb;
+        color: #1f2937;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #d1d5db;
     }
     
     .btn-danger {
-        background-color: #dc2626; color: white; @apply bg-red-600 text-white hover:bg-red-700;:hover { background-color: #b91c1c; }
+        background-color: #dc2626;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background-color: #b91c1c;
     }
     
     .btn-sm {
-        @apply px-3 py-1 text-sm;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
     }
     
     .alert {
-        padding: 1rem; border-radius: 0.375rem;
+        padding: 1rem;
+        border-radius: 0.375rem;
     }
     
     .alert-error {
-        @apply bg-red-50 text-red-800 border border-red-200;
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 </style>

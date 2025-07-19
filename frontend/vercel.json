@@ -1,5 +1,6 @@
 {
   "buildCommand": "svelte-kit sync && vite build",
+  "framework": "sveltekit",
   "headers": [
     {
       "source": "/assets/(.*)",

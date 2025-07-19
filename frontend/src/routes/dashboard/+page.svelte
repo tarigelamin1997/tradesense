@@ -9,10 +9,10 @@
 	import PriceTicker from '$lib/components/PriceTicker.svelte';
 	import TradeInsights from '$lib/components/TradeInsights.svelte';
 	import { tradeStore } from '$lib/stores/trades';
-	import { analyticsApi } from '$lib/api/analytics.js';
-	import { tradesApi } from '$lib/api/trades.js';
-	import { billingApi } from '$lib/api/billing.js';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { analyticsApi } from '$lib/api/analytics';
+	import { tradesApi } from '$lib/api/trades';
+	import { billingApi } from '$lib/api/billing';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { get } from 'svelte/store';
 	import { logger } from '$lib/utils/logger';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';

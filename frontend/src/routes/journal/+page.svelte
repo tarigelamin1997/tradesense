@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { get } from 'svelte/store';
-	import { journalApi, type JournalEntry } from '$lib/api/journal.js';
+	import { journalApi, type JournalEntry } from '$lib/api/journal';
 	import RichTextEditor from '$lib/components/journal/RichTextEditor.svelte';
 	import MoodTracker from '$lib/components/journal/MoodTracker.svelte';
 	import JournalTemplates from '$lib/components/journal/JournalTemplates.svelte';
 	import JournalInsights from '$lib/components/journal/JournalInsights.svelte';
 	import { Search, Calendar, Tag, Filter, X, Edit, Trash2 } from 'lucide-svelte';
-	import { billingApi } from '$lib/api/billing.js';
+	import { billingApi } from '$lib/api/billing';
 	import { logger } from '$lib/utils/logger';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import DataExport from '$lib/components/DataExport.svelte';

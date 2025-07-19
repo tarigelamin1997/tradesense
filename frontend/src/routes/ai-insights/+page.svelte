@@ -5,7 +5,7 @@
     Zap, Activity, BarChart3, Shield, 
     Lightbulb, ChevronRight, RefreshCw
   } from 'lucide-svelte';
-  import { aiApi, type AIInsightsSummary, type PatternDetection, type EdgeStrength } from '$lib/api/ai.js';
+  import { aiApi, type AIInsightsSummary, type PatternDetection, type EdgeStrength } from '$lib/api/ai';
   import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
   import ScoreGauge from '$lib/components/ScoreGauge.svelte';
   import { formatCurrency, formatPercent } from '$lib/utils/format';

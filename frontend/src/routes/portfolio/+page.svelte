@@ -10,7 +10,7 @@
 		Filter,
 		Download
 	} from 'lucide-svelte';
-	import { api } from '$lib/api/client.js';
+	import { api } from '$lib/api/client';
 	import { logger } from '$lib/utils/logger';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	

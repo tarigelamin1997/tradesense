@@ -16,8 +16,8 @@
     type WidgetConfig,
     type WidgetType,
     type DataSource 
-  } from '$lib/api/dashboards.js';
-  import { billingApi } from '$lib/api/billing.js';
+  } from '$lib/api/dashboards';
+  import { billingApi } from '$lib/api/billing';
   import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
   import { widgetComponents, sampleDataGenerators, defaultWidgetSizes } from '$lib/components/dashboard/widgets';
 

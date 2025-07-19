@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { get } from 'svelte/store';
 	import { onMount } from 'svelte';
 	import { 

@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { CreditCard, Calendar, TrendingUp, AlertCircle, ExternalLink } from 'lucide-svelte';
-	import { billingApi, type Subscription, type Usage } from '$lib/api/billing.js';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { billingApi, type Subscription, type Usage } from '$lib/api/billing';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { get } from 'svelte/store';
 	import { logger } from '$lib/utils/logger';
 	

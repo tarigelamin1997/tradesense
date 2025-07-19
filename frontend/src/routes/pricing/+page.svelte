@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Check, X, Zap, TrendingUp, Shield } from 'lucide-svelte';
-	import { billingApi } from '$lib/api/billing.js';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { billingApi } from '$lib/api/billing';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { get } from 'svelte/store';
 	import { logger } from '$lib/utils/logger';
 	

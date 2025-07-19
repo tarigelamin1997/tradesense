@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { get } from 'svelte/store';
-	import { isAuthenticated } from '$lib/api/auth.js';
-	import { uploadsApi, type ColumnMapping } from '$lib/api/uploads.js';
+	import { isAuthenticated } from '$lib/api/auth';
+	import { uploadsApi, type ColumnMapping } from '$lib/api/uploads';
 	import { uploadStore } from '$lib/stores/upload';
 	import FileUpload from '$lib/components/FileUpload.svelte';
 	import UploadProgress from '$lib/components/UploadProgress.svelte';

@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { Lock, CheckCircle2, XCircle } from 'lucide-svelte';
-	import { authApi } from '$lib/api/auth.js';
+	import { authApi } from '$lib/api/auth';
 	import { logger } from '$lib/utils/logger';
 	
 	let password = '';

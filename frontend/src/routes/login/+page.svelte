@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth } from '$lib/api/auth';
+	import { auth } from '$lib/api/auth.js';
 	import MFAVerification from '$lib/components/MFAVerification.svelte';
 	
 	let username = '';

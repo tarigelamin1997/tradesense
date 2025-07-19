@@ -22,6 +22,7 @@
 	let usingSampleData = false;
 	let dateRange = '30d';
 	let userPlan: 'free' | 'pro' | 'enterprise' = 'free';
+	let isNewUser = false;
 	
 	// Data from API
 	let stats = {

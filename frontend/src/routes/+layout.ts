@@ -1,5 +1,5 @@
 import type { LayoutLoad } from './$types';
-import { auth } from '$lib/api/auth.js';
+import { auth } from '$lib/api/auth';
 import { browser } from '$app/environment';
 
 export const load: LayoutLoad = async () => {

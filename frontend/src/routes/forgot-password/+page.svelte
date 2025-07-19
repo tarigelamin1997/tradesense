@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-svelte';
-	import { authApi } from '$lib/api/auth.js';
+	import { authApi } from '$lib/api/auth';
 	import { logger } from '$lib/utils/logger';
 	
 	let email = '';

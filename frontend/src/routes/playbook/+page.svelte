@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { get } from 'svelte/store';
 	import { FileText, Plus, Edit, Trash2, Copy, Search, Filter, Tag } from 'lucide-svelte';
 	import PlaybookForm from '$lib/components/playbook/PlaybookForm.svelte';

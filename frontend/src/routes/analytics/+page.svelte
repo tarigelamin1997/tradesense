@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/api/auth.js';
+	import { isAuthenticated } from '$lib/api/auth';
 	import { tradeStore, type Trade } from '$lib/stores/trades';
-	import { tradesApi } from '$lib/api/trades.js';
+	import { tradesApi } from '$lib/api/trades';
 	import { get } from 'svelte/store';
-	import { analyticsAdvancedApi, type PerformanceSummary, type StreakAnalysis, type HeatmapData } from '$lib/api/analyticsAdvanced.js';
+	import { analyticsAdvancedApi, type PerformanceSummary, type StreakAnalysis, type HeatmapData } from '$lib/api/analyticsAdvanced';
 	
 	// Import chart components
 	import CumulativePnLChart from '$lib/components/charts/CumulativePnLChart.svelte';
@@ -16,7 +16,7 @@
 	import FeatureGate from '$lib/components/FeatureGate.svelte';
 	import TradeInsights from '$lib/components/TradeInsights.svelte';
 	import AIInsightsPanel from '$lib/components/AIInsightsPanel.svelte';
-	import { billingApi } from '$lib/api/billing.js';
+	import { billingApi } from '$lib/api/billing';
 	import { logger } from '$lib/utils/logger';
 	
 	let loading = true;

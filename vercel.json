@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd frontend && npm install && svelte-kit sync && vite build",
+  "buildCommand": "cd frontend && npm install && npx svelte-kit sync && npm run build",
   "installCommand": "cd frontend && npm install",
   "framework": "sveltekit"
 }

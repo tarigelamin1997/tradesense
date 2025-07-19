@@ -10,31 +10,31 @@ echo "Adding Vercel URL: $VERCEL_URL"
 
 # Update Gateway service
 echo "Updating Gateway service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-gateway
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-gateway
 
 # Update Auth service
 echo "Updating Auth service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-auth
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-auth
 
 # Update Trading service
 echo "Updating Trading service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-trading
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-trading
 
 # Update Analytics service
 echo "Updating Analytics service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-analytics
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-analytics
 
 # Update Market Data service
 echo "Updating Market Data service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-market-data
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-market-data
 
 # Update Billing service
 echo "Updating Billing service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-billing
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-billing
 
 # Update AI service
 echo "Updating AI service..."
-railway variables set CORS_ORIGINS_STR="$CORS_ORIGINS" -s tradesense-ai
+railway variables --set "CORS_ORIGINS_STR=$CORS_ORIGINS" -s tradesense-ai
 
 echo "✅ CORS settings updated for all services!"
 echo "The services will restart automatically with the new settings."

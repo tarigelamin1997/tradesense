@@ -561,6 +561,6 @@
 
 <style>
     .spinner {
-        @apply w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin;
+        width: 2rem; height: 2rem; border-width: 4px; border-color: #c7d2fe; border-top-color: #4f46e5; border-radius: 9999px; animation: spin 1s linear infinite;
     }
 </style>

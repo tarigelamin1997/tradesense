@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd frontend && npm run build",
+  "buildCommand": "cd frontend && pwd && ls -la && ls -la src/lib/api/ && cat src/lib/api/auth.ts | head -5 && npm run build",
   "installCommand": "cd frontend && npm install"
 }

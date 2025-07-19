@@ -347,23 +347,23 @@
 
 <style>
     .spinner {
-        @apply w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin;
+        width: 2rem; height: 2rem; border-width: 4px; border-color: #c7d2fe; border-top-color: #4f46e5; border-radius: 9999px; animation: spin 1s linear infinite;
     }
     
     .btn {
-        @apply px-4 py-2 rounded-md font-medium transition-colors inline-flex items-center justify-center;
+        padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.2s, color 0.2s; display: inline-flex; align-items: center; justify-content: center;
     }
     
     .btn-primary {
-        @apply bg-indigo-600 text-white hover:bg-indigo-700;
+        background-color: #4f46e5; color: white; @apply bg-indigo-600 text-white hover:bg-indigo-700;:hover { background-color: #4338ca; }
     }
     
     .btn-secondary {
-        @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+        background-color: #e5e7eb; color: #1f2937; @apply bg-gray-200 text-gray-800 hover:bg-gray-300;:hover { background-color: #d1d5db; }
     }
     
     .btn-danger {
-        @apply bg-red-600 text-white hover:bg-red-700;
+        background-color: #dc2626; color: white; @apply bg-red-600 text-white hover:bg-red-700;:hover { background-color: #b91c1c; }
     }
     
     .btn-sm {
@@ -371,7 +371,7 @@
     }
     
     .alert {
-        @apply p-4 rounded-md;
+        padding: 1rem; border-radius: 0.375rem;
     }
     
     .alert-error {

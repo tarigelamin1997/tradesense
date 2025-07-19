@@ -26,6 +26,9 @@
     "vite": "^5.0.3"
   },
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@tiptap/core": "^3.0.1",
     "@tiptap/extension-highlight": "^3.0.1",

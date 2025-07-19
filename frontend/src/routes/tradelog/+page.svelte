@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/api/auth';
+	import { isAuthenticated } from '$lib/api/auth.js';
 	import { get } from 'svelte/store';
 	import { logger } from '$lib/utils/logger';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';

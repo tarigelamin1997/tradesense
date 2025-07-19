@@ -14,8 +14,8 @@
 		Check,
 		AlertCircle
 	} from 'lucide-svelte';
-	import { auth } from '$lib/api/auth';
-	import { api } from '$lib/api/client';
+	import { auth } from '$lib/api/auth.js';
+	import { api } from '$lib/api/client.js';
 	import { logger } from '$lib/utils/logger';
 	
 	let authState: any;

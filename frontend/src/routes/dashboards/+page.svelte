@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Plus, Copy, Trash2, Share2, Lock, Globe, Layout } from 'lucide-svelte';
-  import { dashboardsApi, type Dashboard, type DashboardTemplate } from '$lib/api/dashboards';
-  import { billingApi } from '$lib/api/billing';
+  import { dashboardsApi, type Dashboard, type DashboardTemplate } from '$lib/api/dashboards.js';
+  import { billingApi } from '$lib/api/billing.js';
   import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
   import { formatDistanceToNow } from 'date-fns';
 

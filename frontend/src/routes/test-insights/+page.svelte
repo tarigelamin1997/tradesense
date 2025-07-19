@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { analyticsAdvancedApi } from '$lib/api/analyticsAdvanced';
-	import type { TradeIntelligence, PerformanceSummary, EmotionalAnalytics } from '$lib/api/analyticsAdvanced';
+	import { analyticsAdvancedApi } from '$lib/api/analyticsAdvanced.js';
+	import type { TradeIntelligence, PerformanceSummary, EmotionalAnalytics } from '$lib/api/analyticsAdvanced.js';
 	
 	let loading = true;
 	let error = '';

@@ -4,11 +4,11 @@
     TrendingUp, TrendingDown, AlertCircle, CheckCircle, 
     Clock, Users, DollarSign, Filter, Search, ChevronDown
   } from 'lucide-svelte';
-  import { feedbackApi } from '$lib/api/feedback';
+  import { feedbackApi } from '$lib/api/feedback.js';
   import type { 
     FeedbackAnalytics, FeedbackItem, FeedbackHeatmapData,
     ImpactAnalysis 
-  } from '$lib/api/feedback';
+  } from '$lib/api/feedback.js';
   import MetricCard from '$lib/components/MetricCard.svelte';
 
   let analytics: FeedbackAnalytics | null = null;

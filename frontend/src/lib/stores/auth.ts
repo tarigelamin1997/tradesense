@@ -1,7 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { api } from '$lib/api/client';
+import { api } from '$lib/api/client-safe';
 
 interface User {
 	id: string;
@@ -40,7 +40,7 @@ function createAuthStore() {
 		if (token && userStr) {
 			try {
 				const user = JSON.parse(userStr);
-				api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+				api.setAuthToken(token);
 				
 				update(state => ({
 					...state,
@@ -83,7 +83,7 @@ function createAuthStore() {
 			localStorage.setItem('user', JSON.stringify(user));
 			
 			// Set authorization header
-			api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+			api.setAuthToken(access_token);
 
 			update(state => ({
 				...state,
@@ -121,7 +121,7 @@ function createAuthStore() {
 			localStorage.setItem('user', JSON.stringify(user));
 			
 			// Set authorization header
-			api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+			api.setAuthToken(access_token);
 
 			update(state => ({
 				...state,
@@ -152,7 +152,7 @@ function createAuthStore() {
 			localStorage.removeItem('user');
 			
 			// Clear auth header
-			delete api.defaults.headers.common['Authorization'];
+			api.clearAuth();
 			
 			// Clear refresh timeout
 			if (refreshTimeout) {
@@ -202,7 +202,7 @@ function createAuthStore() {
 
 			// Update token
 			localStorage.setItem('auth_token', access_token);
-			api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+			api.setAuthToken(access_token);
 
 			update(state => ({
 				...state,

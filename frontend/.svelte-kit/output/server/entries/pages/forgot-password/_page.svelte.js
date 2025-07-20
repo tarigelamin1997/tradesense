@@ -1,4 +1,4 @@
-import { c as create_ssr_component, v as validate_component, a as add_attribute, b as escape } from "../../../chunks/ssr.js";
+import { c as create_ssr_component, v as validate_component, b as add_attribute, d as escape } from "../../../chunks/ssr.js";
 import "../../../chunks/auth.js";
 import { M as Mail } from "../../../chunks/mail.js";
 import { A as Arrow_left } from "../../../chunks/arrow-left.js";

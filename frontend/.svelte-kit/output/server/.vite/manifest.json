@@ -13,7 +13,7 @@
     "name": "DataExport",
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_download.js"
     ],
     "css": [
@@ -28,7 +28,6 @@
     "file": "chunks/Icon.js",
     "name": "Icon",
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_Icon2.js",
       "_arrow-left.js",
@@ -67,7 +66,6 @@
     "file": "chunks/Icon2.js",
     "name": "Icon",
     "imports": [
-      "_utils.js",
       "_ssr.js"
     ]
   },
@@ -126,7 +124,7 @@
     "file": "chunks/auth.js",
     "name": "auth",
     "imports": [
-      "_client2.js",
+      "_client-safe.js",
       "_index.js"
     ]
   },
@@ -136,7 +134,7 @@
     "imports": [
       "_index.js",
       "_client.js",
-      "_client2.js"
+      "_client-safe.js"
     ]
   },
   "_bell.js": {
@@ -195,19 +193,19 @@
       "_Icon2.js"
     ]
   },
+  "_client-safe.js": {
+    "file": "chunks/client-safe.js",
+    "name": "client-safe",
+    "imports": [
+      "_client.js"
+    ]
+  },
   "_client.js": {
     "file": "chunks/client.js",
     "name": "client",
     "imports": [
       "_exports.js",
       "_ssr2.js"
-    ]
-  },
-  "_client2.js": {
-    "file": "chunks/client2.js",
-    "name": "client",
-    "imports": [
-      "_client.js"
     ]
   },
   "_download.js": {
@@ -266,7 +264,7 @@
     "file": "chunks/index.js",
     "name": "index",
     "imports": [
-      "_utils.js"
+      "_ssr.js"
     ]
   },
   "_internal.js": {
@@ -275,6 +273,9 @@
     "imports": [
       "_ssr.js",
       "_ssr2.js"
+    ],
+    "dynamicImports": [
+      "src/hooks.server.ts"
     ]
   },
   "_loader-circle.js": {
@@ -335,10 +336,7 @@
   },
   "_ssr.js": {
     "file": "chunks/ssr.js",
-    "name": "ssr",
-    "imports": [
-      "_utils.js"
-    ]
+    "name": "ssr"
   },
   "_ssr2.js": {
     "file": "chunks/ssr2.js",
@@ -392,10 +390,6 @@
       "_Icon2.js"
     ]
   },
-  "_utils.js": {
-    "file": "chunks/utils.js",
-    "name": "utils"
-  },
   "_websocket.js": {
     "file": "chunks/websocket.js",
     "name": "websocket",
@@ -447,18 +441,23 @@
       "_index.js"
     ]
   },
+  "src/hooks.server.ts": {
+    "file": "chunks/hooks.server.js",
+    "name": "hooks.server",
+    "src": "src/hooks.server.ts",
+    "isDynamicEntry": true
+  },
   "src/routes/+error.svelte": {
     "file": "entries/pages/_error.svelte.js",
     "name": "entries/pages/_error.svelte",
     "src": "src/routes/+error.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_stores.js"
     ],
     "css": [
-      "_app/immutable/assets/_error.DjDCCf0x.css"
+      "_app/immutable/assets/_error.tBsEgbCX.css"
     ]
   },
   "src/routes/+layout.svelte": {
@@ -467,7 +466,6 @@
     "src": "src/routes/+layout.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_auth.js",
       "_client.js",
@@ -475,7 +473,6 @@
       "_websocket.js",
       "_wifi.js",
       "_circle-alert.js",
-      "_client2.js",
       "_trending-up.js",
       "_file-text.js",
       "_index.js",
@@ -484,7 +481,8 @@
       "_shield.js",
       "_mail.js",
       "_x.js",
-      "_chart-column.js"
+      "_chart-column.js",
+      "_auth2.js"
     ],
     "css": [
       "_app/immutable/assets/_layout.Begcf6z2.css"
@@ -494,10 +492,7 @@
     "file": "entries/pages/_layout.ts.js",
     "name": "entries/pages/_layout.ts",
     "src": "src/routes/+layout.ts",
-    "isEntry": true,
-    "imports": [
-      "_auth.js"
-    ]
+    "isEntry": true
   },
   "src/routes/+page.svelte": {
     "file": "entries/pages/_page.svelte.js",
@@ -528,7 +523,6 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
       "_Icon.js"
     ],
     "css": [
@@ -541,7 +535,6 @@
     "src": "src/routes/admin/+layout.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_stores.js",
       "_client.js",
@@ -559,7 +552,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_Icon.js",
       "_analytics.js"
     ],
@@ -574,7 +567,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_Icon.js"
     ],
     "css": [
@@ -588,7 +581,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_Icon.js"
     ],
     "css": [
@@ -602,7 +595,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_auth2.js",
       "_Icon.js"
     ],
@@ -617,7 +610,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js"
+      "_client.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BWtkL8iW.css",
@@ -631,7 +624,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client-safe.js",
       "_Icon.js",
       "_analytics.js"
     ],
@@ -646,7 +639,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_LoadingSkeleton.js",
       "_brain.js",
       "_refresh-cw.js"
@@ -662,7 +655,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_Icon.js"
     ],
     "css": [
@@ -678,8 +671,7 @@
       "_ssr.js",
       "_client.js",
       "_auth.js",
-      "_TradeInsights.svelte_svelte_type_style_lang.js",
-      "_client2.js"
+      "_TradeInsights.svelte_svelte_type_style_lang.js"
     ],
     "css": [
       "_app/immutable/assets/_page.B7wb5pyr.css",
@@ -694,7 +686,6 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
       "_auth.js"
     ],
     "css": [
@@ -709,7 +700,6 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
       "_lock.js",
       "_eye.js"
     ],
@@ -726,7 +716,6 @@
       "_ssr.js",
       "_client.js",
       "_websocket.js",
-      "_client2.js",
       "_TradeInsights.svelte_svelte_type_style_lang.js",
       "_auth.js",
       "_LoadingSkeleton.js"
@@ -746,7 +735,6 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
       "_LoadingSkeleton.js",
       "_plus.js"
     ],
@@ -760,11 +748,9 @@
     "src": "src/routes/dashboards/[id]/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_stores.js",
       "_client.js",
-      "_client2.js",
       "_LoadingSkeleton.js"
     ],
     "css": [
@@ -806,7 +792,6 @@
       "_ssr.js",
       "_client.js",
       "_auth.js",
-      "_client2.js",
       "_LoadingSkeleton.js",
       "_DataExport.js"
     ],
@@ -829,8 +814,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_auth.js",
-      "_client2.js"
+      "_auth.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BKOFMVKt.css"
@@ -874,7 +858,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client-safe.js",
       "_LoadingSkeleton.js",
       "_download.js",
       "_circle-alert.js",
@@ -893,7 +877,6 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
       "_auth.js",
       "_zap.js",
       "_x.js",
@@ -947,7 +930,6 @@
     "src": "src/routes/reset-password/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_stores.js",
       "_client.js",
@@ -982,7 +964,7 @@
     "imports": [
       "_ssr.js",
       "_auth.js",
-      "_client2.js",
+      "_client.js",
       "_user.js",
       "_bell.js",
       "_shield.js"
@@ -998,7 +980,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js",
+      "_client.js",
       "_auth2.js",
       "_analytics.js"
     ],
@@ -1014,7 +996,6 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
       "_auth2.js",
       "_analytics.js"
     ],
@@ -1030,7 +1011,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client2.js",
+      "_client-safe.js",
       "_auth2.js",
       "_Icon.js",
       "_analytics.js"
@@ -1059,7 +1040,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client2.js"
+      "_client.js"
     ],
     "css": [
       "_app/immutable/assets/_page.DXNJp5pQ.css"
@@ -1110,8 +1091,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_auth.js",
-      "_client2.js"
+      "_auth.js"
     ],
     "css": [
       "_app/immutable/assets/_page.3QqDoUJM.css"
@@ -1123,11 +1103,10 @@
     "src": "src/routes/upload/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_client.js",
       "_auth.js",
-      "_client2.js",
+      "_client-safe.js",
       "_index.js",
       "_upload.js",
       "_circle-alert.js",
@@ -1149,7 +1128,6 @@
     "src": "src/routes/verify-email/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_utils.js",
       "_ssr.js",
       "_stores.js",
       "_client.js",

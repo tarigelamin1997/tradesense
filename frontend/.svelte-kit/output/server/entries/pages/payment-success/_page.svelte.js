@@ -1,4 +1,4 @@
-import { c as create_ssr_component, v as validate_component, b as escape } from "../../../chunks/ssr.js";
+import { c as create_ssr_component, v as validate_component, d as escape } from "../../../chunks/ssr.js";
 import "../../../chunks/client.js";
 import { C as Circle_check_big } from "../../../chunks/circle-check-big.js";
 import { S as Sparkles } from "../../../chunks/sparkles.js";

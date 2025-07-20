@@ -1,5 +1,4 @@
-import { c as compute_rest_props } from "./utils.js";
-import { c as create_ssr_component, v as validate_component, m as missing_component } from "./ssr.js";
+import { c as create_ssr_component, v as validate_component, h as compute_rest_props, m as missing_component } from "./ssr.js";
 import { I as Icon$1, d as defaultAttributes } from "./Icon2.js";
 import { A as Arrow_left } from "./arrow-left.js";
 import { A as Arrow_right } from "./arrow-right.js";

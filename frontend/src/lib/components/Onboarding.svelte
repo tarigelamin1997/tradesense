@@ -1,7 +1,7 @@
 <script>
     import { onMount, createEventDispatcher } from 'svelte';
     import { fade, fly, scale } from 'svelte/transition';
-    import { api } from '$lib/api/client';
+    import { api } from '$lib/api/client-safe';
     import Icon from '$lib/components/Icon.svelte';
     import analytics from '$lib/analytics';
     

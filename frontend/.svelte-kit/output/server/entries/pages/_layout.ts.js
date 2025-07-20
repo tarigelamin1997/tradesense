@@ -1,4 +1,3 @@
-import "../../chunks/auth.js";
 const load = async () => {
   return {};
 };

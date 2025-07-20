@@ -1,9 +1,10 @@
-import { a as api } from "./client2.js";
+import { a as api } from "./client-safe.js";
 import { d as derived, w as writable } from "./index.js";
 function createAuthStore() {
   const { subscribe, set, update } = writable({
     user: null,
-    loading: true,
+    loading: false,
+    // Set to false by default for SSR
     error: null
   });
   return {
@@ -67,26 +68,12 @@ function createAuthStore() {
       }
     },
     async logout() {
-      api.clearAuth();
       set({ user: null, loading: false, error: null });
     },
     async checkAuth() {
-      if (!api.isAuthenticated()) {
+      {
         set({ user: null, loading: false, error: null });
         return;
-      }
-      update((state) => ({ ...state, loading: true }));
-      try {
-        const user = await api.get("/api/v1/auth/me");
-        update((state) => ({
-          ...state,
-          user,
-          loading: false,
-          error: null
-        }));
-      } catch (error) {
-        api.clearAuth();
-        set({ user: null, loading: false, error: null });
       }
     },
     clearError() {

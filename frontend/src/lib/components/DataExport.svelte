@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Download, FileText, Table, FileSpreadsheet, Check } from 'lucide-svelte';
-	import { api } from '$lib/api/client';
+	import { api } from '$lib/api/client-safe';
 	import { logger } from '$lib/utils/logger';
 	
 	export let endpoint: string;

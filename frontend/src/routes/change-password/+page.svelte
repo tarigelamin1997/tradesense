@@ -153,14 +153,25 @@
 					<label for="currentPassword">Current Password</label>
 					<div class="password-input">
 						<Lock size={20} />
-						<input
-							id="currentPassword"
-							type={showCurrentPassword ? 'text' : 'password'}
-							bind:value={currentPassword}
-							placeholder="Enter current password"
-							required
-							disabled={loading}
-						/>
+						{#if showCurrentPassword}
+							<input
+								id="currentPassword"
+								type="text"
+								bind:value={currentPassword}
+								placeholder="Enter current password"
+								required
+								disabled={loading}
+							/>
+						{:else}
+							<input
+								id="currentPassword"
+								type="password"
+								bind:value={currentPassword}
+								placeholder="Enter current password"
+								required
+								disabled={loading}
+							/>
+						{/if}
 						<button
 							type="button"
 							class="toggle-password"
@@ -180,14 +191,25 @@
 					<label for="newPassword">New Password</label>
 					<div class="password-input">
 						<Lock size={20} />
-						<input
-							id="newPassword"
-							type={showNewPassword ? 'text' : 'password'}
-							bind:value={newPassword}
-							placeholder="Enter new password"
-							required
-							disabled={loading}
-						/>
+						{#if showNewPassword}
+							<input
+								id="newPassword"
+								type="text"
+								bind:value={newPassword}
+								placeholder="Enter new password"
+								required
+								disabled={loading}
+							/>
+						{:else}
+							<input
+								id="newPassword"
+								type="password"
+								bind:value={newPassword}
+								placeholder="Enter new password"
+								required
+								disabled={loading}
+							/>
+						{/if}
 						<button
 							type="button"
 							class="toggle-password"
@@ -244,14 +266,25 @@
 					<label for="confirmPassword">Confirm New Password</label>
 					<div class="password-input">
 						<Lock size={20} />
-						<input
-							id="confirmPassword"
-							type={showConfirmPassword ? 'text' : 'password'}
-							bind:value={confirmPassword}
-							placeholder="Confirm new password"
-							required
-							disabled={loading}
-						/>
+						{#if showConfirmPassword}
+							<input
+								id="confirmPassword"
+								type="text"
+								bind:value={confirmPassword}
+								placeholder="Confirm new password"
+								required
+								disabled={loading}
+							/>
+						{:else}
+							<input
+								id="confirmPassword"
+								type="password"
+								bind:value={confirmPassword}
+								placeholder="Confirm new password"
+								required
+								disabled={loading}
+							/>
+						{/if}
 						<button
 							type="button"
 							class="toggle-password"

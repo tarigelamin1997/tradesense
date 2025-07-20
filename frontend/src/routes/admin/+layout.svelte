@@ -110,22 +110,40 @@
 <style>
     /* Custom admin styles */
     :global(.admin-card) {
-        @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        padding: 1.5rem;
     }
     
     :global(.admin-table) {
-        @apply min-w-full divide-y divide-gray-200;
+        min-width: 100%;
+        border-collapse: collapse;
+    }
+    
+    :global(.admin-table > * > tr) {
+        border-bottom: 1px solid #e5e7eb;
     }
     
     :global(.admin-table thead) {
-        @apply bg-gray-50;
+        background-color: #f9fafb;
     }
     
     :global(.admin-table th) {
-        @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+        padding: 0.75rem 1.5rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
     
     :global(.admin-table td) {
-        @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+        padding: 1rem 1.5rem;
+        white-space: nowrap;
+        font-size: 0.875rem;
+        color: #111827;
     }
 </style>

@@ -265,7 +265,17 @@
 
 <style>
     .form-input {
-        @apply block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500;
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     }
     
     .btn {
@@ -273,18 +283,36 @@
     }
     
     .btn-primary {
-        background-color: #4f46e5; color: white; @apply bg-indigo-600 text-white hover:bg-indigo-700;:hover { background-color: #4338ca; }
+        background-color: #4f46e5;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
     }
     
     .btn-secondary {
-        background-color: #e5e7eb; color: #1f2937; @apply bg-gray-200 text-gray-800 hover:bg-gray-300;:hover { background-color: #d1d5db; }
+        background-color: #e5e7eb;
+        color: #1f2937;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #d1d5db;
     }
     
     .btn:disabled {
-        @apply opacity-50 cursor-not-allowed;
+        opacity: 0.5;
+        cursor: not-allowed;
     }
     
     .spinner {
-        @apply w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin;
+        width: 1rem;
+        height: 1rem;
+        border-width: 2px;
+        border-style: solid;
+        border-color: white;
+        border-top-color: transparent;
+        border-radius: 9999px;
+        animation: spin 1s linear infinite;
     }
 </style>

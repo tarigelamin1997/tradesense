@@ -635,19 +635,40 @@
     }
     
     .form-input, .form-select, .form-textarea {
-        @apply w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500;
+        width: 100%;
+        border-radius: 0.375rem;
+        border-color: #d1d5db;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     }
     
     .btn {
-        @apply px-4 py-2 rounded-md font-medium transition-colors;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
     }
     
     .btn-primary {
-        background-color: #4f46e5; color: white; @apply bg-indigo-600 text-white hover:bg-indigo-700;:hover { background-color: #4338ca; }
+        background-color: #4f46e5;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
     }
     
     .btn-secondary {
-        background-color: #e5e7eb; color: #1f2937; @apply bg-gray-200 text-gray-800 hover:bg-gray-300;:hover { background-color: #d1d5db; }
+        background-color: #e5e7eb;
+        color: #1f2937;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #d1d5db;
     }
     
     .alert {
@@ -655,6 +676,8 @@
     }
     
     .alert-error {
-        @apply bg-red-50 text-red-800 border border-red-200;
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 </style>

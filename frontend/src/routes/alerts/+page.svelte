@@ -524,15 +524,22 @@
     }
     
     .btn-primary {
-        background-color: #4f46e5; color: white; @apply bg-indigo-600 text-white hover:bg-indigo-700;:hover { background-color: #4338ca; }
+        background-color: #4f46e5;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
     }
     
     .btn-sm {
-        @apply px-3 py-1 text-sm;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
     }
     
     .btn:disabled {
-        @apply opacity-50 cursor-not-allowed;
+        opacity: 0.5;
+        cursor: not-allowed;
     }
     
     .alert {
@@ -540,6 +547,8 @@
     }
     
     .alert-error {
-        @apply bg-red-50 text-red-800 border border-red-200;
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 </style>

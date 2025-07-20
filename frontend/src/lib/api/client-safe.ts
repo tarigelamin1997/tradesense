@@ -116,17 +116,13 @@ export const api = {
 	setAuthToken(token: string): void {
 		if (!browser) return;
 		localStorage.setItem('authToken', token);
-		if (apiInstance) {
-			apiInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-		}
+		// Token will be applied when client is initialized
 	},
 
 	clearAuth(): void {
 		if (!browser) return;
 		localStorage.removeItem('authToken');
-		if (apiInstance) {
-			delete apiInstance.defaults.headers.common['Authorization'];
-		}
+		// Auth will be cleared on next client initialization
 	},
 
 	getAuthToken(): string | null {

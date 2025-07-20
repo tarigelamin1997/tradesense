@@ -4,7 +4,7 @@
     import { goto } from '$app/navigation';
     import MFASetup from '$lib/components/MFASetup.svelte';
     import Icon from '$lib/components/Icon.svelte';
-    import { api } from '$lib/api/client-safe';
+    import { api } from '$lib/api/ssr-safe';
     
     let user = null;
     let trustedDevices = [];

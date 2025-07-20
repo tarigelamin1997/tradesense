@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Lock, Eye, EyeOff, AlertCircle, Check } from 'lucide-svelte';
-	import { api } from '$lib/api/client-safe';
+	import { api } from '$lib/api/ssr-safe';
 	import { logger } from '$lib/utils/logger';
 	
 	let currentPassword = '';

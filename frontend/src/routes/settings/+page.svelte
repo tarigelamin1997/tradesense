@@ -16,7 +16,7 @@
 		AlertCircle
 	} from 'lucide-svelte';
 	import { auth } from '$lib/api/auth';
-	import { api } from '$lib/api/client-safe';
+	import { api } from '$lib/api/ssr-safe';
 	import { logger } from '$lib/utils/logger';
 	
 	let authState: any;

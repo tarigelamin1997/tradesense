@@ -1,7 +1,6 @@
 import { c as create_ssr_component, p as createEventDispatcher, b as add_attribute, v as validate_component, d as escape, e as each, m as missing_component, a as subscribe } from "../../../chunks/ssr.js";
 import "../../../chunks/client.js";
-import "../../../chunks/auth.js";
-import { a as api } from "../../../chunks/client-safe.js";
+import { b as api } from "../../../chunks/auth.js";
 import { w as writable } from "../../../chunks/index.js";
 import { U as Upload, F as File_json, C as Circle_x, L as Loader, I as Info } from "../../../chunks/upload.js";
 import { C as Circle_alert } from "../../../chunks/circle-alert.js";

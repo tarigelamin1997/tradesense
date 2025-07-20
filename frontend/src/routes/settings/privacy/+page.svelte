@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { browser } from '$app/environment';
-    import { api } from '$lib/api/client-safe';
+    import { api } from '$lib/api/ssr-safe';
     import { authStore } from '$lib/stores/auth';
     import Icon from '$lib/components/Icon.svelte';
     import analytics from '$lib/analytics';

@@ -13,7 +13,7 @@
     "name": "DataExport",
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_download.js"
     ],
     "css": [
@@ -124,7 +124,7 @@
     "file": "chunks/auth.js",
     "name": "auth",
     "imports": [
-      "_client-safe.js",
+      "_client.js",
       "_index.js"
     ]
   },
@@ -134,7 +134,7 @@
     "imports": [
       "_index.js",
       "_client.js",
-      "_client-safe.js"
+      "_ssr-safe.js"
     ]
   },
   "_bell.js": {
@@ -191,13 +191,6 @@
     "imports": [
       "_ssr.js",
       "_Icon2.js"
-    ]
-  },
-  "_client-safe.js": {
-    "file": "chunks/client-safe.js",
-    "name": "client-safe",
-    "imports": [
-      "_client.js"
     ]
   },
   "_client.js": {
@@ -332,6 +325,13 @@
     "imports": [
       "_ssr.js",
       "_Icon2.js"
+    ]
+  },
+  "_ssr-safe.js": {
+    "file": "chunks/ssr-safe.js",
+    "name": "ssr-safe",
+    "imports": [
+      "_client.js"
     ]
   },
   "_ssr.js": {
@@ -473,6 +473,7 @@
       "_websocket.js",
       "_wifi.js",
       "_circle-alert.js",
+      "_ssr-safe.js",
       "_trending-up.js",
       "_file-text.js",
       "_index.js",
@@ -523,6 +524,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
+      "_ssr-safe.js",
       "_Icon.js"
     ],
     "css": [
@@ -552,7 +554,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_Icon.js",
       "_analytics.js"
     ],
@@ -567,7 +569,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_Icon.js"
     ],
     "css": [
@@ -581,7 +583,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_Icon.js"
     ],
     "css": [
@@ -595,7 +597,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_auth2.js",
       "_Icon.js"
     ],
@@ -624,7 +626,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client-safe.js",
+      "_ssr-safe.js",
       "_Icon.js",
       "_analytics.js"
     ],
@@ -655,7 +657,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_Icon.js"
     ],
     "css": [
@@ -700,6 +702,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
+      "_ssr-safe.js",
       "_lock.js",
       "_eye.js"
     ],
@@ -814,7 +817,8 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_auth.js"
+      "_auth.js",
+      "_ssr-safe.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BKOFMVKt.css"
@@ -858,7 +862,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client-safe.js",
+      "_ssr-safe.js",
       "_LoadingSkeleton.js",
       "_download.js",
       "_circle-alert.js",
@@ -964,7 +968,7 @@
     "imports": [
       "_ssr.js",
       "_auth.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_user.js",
       "_bell.js",
       "_shield.js"
@@ -980,7 +984,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_auth2.js",
       "_analytics.js"
     ],
@@ -996,6 +1000,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
+      "_ssr-safe.js",
       "_auth2.js",
       "_analytics.js"
     ],
@@ -1011,7 +1016,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_client-safe.js",
+      "_ssr-safe.js",
       "_auth2.js",
       "_Icon.js",
       "_analytics.js"
@@ -1106,7 +1111,6 @@
       "_ssr.js",
       "_client.js",
       "_auth.js",
-      "_client-safe.js",
       "_index.js",
       "_upload.js",
       "_circle-alert.js",

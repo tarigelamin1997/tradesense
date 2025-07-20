@@ -56,7 +56,7 @@ function createAuthStore() {
 				console.log('Attempting login with username:', credentials.username);
 				
 				// Use the correct OAuth2 token endpoint with form data
-				const response = await api.post<any>('/api/auth/token', formData.toString(), {
+				const response = await api.post<any>('/auth/token', formData.toString(), {
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded'
 					}
@@ -68,7 +68,7 @@ function createAuthStore() {
 					api.setAuthToken(response.access_token);
 					
 					// Get user info after login
-					const userInfo = await api.get<User>('/api/auth/me');
+					const userInfo = await api.get<User>('/auth/me');
 					
 					update(state => ({
 						...state,
@@ -98,7 +98,7 @@ function createAuthStore() {
 			try {
 				console.log('Attempting to register with:', data);
 				// Register just creates the user
-				const registerResponse = await api.post<any>('/api/auth/register', data);
+				const registerResponse = await api.post<any>('/auth/register', data);
 				console.log('Registration successful:', registerResponse);
 				
 				// Now login to get the token
@@ -150,7 +150,7 @@ function createAuthStore() {
 			update(state => ({ ...state, loading: true }));
 			
 			try {
-				const user = await api.get<User>('/api/auth/me');
+				const user = await api.get<User>('/auth/me');
 				update(state => ({
 					...state,
 					user,
@@ -180,19 +180,19 @@ export const isAuthenticated: Readable<boolean> = derived(
 // Email verification and password reset API
 export const authApi = {
 	async verifyEmail(token: string) {
-		return api.post('/api/auth/verify-email', null, { params: { token } });
+		return api.post('/auth/verify-email', null, { params: { token } });
 	},
 	
 	async resendVerification(email: string) {
-		return api.post('/api/auth/resend-verification', null, { params: { email } });
+		return api.post('/auth/resend-verification', null, { params: { email } });
 	},
 	
 	async requestPasswordReset(email: string) {
-		return api.post('/api/auth/password-reset', { email });
+		return api.post('/auth/password-reset', { email });
 	},
 	
 	async resetPassword(token: string, newPassword: string) {
-		return api.post('/api/auth/password-reset/confirm', {
+		return api.post('/auth/password-reset/confirm', {
 			token,
 			new_password: newPassword
 		});

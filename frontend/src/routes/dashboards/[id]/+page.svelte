@@ -629,6 +629,8 @@
           class="dnd-container"
         >
           {#each dashboard.widgets as widget (widget.id)}
+            {@const widgetComponent = renderWidget(widget)}
+            {@const data = getWidgetData(widget)}
             <div 
               class="widget-container"
               animate:flip={{ duration: 200 }}
@@ -652,8 +654,6 @@
                     </button>
                   </div>
                 </div>
-                {@const widgetComponent = renderWidget(widget)}
-                {@const data = getWidgetData(widget)}
                 <div class="widget-content">
                   {#if widgetComponent && data}
                     <svelte:component 
@@ -697,6 +697,8 @@
       {:else}
         <!-- View Mode - No drag and drop -->
         {#each dashboard.widgets as widget}
+          {@const widgetComponent = renderWidget(widget)}
+          {@const data = getWidgetData(widget)}
           <div 
             class="widget-container"
             style="
@@ -708,8 +710,6 @@
               <div class="widget-header">
                 <h4>{widget.title}</h4>
               </div>
-              {@const widgetComponent = renderWidget(widget)}
-              {@const data = getWidgetData(widget)}
               <div class="widget-content">
                 {#if widgetComponent && data}
                   <svelte:component 

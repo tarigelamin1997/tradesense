@@ -34,6 +34,9 @@
 	"/analytics": [
 		"src/routes/+layout.ts"
 	],
+	"/api/debug": [
+		"src/routes/api/debug/+server.ts"
+	],
 	"/billing": [
 		"src/routes/+layout.ts"
 	],
@@ -107,6 +110,10 @@
 		"src/routes/+layout.ts"
 	],
 	"/test-insights": [
+		"src/routes/+layout.ts"
+	],
+	"/test-ssr": [
+		"src/routes/test-ssr/+page.ts",
 		"src/routes/+layout.ts"
 	],
 	"/test": [

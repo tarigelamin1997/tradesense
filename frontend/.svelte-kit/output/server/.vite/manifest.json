@@ -221,6 +221,10 @@
       "_Icon2.js"
     ]
   },
+  "_false.js": {
+    "file": "chunks/false.js",
+    "name": "false"
+  },
   "_file-spreadsheet.js": {
     "file": "chunks/file-spreadsheet.js",
     "name": "file-spreadsheet",
@@ -258,6 +262,13 @@
     "name": "index",
     "imports": [
       "_ssr.js"
+    ]
+  },
+  "_index2.js": {
+    "file": "chunks/index2.js",
+    "name": "index",
+    "imports": [
+      "_false.js"
     ]
   },
   "_internal.js": {
@@ -331,6 +342,7 @@
     "file": "chunks/ssr-safe.js",
     "name": "ssr-safe",
     "imports": [
+      "_index2.js",
       "_client.js"
     ]
   },
@@ -436,6 +448,7 @@
     "src": "node_modules/@sveltejs/kit/src/runtime/server/index.js",
     "isEntry": true,
     "imports": [
+      "_false.js",
       "_internal.js",
       "_exports.js",
       "_index.js"
@@ -470,6 +483,7 @@
       "_auth.js",
       "_client.js",
       "_stores.js",
+      "_index2.js",
       "_websocket.js",
       "_wifi.js",
       "_circle-alert.js",
@@ -480,7 +494,6 @@
       "_bell.js",
       "_lock.js",
       "_shield.js",
-      "_mail.js",
       "_x.js",
       "_chart-column.js",
       "_auth2.js"
@@ -680,6 +693,12 @@
       "_app/immutable/assets/_page.B7wb5pyr.css",
       "_app/immutable/assets/FeatureGate.wNN5YLQ8.css"
     ]
+  },
+  "src/routes/api/debug/+server.ts": {
+    "file": "entries/endpoints/api/debug/_server.ts.js",
+    "name": "entries/endpoints/api/debug/_server.ts",
+    "src": "src/routes/api/debug/+server.ts",
+    "isEntry": true
   },
   "src/routes/billing/+page.svelte": {
     "file": "entries/pages/billing/_page.svelte.js",
@@ -1057,6 +1076,25 @@
     "css": [
       "_app/immutable/assets/_page.DXNJp5pQ.css"
     ]
+  },
+  "src/routes/test-ssr/+page.svelte": {
+    "file": "entries/pages/test-ssr/_page.svelte.js",
+    "name": "entries/pages/test-ssr/_page.svelte",
+    "src": "src/routes/test-ssr/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_ssr.js",
+      "_index2.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.okE2dYN4.css"
+    ]
+  },
+  "src/routes/test-ssr/+page.ts": {
+    "file": "entries/pages/test-ssr/_page.ts.js",
+    "name": "entries/pages/test-ssr/_page.ts",
+    "src": "src/routes/test-ssr/+page.ts",
+    "isEntry": true
   },
   "src/routes/test/+page.svelte": {
     "file": "entries/pages/test/_page.svelte.js",

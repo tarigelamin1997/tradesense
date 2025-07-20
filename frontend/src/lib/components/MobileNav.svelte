@@ -118,6 +118,7 @@
 			</div>
 		</button>
 	{/if}
+{/if}
 
 <style>
 	.mobile-nav {

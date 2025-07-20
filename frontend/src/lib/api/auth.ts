@@ -53,6 +53,8 @@ function createAuthStore() {
 				formData.append('username', credentials.username);
 				formData.append('password', credentials.password);
 				
+				console.log('Attempting login with username:', credentials.username);
+				
 				// Use the correct OAuth2 token endpoint with form data
 				const response = await api.post<any>('/api/auth/token', formData.toString(), {
 					headers: {

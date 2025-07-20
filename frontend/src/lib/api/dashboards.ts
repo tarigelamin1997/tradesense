@@ -180,7 +180,9 @@ export const dashboardsApi = {
   },
 
   // Real-time streaming
-  streamDashboardData(dashboardId: string): EventSource {
+  streamDashboardData(dashboardId: string): EventSource | null {
+    if (typeof window === 'undefined') return null;
+    
     const token = localStorage.getItem('authToken');
     return new EventSource(
       `/api/v1/dashboards/${dashboardId}/data/stream?token=${token}`

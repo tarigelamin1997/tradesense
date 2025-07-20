@@ -1,0 +1,130 @@
+{
+	"/": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/account/security": [
+		"src/routes/+layout.ts"
+	],
+	"/admin": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/admin/backup": [
+		"src/routes/+layout.ts"
+	],
+	"/admin/experiments": [
+		"src/routes/+layout.ts"
+	],
+	"/admin/feature-flags": [
+		"src/routes/+layout.ts"
+	],
+	"/admin/feedback": [
+		"src/routes/+layout.ts"
+	],
+	"/admin/users": [
+		"src/routes/+layout.ts"
+	],
+	"/ai-insights": [
+		"src/routes/+layout.ts"
+	],
+	"/alerts": [
+		"src/routes/+layout.ts"
+	],
+	"/analytics": [
+		"src/routes/+layout.ts"
+	],
+	"/billing": [
+		"src/routes/+layout.ts"
+	],
+	"/change-password": [
+		"src/routes/+layout.ts"
+	],
+	"/dashboards": [
+		"src/routes/+layout.ts"
+	],
+	"/dashboards/[id]": [
+		"src/routes/+layout.ts"
+	],
+	"/dashboard": [
+		"src/routes/+layout.ts"
+	],
+	"/debug": [
+		"src/routes/+layout.ts"
+	],
+	"/forgot-password": [
+		"src/routes/+layout.ts"
+	],
+	"/journal": [
+		"src/routes/+layout.ts"
+	],
+	"/login": [
+		"src/routes/login/+layout.ts",
+		"src/routes/+layout.ts",
+		"src/routes/login/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/payment-success": [
+		"src/routes/+layout.ts"
+	],
+	"/playbook": [
+		"src/routes/+layout.ts"
+	],
+	"/portfolio": [
+		"src/routes/+layout.ts"
+	],
+	"/pricing": [
+		"src/routes/+layout.ts"
+	],
+	"/privacy": [
+		"src/routes/+layout.ts"
+	],
+	"/register": [
+		"src/routes/register/+layout.ts",
+		"src/routes/+layout.ts",
+		"src/routes/register/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/reset-password": [
+		"src/routes/+layout.ts"
+	],
+	"/security": [
+		"src/routes/+layout.ts"
+	],
+	"/settings": [
+		"src/routes/+layout.ts"
+	],
+	"/settings/privacy": [
+		"src/routes/+layout.ts"
+	],
+	"/subscription": [
+		"src/routes/+layout.ts"
+	],
+	"/support": [
+		"src/routes/+layout.ts"
+	],
+	"/terms": [
+		"src/routes/+layout.ts"
+	],
+	"/test-insights": [
+		"src/routes/+layout.ts"
+	],
+	"/test": [
+		"src/routes/+layout.ts"
+	],
+	"/tradelog": [
+		"src/routes/+layout.ts"
+	],
+	"/trades": [
+		"src/routes/+layout.ts"
+	],
+	"/trades/new": [
+		"src/routes/+layout.ts"
+	],
+	"/upload": [
+		"src/routes/+layout.ts"
+	],
+	"/verify-email": [
+		"src/routes/+layout.ts"
+	]
+}

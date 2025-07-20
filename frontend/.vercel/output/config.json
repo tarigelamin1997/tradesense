@@ -1,0 +1,179 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"src": "/_app/immutable/.+",
+			"headers": {
+				"cache-control": "public, immutable, max-age=31536000"
+			}
+		},
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/?(?:/__data.json)?$",
+			"dest": "/"
+		},
+		{
+			"src": "^/account/security/?(?:/__data.json)?$",
+			"dest": "/account/security"
+		},
+		{
+			"src": "^/admin/?(?:/__data.json)?$",
+			"dest": "/admin"
+		},
+		{
+			"src": "^/admin/backup/?(?:/__data.json)?$",
+			"dest": "/admin/backup"
+		},
+		{
+			"src": "^/admin/experiments/?(?:/__data.json)?$",
+			"dest": "/admin/experiments"
+		},
+		{
+			"src": "^/admin/feature-flags/?(?:/__data.json)?$",
+			"dest": "/admin/feature-flags"
+		},
+		{
+			"src": "^/admin/feedback/?(?:/__data.json)?$",
+			"dest": "/admin/feedback"
+		},
+		{
+			"src": "^/admin/users/?(?:/__data.json)?$",
+			"dest": "/admin/users"
+		},
+		{
+			"src": "^/ai-insights/?(?:/__data.json)?$",
+			"dest": "/ai-insights"
+		},
+		{
+			"src": "^/alerts/?(?:/__data.json)?$",
+			"dest": "/alerts"
+		},
+		{
+			"src": "^/analytics/?(?:/__data.json)?$",
+			"dest": "/analytics"
+		},
+		{
+			"src": "^/billing/?(?:/__data.json)?$",
+			"dest": "/billing"
+		},
+		{
+			"src": "^/change-password/?(?:/__data.json)?$",
+			"dest": "/change-password"
+		},
+		{
+			"src": "^/dashboards/?(?:/__data.json)?$",
+			"dest": "/dashboards"
+		},
+		{
+			"src": "^/dashboards/([^/]+?)/?(?:/__data.json)?$",
+			"dest": "/dashboards/[id]"
+		},
+		{
+			"src": "^/dashboard/?(?:/__data.json)?$",
+			"dest": "/dashboard"
+		},
+		{
+			"src": "^/debug/?(?:/__data.json)?$",
+			"dest": "/debug"
+		},
+		{
+			"src": "^/forgot-password/?(?:/__data.json)?$",
+			"dest": "/forgot-password"
+		},
+		{
+			"src": "^/journal/?(?:/__data.json)?$",
+			"dest": "/journal"
+		},
+		{
+			"src": "^/login/?(?:/__data.json)?$",
+			"dest": "/login"
+		},
+		{
+			"src": "^/payment-success/?(?:/__data.json)?$",
+			"dest": "/payment-success"
+		},
+		{
+			"src": "^/playbook/?(?:/__data.json)?$",
+			"dest": "/playbook"
+		},
+		{
+			"src": "^/portfolio/?(?:/__data.json)?$",
+			"dest": "/portfolio"
+		},
+		{
+			"src": "^/pricing/?(?:/__data.json)?$",
+			"dest": "/pricing"
+		},
+		{
+			"src": "^/privacy/?(?:/__data.json)?$",
+			"dest": "/privacy"
+		},
+		{
+			"src": "^/register/?(?:/__data.json)?$",
+			"dest": "/register"
+		},
+		{
+			"src": "^/reset-password/?(?:/__data.json)?$",
+			"dest": "/reset-password"
+		},
+		{
+			"src": "^/security/?(?:/__data.json)?$",
+			"dest": "/security"
+		},
+		{
+			"src": "^/settings/?(?:/__data.json)?$",
+			"dest": "/settings"
+		},
+		{
+			"src": "^/settings/privacy/?(?:/__data.json)?$",
+			"dest": "/settings/privacy"
+		},
+		{
+			"src": "^/subscription/?(?:/__data.json)?$",
+			"dest": "/subscription"
+		},
+		{
+			"src": "^/support/?(?:/__data.json)?$",
+			"dest": "/support"
+		},
+		{
+			"src": "^/terms/?(?:/__data.json)?$",
+			"dest": "/terms"
+		},
+		{
+			"src": "^/test-insights/?(?:/__data.json)?$",
+			"dest": "/test-insights"
+		},
+		{
+			"src": "^/test/?(?:/__data.json)?$",
+			"dest": "/test"
+		},
+		{
+			"src": "^/tradelog/?(?:/__data.json)?$",
+			"dest": "/tradelog"
+		},
+		{
+			"src": "^/trades/?(?:/__data.json)?$",
+			"dest": "/trades"
+		},
+		{
+			"src": "^/trades/new/?(?:/__data.json)?$",
+			"dest": "/trades/new"
+		},
+		{
+			"src": "^/upload/?(?:/__data.json)?$",
+			"dest": "/upload"
+		},
+		{
+			"src": "^/verify-email/?(?:/__data.json)?$",
+			"dest": "/verify-email"
+		},
+		{
+			"src": "/.*",
+			"dest": "/![-]/catchall"
+		}
+	],
+	"overrides": {}
+}

@@ -8,7 +8,7 @@
     Plus, Save, Eye, EyeOff, Settings, X, Move, 
     Maximize2, BarChart2, PieChart, TrendingUp, 
     Table, Activity, DollarSign, Calendar, FileText,
-    Download, FileImage, FilePdf
+    Download, FileImage, File
   } from 'lucide-svelte';
   import { 
     dashboardsApi, 
@@ -558,7 +558,7 @@
           {#if showExportMenu}
             <div class="export-menu">
               <button class="export-option" on:click={() => exportDashboard('pdf')}>
-                <FilePdf size={16} />
+                <File size={16} />
                 <span>Export as PDF</span>
               </button>
               <button class="export-option" on:click={() => exportDashboard('png')}>

@@ -1,4 +1,4 @@
-import { api } from './index';
+import { api } from './client';
 import type { Trade } from './trades';
 
 // AI Analysis Types

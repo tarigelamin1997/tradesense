@@ -45,7 +45,7 @@
 	}
 	
 	// Track page visits for feedback context
-	$: if ($page.url.pathname) {
+	$: if ($page.url.pathname && browser) {
 		trackPageVisit($page.url.pathname);
 	}
 </script>

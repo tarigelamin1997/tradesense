@@ -1,7 +1,6 @@
-import axios from 'axios';
-import type { AxiosInstance, AxiosError } from 'axios';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
+import type { AxiosInstance, AxiosError } from 'axios';
 
 // Use environment variable for API URL, fallback to empty string for Vite proxy
 const API_BASE_URL = browser ? (import.meta.env.VITE_API_URL || '') : '';
@@ -16,10 +15,20 @@ export interface ApiError {
 }
 
 class ApiClient {
-	private client: AxiosInstance;
+	private client: AxiosInstance = null as any;
 	private token: string | null = null;
+	private initialized = false;
 
 	constructor() {
+		// Delay initialization until first use
+	}
+
+	private async initialize() {
+		if (this.initialized || !browser) return;
+		
+		// Dynamically import axios only in browser
+		const { default: axios } = await import('axios');
+		
 		this.client = axios.create({
 			baseURL: API_BASE_URL,
 			timeout: 30000,
@@ -29,11 +38,10 @@ class ApiClient {
 		});
 
 		// Load token from localStorage on init (client-side only)
-		if (browser) {
-			this.token = localStorage.getItem('authToken');
-		}
+		this.token = localStorage.getItem('authToken');
 
 		this.setupInterceptors();
+		this.initialized = true;
 	}
 
 	private setupInterceptors() {
@@ -110,53 +118,108 @@ class ApiClient {
 
 	// API methods
 	async get<T>(url: string, params?: any): Promise<T> {
+		await this.initialize();
 		const response = await this.client.get<T>(url, { params });
 		return response.data;
 	}
 
 	async post<T>(url: string, data?: any, config?: any): Promise<T> {
+		await this.initialize();
 		const response = await this.client.post<T>(url, data, config);
 		return response.data;
 	}
 
 	async put<T>(url: string, data?: any): Promise<T> {
+		await this.initialize();
 		const response = await this.client.put<T>(url, data);
 		return response.data;
 	}
 
 	async patch<T>(url: string, data?: any): Promise<T> {
+		await this.initialize();
 		const response = await this.client.patch<T>(url, data);
 		return response.data;
 	}
 
 	async delete<T>(url: string): Promise<T> {
+		await this.initialize();
 		const response = await this.client.delete<T>(url);
 		return response.data;
 	}
 }
 
-// Export singleton instance
-// Create a singleton instance that's SSR-safe
+// Export singleton instance with SSR-safe wrapper
 let apiInstance: ApiClient | null = null;
 
-export const api = new Proxy({} as ApiClient, {
-	get(target, prop) {
-		if (!apiInstance && browser) {
-			apiInstance = new ApiClient();
-		}
-		if (!apiInstance) {
-			// Return no-op functions during SSR
-			if (typeof prop === 'string' && ['get', 'post', 'put', 'patch', 'delete'].includes(prop)) {
-				return () => Promise.reject(new Error('API not available during SSR'));
-			}
-			if (prop === 'setAuthToken' || prop === 'clearAuth' || prop === 'getAuthToken' || prop === 'isAuthenticated') {
-				return () => {};
-			}
-			return undefined;
-		}
-		return apiInstance[prop as keyof ApiClient];
+// Create a mock API for SSR that returns safe defaults
+const ssrApi: Partial<ApiClient> = {
+	get: () => Promise.reject(new Error('API not available during SSR')),
+	post: () => Promise.reject(new Error('API not available during SSR')),
+	put: () => Promise.reject(new Error('API not available during SSR')),
+	patch: () => Promise.reject(new Error('API not available during SSR')),
+	delete: () => Promise.reject(new Error('API not available during SSR')),
+	setAuthToken: () => {},
+	clearAuth: () => {},
+	getAuthToken: () => null,
+	isAuthenticated: () => false
+};
+
+// Export a simple wrapper that checks browser at call time
+export const api = {
+	get<T = any>(...args: Parameters<ApiClient['get']>): ReturnType<ApiClient['get']> {
+		if (!browser) return ssrApi.get!(...args);
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.get<T>(...args);
+	},
+	
+	post<T = any>(...args: Parameters<ApiClient['post']>): ReturnType<ApiClient['post']> {
+		if (!browser) return ssrApi.post!(...args);
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.post<T>(...args);
+	},
+	
+	put<T = any>(...args: Parameters<ApiClient['put']>): ReturnType<ApiClient['put']> {
+		if (!browser) return ssrApi.put!(...args);
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.put<T>(...args);
+	},
+	
+	patch<T = any>(...args: Parameters<ApiClient['patch']>): ReturnType<ApiClient['patch']> {
+		if (!browser) return ssrApi.patch!(...args);
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.patch<T>(...args);
+	},
+	
+	delete<T = any>(...args: Parameters<ApiClient['delete']>): ReturnType<ApiClient['delete']> {
+		if (!browser) return ssrApi.delete!(...args);
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.delete<T>(...args);
+	},
+	
+	setAuthToken(token: string): void {
+		if (!browser) return;
+		if (!apiInstance) apiInstance = new ApiClient();
+		apiInstance.setAuthToken(token);
+	},
+	
+	clearAuth(): void {
+		if (!browser) return;
+		if (!apiInstance) apiInstance = new ApiClient();
+		apiInstance.clearAuth();
+	},
+	
+	getAuthToken(): string | null {
+		if (!browser) return null;
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.getAuthToken();
+	},
+	
+	isAuthenticated(): boolean {
+		if (!browser) return false;
+		if (!apiInstance) apiInstance = new ApiClient();
+		return apiInstance.isAuthenticated();
 	}
-});
+};
 
 // Export types
 export type { ApiClient };

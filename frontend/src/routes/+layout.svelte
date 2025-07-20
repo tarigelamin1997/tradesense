@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import WebSocketStatus from '$lib/components/WebSocketStatus.svelte';
 	import MobileNav from '$lib/components/MobileNav.svelte';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
@@ -19,9 +20,12 @@
 	
 	let authState: any = { user: null, loading: true, error: null };
 	
-	auth.subscribe(state => {
-		authState = state;
-	});
+	// Only subscribe to auth in browser
+	$: if (browser) {
+		auth.subscribe(state => {
+			authState = state;
+		});
+	}
 	
 	// Initialize browser-only features
 	onMount(() => {

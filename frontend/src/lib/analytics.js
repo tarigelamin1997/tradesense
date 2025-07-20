@@ -33,14 +33,14 @@ class Analytics {
             properties: {
                 ...properties,
                 timestamp: new Date().toISOString(),
-                user_agent: navigator.userAgent,
-                screen_resolution: `${window.screen.width}x${window.screen.height}`,
-                viewport_size: `${window.innerWidth}x${window.innerHeight}`,
-                referrer: document.referrer,
-                page_title: document.title
+                user_agent: navigator?.userAgent || '',
+                screen_resolution: window?.screen ? `${window.screen.width}x${window.screen.height}` : '',
+                viewport_size: window ? `${window.innerWidth}x${window.innerHeight}` : '',
+                referrer: document?.referrer || '',
+                page_title: document?.title || ''
             },
-            page_url: window.location.href,
-            referrer_url: document.referrer,
+            page_url: window?.location?.href || '',
+            referrer_url: document?.referrer || '',
             session_id: this.sessionId
         };
         
@@ -202,9 +202,11 @@ class Analytics {
             });
             
             // Try to flush remaining events
-            navigator.sendBeacon(this.apiEndpoint, JSON.stringify({
-                events: this.queue
-            }));
+            if (navigator?.sendBeacon) {
+                navigator.sendBeacon(this.apiEndpoint, JSON.stringify({
+                    events: this.queue
+                }));
+            }
         });
     }
     
@@ -325,6 +327,7 @@ class Analytics {
      */
     getAuthToken() {
         // This should get the actual auth token from your auth store
+        if (!browser) return '';
         return localStorage.getItem('auth_token') || '';
     }
     

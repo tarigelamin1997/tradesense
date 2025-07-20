@@ -45,7 +45,7 @@ function createWebSocketStore() {
 				update(state => ({ ...state, status: 'connected' }));
 				
 				// Send authentication if needed
-				const token = localStorage.getItem('authToken');
+				const token = browser ? localStorage.getItem('authToken') : null;
 				if (token && ws) {
 					ws.send(JSON.stringify({
 						type: 'auth',

@@ -5,6 +5,7 @@
 
 import { api } from './api';
 import { get, writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 class FeatureFlagsClient {
     constructor() {
@@ -118,7 +119,7 @@ class FeatureFlagsClient {
     async trackUsage(key, action = 'viewed') {
         try {
             // Send to analytics
-            if (window.analytics && window.analytics.track) {
+            if (browser && window.analytics && window.analytics.track) {
                 window.analytics.track('Feature Usage', {
                     feature_key: key,
                     feature_value: this.getFlag(key),
@@ -134,6 +135,8 @@ class FeatureFlagsClient {
      * Cache flags in localStorage
      */
     cacheFlags(flags) {
+        if (!browser) return;
+        
         try {
             const cache = {
                 flags: flags,
@@ -149,6 +152,8 @@ class FeatureFlagsClient {
      * Get cached flags if valid
      */
     getCachedFlags() {
+        if (!browser) return null;
+        
         try {
             const cached = localStorage.getItem(this.cacheKey);
             if (!cached) return null;
@@ -174,6 +179,8 @@ class FeatureFlagsClient {
      * Clear cache
      */
     clearCache() {
+        if (!browser) return;
+        
         try {
             localStorage.removeItem(this.cacheKey);
         } catch (err) {

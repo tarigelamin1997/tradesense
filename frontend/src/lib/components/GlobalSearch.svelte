@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Search, X, TrendingUp, FileText, BarChart3, Calendar, Hash } from 'lucide-svelte';
-	import { api } from '$lib/api/client-safe';
+	import { api } from '$lib/api/ssr-safe';
 	import { logger } from '$lib/utils/logger';
 	
 	let isOpen = false;

@@ -1,6 +1,6 @@
 import { d as derived, w as writable } from "./index.js";
 import "./client.js";
-import { a as api } from "./client-safe.js";
+import { a as api } from "./ssr-safe.js";
 function createAuthStore() {
   const { subscribe, set, update } = writable({
     user: null,
@@ -72,6 +72,7 @@ function createAuthStore() {
     } finally {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
+      api.clearAuth();
       if (refreshTimeout) {
         clearTimeout(refreshTimeout);
       }

@@ -1,7 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { api } from '$lib/api/client-safe';
+import { api } from '$lib/api/ssr-safe';
 
 interface User {
 	id: string;

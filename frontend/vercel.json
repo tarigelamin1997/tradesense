@@ -1,6 +1,5 @@
 {
-  "env": {
-    "VITE_API_URL": "https://tradesense-gateway-production.up.railway.app",
-    "VITE_APP_URL": "https://tradesense.vercel.app"
-  }
+  "buildCommand": "npm run build",
+  "outputDirectory": ".svelte-kit/output",
+  "framework": "sveltekit"
 }

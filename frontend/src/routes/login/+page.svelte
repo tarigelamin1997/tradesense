@@ -31,15 +31,22 @@
 				goto('/');
 			}
 		} catch (err: any) {
-			error = err.message || 'Login failed. Please try again.';
+			console.error('Login error:', err);
+			// Extract error message
+			if (err.detail && typeof err.detail === 'string') {
+				error = err.detail;
+			} else if (err.message) {
+				error = err.message;
+			} else {
+				error = 'Login failed. Please check your credentials and try again.';
+			}
 		} finally {
 			loading = false;
 		}
 	}
 	
 	function handleMFASuccess(authData: any) {
-		// MFA verification successful, store auth token and redirect
-		auth.setToken(authData.access_token);
+		// MFA verification successful, redirect
 		goto('/');
 	}
 	

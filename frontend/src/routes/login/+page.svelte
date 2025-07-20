@@ -84,13 +84,13 @@
 			
 			<form on:submit={handleLogin}>
 				<div class="form-group">
-					<label for="username">Username</label>
+					<label for="username">Email or Username</label>
 					<input
 						id="username"
 						type="text"
 						bind:value={username}
 						required
-						placeholder="Enter your username"
+						placeholder="Enter your email or username"
 						disabled={loading}
 					/>
 				</div>

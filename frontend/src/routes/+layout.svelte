@@ -13,11 +13,30 @@
 	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 	import FeedbackButton from '$lib/components/FeedbackButton.svelte';
 	import { trackPageVisit } from '$lib/utils/feedbackContext';
+	import { authStore } from '$lib/stores/auth';
+	import { websocket } from '$lib/stores/websocket';
+	import { requestNotificationPermission } from '$lib/stores/notifications';
 	
 	let authState: any = { user: null, loading: true, error: null };
 	
 	auth.subscribe(state => {
 		authState = state;
+	});
+	
+	// Initialize browser-only features
+	onMount(() => {
+		// Initialize auth store
+		authStore.initialize();
+		
+		// Connect WebSocket
+		websocket.connect();
+		
+		// Request notification permission after user interaction
+		// We don't do it immediately to avoid annoying users
+		return () => {
+			// Cleanup WebSocket on unmount
+			websocket.disconnect();
+		};
 	});
 	
 	async function handleLogout() {

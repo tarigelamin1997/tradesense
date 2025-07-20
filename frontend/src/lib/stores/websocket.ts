@@ -178,7 +178,6 @@ export const priceUpdates = derived(
 	$ws => $ws.lastMessage?.type === 'price_update' ? $ws.lastMessage.data : null
 );
 
-// Auto-connect when in browser
-if (browser) {
-	websocket.connect();
-}
+// IMPORTANT: Connection should be initiated from components/layouts, not at module level
+// This prevents SSR errors on Vercel
+// Use websocket.connect() in onMount() or +layout.svelte

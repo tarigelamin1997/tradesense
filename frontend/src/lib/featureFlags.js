@@ -3,7 +3,7 @@
  * Manages feature toggles and A/B testing
  */
 
-import { api } from './api';
+import { api } from './api/client';
 import { get, writable } from 'svelte/store';
 import { browser } from '$app/environment';
 

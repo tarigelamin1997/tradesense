@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { Check, X, Zap, TrendingUp, Shield } from 'lucide-svelte';
 	import { billingApi } from '$lib/api/billing';
 	import { isAuthenticated } from '$lib/api/auth';
@@ -114,10 +115,12 @@
 			
 			if (!get(isAuthenticated)) {
 				// Store plan selection and redirect to register
-				localStorage.setItem('selectedPlan', JSON.stringify({
-					planId: plan.id,
-					isAnnual
-				}));
+				if (browser) {
+					localStorage.setItem('selectedPlan', JSON.stringify({
+						planId: plan.id,
+						isAnnual
+					}));
+				}
 				goto('/register');
 				return;
 			}
@@ -126,12 +129,14 @@
 			const productId = isAnnual ? plan.annualProductId : plan.stripeProductId;
 			const { url } = await billingApi.createCheckoutSession({
 				productId,
-				successUrl: `${window.location.origin}/payment-success`,
-				cancelUrl: `${window.location.origin}/pricing`
+				successUrl: browser ? `${window.location.origin}/payment-success` : '/payment-success',
+				cancelUrl: browser ? `${window.location.origin}/pricing` : '/pricing'
 			});
 			
 			// Redirect to Stripe checkout
-			window.location.href = url;
+			if (browser) {
+				window.location.href = url;
+			}
 			
 		} catch (err: any) {
 			logger.error('Failed to create checkout session:', err);

@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment';
     import { api } from '$lib/api/client';
     import { authStore } from '$lib/stores/auth';
     import Icon from '$lib/components/Icon.svelte';
@@ -32,7 +33,7 @@
     
     authStore.subscribe(value => {
         user = value.user;
-        if (!user?.is_admin) {
+        if (browser && !user?.is_admin) {
             window.location.href = '/';
         }
     });

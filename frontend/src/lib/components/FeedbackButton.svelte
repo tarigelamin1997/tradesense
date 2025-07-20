@@ -1,6 +1,7 @@
 <script lang="ts">
   import { MessageSquare, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { writable } from 'svelte/store';
   import FeedbackModal from './FeedbackModal.svelte';
 
@@ -11,12 +12,14 @@
   // Disable pulse after first interaction
   function handleInteraction() {
     pulseAnimation = false;
-    localStorage.setItem('feedback-button-seen', 'true');
+    if (browser) {
+      localStorage.setItem('feedback-button-seen', 'true');
+    }
   }
 
   onMount(() => {
     // Check if user has seen the button before
-    if (localStorage.getItem('feedback-button-seen')) {
+    if (browser && localStorage.getItem('feedback-button-seen')) {
       pulseAnimation = false;
     }
 
@@ -29,8 +32,10 @@
       }
     }
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    if (browser) {
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }
   });
 </script>
 

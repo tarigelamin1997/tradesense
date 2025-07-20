@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment';
     import { api } from '$lib/api/client';
     import { authStore } from '$lib/stores/auth';
     import Icon from '$lib/components/Icon.svelte';
@@ -141,7 +142,9 @@
                 await authStore.logout();
                 
                 // Redirect to goodbye page
-                window.location.href = '/goodbye';
+                if (browser) {
+                    window.location.href = '/goodbye';
+                }
             }
             
         } catch (err) {
@@ -152,9 +155,11 @@
     async function checkActiveRequests() {
         // In a real implementation, you'd fetch active requests from an endpoint
         // For now, check localStorage for recent requests
-        const stored = localStorage.getItem('gdpr_requests');
-        if (stored) {
-            activeRequests = JSON.parse(stored);
+        if (browser) {
+            const stored = localStorage.getItem('gdpr_requests');
+            if (stored) {
+                activeRequests = JSON.parse(stored);
+            }
         }
     }
     
@@ -168,11 +173,13 @@
             );
             
             // Save to localStorage
-            localStorage.setItem('gdpr_requests', JSON.stringify(activeRequests));
-            
-            if (status.status === 'completed' && status.download_url) {
-                // Download file
-                window.location.href = `/api/v1${status.download_url}`;
+            if (browser) {
+                localStorage.setItem('gdpr_requests', JSON.stringify(activeRequests));
+                
+                if (status.status === 'completed' && status.download_url) {
+                    // Download file
+                    window.location.href = `/api/v1${status.download_url}`;
+                }
             }
             
         } catch (err) {

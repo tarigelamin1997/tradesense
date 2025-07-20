@@ -208,7 +208,7 @@
 				filename="trades"
 				buttonText="Export Trades"
 			/>
-			<button on:click={() => window.location.href = '/trades/new'} class="add-trade-button">
+			<button on:click={() => goto('/trades/new')} class="add-trade-button">
 				Add Trade
 			</button>
 		</div>

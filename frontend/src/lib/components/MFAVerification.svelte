@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment';
     import { api } from '$lib/api/client';
     import Icon from '$lib/components/Icon.svelte';
     
@@ -46,13 +47,13 @@
                 method: selectedMethod,
                 code: verificationCode,
                 trust_device: trustDevice,
-                device_name: trustDevice ? (deviceName || navigator.userAgent) : null,
+                device_name: trustDevice ? (deviceName || (browser ? navigator.userAgent : 'Unknown')) : null,
                 session_id: sessionId
             });
             
             if (result.success) {
                 // Store trust token if device was trusted
-                if (result.trust_token) {
+                if (browser && result.trust_token) {
                     localStorage.setItem('mfa_trust_token', result.trust_token);
                 }
                 

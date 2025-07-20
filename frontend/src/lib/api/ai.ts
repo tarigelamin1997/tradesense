@@ -1,4 +1,4 @@
-import { api } from './client-safe';
+import { api } from './ssr-safe';
 import type { Trade } from './trades';
 
 // AI Analysis Types

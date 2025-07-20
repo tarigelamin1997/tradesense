@@ -1,5 +1,6 @@
 import { c as create_ssr_component, e as each, v as validate_component, d as escape } from "../../../chunks/ssr.js";
 import "../../../chunks/client.js";
+import "../../../chunks/ssr-safe.js";
 import "../../../chunks/auth.js";
 import { Z as Zap, C as Check } from "../../../chunks/zap.js";
 import { X } from "../../../chunks/x.js";

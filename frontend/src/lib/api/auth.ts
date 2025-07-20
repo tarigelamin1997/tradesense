@@ -1,4 +1,4 @@
-import { api } from './client-safe';
+import { api } from './ssr-safe';
 import { writable, derived } from 'svelte/store';
 import type { Readable, Writable } from 'svelte/store';
 import { browser } from '$app/environment';

@@ -1,4 +1,4 @@
-import { api } from './client-safe';
+import { api } from './ssr-safe';
 
 export interface PerformanceSummary {
 	total_trades: number;

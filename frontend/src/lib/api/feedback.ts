@@ -1,4 +1,4 @@
-import { api } from './client-safe';
+import { api } from './ssr-safe';
 
 export interface FeedbackData {
   type: 'bug' | 'feature' | 'performance' | 'ux' | 'other';

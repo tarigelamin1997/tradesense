@@ -2,6 +2,7 @@ import { c as create_ssr_component } from "../../../chunks/ssr.js";
 import "../../../chunks/client.js";
 import "../../../chunks/auth.js";
 import "../../../chunks/TradeInsights.svelte_svelte_type_style_lang.js";
+import "../../../chunks/ssr-safe.js";
 import "chartjs-adapter-date-fns";
 /* empty css                                                        */
 const css = {

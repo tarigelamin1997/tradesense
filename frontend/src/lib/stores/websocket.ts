@@ -32,9 +32,13 @@ function createWebSocketStore() {
 		if (!browser) return;
 		
 		// Get WebSocket URL from environment or use default
-		const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+		const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+		const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
+		const wsHost = apiUrl.replace(/^https?:\/\//, '');
+		const wsUrl = import.meta.env.VITE_WS_URL || `${wsProtocol}://${wsHost}/ws`;
 		
 		try {
+			console.log('Attempting WebSocket connection to:', wsUrl);
 			update(state => ({ ...state, status: 'connecting', error: null }));
 			
 			ws = new WebSocket(wsUrl);

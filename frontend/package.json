@@ -50,6 +50,7 @@
     "lodash-es": "^4.17.21",
     "lucide-svelte": "^0.525.0",
     "marked": "^16.0.0",
+    "qrcode": "^1.5.4",
     "svelte-dnd-action": "^0.9.63",
     "zustand": "^4.4.7"
   }

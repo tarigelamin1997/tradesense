@@ -48,10 +48,16 @@ function createAuthStore() {
 			update(state => ({ ...state, loading: true, error: null }));
 			
 			try {
-				// Send as JSON
-				const response = await api.post<any>('/api/v1/auth/login', {
-					username: credentials.username,
-					password: credentials.password
+				// OAuth2 requires form data, not JSON
+				const formData = new URLSearchParams();
+				formData.append('username', credentials.username);
+				formData.append('password', credentials.password);
+				
+				// Use the correct OAuth2 token endpoint with form data
+				const response = await api.post<any>('/api/auth/token', formData.toString(), {
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded'
+					}
 				});
 				
 				console.log('Login response:', response);
@@ -60,7 +66,7 @@ function createAuthStore() {
 					api.setAuthToken(response.access_token);
 					
 					// Get user info after login
-					const userInfo = await api.get<User>('/api/v1/auth/me');
+					const userInfo = await api.get<User>('/api/auth/me');
 					
 					update(state => ({
 						...state,
@@ -90,7 +96,7 @@ function createAuthStore() {
 			try {
 				console.log('Attempting to register with:', data);
 				// Register just creates the user
-				const registerResponse = await api.post<any>('/api/v1/auth/register', data);
+				const registerResponse = await api.post<any>('/api/auth/register', data);
 				console.log('Registration successful:', registerResponse);
 				
 				// Now login to get the token
@@ -108,6 +114,8 @@ function createAuthStore() {
 					errorMessage = error.detail.details.message;
 				} else if (error.message) {
 					errorMessage = error.message;
+				} else if (error.detail && typeof error.detail === 'string') {
+					errorMessage = error.detail;
 				}
 				
 				update(state => ({
@@ -140,7 +148,7 @@ function createAuthStore() {
 			update(state => ({ ...state, loading: true }));
 			
 			try {
-				const user = await api.get<User>('/api/v1/auth/me');
+				const user = await api.get<User>('/api/auth/me');
 				update(state => ({
 					...state,
 					user,
@@ -170,19 +178,19 @@ export const isAuthenticated: Readable<boolean> = derived(
 // Email verification and password reset API
 export const authApi = {
 	async verifyEmail(token: string) {
-		return api.post('/api/v1/auth/verify-email', null, { params: { token } });
+		return api.post('/api/auth/verify-email', null, { params: { token } });
 	},
 	
 	async resendVerification(email: string) {
-		return api.post('/api/v1/auth/resend-verification', null, { params: { email } });
+		return api.post('/api/auth/resend-verification', null, { params: { email } });
 	},
 	
 	async requestPasswordReset(email: string) {
-		return api.post('/api/v1/auth/password-reset', { email });
+		return api.post('/api/auth/password-reset', { email });
 	},
 	
 	async resetPassword(token: string, newPassword: string) {
-		return api.post('/api/v1/auth/password-reset/confirm', {
+		return api.post('/api/auth/password-reset/confirm', {
 			token,
 			new_password: newPassword
 		});

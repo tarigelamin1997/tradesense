@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { auth } from '$lib/api/auth';
 	
 	let email = '';
 	let username = '';
@@ -22,9 +23,31 @@
 			return;
 		}
 		
-		// For now, just show success
-		alert('Registration would happen here. Use test@example.com / testpass123 to login.');
-		goto('/login');
+		loading = true;
+		
+		try {
+			// Register and login the user
+			await auth.register({
+				email,
+				username,
+				password
+			});
+			
+			// Registration successful, redirect to home
+			goto('/');
+		} catch (err: any) {
+			console.error('Registration error:', err);
+			// Extract error message from the error object
+			if (err.detail?.detail) {
+				error = err.detail.detail;
+			} else if (err.message) {
+				error = err.message;
+			} else {
+				error = 'Registration failed. Please try again.';
+			}
+		} finally {
+			loading = false;
+		}
 	}
 </script>
 

@@ -118,7 +118,17 @@ class SSRSafeApiClient {
 		}
 		await this.initializeClient();
 		if (!this.axiosInstance) throw new Error('API client not initialized');
-		const response = await this.axiosInstance.post<T>(url, data, config);
+		
+		// Merge custom config with default config
+		const finalConfig = {
+			...config,
+			headers: {
+				...this.axiosInstance.defaults.headers.common,
+				...config?.headers
+			}
+		};
+		
+		const response = await this.axiosInstance.post<T>(url, data, finalConfig);
 		return response.data;
 	}
 

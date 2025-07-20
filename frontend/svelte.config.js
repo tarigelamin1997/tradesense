@@ -14,9 +14,7 @@ const config = {
 		adapter: adapter({
 			runtime: 'nodejs20.x',
 			regions: ['iad1'], // US East
-			split: false, // Keep all routes in a single function for now
-			include: ['/*'],
-			exclude: ['<all>']
+			split: false // Keep all routes in a single function for now
 		})
 	}
 };

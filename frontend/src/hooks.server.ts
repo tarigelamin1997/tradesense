@@ -36,8 +36,9 @@ export const handleError: HandleServerError = ({ error, event }) => {
 	
 	// Return a generic error message to the client
 	// Don't expose sensitive error details in production
+	const isDev = process.env.NODE_ENV === 'development';
 	return {
-		message: import.meta.env.DEV ? errorMessage : 'An unexpected error occurred',
+		message: isDev ? errorMessage : 'An unexpected error occurred',
 		code: 'INTERNAL_ERROR'
 	};
 };

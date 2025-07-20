@@ -55,6 +55,10 @@
 			"dest": "/analytics"
 		},
 		{
+			"src": "^/api/debug/?(?:/__data.json)?$",
+			"dest": "/api/debug"
+		},
+		{
 			"src": "^/billing/?(?:/__data.json)?$",
 			"dest": "/billing"
 		},
@@ -145,6 +149,10 @@
 		{
 			"src": "^/test-insights/?(?:/__data.json)?$",
 			"dest": "/test-insights"
+		},
+		{
+			"src": "^/test-ssr/?(?:/__data.json)?$",
+			"dest": "/test-ssr"
 		},
 		{
 			"src": "^/test/?(?:/__data.json)?$",

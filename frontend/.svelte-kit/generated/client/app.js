@@ -48,7 +48,8 @@ export const nodes = [
 	() => import('./nodes/41'),
 	() => import('./nodes/42'),
 	() => import('./nodes/43'),
-	() => import('./nodes/44')
+	() => import('./nodes/44'),
+	() => import('./nodes/45')
 ];
 
 export const server_loads = [];
@@ -88,12 +89,13 @@ export const dictionary = {
 		"/support": [36],
 		"/terms": [37],
 		"/test-insights": [39],
+		"/test-ssr": [40],
 		"/test": [38],
-		"/tradelog": [40],
-		"/trades": [41],
-		"/trades/new": [42],
-		"/upload": [43],
-		"/verify-email": [44]
+		"/tradelog": [41],
+		"/trades": [42],
+		"/trades/new": [43],
+		"/upload": [44],
+		"/verify-email": [45]
 	};
 
 export const hooks = {

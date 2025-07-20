@@ -10,7 +10,7 @@ return {
 	assets: new Set(["favicon.png","favicon.svg","icon.svg","manifest.json","offline.html","service-worker.js","service-worker.js"]),
 	mimeTypes: {".png":"image/png",".svg":"image/svg+xml",".json":"application/json",".html":"text/html",".js":"text/javascript"},
 	_: {
-		client: {start:"_app/immutable/entry/start.B5EbYOQL.js",app:"_app/immutable/entry/app.B783qlhR.js",imports:["_app/immutable/entry/start.B5EbYOQL.js","_app/immutable/chunks/D-G9JMcs.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/entry/app.B783qlhR.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BaXaLpMJ.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.DALVkbE-.js",app:"_app/immutable/entry/app.h_10UhS_.js",imports:["_app/immutable/entry/start.DALVkbE-.js","_app/immutable/chunks/_pMazo4M.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/entry/app.h_10UhS_.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BaXaLpMJ.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('../output/server/nodes/0.js')),
 			__memo(() => import('../output/server/nodes/1.js')),
@@ -56,7 +56,8 @@ return {
 			__memo(() => import('../output/server/nodes/41.js')),
 			__memo(() => import('../output/server/nodes/42.js')),
 			__memo(() => import('../output/server/nodes/43.js')),
-			__memo(() => import('../output/server/nodes/44.js'))
+			__memo(() => import('../output/server/nodes/44.js')),
+			__memo(() => import('../output/server/nodes/45.js'))
 		],
 		routes: [
 			{
@@ -135,6 +136,13 @@ return {
 				params: [],
 				page: { layouts: [0,], errors: [1,], leaf: 15 },
 				endpoint: null
+			},
+			{
+				id: "/api/debug",
+				pattern: /^\/api\/debug\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('../output/server/entries/endpoints/api/debug/_server.ts.js'))
 			},
 			{
 				id: "/billing",
@@ -298,6 +306,13 @@ return {
 				endpoint: null
 			},
 			{
+				id: "/test-ssr",
+				pattern: /^\/test-ssr\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 40 },
+				endpoint: null
+			},
+			{
 				id: "/test",
 				pattern: /^\/test\/?$/,
 				params: [],
@@ -308,35 +323,35 @@ return {
 				id: "/tradelog",
 				pattern: /^\/tradelog\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 40 },
+				page: { layouts: [0,], errors: [1,], leaf: 41 },
 				endpoint: null
 			},
 			{
 				id: "/trades",
 				pattern: /^\/trades\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 41 },
+				page: { layouts: [0,], errors: [1,], leaf: 42 },
 				endpoint: null
 			},
 			{
 				id: "/trades/new",
 				pattern: /^\/trades\/new\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 42 },
+				page: { layouts: [0,], errors: [1,], leaf: 43 },
 				endpoint: null
 			},
 			{
 				id: "/upload",
 				pattern: /^\/upload\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 43 },
+				page: { layouts: [0,], errors: [1,], leaf: 44 },
 				endpoint: null
 			},
 			{
 				id: "/verify-email",
 				pattern: /^\/verify-email\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 44 },
+				page: { layouts: [0,], errors: [1,], leaf: 45 },
 				endpoint: null
 			}
 		],

@@ -1,3 +1,4 @@
+import { b as browser } from "./index2.js";
 import "./client.js";
 class SSRSafeApiClient {
   static instance = null;
@@ -12,7 +13,7 @@ class SSRSafeApiClient {
     return SSRSafeApiClient.instance;
   }
   async initializeClient() {
-    if (this.initialized || true) return;
+    if (this.initialized || !browser) return;
   }
   setupInterceptors() {
     if (!this.axiosInstance) return;

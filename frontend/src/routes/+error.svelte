@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 </script>
 
 <svelte:head>
@@ -13,7 +14,7 @@
 	{#if $page.status === 404}
 		<a href="/">Go to Dashboard</a>
 	{:else}
-		<button on:click={() => location.reload()}>Try Again</button>
+		<button on:click={() => browser && window.location.reload()}>Try Again</button>
 	{/if}
 </div>
 

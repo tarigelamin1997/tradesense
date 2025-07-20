@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { api } from '$lib/api';
+    import { api } from '$lib/api/client';
     import { authStore } from '$lib/stores/auth';
     import Icon from '$lib/components/Icon.svelte';
     

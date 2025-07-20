@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { api } from '$lib/api';
+    import { api } from '$lib/api/client';
     import Icon from '$lib/components/Icon.svelte';
     import ExperimentCard from '$lib/components/admin/ExperimentCard.svelte';
     import CreateExperimentModal from '$lib/components/admin/CreateExperimentModal.svelte';

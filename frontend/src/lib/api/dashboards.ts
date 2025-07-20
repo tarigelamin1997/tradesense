@@ -1,4 +1,4 @@
-import { api } from './base';
+import { api } from './client';
 
 // Types
 export interface DashboardTemplate {

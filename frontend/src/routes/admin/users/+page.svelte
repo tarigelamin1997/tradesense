@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { api } from '$lib/api';
+    import { api } from '$lib/api/client';
     import Icon from '$lib/components/Icon.svelte';
     import analytics from '$lib/analytics';
     

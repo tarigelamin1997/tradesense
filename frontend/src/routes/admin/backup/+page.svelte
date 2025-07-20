@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { api } from '$lib/api';
+    import { api } from '$lib/api/client';
     import Icon from '$lib/components/Icon.svelte';
     import BackupScheduleModal from '$lib/components/admin/BackupScheduleModal.svelte';
     import RestoreModal from '$lib/components/admin/RestoreModal.svelte';

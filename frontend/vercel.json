@@ -1,7 +1,6 @@
 {
   "buildCommand": "svelte-kit sync && vite build",
   "framework": "sveltekit",
-  "outputDirectory": ".vercel/output",
   "headers": [
     {
       "source": "/assets/(.*)",

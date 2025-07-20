@@ -1,6 +1,7 @@
 import { api } from './client';
 import { writable, derived } from 'svelte/store';
 import type { Readable, Writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 export interface User {
 	id: string;
@@ -36,7 +37,7 @@ interface AuthState {
 function createAuthStore() {
 	const { subscribe, set, update }: Writable<AuthState> = writable({
 		user: null,
-		loading: true,
+		loading: false, // Set to false by default for SSR
 		error: null
 	});
 
@@ -125,6 +126,12 @@ function createAuthStore() {
 		},
 		
 		async checkAuth() {
+			// Don't run on server
+			if (!browser) {
+				set({ user: null, loading: false, error: null });
+				return;
+			}
+			
 			if (!api.isAuthenticated()) {
 				set({ user: null, loading: false, error: null });
 				return;

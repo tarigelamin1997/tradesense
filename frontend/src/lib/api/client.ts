@@ -4,7 +4,7 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
 // Use environment variable for API URL, fallback to empty string for Vite proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = browser ? (import.meta.env.VITE_API_URL || '') : '';
 if (browser) {
 	console.log('API Base URL:', API_BASE_URL || 'Using Vite proxy');
 }
@@ -136,7 +136,27 @@ class ApiClient {
 }
 
 // Export singleton instance
-export const api = new ApiClient();
+// Create a singleton instance that's SSR-safe
+let apiInstance: ApiClient | null = null;
+
+export const api = new Proxy({} as ApiClient, {
+	get(target, prop) {
+		if (!apiInstance && browser) {
+			apiInstance = new ApiClient();
+		}
+		if (!apiInstance) {
+			// Return no-op functions during SSR
+			if (typeof prop === 'string' && ['get', 'post', 'put', 'patch', 'delete'].includes(prop)) {
+				return () => Promise.reject(new Error('API not available during SSR'));
+			}
+			if (prop === 'setAuthToken' || prop === 'clearAuth' || prop === 'getAuthToken' || prop === 'isAuthenticated') {
+				return () => {};
+			}
+			return undefined;
+		}
+		return apiInstance[prop as keyof ApiClient];
+	}
+});
 
 // Export types
 export type { ApiClient };

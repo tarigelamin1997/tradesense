@@ -143,7 +143,7 @@ const options = {
   root: Root,
   service_worker: true,
   templates: {
-    app: ({ head, body, assets: assets2, nonce, env }) => '<!doctype html>\n<html lang="en">\n	<head>\n		<meta charset="utf-8" />\n		<link rel="icon" href="' + assets2 + '/favicon.png" />\n		<meta name="viewport" content="width=device-width, initial-scale=1" />\n		\n		<!-- PWA Meta Tags -->\n		<meta name="theme-color" content="#10b981" />\n		<meta name="apple-mobile-web-app-capable" content="yes" />\n		<meta name="apple-mobile-web-app-status-bar-style" content="default" />\n		<meta name="apple-mobile-web-app-title" content="TradeSense" />\n		<link rel="manifest" href="' + assets2 + '/manifest.json" />\n		\n		<!-- iOS Icons -->\n		<link rel="apple-touch-icon" href="' + assets2 + '/icon.svg" />\n		\n		<!-- Splash Screens for iOS -->\n		<meta name="apple-mobile-web-app-capable" content="yes" />\n		\n		' + head + '\n	</head>\n	<body data-sveltekit-preload-data="hover">\n		<div style="display: contents">' + body + "</div>\n		\n		<script>\n			// Register service worker\n			if ('serviceWorker' in navigator) {\n				window.addEventListener('load', () => {\n					navigator.serviceWorker.register('/service-worker.js')\n						.then(registration => {\n							// ServiceWorker registered successfully\n						})\n						.catch(err => {\n							// ServiceWorker registration failed\n						});\n				});\n			}\n		<\/script>\n	</body>\n</html>",
+    app: ({ head, body, assets: assets2, nonce, env }) => '<!doctype html>\n<html lang="en">\n	<head>\n		<meta charset="utf-8" />\n		<link rel="icon" href="' + assets2 + '/favicon.svg" type="image/svg+xml" />\n		<meta name="viewport" content="width=device-width, initial-scale=1" />\n		\n		<!-- PWA Meta Tags -->\n		<meta name="theme-color" content="#10b981" />\n		<meta name="apple-mobile-web-app-capable" content="yes" />\n		<meta name="apple-mobile-web-app-status-bar-style" content="default" />\n		<meta name="apple-mobile-web-app-title" content="TradeSense" />\n		<link rel="manifest" href="' + assets2 + '/manifest.json" />\n		\n		<!-- iOS Icons -->\n		<link rel="apple-touch-icon" href="' + assets2 + '/icon.svg" />\n		\n		<!-- Splash Screens for iOS -->\n		<meta name="apple-mobile-web-app-capable" content="yes" />\n		\n		' + head + '\n	</head>\n	<body data-sveltekit-preload-data="hover">\n		<div style="display: contents">' + body + "</div>\n		\n		<script>\n			// Register service worker\n			if ('serviceWorker' in navigator) {\n				window.addEventListener('load', () => {\n					navigator.serviceWorker.register('/service-worker.js')\n						.then(registration => {\n							// ServiceWorker registered successfully\n						})\n						.catch(err => {\n							// ServiceWorker registration failed\n						});\n				});\n			}\n		<\/script>\n	</body>\n</html>",
     error: ({ status, message }) => '<!doctype html>\n<html lang="en">\n	<head>\n		<meta charset="utf-8" />\n		<title>' + message + `</title>
 
 		<style>
@@ -215,13 +215,14 @@ const options = {
 		<div class="error">
 			<span class="status">` + status + '</span>\n			<div class="message">\n				<h1>' + message + "</h1>\n			</div>\n		</div>\n	</body>\n</html>\n"
   },
-  version_hash: "caz8qf"
+  version_hash: "1ap06r8"
 };
 async function get_hooks() {
   let handle;
   let handleFetch;
   let handleError;
   let init;
+  ({ handle, handleFetch, handleError, init } = await import("./hooks.server.js"));
   let reroute;
   let transport;
   return {

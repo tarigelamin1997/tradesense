@@ -1,5 +1,5 @@
 import { c as create_ssr_component, v as validate_component } from "../../../chunks/ssr.js";
-import "../../../chunks/client2.js";
+import "../../../chunks/client.js";
 import { L as LoadingSkeleton } from "../../../chunks/LoadingSkeleton.js";
 import { B as Brain } from "../../../chunks/brain.js";
 import { R as Refresh_cw } from "../../../chunks/refresh-cw.js";

@@ -140,9 +140,11 @@ class Analytics {
         time_on_page: timeOnPage,
         url: window.location.href
       });
-      navigator.sendBeacon(this.apiEndpoint, JSON.stringify({
-        events: this.queue
-      }));
+      if (navigator?.sendBeacon) {
+        navigator.sendBeacon(this.apiEndpoint, JSON.stringify({
+          events: this.queue
+        }));
+      }
     });
   }
   /**
@@ -245,7 +247,7 @@ class Analytics {
    * Get auth token
    */
   getAuthToken() {
-    return localStorage.getItem("auth_token") || "";
+    return "";
   }
   /**
    * Get first paint time

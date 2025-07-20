@@ -1,4 +1,4 @@
-import { c as create_ssr_component, v as validate_component, b as escape } from "../../../chunks/ssr.js";
+import { c as create_ssr_component, v as validate_component, d as escape } from "../../../chunks/ssr.js";
 import { C as Chevron_left } from "../../../chunks/chevron-left.js";
 import { S as Shield } from "../../../chunks/shield.js";
 import { L as Lock } from "../../../chunks/lock.js";

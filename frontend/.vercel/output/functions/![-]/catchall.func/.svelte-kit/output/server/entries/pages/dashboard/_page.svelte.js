@@ -5,7 +5,6 @@ import "lightweight-charts";
 /* empty css                                                      */
 import "../../../chunks/websocket.js";
 /* empty css                                                        */
-import "../../../chunks/client2.js";
 import "../../../chunks/TradeInsights.svelte_svelte_type_style_lang.js";
 import "../../../chunks/auth.js";
 import { L as LoadingSkeleton } from "../../../chunks/LoadingSkeleton.js";

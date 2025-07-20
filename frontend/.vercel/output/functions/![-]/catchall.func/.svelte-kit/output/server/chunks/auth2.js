@@ -1,6 +1,6 @@
 import { d as derived, w as writable } from "./index.js";
 import "./client.js";
-import { a as api } from "./client2.js";
+import { a as api } from "./client-safe.js";
 function createAuthStore() {
   const { subscribe, set, update } = writable({
     user: null,
@@ -22,7 +22,7 @@ function createAuthStore() {
       const { access_token, user: user2 } = response.data;
       localStorage.setItem("auth_token", access_token);
       localStorage.setItem("user", JSON.stringify(user2));
-      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      api.setAuthToken(access_token);
       update((state) => ({
         ...state,
         user: user2,
@@ -50,7 +50,7 @@ function createAuthStore() {
       const { access_token, user: user2 } = response.data;
       localStorage.setItem("auth_token", access_token);
       localStorage.setItem("user", JSON.stringify(user2));
-      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      api.setAuthToken(access_token);
       update((state) => ({
         ...state,
         user: user2,
@@ -72,7 +72,6 @@ function createAuthStore() {
     } finally {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
-      delete api.defaults.headers.common["Authorization"];
       if (refreshTimeout) {
         clearTimeout(refreshTimeout);
       }
@@ -105,7 +104,7 @@ function createAuthStore() {
       const response = await api.post("/api/v1/auth/refresh");
       const { access_token } = response.data;
       localStorage.setItem("auth_token", access_token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      api.setAuthToken(access_token);
       update((state) => ({
         ...state,
         token: access_token

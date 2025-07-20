@@ -1,5 +1,4 @@
-import { s as subscribe } from "../../../chunks/utils.js";
-import { c as create_ssr_component, v as validate_component } from "../../../chunks/ssr.js";
+import { c as create_ssr_component, a as subscribe, v as validate_component } from "../../../chunks/ssr.js";
 import { p as page } from "../../../chunks/stores.js";
 import "../../../chunks/client.js";
 import "../../../chunks/auth.js";

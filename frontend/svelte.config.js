@@ -12,8 +12,11 @@ const config = {
 		// If your environment is not supported or you settled on a specific environment, switch out the adapter.
 		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
 		adapter: adapter({
-			// See below for an explanation of these options
-			runtime: 'nodejs20.x'
+			runtime: 'nodejs20.x',
+			regions: ['iad1'], // US East
+			split: false, // Keep all routes in a single function for now
+			include: ['/*'],
+			exclude: ['<all>']
 		})
 	}
 };

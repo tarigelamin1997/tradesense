@@ -1,5 +1,8 @@
 {
 	"runtime": "nodejs20.x",
+	"regions": [
+		"iad1"
+	],
 	"handler": ".svelte-kit/vercel-tmp/index.js",
 	"launcherType": "Nodejs",
 	"experimentalResponseStreaming": true,

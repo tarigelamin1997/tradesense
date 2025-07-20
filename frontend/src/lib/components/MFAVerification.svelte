@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { browser } from '$app/environment';
-    import { api } from '$lib/api/client';
+    import { api } from '$lib/api/client-safe';
     import Icon from '$lib/components/Icon.svelte';
     
     export let sessionId;

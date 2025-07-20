@@ -1,4 +1,36 @@
-import { r as run_all, b as blank_object } from "./utils.js";
+function noop() {
+}
+function run(fn) {
+  return fn();
+}
+function blank_object() {
+  return /* @__PURE__ */ Object.create(null);
+}
+function run_all(fns) {
+  fns.forEach(run);
+}
+function is_function(thing) {
+  return typeof thing === "function";
+}
+function safe_not_equal(a, b) {
+  return a != a ? b == b : a !== b || a && typeof a === "object" || typeof a === "function";
+}
+function subscribe(store, ...callbacks) {
+  if (store == null) {
+    for (const callback of callbacks) {
+      callback(void 0);
+    }
+    return noop;
+  }
+  const unsub = store.subscribe(...callbacks);
+  return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
+}
+function compute_rest_props(props, keys) {
+  const rest = {};
+  keys = new Set(keys);
+  for (const k in props) if (!keys.has(k) && k[0] !== "$") rest[k] = props[k];
+  return rest;
+}
 function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
   return new CustomEvent(type, { detail, bubbles, cancelable });
 }
@@ -221,17 +253,23 @@ function style_object_to_string(style_object) {
   return Object.keys(style_object).filter((key) => style_object[key] != null && style_object[key] !== "").map((key) => `${key}: ${escape_attribute_value(style_object[key])};`).join(" ");
 }
 export {
-  add_attribute as a,
-  escape as b,
+  subscribe as a,
+  add_attribute as b,
   create_ssr_component as c,
-  spread as d,
+  escape as d,
   each as e,
-  escape_object as f,
+  safe_not_equal as f,
   getContext as g,
-  escape_attribute_value as h,
-  createEventDispatcher as i,
+  compute_rest_props as h,
+  is_function as i,
+  spread as j,
+  escape_object as k,
+  escape_attribute_value as l,
   missing_component as m,
+  noop as n,
   onDestroy as o,
+  createEventDispatcher as p,
+  run_all as r,
   setContext as s,
   validate_component as v
 };

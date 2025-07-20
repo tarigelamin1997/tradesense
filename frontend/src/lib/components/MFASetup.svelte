@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { api } from '$lib/api/client';
+    import { api } from '$lib/api/client-safe';
     import Icon from '$lib/components/Icon.svelte';
     import QRCode from 'qrcode';
     

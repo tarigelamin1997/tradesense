@@ -652,9 +652,9 @@
                     </button>
                   </div>
                 </div>
+                {@const widgetComponent = renderWidget(widget)}
+                {@const data = getWidgetData(widget)}
                 <div class="widget-content">
-                  {@const widgetComponent = renderWidget(widget)}
-                  {@const data = getWidgetData(widget)}
                   {#if widgetComponent && data}
                     <svelte:component 
                       this={widgetComponent} 
@@ -708,9 +708,9 @@
               <div class="widget-header">
                 <h4>{widget.title}</h4>
               </div>
+              {@const widgetComponent = renderWidget(widget)}
+              {@const data = getWidgetData(widget)}
               <div class="widget-content">
-                {@const widgetComponent = renderWidget(widget)}
-                {@const data = getWidgetData(widget)}
                 {#if widgetComponent && data}
                   <svelte:component 
                     this={widgetComponent} 

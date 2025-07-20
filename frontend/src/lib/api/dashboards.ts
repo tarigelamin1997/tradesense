@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api } from './client-safe';
 
 // Types
 export interface DashboardTemplate {

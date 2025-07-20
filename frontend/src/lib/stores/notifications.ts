@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { websocket } from './websocket';
+import { browser } from '$app/environment';
 
 export interface Notification {
 	id: string;
@@ -33,7 +34,7 @@ function createNotificationStore() {
 		}
 		
 		// Show browser notification if permitted
-		if ('Notification' in window && Notification.permission === 'granted') {
+		if (browser && 'Notification' in window && Notification.permission === 'granted') {
 			new Notification(notification.title, {
 				body: notification.message,
 				icon: '/favicon.ico'
@@ -57,38 +58,40 @@ function createNotificationStore() {
 		set([]);
 	}
 	
-	// Subscribe to WebSocket notifications
-	websocket.subscribe(ws => {
-		if (ws.lastMessage?.type === 'notification') {
-			const data = ws.lastMessage.data;
-			addNotification({
-				type: data.severity || 'info',
-				title: data.title,
-				message: data.message
-			});
-		}
-		
-		// Handle trade updates as notifications
-		if (ws.lastMessage?.type === 'trade_update') {
-			const data = ws.lastMessage.data;
-			const action = data.action || 'updated';
-			addNotification({
-				type: 'success',
-				title: `Trade ${action}`,
-				message: `Trade ${data.trade?.symbol || ''} has been ${action}`
-			});
-		}
-		
-		// Handle performance alerts
-		if (ws.lastMessage?.type === 'performance_alert') {
-			const data = ws.lastMessage.data;
-			addNotification({
-				type: data.severity || 'warning',
-				title: 'Performance Alert',
-				message: data.message
-			});
-		}
-	});
+	// Subscribe to WebSocket notifications only in browser
+	if (browser) {
+		websocket.subscribe(ws => {
+			if (ws.lastMessage?.type === 'notification') {
+				const data = ws.lastMessage.data;
+				addNotification({
+					type: data.severity || 'info',
+					title: data.title,
+					message: data.message
+				});
+			}
+			
+			// Handle trade updates as notifications
+			if (ws.lastMessage?.type === 'trade_update') {
+				const data = ws.lastMessage.data;
+				const action = data.action || 'updated';
+				addNotification({
+					type: 'success',
+					title: `Trade ${action}`,
+					message: `Trade ${data.trade?.symbol || ''} has been ${action}`
+				});
+			}
+			
+			// Handle performance alerts
+			if (ws.lastMessage?.type === 'performance_alert') {
+				const data = ws.lastMessage.data;
+				addNotification({
+					type: data.severity || 'warning',
+					title: 'Performance Alert',
+					message: data.message
+				});
+			}
+		});
+	}
 	
 	return {
 		subscribe,
@@ -107,9 +110,14 @@ export const unreadCount = derived(
 	$notifications => $notifications.filter(n => !n.read).length
 );
 
-// Request notification permission on load
-if (typeof window !== 'undefined' && 'Notification' in window) {
-	if (Notification.permission === 'default') {
-		Notification.requestPermission();
+// IMPORTANT: Do not request notification permission at module level
+// This prevents SSR errors on Vercel
+// Request permission from components/layouts using requestNotificationPermission()
+export function requestNotificationPermission() {
+	if (browser && 'Notification' in window) {
+		if (Notification.permission === 'default') {
+			return Notification.requestPermission();
+		}
 	}
+	return Promise.resolve(Notification.permission);
 }

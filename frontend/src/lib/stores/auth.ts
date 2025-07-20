@@ -252,10 +252,9 @@ function createAuthStore() {
 		}
 	}
 
-	// Initialize on store creation
-	if (browser) {
-		initialize();
-	}
+	// IMPORTANT: Do not initialize automatically at module level
+	// This prevents SSR errors on Vercel
+	// Call authStore.initialize() from +layout.svelte onMount instead
 
 	return {
 		subscribe,

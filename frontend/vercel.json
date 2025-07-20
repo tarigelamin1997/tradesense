@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm install && npm run build",
+  "installCommand": "npm install",
   "headers": [
     {
       "source": "/assets/(.*)",

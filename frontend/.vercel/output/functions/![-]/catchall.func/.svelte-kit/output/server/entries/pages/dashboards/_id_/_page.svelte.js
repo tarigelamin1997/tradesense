@@ -1,6 +1,7 @@
 import { c as create_ssr_component, a as subscribe, o as onDestroy, v as validate_component, e as each, d as escape } from "../../../../chunks/ssr.js";
 import { p as page } from "../../../../chunks/stores.js";
 import "../../../../chunks/client.js";
+import "../../../../chunks/ssr-safe.js";
 import { L as LoadingSkeleton } from "../../../../chunks/LoadingSkeleton.js";
 /* empty css                                                          */
 import "lightweight-charts";

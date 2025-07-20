@@ -1,5 +1,6 @@
 import { c as create_ssr_component, v as validate_component, d as escape, e as each } from "../../../chunks/ssr.js";
 import "../../../chunks/client.js";
+import "../../../chunks/ssr-safe.js";
 import { L as LoadingSkeleton } from "../../../chunks/LoadingSkeleton.js";
 import { P as Plus } from "../../../chunks/plus.js";
 const css = {

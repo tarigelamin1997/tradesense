@@ -1,6 +1,7 @@
 import { c as create_ssr_component, v as validate_component, e as each } from "../../../chunks/ssr.js";
 import "../../../chunks/client.js";
 import "../../../chunks/auth.js";
+import "../../../chunks/ssr-safe.js";
 import "@tiptap/starter-kit";
 import "@tiptap/extension-text-style";
 import "@tiptap/extension-underline";

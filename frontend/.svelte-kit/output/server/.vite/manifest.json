@@ -124,7 +124,7 @@
     "file": "chunks/auth.js",
     "name": "auth",
     "imports": [
-      "_client.js",
+      "_ssr-safe.js",
       "_index.js"
     ]
   },
@@ -612,7 +612,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js"
+      "_ssr-safe.js"
     ],
     "css": [
       "_app/immutable/assets/_page.BWtkL8iW.css",
@@ -641,7 +641,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js",
+      "_ssr-safe.js",
       "_LoadingSkeleton.js",
       "_brain.js",
       "_refresh-cw.js"
@@ -673,7 +673,8 @@
       "_ssr.js",
       "_client.js",
       "_auth.js",
-      "_TradeInsights.svelte_svelte_type_style_lang.js"
+      "_TradeInsights.svelte_svelte_type_style_lang.js",
+      "_ssr-safe.js"
     ],
     "css": [
       "_app/immutable/assets/_page.B7wb5pyr.css",
@@ -688,6 +689,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
+      "_ssr-safe.js",
       "_auth.js"
     ],
     "css": [
@@ -719,6 +721,7 @@
       "_ssr.js",
       "_client.js",
       "_websocket.js",
+      "_ssr-safe.js",
       "_TradeInsights.svelte_svelte_type_style_lang.js",
       "_auth.js",
       "_LoadingSkeleton.js"
@@ -738,6 +741,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
+      "_ssr-safe.js",
       "_LoadingSkeleton.js",
       "_plus.js"
     ],
@@ -754,6 +758,7 @@
       "_ssr.js",
       "_stores.js",
       "_client.js",
+      "_ssr-safe.js",
       "_LoadingSkeleton.js"
     ],
     "css": [
@@ -795,6 +800,7 @@
       "_ssr.js",
       "_client.js",
       "_auth.js",
+      "_ssr-safe.js",
       "_LoadingSkeleton.js",
       "_DataExport.js"
     ],
@@ -881,6 +887,7 @@
     "imports": [
       "_ssr.js",
       "_client.js",
+      "_ssr-safe.js",
       "_auth.js",
       "_zap.js",
       "_x.js",
@@ -1045,7 +1052,7 @@
     "isEntry": true,
     "imports": [
       "_ssr.js",
-      "_client.js"
+      "_ssr-safe.js"
     ],
     "css": [
       "_app/immutable/assets/_page.DXNJp5pQ.css"
@@ -1096,7 +1103,8 @@
     "imports": [
       "_ssr.js",
       "_client.js",
-      "_auth.js"
+      "_auth.js",
+      "_ssr-safe.js"
     ],
     "css": [
       "_app/immutable/assets/_page.3QqDoUJM.css"
@@ -1111,6 +1119,7 @@
       "_ssr.js",
       "_client.js",
       "_auth.js",
+      "_ssr-safe.js",
       "_index.js",
       "_upload.js",
       "_circle-alert.js",

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import './styles.css';
-	import { auth, isAuthenticated } from '$lib/api/auth';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
@@ -14,18 +13,11 @@
 	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 	import FeedbackButton from '$lib/components/FeedbackButton.svelte';
 	import { trackPageVisit } from '$lib/utils/feedbackContext';
-	import { authStore } from '$lib/stores/auth';
+	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { websocket } from '$lib/stores/websocket';
 	import { requestNotificationPermission } from '$lib/stores/notifications';
 	
-	let authState: any = { user: null, loading: true, error: null };
-	
-	// Only subscribe to auth in browser
-	$: if (browser) {
-		auth.subscribe(state => {
-			authState = state;
-		});
-	}
+	$: authState = $authStore;
 	
 	// Initialize browser-only features
 	onMount(() => {
@@ -44,8 +36,8 @@
 	});
 	
 	async function handleLogout() {
-		await auth.logout();
-		goto('/login');
+		await authStore.logout();
+		// Navigation is handled by the logout function
 	}
 	
 	// Track page visits for feedback context
@@ -75,7 +67,7 @@
 					<WebSocketStatus />
 					<NotificationCenter />
 					<div class="nav-divider"></div>
-					<span class="username">{authState?.user?.username || ''}</span>
+					<span class="username">{authState?.user?.name || authState?.user?.email || ''}</span>
 					<button on:click={handleLogout} class="logout-button">Logout</button>
 				{:else}
 					<a href="/pricing">Pricing</a>
@@ -131,11 +123,12 @@
 		font-weight: bold;
 		color: white;
 		text-decoration: none;
+		margin-right: 3rem;
 	}
 
 	.nav-links {
 		display: flex;
-		gap: 2rem;
+		gap: 1.5rem;
 		align-items: center;
 	}
 
@@ -172,19 +165,20 @@
 	}
 	
 	.logout-button {
-		background: transparent;
-		border: 1px solid rgba(255, 255, 255, 0.3);
-		color: white;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: #ef4444;
 		padding: 0.5rem 1rem;
 		border-radius: 6px;
 		font-size: 0.875rem;
+		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
 	
 	.logout-button:hover {
-		background: rgba(255, 255, 255, 0.1);
-		border-color: rgba(255, 255, 255, 0.5);
+		background: rgba(239, 68, 68, 0.2);
+		border-color: rgba(239, 68, 68, 0.5);
 	}
 	
 	.register-button {
@@ -196,6 +190,21 @@
 	
 	.register-button:hover {
 		background: #059669;
+	}
+	
+	/* Medium screens */
+	@media (max-width: 1200px) {
+		.nav-links {
+			gap: 1rem;
+		}
+		
+		.logo {
+			margin-right: 2rem;
+		}
+		
+		.nav-links a {
+			font-size: 0.875rem;
+		}
 	}
 	
 	/* Mobile Styles */

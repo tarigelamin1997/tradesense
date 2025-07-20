@@ -810,6 +810,12 @@
       "_app/immutable/assets/_page.D60MAn4_.css"
     ]
   },
+  "src/routes/health/+server.ts": {
+    "file": "entries/endpoints/health/_server.ts.js",
+    "name": "entries/endpoints/health/_server.ts",
+    "src": "src/routes/health/+server.ts",
+    "isEntry": true
+  },
   "src/routes/journal/+page.svelte": {
     "file": "entries/pages/journal/_page.svelte.js",
     "name": "entries/pages/journal/_page.svelte",

@@ -58,6 +58,9 @@
 	"/forgot-password": [
 		"src/routes/+layout.ts"
 	],
+	"/health": [
+		"src/routes/health/+server.ts"
+	],
 	"/journal": [
 		"src/routes/+layout.ts"
 	],

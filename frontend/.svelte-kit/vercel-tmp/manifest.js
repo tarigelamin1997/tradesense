@@ -10,7 +10,7 @@ return {
 	assets: new Set(["favicon.png","favicon.svg","icon.svg","manifest.json","offline.html","service-worker.js","service-worker.js"]),
 	mimeTypes: {".png":"image/png",".svg":"image/svg+xml",".json":"application/json",".html":"text/html",".js":"text/javascript"},
 	_: {
-		client: {start:"_app/immutable/entry/start.DALVkbE-.js",app:"_app/immutable/entry/app.h_10UhS_.js",imports:["_app/immutable/entry/start.DALVkbE-.js","_app/immutable/chunks/_pMazo4M.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/entry/app.h_10UhS_.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BaXaLpMJ.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.BtxzgZ3q.js",app:"_app/immutable/entry/app.yysBdd9T.js",imports:["_app/immutable/entry/start.BtxzgZ3q.js","_app/immutable/chunks/BFH-i71J.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/entry/app.yysBdd9T.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BaXaLpMJ.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/chunks/IHki7fMi.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('../output/server/nodes/0.js')),
 			__memo(() => import('../output/server/nodes/1.js')),
@@ -192,6 +192,13 @@ return {
 				params: [],
 				page: { layouts: [0,], errors: [1,], leaf: 22 },
 				endpoint: null
+			},
+			{
+				id: "/health",
+				pattern: /^\/health\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('../output/server/entries/endpoints/health/_server.ts.js'))
 			},
 			{
 				id: "/journal",

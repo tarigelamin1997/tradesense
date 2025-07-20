@@ -87,6 +87,10 @@
 			"dest": "/forgot-password"
 		},
 		{
+			"src": "^/health/?(?:/__data.json)?$",
+			"dest": "/health"
+		},
+		{
 			"src": "^/journal/?(?:/__data.json)?$",
 			"dest": "/journal"
 		},

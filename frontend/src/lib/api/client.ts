@@ -3,7 +3,7 @@ import { goto } from '$app/navigation';
 import type { AxiosInstance, AxiosError } from 'axios';
 
 // Use environment variable for API URL, fallback to empty string for Vite proxy
-const API_BASE_URL = browser ? (import.meta.env.VITE_API_URL || '') : '';
+const API_BASE_URL = browser ? (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '') : '';
 if (browser) {
 	console.log('API Base URL:', API_BASE_URL || 'Using Vite proxy');
 }

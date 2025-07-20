@@ -28,9 +28,9 @@ class SSRSafeApiClient {
 		try {
 			const { default: axios } = await import('axios');
 			
-			const baseURL = import.meta.env.VITE_API_URL || '';
+			const baseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '';
 			if (!baseURL) {
-				console.warn('API URL not configured. Please set VITE_API_URL environment variable.');
+				console.warn('API URL not configured. Please set VITE_API_BASE_URL or VITE_API_URL environment variable.');
 			}
 			
 			this.axiosInstance = axios.create({

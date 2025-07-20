@@ -116,6 +116,10 @@ class ApiClient {
 		return !!this.token;
 	}
 
+	getAuthToken(): string | null {
+		return this.token;
+	}
+
 	// API methods
 	async get<T>(url: string, params?: any): Promise<T> {
 		await this.initialize();

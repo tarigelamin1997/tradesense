@@ -19,8 +19,9 @@ const handleError = ({ error, event }) => {
   if (event.url.pathname.startsWith("/api/")) {
     console.error("API route error:", errorMessage);
   }
+  const isDev = process.env.NODE_ENV === "development";
   return {
-    message: "An unexpected error occurred",
+    message: isDev ? errorMessage : "An unexpected error occurred",
     code: "INTERNAL_ERROR"
   };
 };

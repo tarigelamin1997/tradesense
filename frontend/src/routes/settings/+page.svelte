@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { 
 		User, 
 		Bell, 
@@ -149,10 +150,12 @@
 			saveStatus = 'Display settings saved!';
 			
 			// Apply theme immediately
-			if (displaySettings.theme === 'dark') {
-				document.documentElement.classList.add('dark');
-			} else {
-				document.documentElement.classList.remove('dark');
+			if (browser) {
+				if (displaySettings.theme === 'dark') {
+					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
+				}
 			}
 			
 			setTimeout(() => {

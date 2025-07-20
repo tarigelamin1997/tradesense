@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment';
     import { goto } from '$app/navigation';
     import { api } from '$lib/api/client';
     import { authStore } from '$lib/stores/auth';
@@ -55,14 +56,16 @@
                 // Upgrade from free - go to checkout
                 const response = await api.post('/subscription/checkout', {
                     plan: planId,
-                    success_url: `${window.location.origin}/subscription/success`,
-                    cancel_url: `${window.location.origin}/subscription`
+                    success_url: browser ? `${window.location.origin}/subscription/success` : '/subscription/success',
+                    cancel_url: browser ? `${window.location.origin}/subscription` : '/subscription'
                 });
                 
                 analytics.trackAction('start_checkout', 'subscription', { plan: planId });
                 
                 // Redirect to Stripe checkout
-                window.location.href = response.checkout_url;
+                if (browser) {
+                    window.location.href = response.checkout_url;
+                }
             } else {
                 // Change between paid plans
                 const response = await api.post('/subscription/change-plan', {
@@ -117,12 +120,14 @@
     async function openCustomerPortal() {
         try {
             const response = await api.post('/subscription/customer-portal', {
-                return_url: window.location.href
+                return_url: browser ? window.location.href : '/subscription'
             });
             
             analytics.trackAction('open_customer_portal', 'subscription');
             
-            window.location.href = response.portal_url;
+            if (browser) {
+                window.location.href = response.portal_url;
+            }
             
         } catch (err) {
             error = err.message || 'Failed to open customer portal';

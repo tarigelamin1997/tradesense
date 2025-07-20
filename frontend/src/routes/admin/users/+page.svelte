@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment';
     import { api } from '$lib/api/client';
     import Icon from '$lib/components/Icon.svelte';
     import analytics from '$lib/analytics';
@@ -126,11 +127,13 @@
             const response = await api.post(`/admin/users/${userId}/impersonate`);
             
             // Store the impersonation token
-            localStorage.setItem('impersonation_token', response.token);
-            localStorage.setItem('impersonated_user', JSON.stringify(response.user));
-            
-            // Redirect to dashboard as the user
-            window.location.href = '/dashboard';
+            if (browser) {
+                localStorage.setItem('impersonation_token', response.token);
+                localStorage.setItem('impersonated_user', JSON.stringify(response.user));
+                
+                // Redirect to dashboard as the user
+                window.location.href = '/dashboard';
+            }
             
         } catch (err) {
             error = err.message || 'Failed to impersonate user';

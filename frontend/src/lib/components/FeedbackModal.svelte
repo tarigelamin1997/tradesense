@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { X, Camera, AlertCircle, Bug, Zap, Layout, HelpCircle } from 'lucide-svelte';
   import { page } from '$app/stores';
   import { feedbackApi } from '$lib/api/feedback';
@@ -41,6 +42,8 @@
   };
 
   async function captureScreenshot() {
+    if (!browser) return;
+    
     try {
       const canvas = await html2canvas(document.body, {
         logging: false,
@@ -72,8 +75,8 @@
         actualBehavior,
         email: email || undefined,
         url: $page.url.pathname,
-        userAgent: navigator.userAgent,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        userAgent: browser ? navigator.userAgent : 'Unknown',
+        screenResolution: browser ? `${window.screen.width}x${window.screen.height}` : 'Unknown',
         previousPages: context.previousPages,
         lastActions: context.lastActions,
         errorLogs: context.errorLogs,
@@ -86,7 +89,7 @@
       submitted = true;
 
       // Track feedback submission
-      if (window.gtag) {
+      if (browser && window.gtag) {
         window.gtag('event', 'feedback_submitted', {
           feedback_type: type,
           severity: severity
@@ -274,7 +277,7 @@
           <div class="context-info">
             <p><strong>Page:</strong> {$page.url.pathname}</p>
             <p><strong>Browser:</strong> {context.browser}</p>
-            <p><strong>Screen:</strong> {window.screen.width}x{window.screen.height}</p>
+            <p><strong>Screen:</strong> {browser ? `${window.screen.width}x${window.screen.height}` : 'Unknown'}</p>
             <p><strong>Recent actions:</strong> {context.lastActions.length} tracked</p>
             <p><strong>Error logs:</strong> {context.errorLogs.length} found</p>
           </div>

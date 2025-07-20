@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { browser } from '$app/environment';
     import { api } from '$lib/api/client';
     import Icon from '$lib/components/Icon.svelte';
     import CreateAlertModal from '$lib/components/alerts/CreateAlertModal.svelte';
@@ -131,24 +132,26 @@
         loadData();
         
         // Set up WebSocket for real-time notifications
-        const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
-        
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'notification' && data.data.type === 'alert') {
-                // Show notification
-                showNotification(data.data);
-                
-                // Reload alerts to update trigger count
-                if (activeTab === 'alerts') {
-                    loadData();
+        if (browser) {
+            const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'notification' && data.data.type === 'alert') {
+                    // Show notification
+                    showNotification(data.data);
+                    
+                    // Reload alerts to update trigger count
+                    if (activeTab === 'alerts') {
+                        loadData();
+                    }
                 }
-            }
-        };
-        
-        return () => {
-            ws.close();
-        };
+            };
+            
+            return () => {
+                ws.close();
+            };
+        }
     });
     
     function showNotification(notification) {

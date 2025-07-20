@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { CreditCard, Calendar, TrendingUp, AlertCircle, ExternalLink } from 'lucide-svelte';
 	import { billingApi, type Subscription, type Usage } from '$lib/api/billing';
@@ -59,8 +60,10 @@
 	
 	async function handleManageBilling() {
 		try {
-			const { url } = await billingApi.createPortalSession(window.location.href);
-			window.location.href = url;
+			const { url } = await billingApi.createPortalSession(browser ? window.location.href : '/billing');
+			if (browser) {
+				window.location.href = url;
+			}
 		} catch (err: any) {
 			logger.error('Failed to create portal session:', err);
 			error = err.message || 'Failed to open billing portal';

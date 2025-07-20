@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { X, Download } from 'lucide-svelte';
 	
 	let deferredPrompt: any = null;
@@ -7,6 +8,8 @@
 	let isInstalled = false;
 	
 	onMount(() => {
+		if (!browser) return;
+		
 		// Check if already installed
 		if (window.matchMedia('(display-mode: standalone)').matches) {
 			isInstalled = true;
@@ -65,11 +68,15 @@
 	function handleDismiss() {
 		showPrompt = false;
 		// Don't show again for 7 days
-		localStorage.setItem('pwa-prompt-dismissed', Date.now().toString());
+		if (browser) {
+			localStorage.setItem('pwa-prompt-dismissed', Date.now().toString());
+		}
 	}
 	
 	// Check if previously dismissed
 	onMount(() => {
+		if (!browser) return;
+		
 		const dismissed = localStorage.getItem('pwa-prompt-dismissed');
 		if (dismissed) {
 			const dismissedTime = parseInt(dismissed);

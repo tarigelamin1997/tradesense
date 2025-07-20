@@ -1,16 +1,19 @@
 <script>
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	
 	let status = 'Loading...';
 	let details = {};
 	
 	onMount(() => {
 		status = 'Page loaded successfully!';
-		details = {
-			url: window.location.href,
-			userAgent: navigator.userAgent,
-			timestamp: new Date().toISOString()
-		};
+		if (browser) {
+			details = {
+				url: window.location.href,
+				userAgent: navigator.userAgent,
+				timestamp: new Date().toISOString()
+			};
+		}
 	});
 </script>
 

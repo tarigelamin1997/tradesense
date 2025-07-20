@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { browser } from '$app/environment';
 	import { fade, fly } from 'svelte/transition';
 	import { 
 		ChevronRight, ChevronLeft, Check, Upload, 
@@ -103,7 +104,9 @@
 		};
 		
 		// Store in localStorage
-		localStorage.setItem('userPreferences', JSON.stringify(preferences));
+		if (browser) {
+			localStorage.setItem('userPreferences', JSON.stringify(preferences));
+		}
 		
 		// Dispatch completion event
 		dispatch('complete', preferences);
@@ -113,7 +116,9 @@
 	}
 	
 	function handleSkip() {
-		localStorage.setItem('wizardSkipped', 'true');
+		if (browser) {
+			localStorage.setItem('wizardSkipped', 'true');
+		}
 		show = false;
 		dispatch('skip');
 	}

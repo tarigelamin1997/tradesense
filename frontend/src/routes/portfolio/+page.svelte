@@ -407,15 +407,15 @@
 			<div class="chart-container">
 				<!-- Simple line chart using SVG -->
 				{#if portfolio.performance.length > 0}
+					{@const maxValue = Math.max(...portfolio.performance.map(p => p.value))}
+					{@const minValue = Math.min(...portfolio.performance.map(p => p.value))}
+					{@const range = maxValue - minValue || 1}
+					{@const points = portfolio.performance.map((p, i) => {
+						const x = (i / (portfolio.performance.length - 1)) * 780 + 10;
+						const y = 290 - ((p.value - minValue) / range) * 280;
+						return `${x},${y}`;
+					}).join(' ')}
 					<svg viewBox="0 0 800 300" class="performance-chart">
-						{@const maxValue = Math.max(...portfolio.performance.map(p => p.value))}
-						{@const minValue = Math.min(...portfolio.performance.map(p => p.value))}
-						{@const range = maxValue - minValue || 1}
-						{@const points = portfolio.performance.map((p, i) => {
-							const x = (i / (portfolio.performance.length - 1)) * 780 + 10;
-							const y = 290 - ((p.value - minValue) / range) * 280;
-							return `${x},${y}`;
-						}).join(' ')}
 						
 						<!-- Grid lines -->
 						{#each Array(5) as _, i}
@@ -462,9 +462,9 @@
 				<h2>Asset Allocation</h2>
 				<div class="donut-chart">
 					<svg viewBox="0 0 200 200" class="donut">
-						{@const radius = 80}
-						{@const circumference = 2 * Math.PI * radius}
 						{#each portfolio.allocations as allocation, i}
+							{@const radius = 80}
+							{@const circumference = 2 * Math.PI * radius}
 							{@const offset = portfolio.allocations
 								.slice(0, i)
 								.reduce((sum, a) => sum + a.percentage, 0) / 100 * circumference}

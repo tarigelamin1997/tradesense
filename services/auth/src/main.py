@@ -22,13 +22,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
+# Configure CORS - MUST be after app creation and before routes
+origins = [
+    "https://tradesense-gamma.vercel.app",
+    "https://tradesense.vercel.app", 
+    "https://frontend-self-nu-47.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "*"  # Allow all origins temporarily - FIX THIS IN PRODUCTION
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins temporarily - FIX THIS IN PRODUCTION
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Database setup

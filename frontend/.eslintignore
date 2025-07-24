@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+.svelte-kit
+coverage
+*.config.js
+*.config.ts
+vite.config.ts.timestamp-*
+package
+.env
+.env.*
+!.env.example
+static
+public

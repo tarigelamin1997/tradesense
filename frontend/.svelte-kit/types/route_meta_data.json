@@ -1,140 +1,279 @@
 {
 	"/": [
 		"src/routes/+layout.ts",
-		"src/routes/+layout.ts"
+		"src/routes/+layout.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/about": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/account/security": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/admin": [
 		"src/routes/+layout.ts",
-		"src/routes/+layout.ts"
+		"src/routes/+layout.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/admin/analytics": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/admin/backup": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/admin/experiments": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/admin/feature-flags": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/admin/feedback": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/admin/settings": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/admin/support": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/admin/users": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/ai-insights": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/alerts": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/analytics": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/api/auth/login": [
+		"src/routes/api/auth/login/+server.ts"
+	],
+	"/api/auth/logout": [
+		"src/routes/api/auth/logout/+server.ts"
+	],
+	"/api/auth/refresh": [
+		"src/routes/api/auth/refresh/+server.ts"
 	],
 	"/api/debug": [
 		"src/routes/api/debug/+server.ts"
 	],
 	"/billing": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/blog": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/change-password": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/changelog": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/contact": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/dashboards": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/dashboards/[id]": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/dashboard": [
-		"src/routes/+layout.ts"
+		"src/routes/dashboard/+page.server.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/debug": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/docs": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/features": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/forgot-password": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/health": [
 		"src/routes/health/+server.ts"
 	],
 	"/journal": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/login": [
 		"src/routes/login/+layout.ts",
 		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts",
 		"src/routes/login/+layout.ts",
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/onboarding": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/payment-success": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/playbook": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/portfolio": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/pricing": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/privacy": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/register": [
 		"src/routes/register/+layout.ts",
 		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts",
 		"src/routes/register/+layout.ts",
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/reset-password": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/roadmap": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/security": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/settings": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/settings/api": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/settings/danger-zone": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/settings/export": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/settings/integrations": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/settings/notifications": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/settings/privacy": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/status": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/subscription": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/support": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/support/kb": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/support/kb/[id]/[slug]": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/support/tickets": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/terms": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/test-insights": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/test-ssr": [
 		"src/routes/test-ssr/+page.ts",
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/test": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/tradelog": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/trades": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/trades/import": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/trades/new": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/upload": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	],
 	"/verify-email": [
-		"src/routes/+layout.ts"
+		"src/routes/+layout.ts",
+		"src/routes/+layout.server.ts"
 	]
 }

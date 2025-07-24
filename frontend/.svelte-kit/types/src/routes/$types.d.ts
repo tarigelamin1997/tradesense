@@ -12,15 +12,19 @@ type EnsureDefined<T> = T extends null | undefined ? {} : T;
 type OptionalUnion<U extends Record<string, any>, A extends keyof U = U extends U ? keyof U : never> = U extends unknown ? { [P in Exclude<A, keyof U>]?: never } & U : never;
 export type Snapshot<T = any> = Kit.Snapshot<T>;
 type PageParentData = EnsureDefined<LayoutData>;
-type LayoutRouteId = RouteId | "/" | "/account/security" | "/admin" | "/admin/backup" | "/admin/experiments" | "/admin/feature-flags" | "/admin/feedback" | "/admin/users" | "/ai-insights" | "/alerts" | "/analytics" | "/billing" | "/change-password" | "/dashboard" | "/dashboards" | "/dashboards/[id]" | "/debug" | "/forgot-password" | "/journal" | "/login" | "/payment-success" | "/playbook" | "/portfolio" | "/pricing" | "/privacy" | "/register" | "/reset-password" | "/security" | "/settings" | "/settings/privacy" | "/subscription" | "/support" | "/terms" | "/test" | "/test-insights" | "/test-ssr" | "/tradelog" | "/trades" | "/trades/new" | "/upload" | "/verify-email" | null
-type LayoutParams = RouteParams & { id?: string }
+type LayoutRouteId = RouteId | "/" | "/about" | "/account/security" | "/admin" | "/admin/analytics" | "/admin/backup" | "/admin/experiments" | "/admin/feature-flags" | "/admin/feedback" | "/admin/settings" | "/admin/support" | "/admin/users" | "/ai-insights" | "/alerts" | "/analytics" | "/billing" | "/blog" | "/change-password" | "/changelog" | "/contact" | "/dashboard" | "/dashboards" | "/dashboards/[id]" | "/debug" | "/docs" | "/features" | "/forgot-password" | "/journal" | "/login" | "/onboarding" | "/payment-success" | "/playbook" | "/portfolio" | "/pricing" | "/privacy" | "/register" | "/reset-password" | "/roadmap" | "/security" | "/settings" | "/settings/api" | "/settings/danger-zone" | "/settings/export" | "/settings/integrations" | "/settings/notifications" | "/settings/privacy" | "/status" | "/subscription" | "/support" | "/support/kb" | "/support/kb/[id]/[slug]" | "/support/tickets" | "/terms" | "/test" | "/test-insights" | "/test-ssr" | "/tradelog" | "/trades" | "/trades/import" | "/trades/new" | "/upload" | "/verify-email" | null
+type LayoutParams = RouteParams & { id?: string; slug?: string }
+type LayoutServerParentData = EnsureDefined<{}>;
 type LayoutParentData = EnsureDefined<{}>;
 
 export type PageServerData = null;
 export type PageData = Expand<PageParentData>;
-export type PageProps = { data: PageData }
-export type LayoutServerData = null;
+export type PageProps = { params: RouteParams; data: PageData }
+export type LayoutServerLoad<OutputData extends Partial<App.PageData> & Record<string, any> | void = Partial<App.PageData> & Record<string, any> | void> = Kit.ServerLoad<LayoutParams, LayoutServerParentData, OutputData, LayoutRouteId>;
+export type LayoutServerLoadEvent = Parameters<LayoutServerLoad>[0];
+export type LayoutServerData = Expand<OptionalUnion<EnsureDefined<Kit.LoadProperties<Awaited<ReturnType<typeof import('./proxy+layout.server.js').load>>>>>>;
 export type LayoutLoad<OutputData extends OutputDataShape<LayoutParentData> = OutputDataShape<LayoutParentData>> = Kit.Load<LayoutParams, LayoutServerData, LayoutParentData, OutputData, LayoutRouteId>;
 export type LayoutLoadEvent = Parameters<LayoutLoad>[0];
 export type LayoutData = Expand<Omit<LayoutParentData, keyof Kit.LoadProperties<Awaited<ReturnType<typeof import('./proxy+layout.js').load>>>> & OptionalUnion<EnsureDefined<Kit.LoadProperties<Awaited<ReturnType<typeof import('./proxy+layout.js').load>>>>>>;
-export type LayoutProps = { data: LayoutData; children: import("svelte").Snippet }
+export type LayoutProps = { params: LayoutParams; data: LayoutData; children: import("svelte").Snippet }
+export type RequestEvent = Kit.RequestEvent<RouteParams, RouteId>;

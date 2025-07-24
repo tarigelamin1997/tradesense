@@ -1,0 +1,90 @@
+# Pod Failure Experiments for TradeSense
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: backend-pod-failure
+  namespace: chaos-mesh
+spec:
+  action: pod-kill
+  mode: one
+  duration: "30s"
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  scheduler:
+    cron: "@every 1h"
+---
+# Pod CPU stress test
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: backend-cpu-stress
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  stressors:
+    cpu:
+      workers: 2
+      load: 80
+  duration: "5m"
+---
+# Pod memory stress test
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: backend-memory-stress
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  stressors:
+    memory:
+      workers: 2
+      size: "256MB"
+  duration: "5m"
+---
+# Container kill experiment
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: redis-container-kill
+  namespace: chaos-mesh
+spec:
+  action: container-kill
+  mode: one
+  containerNames:
+    - redis
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: redis
+  duration: "30s"
+---
+# Pod failure with fixed percentage
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: frontend-pod-failure-percentage
+  namespace: chaos-mesh
+spec:
+  action: pod-failure
+  mode: fixed-percent
+  value: "50"
+  duration: "2m"
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: frontend

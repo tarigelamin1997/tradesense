@@ -1,0 +1,60 @@
+# Kustomization for GitOps with ArgoCD
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tradesense
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - backend-with-external-secrets.yaml
+  - frontend.yaml
+  - postgres.yaml
+  - redis.yaml
+  - ingress.yaml
+
+# External Secrets
+  - external-secrets/external-secrets.yaml
+
+# Image management
+images:
+  - name: tradesense/backend
+    newTag: latest
+  - name: tradesense/frontend  
+    newTag: latest
+
+# Config generation
+configMapGenerator:
+  - name: tradesense-config
+    literals:
+      - ENVIRONMENT=production
+      - API_V1_STR=/api/v1
+      - PROJECT_NAME=TradeSense
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+
+# Patches for production
+patches:
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+
+# Common labels
+commonLabels:
+  app.kubernetes.io/part-of: tradesense
+  app.kubernetes.io/managed-by: argocd
+
+# Common annotations
+commonAnnotations:
+  argocd.argoproj.io/sync-wave: "0"

@@ -1,0 +1,81 @@
+{
+  "title": "Registro de Operaciones",
+  "newTrade": "Nueva Operación",
+  "editTrade": "Editar Operación",
+  "deleteTrade": "Eliminar Operación",
+  "importTrades": "Importar Operaciones",
+  "exportTrades": "Exportar Operaciones",
+  "fields": {
+    "symbol": "Símbolo",
+    "side": "Lado",
+    "quantity": "Cantidad",
+    "entryPrice": "Precio de Entrada",
+    "exitPrice": "Precio de Salida",
+    "entryDate": "Fecha de Entrada",
+    "exitDate": "Fecha de Salida",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "commission": "Comisión",
+    "fees": "Tarifas",
+    "notes": "Notas",
+    "tags": "Etiquetas",
+    "strategy": "Estrategia",
+    "status": "Estado",
+    "pnl": "P&G",
+    "returnPercent": "Retorno %",
+    "riskReward": "Riesgo/Recompensa"
+  },
+  "side": {
+    "buy": "Compra",
+    "sell": "Venta",
+    "long": "Largo",
+    "short": "Corto"
+  },
+  "status": {
+    "open": "Abierta",
+    "closed": "Cerrada",
+    "pending": "Pendiente",
+    "cancelled": "Cancelada",
+    "partial": "Parcial"
+  },
+  "filters": {
+    "all": "Todas las Operaciones",
+    "open": "Operaciones Abiertas",
+    "closed": "Operaciones Cerradas",
+    "winners": "Ganadoras",
+    "losers": "Perdedoras",
+    "today": "Hoy",
+    "thisWeek": "Esta Semana",
+    "thisMonth": "Este Mes",
+    "dateRange": "Rango de Fechas",
+    "symbol": "Por Símbolo",
+    "strategy": "Por Estrategia"
+  },
+  "actions": {
+    "view": "Ver Detalles",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "duplicate": "Duplicar",
+    "close": "Cerrar Operación",
+    "addToJournal": "Agregar al Diario"
+  },
+  "summary": {
+    "totalTrades": "Total de Operaciones",
+    "openTrades": "Operaciones Abiertas",
+    "closedTrades": "Operaciones Cerradas",
+    "totalPnl": "P&G Total",
+    "winRate": "Tasa de Éxito",
+    "avgWin": "Ganancia Promedio",
+    "avgLoss": "Pérdida Promedio",
+    "profitFactor": "Factor de Ganancia"
+  },
+  "messages": {
+    "tradeAdded": "Operación agregada exitosamente",
+    "tradeUpdated": "Operación actualizada exitosamente",
+    "tradeDeleted": "Operación eliminada exitosamente",
+    "tradeClosed": "Operación cerrada exitosamente",
+    "importSuccess": "{{count}} operaciones importadas exitosamente",
+    "exportSuccess": "Operaciones exportadas exitosamente",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar esta operación?"
+  }
+}

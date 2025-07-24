@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tradesense
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: "56.0.0"
+    chart: kube-prometheus-stack
+    helm:
+      releaseName: monitoring
+      values: |
+        grafana:
+          enabled: true
+          adminPassword: admin
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+            hosts:
+              - grafana.tradesense.com
+            tls:
+              - secretName: grafana-tls
+                hosts:
+                  - grafana.tradesense.com
+        prometheus:
+          prometheusSpec:
+            retention: 30d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 50Gi
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+        alertmanager:
+          enabled: true
+          config:
+            route:
+              group_by: ['alertname', 'cluster', 'service']
+              group_wait: 10s
+              group_interval: 10s
+              repeat_interval: 12h
+              receiver: 'slack'
+            receivers:
+            - name: 'slack'
+              slack_configs:
+              - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+                channel: '#alerts'
+                title: 'TradeSense Alert'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true

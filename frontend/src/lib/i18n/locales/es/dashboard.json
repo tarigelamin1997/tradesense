@@ -1,0 +1,52 @@
+{
+  "title": "Panel de Control",
+  "welcome": "¡Bienvenido de nuevo, {{name}}!",
+  "overview": "Resumen",
+  "recentActivity": "Actividad Reciente",
+  "quickActions": "Acciones Rápidas",
+  "metrics": {
+    "totalTrades": "Total de Operaciones",
+    "winRate": "Tasa de Éxito",
+    "profitLoss": "Ganancia/Pérdida",
+    "avgReturn": "Retorno Promedio",
+    "totalVolume": "Volumen Total",
+    "activeTrades": "Operaciones Activas",
+    "todaysPL": "P/G de Hoy",
+    "weeklyPL": "P/G Semanal",
+    "monthlyPL": "P/G Mensual",
+    "yearlyPL": "P/G Anual"
+  },
+  "charts": {
+    "performanceOverTime": "Rendimiento a lo Largo del Tiempo",
+    "profitByStrategy": "Ganancia por Estrategia",
+    "winLossDistribution": "Distribución de Ganancias/Pérdidas",
+    "riskRewardRatio": "Ratio Riesgo/Recompensa",
+    "tradingVolume": "Volumen de Trading",
+    "topPerformers": "Mejores Rendimientos",
+    "worstPerformers": "Peores Rendimientos"
+  },
+  "widgets": {
+    "recentTrades": "Operaciones Recientes",
+    "upcomingAlerts": "Alertas Próximas",
+    "marketOverview": "Resumen del Mercado",
+    "newsAndAnalysis": "Noticias y Análisis",
+    "openPositions": "Posiciones Abiertas",
+    "watchlist": "Lista de Seguimiento"
+  },
+  "empty": {
+    "noData": "No hay datos disponibles",
+    "noTrades": "No hay operaciones aún. ¡Comienza agregando tu primera operación!",
+    "noAlerts": "No hay alertas configuradas",
+    "noPositions": "No hay posiciones abiertas"
+  },
+  "timeframes": {
+    "1d": "1 Día",
+    "1w": "1 Semana",
+    "1m": "1 Mes",
+    "3m": "3 Meses",
+    "6m": "6 Meses",
+    "1y": "1 Año",
+    "ytd": "YTD",
+    "all": "Todo el Tiempo"
+  }
+}

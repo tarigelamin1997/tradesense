@@ -1,0 +1,229 @@
+# Istio Installation Configuration
+# Production-ready values for Istio service mesh
+
+global:
+  # Hub for Istio images
+  hub: docker.io/istio
+  
+  # Default tag for Istio images
+  tag: 1.20.1
+  
+  # Istio mesh configuration
+  mesh:
+    # Enable automatic sidecar injection
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*circuit_breakers.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*_cx_.*"
+        - ".*osconfig.*"
+        - ".*outlier_detection.*"
+      
+      # Tracing configuration
+      defaultProviders:
+        tracing:
+        - "tempo"
+      
+      extensionProviders:
+      - name: "tempo"
+        envoyOtelAls:
+          service: "opentelemetry-collector.istio-system.svc.cluster.local"
+          port: 4317
+      
+      # Access logging
+      accessLogFile: /dev/stdout
+      
+      # Outlier detection
+      outlierDetection:
+        consecutiveErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+      
+      # Connection pool settings
+      connectionPool:
+        tcp:
+          maxConnections: 100
+        http:
+          http2MaxRequests: 100
+          maxRequestsPerConnection: 2
+          h2UpgradePolicy: UPGRADE
+  
+  # Multi-cluster configuration
+  multiCluster:
+    enabled: false
+  
+  # Default resource limits for Istio components
+  defaultResources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 2000m
+      memory: 1024Mi
+
+# Istio control plane configuration
+pilot:
+  autoscaleEnabled: true
+  autoscaleMin: 2
+  autoscaleMax: 5
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2048Mi
+    limits:
+      cpu: 2000m
+      memory: 4096Mi
+  
+  # Environmental variables
+  env:
+    PILOT_ENABLE_WORKLOAD_ENTRY_AUTOREGISTRATION: true
+    PILOT_ENABLE_CROSS_CLUSTER_WORKLOAD_ENTRY: false
+  
+  # CPU targetAverageUtilization for HPA
+  cpu:
+    targetAverageUtilization: 80
+
+# Telemetry v2 configuration
+telemetry:
+  v2:
+    enabled: true
+    prometheus:
+      configOverride:
+        inboundSidecar:
+          disable_host_header_fallback: true
+        outboundSidecar:
+          disable_host_header_fallback: true
+        gateway:
+          disable_host_header_fallback: true
+
+# Gateway configuration
+gateways:
+  istio-ingressgateway:
+    enabled: true
+    
+    # Service type and annotations
+    serviceAnnotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    
+    # Autoscaling
+    autoscaleEnabled: true
+    autoscaleMin: 2
+    autoscaleMax: 10
+    
+    # Resources
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 2000m
+        memory: 1024Mi
+    
+    # Service ports
+    service:
+      type: LoadBalancer
+      ports:
+      - port: 80
+        targetPort: 8080
+        name: http2
+      - port: 443
+        targetPort: 8443
+        name: https
+    
+    # Pod anti-affinity
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - istio-ingressgateway
+            topologyKey: kubernetes.io/hostname
+  
+  istio-egressgateway:
+    enabled: false
+
+# Mixer policy (deprecated in newer versions)
+mixer:
+  policy:
+    enabled: false
+  telemetry:
+    enabled: false
+
+# CNI plugin for automatic sidecar injection
+cni:
+  enabled: true
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# MeshConfig overrides
+meshConfig:
+  # Enable access logs
+  accessLogFile: /dev/stdout
+  
+  # Default config for sidecars
+  defaultConfig:
+    proxyStatsMatcher:
+      inclusionRegexps:
+      - ".*outlier_detection.*"
+      - ".*circuit_breakers.*"
+      - ".*upstream_rq_retry.*"
+      - ".*upstream_rq_pending.*"
+    
+    # Distributed tracing
+    tracing:
+      sampling: 10.0  # 10% sampling rate
+    
+    # Terminate TLS at sidecar
+    terminateDrainDuration: 30s
+    
+    # Discovery refresh rate
+    discoveryRefreshDelay: 10s
+    
+    # Envoy concurrency
+    concurrency: 2
+  
+  # Ingress configuration
+  ingressService: istio-ingressgateway
+  ingressSelector: ingressgateway
+  
+  # Trust domain
+  trustDomain: cluster.local
+  
+  # Enable auto mTLS
+  defaultProviders:
+    tracing:
+    - tempo
+
+# Values for Base component
+base:
+  enableCRDTemplates: false
+  validateHub: docker.io/istio
+
+# Values for istiod component
+istiod:
+  enableAnalysis: true
+
+# Kiali configuration (optional)
+kiali:
+  enabled: false
+
+# Prometheus configuration (we use existing)
+prometheus:
+  enabled: false

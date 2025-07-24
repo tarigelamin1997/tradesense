@@ -1,0 +1,111 @@
+# HTTP Chaos Experiments for TradeSense
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: backend-http-delay
+  namespace: chaos-mesh
+spec:
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  target: Request
+  port: 8000
+  method: GET
+  path: "/api/v1/*"
+  delay: "3s"
+  duration: "5m"
+---
+# HTTP response modification
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: backend-http-abort
+  namespace: chaos-mesh
+spec:
+  mode: fixed-percent
+  value: "20"
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  target: Request
+  port: 8000
+  method: POST
+  path: "/api/v1/orders"
+  abort: true
+  duration: "3m"
+---
+# HTTP status code injection
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: backend-http-500-errors
+  namespace: chaos-mesh
+spec:
+  mode: fixed-percent
+  value: "10"
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  target: Response
+  port: 8000
+  method: GET
+  path: "/api/v1/markets"
+  replace:
+    code: 500
+    body: '{"error": "Internal server error injected by chaos testing"}'
+    headers:
+      Content-Type: "application/json"
+  duration: "2m"
+---
+# HTTP request header modification
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: backend-auth-header-chaos
+  namespace: chaos-mesh
+spec:
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  target: Request
+  port: 8000
+  method: "*"
+  path: "/api/v1/protected/*"
+  replace:
+    headers:
+      Authorization: "Bearer invalid-token-chaos-test"
+  duration: "1m"
+---
+# HTTP body corruption
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: backend-response-corruption
+  namespace: chaos-mesh
+spec:
+  mode: fixed-percent
+  value: "5"
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  target: Response
+  port: 8000
+  method: GET
+  path: "/api/v1/data/*"
+  patch:
+    body:
+      type: JSON
+      value: '{"corrupted": true}'
+  duration: "3m"

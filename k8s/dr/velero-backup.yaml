@@ -1,0 +1,233 @@
+# Velero Backup Configuration for Cluster-wide DR
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: tradesense-velero-backups
+    prefix: cluster
+  config:
+    region: us-east-1
+    s3ForcePathStyle: "false"
+    s3Url: ""
+  credential:
+    name: cloud-credentials
+    key: cloud
+  default: true
+---
+# Volume Snapshot Location
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws
+  config:
+    region: us-east-1
+  credential:
+    name: cloud-credentials
+    key: cloud
+---
+# Schedule for full cluster backup
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-cluster-backup
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  template:
+    ttl: 720h  # 30 days retention
+    includedNamespaces:
+    - tradesense
+    - monitoring
+    - argocd
+    - istio-system
+    excludedResources:
+    - events
+    - events.events.k8s.io
+    includeClusterResources: true
+    storageLocation: default
+    volumeSnapshotLocations:
+    - default
+    hooks:
+      resources:
+      - name: postgres-checkpoint
+        includedNamespaces:
+        - tradesense
+        labelSelector:
+          matchLabels:
+            app: postgres
+        pre:
+        - exec:
+            container: postgres
+            command:
+            - /bin/bash
+            - -c
+            - "psql -U postgres -c 'CHECKPOINT;'"
+            onError: Continue
+            timeout: 30s
+    defaultVolumesToRestic: true
+    metadata:
+      labels:
+        backup-type: full
+        cluster: production
+---
+# Schedule for namespace-specific backup
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: tradesense-app-backup
+  namespace: velero
+spec:
+  schedule: "0 */4 * * *"  # Every 4 hours
+  template:
+    ttl: 168h  # 7 days retention
+    includedNamespaces:
+    - tradesense
+    excludedResources:
+    - events
+    - pods
+    - replicasets.apps
+    labelSelector:
+      matchLabels:
+        backup: "true"
+    storageLocation: default
+    metadata:
+      labels:
+        backup-type: application
+        app: tradesense
+---
+# Backup for persistent volumes
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: persistent-volume-backup
+  namespace: velero
+spec:
+  schedule: "0 */12 * * *"  # Every 12 hours
+  template:
+    ttl: 336h  # 14 days retention
+    includedNamespaces:
+    - tradesense
+    includedResources:
+    - persistentvolumeclaims
+    - persistentvolumes
+    storageLocation: default
+    volumeSnapshotLocations:
+    - default
+    defaultVolumesToRestic: true
+    metadata:
+      labels:
+        backup-type: volumes
+---
+# Pre-backup hook for application quiesce
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-hooks
+  namespace: tradesense
+  labels:
+    velero.io/backup-hook: "true"
+data:
+  pre-backup.sh: |
+    #!/bin/bash
+    # Quiesce application before backup
+    
+    # Scale down non-critical workloads
+    kubectl scale deployment frontend --replicas=1 -n tradesense
+    
+    # Flush Redis
+    redis-cli -h redis -a $REDIS_PASSWORD BGSAVE
+    
+    # PostgreSQL checkpoint
+    PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U postgres -c "CHECKPOINT;"
+    
+    # Wait for operations to complete
+    sleep 10
+  
+  post-backup.sh: |
+    #!/bin/bash
+    # Resume normal operations after backup
+    
+    # Scale up workloads
+    kubectl scale deployment frontend --replicas=3 -n tradesense
+---
+# Restore priority configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restore-priority
+  namespace: velero
+data:
+  priorities.yaml: |
+    # Restore order for dependencies
+    priorities:
+      10: # Infrastructure
+        - namespaces
+        - customresourcedefinitions
+        - clusterroles
+        - clusterrolebindings
+      20: # Storage
+        - persistentvolumes
+        - persistentvolumeclaims
+        - storageclasses
+      30: # Configuration
+        - configmaps
+        - secrets
+        - serviceaccounts
+      40: # Networking
+        - services
+        - ingresses
+        - networkpolicies
+      50: # Workloads
+        - deployments
+        - statefulsets
+        - daemonsets
+      60: # Jobs
+        - jobs
+        - cronjobs
+---
+# Backup validation job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-validation
+  namespace: velero
+spec:
+  schedule: "0 6 * * *"  # Daily at 6 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: velero
+          containers:
+          - name: validator
+            image: velero/velero:v1.12.0
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # List recent backups
+              echo "Recent backups:"
+              velero backup get
+              
+              # Check backup status
+              FAILED=$(velero backup get -o json | jq -r '.items[] | select(.status.phase=="Failed") | .metadata.name')
+              if [ -n "$FAILED" ]; then
+                echo "Failed backups detected: $FAILED"
+                exit 1
+              fi
+              
+              # Validate latest backup
+              LATEST=$(velero backup get -o json | jq -r '.items[0].metadata.name')
+              echo "Validating backup: $LATEST"
+              velero backup describe $LATEST --details
+              
+              # Check backup size and duration
+              velero backup get $LATEST -o json | jq '.status'
+          restartPolicy: OnFailure

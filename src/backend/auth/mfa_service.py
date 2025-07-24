@@ -19,9 +19,9 @@ from core.config import settings
 from models.user import User
 from core.db.session import get_db
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from services.email_service import email_service
-from monitoring.metrics import security_metrics
+from monitoring.security_metrics import security_metrics
 
 
 class MFAMethod:
@@ -58,7 +58,7 @@ class MFAService:
         self.max_attempts = 5
         self.lockout_duration = timedelta(minutes=15)
     
-    async def setup_totp(self, user: User, db: AsyncSession) -> Dict[str, any]:
+    def setup_totp(self, user: User, db: Session) -> Dict[str, any]:
         """Set up TOTP authentication for a user."""
         # Generate secret key
         secret = pyotp.random_base32()
@@ -90,7 +90,7 @@ class MFAService:
         qr_code_b64 = base64.b64encode(img_buffer.getvalue()).decode()
         
         # Store encrypted secret temporarily (not active yet)
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_devices (
                     user_id, device_type, device_name,
@@ -114,7 +114,7 @@ class MFAService:
                 "metadata": {"issuer": self.totp_issuer}
             }
         )
-        await db.commit()
+        db.commit()
         
         return {
             "secret": secret,
@@ -128,10 +128,10 @@ class MFAService:
             }
         }
     
-    async def verify_totp_setup(self, user: User, code: str, db: AsyncSession) -> bool:
+    def verify_totp_setup(self, user: User, code: str, db: Session) -> bool:
         """Verify TOTP setup with initial code."""
         # Get pending TOTP device
-        result = await db.execute(
+        result = db.execute(
             text("""
                 SELECT id, secret_encrypted
                 FROM mfa_devices
@@ -157,7 +157,7 @@ class MFAService:
         
         if totp.verify(code, valid_window=1):
             # Activate device
-            await db.execute(
+            db.execute(
                 text("""
                     UPDATE mfa_devices
                     SET status = 'active',
@@ -169,7 +169,7 @@ class MFAService:
             )
             
             # Enable MFA for user
-            await db.execute(
+            db.execute(
                 text("""
                     UPDATE users
                     SET mfa_enabled = TRUE,
@@ -186,9 +186,9 @@ class MFAService:
             )
             
             # Generate backup codes
-            backup_codes = await self.generate_backup_codes(user, db)
+            backup_codes = self.generate_backup_codes(user, db)
             
-            await db.commit()
+            db.commit()
             
             # Track metric
             security_metrics.mfa_enabled.labels(method=MFAMethod.TOTP).inc()
@@ -197,7 +197,7 @@ class MFAService:
         
         return False
     
-    async def setup_sms(self, user: User, phone_number: str, db: AsyncSession) -> bool:
+    def setup_sms(self, user: User, phone_number: str, db: Session) -> bool:
         """Set up SMS authentication for a user."""
         if not self.twilio_client:
             raise ValueError("SMS service not configured")
@@ -207,7 +207,7 @@ class MFAService:
             phone_number = f"+1{phone_number}"  # Default to US
         
         # Store phone number (pending verification)
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_devices (
                     user_id, device_type, device_name,
@@ -229,21 +229,21 @@ class MFAService:
                 "phone_number": phone_number
             }
         )
-        await db.commit()
+        db.commit()
         
         # Send verification code
-        code = await self._send_sms_code(user, phone_number, db)
+        code = self._send_sms_code(user, phone_number, db)
         
         return code is not None
     
-    async def verify_sms_setup(self, user: User, code: str, db: AsyncSession) -> bool:
+    def verify_sms_setup(self, user: User, code: str, db: Session) -> bool:
         """Verify SMS setup with code."""
         # Verify code
-        is_valid = await self._verify_code(user, MFAMethod.SMS, code, db)
+        is_valid = self._verify_code(user, MFAMethod.SMS, code, db)
         
         if is_valid:
             # Activate SMS device
-            await db.execute(
+            db.execute(
                 text("""
                     UPDATE mfa_devices
                     SET status = 'active',
@@ -259,7 +259,7 @@ class MFAService:
             )
             
             # Enable MFA for user
-            await db.execute(
+            db.execute(
                 text("""
                     UPDATE users
                     SET mfa_enabled = TRUE,
@@ -275,7 +275,7 @@ class MFAService:
                 }
             )
             
-            await db.commit()
+            db.commit()
             
             # Track metric
             security_metrics.mfa_enabled.labels(method=MFAMethod.SMS).inc()
@@ -284,7 +284,7 @@ class MFAService:
         
         return False
     
-    async def generate_backup_codes(self, user: User, db: AsyncSession) -> List[str]:
+    def generate_backup_codes(self, user: User, db: Session) -> List[str]:
         """Generate backup recovery codes for a user."""
         codes = []
         
@@ -298,7 +298,7 @@ class MFAService:
         
         # Store hashed codes
         for code in codes:
-            await db.execute(
+            db.execute(
                 text("""
                     INSERT INTO mfa_backup_codes (
                         user_id, code_hash, status
@@ -312,11 +312,11 @@ class MFAService:
                 }
             )
         
-        await db.commit()
+        db.commit()
         
         return codes
     
-    async def send_mfa_challenge(self, user: User, method: str, db: AsyncSession) -> Dict[str, any]:
+    def send_mfa_challenge(self, user: User, method: str, db: Session) -> Dict[str, any]:
         """Send MFA challenge to user."""
         if method == MFAMethod.TOTP:
             # No action needed, user generates code
@@ -327,7 +327,7 @@ class MFAService:
         
         elif method == MFAMethod.SMS:
             # Get phone number
-            result = await db.execute(
+            result = db.execute(
                 text("""
                     SELECT phone_number
                     FROM mfa_devices
@@ -347,7 +347,7 @@ class MFAService:
                 raise ValueError("SMS device not found")
             
             # Send code
-            await self._send_sms_code(user, device.phone_number, db)
+            self._send_sms_code(user, device.phone_number, db)
             
             return {
                 "method": MFAMethod.SMS,
@@ -357,7 +357,7 @@ class MFAService:
         
         elif method == MFAMethod.EMAIL:
             # Send email code
-            await self._send_email_code(user, db)
+            self._send_email_code(user, db)
             
             return {
                 "method": MFAMethod.EMAIL,
@@ -373,7 +373,7 @@ class MFAService:
         else:
             raise ValueError(f"Unsupported MFA method: {method}")
     
-    async def verify_mfa_code(
+    def verify_mfa_code(
         self, 
         user: User, 
         method: str, 
@@ -382,12 +382,12 @@ class MFAService:
     ) -> Tuple[bool, Optional[str]]:
         """Verify MFA code."""
         # Check rate limiting
-        if await self._is_rate_limited(user, db):
+        if self._is_rate_limited(user, db):
             return False, "Too many attempts. Please try again later."
         
         if method == MFAMethod.TOTP:
             # Get TOTP secret
-            result = await db.execute(
+            result = db.execute(
                 text("""
                     SELECT secret_encrypted
                     FROM mfa_devices
@@ -411,32 +411,32 @@ class MFAService:
             totp = pyotp.TOTP(secret)
             
             if totp.verify(code, valid_window=1):
-                await self._record_successful_auth(user, method, db)
+                self._record_successful_auth(user, method, db)
                 return True, None
             
         elif method in [MFAMethod.SMS, MFAMethod.EMAIL]:
             # Verify time-based code
-            is_valid = await self._verify_code(user, method, code, db)
+            is_valid = self._verify_code(user, method, code, db)
             if is_valid:
-                await self._record_successful_auth(user, method, db)
+                self._record_successful_auth(user, method, db)
                 return True, None
             
         elif method == MFAMethod.BACKUP_CODES:
             # Verify backup code
-            is_valid = await self._verify_backup_code(user, code, db)
+            is_valid = self._verify_backup_code(user, code, db)
             if is_valid:
-                await self._record_successful_auth(user, method, db)
+                self._record_successful_auth(user, method, db)
                 return True, None
         
         # Record failed attempt
-        await self._record_failed_attempt(user, method, db)
+        self._record_failed_attempt(user, method, db)
         
         return False, "Invalid code"
     
-    async def disable_mfa(self, user: User, db: AsyncSession) -> bool:
+    def disable_mfa(self, user: User, db: Session) -> bool:
         """Disable all MFA for a user."""
         # Deactivate all devices
-        await db.execute(
+        db.execute(
             text("""
                 UPDATE mfa_devices
                 SET status = 'disabled',
@@ -448,7 +448,7 @@ class MFAService:
         )
         
         # Deactivate backup codes
-        await db.execute(
+        db.execute(
             text("""
                 UPDATE mfa_backup_codes
                 SET status = 'disabled'
@@ -459,7 +459,7 @@ class MFAService:
         )
         
         # Update user
-        await db.execute(
+        db.execute(
             text("""
                 UPDATE users
                 SET mfa_enabled = FALSE,
@@ -469,16 +469,16 @@ class MFAService:
             {"user_id": user.id}
         )
         
-        await db.commit()
+        db.commit()
         
         # Track metric
         security_metrics.mfa_disabled.inc()
         
         return True
     
-    async def list_mfa_devices(self, user: User, db: AsyncSession) -> List[Dict[str, any]]:
+    def list_mfa_devices(self, user: User, db: Session) -> List[Dict[str, any]]:
         """List all MFA devices for a user."""
-        result = await db.execute(
+        result = db.execute(
             text("""
                 SELECT 
                     id, device_type, device_name, status,
@@ -510,7 +510,7 @@ class MFAService:
             })
         
         # Check backup codes
-        result = await db.execute(
+        result = db.execute(
             text("""
                 SELECT COUNT(*) as unused_codes
                 FROM mfa_backup_codes
@@ -532,12 +532,12 @@ class MFAService:
         return devices
     
     # Helper methods
-    async def _send_sms_code(self, user: User, phone_number: str, db: AsyncSession) -> Optional[str]:
+    def _send_sms_code(self, user: User, phone_number: str, db: Session) -> Optional[str]:
         """Send SMS verification code."""
         code = ''.join(secrets.choice('0123456789') for _ in range(6))
         
         # Store code
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_verification_codes (
                     user_id, code_hash, method, expires_at
@@ -552,7 +552,7 @@ class MFAService:
                 "expires_at": datetime.utcnow() + timedelta(minutes=10)
             }
         )
-        await db.commit()
+        db.commit()
         
         # Send SMS
         try:
@@ -571,12 +571,12 @@ class MFAService:
             print(f"SMS send error: {e}")
             return None
     
-    async def _send_email_code(self, user: User, db: AsyncSession) -> Optional[str]:
+    def _send_email_code(self, user: User, db: Session) -> Optional[str]:
         """Send email verification code."""
         code = ''.join(secrets.choice('0123456789') for _ in range(6))
         
         # Store code
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_verification_codes (
                     user_id, code_hash, method, expires_at
@@ -591,7 +591,7 @@ class MFAService:
                 "expires_at": datetime.utcnow() + timedelta(minutes=10)
             }
         )
-        await db.commit()
+        db.commit()
         
         # Send email
         subject = "TradeSense Verification Code"
@@ -603,7 +603,7 @@ class MFAService:
         <p>If you didn't request this code, please ignore this email.</p>
         """
         
-        await email_service.send_email(
+        email_service.send_email(
             to_email=user.email,
             subject=subject,
             body=body,
@@ -615,9 +615,9 @@ class MFAService:
         
         return code
     
-    async def _verify_code(self, user: User, method: str, code: str, db: AsyncSession) -> bool:
+    def _verify_code(self, user: User, method: str, code: str, db: Session) -> bool:
         """Verify a time-based code."""
-        result = await db.execute(
+        result = db.execute(
             text("""
                 SELECT id
                 FROM mfa_verification_codes
@@ -639,7 +639,7 @@ class MFAService:
         code_record = result.first()
         if code_record:
             # Mark as used
-            await db.execute(
+            db.execute(
                 text("""
                     UPDATE mfa_verification_codes
                     SET used_at = NOW()
@@ -647,17 +647,17 @@ class MFAService:
                 """),
                 {"id": code_record.id}
             )
-            await db.commit()
+            db.commit()
             return True
         
         return False
     
-    async def _verify_backup_code(self, user: User, code: str, db: AsyncSession) -> bool:
+    def _verify_backup_code(self, user: User, code: str, db: Session) -> bool:
         """Verify a backup code."""
         # Normalize code (remove dashes)
         normalized_code = code.replace('-', '').upper()
         
-        result = await db.execute(
+        result = db.execute(
             text("""
                 SELECT id
                 FROM mfa_backup_codes
@@ -675,7 +675,7 @@ class MFAService:
         backup_code = result.first()
         if backup_code:
             # Mark as used
-            await db.execute(
+            db.execute(
                 text("""
                     UPDATE mfa_backup_codes
                     SET status = 'used',
@@ -684,7 +684,7 @@ class MFAService:
                 """),
                 {"id": backup_code.id}
             )
-            await db.commit()
+            db.commit()
             
             # Track metric
             security_metrics.backup_codes_used.inc()
@@ -693,11 +693,11 @@ class MFAService:
         
         return False
     
-    async def _is_rate_limited(self, user: User, db: AsyncSession) -> bool:
+    def _is_rate_limited(self, user: User, db: Session) -> bool:
         """Check if user is rate limited."""
         cutoff_time = datetime.utcnow() - self.lockout_duration
         
-        result = await db.execute(
+        result = db.execute(
             text("""
                 SELECT COUNT(*) as failed_attempts
                 FROM mfa_auth_attempts
@@ -714,9 +714,9 @@ class MFAService:
         failed_attempts = result.scalar()
         return failed_attempts >= self.max_attempts
     
-    async def _record_successful_auth(self, user: User, method: str, db: AsyncSession):
+    def _record_successful_auth(self, user: User, method: str, db: Session):
         """Record successful MFA authentication."""
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_auth_attempts (
                     user_id, method, success, attempted_at
@@ -731,7 +731,7 @@ class MFAService:
         )
         
         # Update device last used
-        await db.execute(
+        db.execute(
             text("""
                 UPDATE mfa_devices
                 SET last_used_at = NOW()
@@ -745,7 +745,7 @@ class MFAService:
             }
         )
         
-        await db.commit()
+        db.commit()
         
         # Track metric
         security_metrics.mfa_verifications.labels(
@@ -753,9 +753,9 @@ class MFAService:
             result="success"
         ).inc()
     
-    async def _record_failed_attempt(self, user: User, method: str, db: AsyncSession):
+    def _record_failed_attempt(self, user: User, method: str, db: Session):
         """Record failed MFA attempt."""
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_auth_attempts (
                     user_id, method, success, attempted_at
@@ -768,7 +768,7 @@ class MFAService:
                 "method": method
             }
         )
-        await db.commit()
+        db.commit()
         
         # Track metric
         security_metrics.mfa_verifications.labels(

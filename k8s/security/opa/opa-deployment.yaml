@@ -1,0 +1,222 @@
+# OPA Deployment with Kubernetes Admission Controller
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  namespace: opa
+  labels:
+    app: opa
+spec:
+  selector:
+    app: opa
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: opa
+  labels:
+    app: opa
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8181"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: opa
+      containers:
+      - name: opa
+        image: openpolicyagent/opa:0.59.0-envoy
+        ports:
+        - containerPort: 8443
+          name: https
+        - containerPort: 8181
+          name: http-metrics
+        args:
+          - "run"
+          - "--server"
+          - "--tls-cert-file=/certs/tls.crt"
+          - "--tls-private-key-file=/certs/tls.key"
+          - "--addr=0.0.0.0:8181"
+          - "--addr=https://0.0.0.0:8443"
+          - "--diagnostic-addr=0.0.0.0:8282"
+          - "--set=plugins.envoy_ext_authz_grpc.addr=:9191"
+          - "--set=plugins.envoy_ext_authz_grpc.query=data.envoy.authz.allow"
+          - "--set=decision_logs.console=true"
+          - "--set=status.console=true"
+          - "--set=services.authz.url=https://example.com"
+          - "/policies"
+        volumeMounts:
+        - name: opa-policies
+          mountPath: /policies
+          readOnly: true
+        - name: opa-certs
+          mountPath: /certs
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health?plugins&bundle
+            port: 8282
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health?plugins&bundle
+            port: 8282
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      - name: kube-mgmt
+        image: openpolicyagent/kube-mgmt:8.5.3
+        args:
+          - "--replicate-cluster=v1/namespaces"
+          - "--replicate=v1/pods"
+          - "--replicate=v1/services"
+          - "--replicate=apps/v1/deployments"
+          - "--replicate=networking.k8s.io/v1/ingresses"
+          - "--replicate=v1/configmaps"
+          - "--policies=opa/policies"
+          - "--require-policy-label=true"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      volumes:
+      - name: opa-policies
+        configMap:
+          name: opa-policies
+      - name: opa-certs
+        secret:
+          secretName: opa-tls
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - opa
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opa
+  namespace: opa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: opa-viewer
+rules:
+- apiGroups: [""]
+  resources: ["namespaces", "pods", "services", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: opa-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: opa-viewer
+subjects:
+- kind: ServiceAccount
+  name: opa
+  namespace: opa
+---
+# Admission Webhook Configuration
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: opa-validating-webhook
+webhooks:
+- name: validating.opa.admission
+  namespaceSelector:
+    matchExpressions:
+    - key: openpolicyagent.org/webhook
+      operator: NotIn
+      values:
+      - ignore
+  rules:
+  - apiGroups: ["*"]
+    apiVersions: ["*"]
+    operations: ["CREATE", "UPDATE"]
+    resources:
+    - pods
+    - services
+    - deployments
+    - replicasets
+    - ingresses
+    scope: "Namespaced"
+  clientConfig:
+    service:
+      namespace: opa
+      name: opa
+      path: "/v1/data/kubernetes/admission"
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: opa-mutating-webhook
+webhooks:
+- name: mutating.opa.admission
+  namespaceSelector:
+    matchExpressions:
+    - key: openpolicyagent.org/webhook
+      operator: NotIn
+      values:
+      - ignore
+  rules:
+  - apiGroups: [""]
+    apiVersions: ["v1"]
+    operations: ["CREATE", "UPDATE"]
+    resources:
+    - pods
+    scope: "Namespaced"
+  clientConfig:
+    service:
+      namespace: opa
+      name: opa
+      path: "/v1/data/kubernetes/mutating"
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10

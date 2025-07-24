@@ -1,0 +1,52 @@
+{
+  "title": "Dasbor",
+  "welcome": "Selamat datang kembali, {{name}}!",
+  "overview": "Ringkasan",
+  "recentActivity": "Aktivitas Terkini",
+  "quickActions": "Aksi Cepat",
+  "metrics": {
+    "totalTrades": "Total Perdagangan",
+    "winRate": "Tingkat Kemenangan",
+    "profitLoss": "Untung/Rugi",
+    "avgReturn": "Return Rata-rata",
+    "totalVolume": "Volume Total",
+    "activeTrades": "Perdagangan Aktif",
+    "todaysPL": "U/R Hari Ini",
+    "weeklyPL": "U/R Mingguan",
+    "monthlyPL": "U/R Bulanan",
+    "yearlyPL": "U/R Tahunan"
+  },
+  "charts": {
+    "performanceOverTime": "Performa Sepanjang Waktu",
+    "profitByStrategy": "Profit per Strategi",
+    "winLossDistribution": "Distribusi Menang/Kalah",
+    "riskRewardRatio": "Rasio Risiko/Imbalan",
+    "tradingVolume": "Volume Perdagangan",
+    "topPerformers": "Performa Terbaik",
+    "worstPerformers": "Performa Terburuk"
+  },
+  "widgets": {
+    "recentTrades": "Perdagangan Terkini",
+    "upcomingAlerts": "Peringatan Mendatang",
+    "marketOverview": "Ikhtisar Pasar",
+    "newsAndAnalysis": "Berita & Analisis",
+    "openPositions": "Posisi Terbuka",
+    "watchlist": "Daftar Pantau"
+  },
+  "empty": {
+    "noData": "Tidak ada data tersedia",
+    "noTrades": "Belum ada perdagangan. Mulailah dengan menambahkan perdagangan pertama Anda!",
+    "noAlerts": "Tidak ada peringatan yang ditetapkan",
+    "noPositions": "Tidak ada posisi terbuka"
+  },
+  "timeframes": {
+    "1d": "1 Hari",
+    "1w": "1 Minggu",
+    "1m": "1 Bulan",
+    "3m": "3 Bulan",
+    "6m": "6 Bulan",
+    "1y": "1 Tahun",
+    "ytd": "YTD",
+    "all": "Sepanjang Waktu"
+  }
+}

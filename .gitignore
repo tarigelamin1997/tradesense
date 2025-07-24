@@ -229,3 +229,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .vercel
+src/backend/app/core/database.py

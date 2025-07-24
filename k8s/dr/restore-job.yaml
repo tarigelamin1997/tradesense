@@ -1,0 +1,278 @@
+# Disaster Recovery - Database Restore Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-restore
+  namespace: tradesense
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-5"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: postgres-restore
+        job-type: restore
+    spec:
+      serviceAccountName: backup-sa
+      restartPolicy: OnFailure
+      initContainers:
+      # Wait for PostgreSQL to be ready
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        command:
+        - /bin/sh
+        - -c
+        - |
+          until pg_isready -h postgres -U postgres; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+      containers:
+      - name: postgres-restore
+        image: postgres:15-alpine
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: PGHOST
+          value: postgres
+        - name: PGUSER
+          value: postgres
+        - name: PGDATABASE
+          value: tradesense
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: backup-aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backup-aws-credentials
+              key: secret-access-key
+        - name: S3_BUCKET
+          value: tradesense-backups
+        - name: S3_PREFIX
+          value: postgres
+        - name: RESTORE_FROM
+          value: "latest"  # Can be overridden to specific backup
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Starting PostgreSQL restore..."
+          
+          # Install AWS CLI
+          apk add --no-cache aws-cli
+          
+          # Determine which backup to restore
+          if [ "${RESTORE_FROM}" = "latest" ]; then
+            echo "Fetching latest backup name..."
+            aws s3 cp "s3://${S3_BUCKET}/${S3_PREFIX}/latest.txt" /tmp/latest.txt
+            BACKUP_NAME=$(cat /tmp/latest.txt)
+          else
+            BACKUP_NAME="${RESTORE_FROM}"
+          fi
+          
+          echo "Restoring from backup: ${BACKUP_NAME}"
+          BACKUP_PATH="/tmp/${BACKUP_NAME}"
+          
+          # Download backup from S3
+          echo "Downloading backup from S3..."
+          aws s3 cp "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_NAME}" "${BACKUP_PATH}"
+          
+          # Verify backup integrity
+          echo "Verifying backup integrity..."
+          if ! gzip -t "${BACKUP_PATH}" 2>/dev/null; then
+            if ! file "${BACKUP_PATH}" | grep -q "PostgreSQL custom database dump"; then
+              echo "ERROR: Backup file is corrupted!"
+              exit 1
+            fi
+          fi
+          
+          # Check if database exists
+          if psql -h ${PGHOST} -U ${PGUSER} -lqt | cut -d \| -f 1 | grep -qw ${PGDATABASE}; then
+            echo "WARNING: Database ${PGDATABASE} already exists!"
+            echo "Creating backup of existing database..."
+            pg_dump -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} \
+              --format=custom --compress=9 \
+              --file="/tmp/pre-restore-backup-$(date +%Y%m%d-%H%M%S).dump"
+            
+            # Drop existing database
+            echo "Dropping existing database..."
+            psql -h ${PGHOST} -U ${PGUSER} -c "DROP DATABASE IF EXISTS ${PGDATABASE};"
+          fi
+          
+          # Create new database
+          echo "Creating database..."
+          psql -h ${PGHOST} -U ${PGUSER} -c "CREATE DATABASE ${PGDATABASE};"
+          
+          # Restore database
+          echo "Restoring database..."
+          pg_restore -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} \
+            --verbose --no-owner --no-acl \
+            --if-exists --clean \
+            "${BACKUP_PATH}"
+          
+          # Verify restoration
+          echo "Verifying restoration..."
+          TABLES=$(psql -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';")
+          echo "Restored ${TABLES} tables"
+          
+          # Run post-restore tasks
+          echo "Running post-restore tasks..."
+          psql -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} <<EOF
+          -- Update sequences
+          SELECT setval(pg_get_serial_sequence(table_name, column_name), 
+                       (SELECT MAX(column_name::regclass) FROM table_name::regclass))
+          FROM information_schema.columns
+          WHERE column_default LIKE 'nextval%';
+          
+          -- Analyze tables for optimizer
+          ANALYZE;
+          
+          -- Check data integrity
+          SELECT 'Users:', COUNT(*) FROM users
+          UNION ALL
+          SELECT 'Orders:', COUNT(*) FROM orders
+          UNION ALL
+          SELECT 'Trades:', COUNT(*) FROM trades;
+          EOF
+          
+          echo "PostgreSQL restore completed successfully!"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 200m
+          limits:
+            memory: 2Gi
+            cpu: 1000m
+        volumeMounts:
+        - name: restore-temp
+          mountPath: /tmp
+      volumes:
+      - name: restore-temp
+        emptyDir:
+          sizeLimit: 20Gi
+---
+# Redis Restore Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-restore
+  namespace: tradesense
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: redis-restore
+        job-type: restore
+    spec:
+      serviceAccountName: backup-sa
+      restartPolicy: OnFailure
+      containers:
+      - name: redis-restore
+        image: redis:7-alpine
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: REDIS_HOST
+          value: redis
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: password
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: backup-aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backup-aws-credentials
+              key: secret-access-key
+        - name: S3_BUCKET
+          value: tradesense-backups
+        - name: S3_PREFIX
+          value: redis
+        - name: RESTORE_FROM
+          value: "latest"
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "Starting Redis restore..."
+          
+          # Install AWS CLI
+          apk add --no-cache aws-cli
+          
+          # Determine which backup to restore
+          if [ "${RESTORE_FROM}" = "latest" ]; then
+            aws s3 cp "s3://${S3_BUCKET}/${S3_PREFIX}/latest.txt" /tmp/latest.txt
+            BACKUP_NAME=$(cat /tmp/latest.txt)
+          else
+            BACKUP_NAME="${RESTORE_FROM}"
+          fi
+          
+          echo "Restoring from backup: ${BACKUP_NAME}"
+          BACKUP_PATH="/tmp/${BACKUP_NAME}"
+          
+          # Download backup
+          aws s3 cp "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_NAME}" "${BACKUP_PATH}"
+          
+          # Decompress backup
+          gunzip "${BACKUP_PATH}"
+          RDB_PATH="${BACKUP_PATH%.gz}"
+          
+          # Stop Redis saves during restore
+          redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} -a ${REDIS_PASSWORD} CONFIG SET save ""
+          
+          # Clear existing data
+          echo "Clearing existing Redis data..."
+          redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} -a ${REDIS_PASSWORD} FLUSHALL
+          
+          # Restore data using DEBUG RELOAD
+          echo "Restoring Redis data..."
+          redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} -a ${REDIS_PASSWORD} --rdb "${RDB_PATH}" 
+          
+          # Re-enable saves
+          redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} -a ${REDIS_PASSWORD} CONFIG SET save "900 1 300 10 60 10000"
+          
+          # Verify restoration
+          echo "Verifying restoration..."
+          KEY_COUNT=$(redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} -a ${REDIS_PASSWORD} DBSIZE | awk '{print $1}')
+          echo "Restored ${KEY_COUNT} keys"
+          
+          echo "Redis restore completed!"
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 1Gi
+            cpu: 500m
+        volumeMounts:
+        - name: restore-temp
+          mountPath: /tmp
+      volumes:
+      - name: restore-temp
+        emptyDir:
+          sizeLimit: 5Gi

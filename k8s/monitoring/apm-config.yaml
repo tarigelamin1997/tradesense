@@ -1,0 +1,404 @@
+# Application Performance Monitoring Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apm-config
+  namespace: monitoring
+data:
+  # Datadog APM Configuration
+  datadog-apm.yaml: |
+    # Datadog Agent configuration
+    api_key: ${DD_API_KEY}
+    site: datadoghq.com
+    
+    # APM Configuration
+    apm_config:
+      enabled: true
+      env: ${ENVIRONMENT}
+      
+      # Service mapping
+      service_mapping:
+        - frontend: tradesense-frontend
+        - backend: tradesense-backend
+        - postgres: tradesense-database
+        - redis: tradesense-cache
+      
+      # Sampling rules
+      trace_sampling_rules:
+        - service: tradesense-backend
+          name: "GET /api/v1/health"
+          sample_rate: 0.1
+        - service: tradesense-backend
+          name: "POST /api/v1/orders"
+          sample_rate: 1.0  # Sample all order transactions
+        - service: tradesense-*
+          sample_rate: 0.2  # Default 20% sampling
+      
+      # Performance thresholds
+      analyzed_spans:
+        - service: tradesense-backend
+          operation: "sql.query"
+          threshold: 100ms
+        - service: tradesense-backend
+          operation: "http.request"
+          threshold: 500ms
+        - service: tradesense-frontend
+          operation: "resource.fetch"
+          threshold: 1000ms
+    
+    # Logs configuration
+    logs_config:
+      enabled: true
+      container_collect_all: true
+      auto_multi_line_detection: true
+      
+    # Process monitoring
+    process_config:
+      enabled: true
+      process_discovery:
+        enabled: true
+    
+    # Network monitoring
+    network_config:
+      enabled: true
+    
+    # Runtime metrics
+    runtime_metrics_enabled: true
+    
+    # Profiling
+    profiling:
+      enabled: true
+      cpu_enabled: true
+      heap_enabled: true
+    
+    # Custom metrics
+    dogstatsd:
+      port: 8125
+      non_local_traffic: true
+
+  # OpenTelemetry Collector Configuration for APM
+  otel-collector-apm.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      
+      # Prometheus metrics receiver
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'tradesense-metrics'
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+      
+      # Kubernetes events
+      k8s_events:
+        namespaces: [tradesense]
+    
+    processors:
+      # Add resource attributes
+      resource:
+        attributes:
+          - key: environment
+            value: ${ENVIRONMENT}
+            action: upsert
+          - key: service.namespace
+            value: tradesense
+            action: upsert
+      
+      # Batch processing
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+      
+      # Memory limiter
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 1024
+        spike_limit_mib: 256
+      
+      # Span metrics
+      spanmetrics:
+        metrics_exporter: prometheus
+        latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: service.version
+      
+      # Tail sampling
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 10000
+        expected_new_traces_per_sec: 100
+        policies:
+          - name: errors-policy
+            type: status_code
+            status_code:
+              status_codes: [ERROR]
+          - name: slow-traces-policy
+            type: latency
+            latency:
+              threshold_ms: 1000
+          - name: important-endpoints
+            type: string_attribute
+            string_attribute:
+              key: http.url
+              values: ["/api/v1/orders", "/api/v1/trades", "/api/v1/payments"]
+          - name: probabilistic-policy
+            type: probabilistic
+            probabilistic:
+              sampling_percentage: 10
+    
+    exporters:
+      # Datadog exporter
+      datadog:
+        api:
+          key: ${DD_API_KEY}
+          site: datadoghq.com
+        metrics:
+          resource_attributes_as_tags: true
+        traces:
+          span_name_as_resource_name: true
+          span_name_remappings:
+            http.request: "{{http.method}} {{http.route}}"
+      
+      # Prometheus exporter for metrics
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        resource_to_telemetry_conversion:
+          enabled: true
+      
+      # Tempo exporter for traces
+      otlp/tempo:
+        endpoint: tempo-distributor.monitoring:4317
+        tls:
+          insecure: true
+      
+      # Debug exporter
+      logging:
+        loglevel: info
+        sampling_initial: 10
+        sampling_thereafter: 100
+    
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, tail_sampling, batch]
+          exporters: [datadog, otlp/tempo]
+        
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [memory_limiter, resource, batch]
+          exporters: [datadog, prometheus]
+        
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, batch]
+          exporters: [datadog]
+      
+      extensions: [health_check, pprof, zpages]
+
+---
+# Datadog Agent DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/datadog-agent: unconfined
+    spec:
+      serviceAccountName: datadog-agent
+      containers:
+      - name: datadog-agent
+        image: gcr.io/datadoghq/agent:7
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 200m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+        ports:
+        - containerPort: 8125
+          name: dogstatsd
+          protocol: UDP
+        - containerPort: 8126
+          name: apm
+          protocol: TCP
+        env:
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_APM_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_SYSTEM_PROBE_ENABLED
+          value: "true"
+        - name: DD_RUNTIME_METRICS_ENABLED
+          value: "true"
+        volumeMounts:
+        - name: dockersocket
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        - name: procdir
+          mountPath: /host/proc
+          readOnly: true
+        - name: cgroups
+          mountPath: /host/sys/fs/cgroup
+          readOnly: true
+        - name: dd-agent-config
+          mountPath: /etc/datadog-agent
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: procdir
+        hostPath:
+          path: /proc
+      - name: cgroups
+        hostPath:
+          path: /sys/fs/cgroup
+      - name: dd-agent-config
+        configMap:
+          name: datadog-agent-config
+---
+# ServiceAccount for Datadog
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-agent
+  namespace: monitoring
+---
+# ClusterRole for Datadog
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-agent
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  - endpoints
+  - pods
+  - nodes
+  - namespaces
+  - componentstatuses
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get"]
+- apiGroups: [""]
+  resources:
+  - nodes/metrics
+  - nodes/spec
+  - nodes/proxy
+  - nodes/stats
+  verbs: ["get"]
+- apiGroups: [""]
+  resources:
+  - endpoints
+  verbs: ["get"]
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  - replicasets
+  - daemonsets
+  - statefulsets
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  - cronjobs
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources:
+  - horizontalpodautoscalers
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["policy"]
+  resources:
+  - poddisruptionbudgets
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["storage.k8s.io"]
+  resources:
+  - storageclasses
+  - volumeattachments
+  verbs: ["get", "list", "watch"]
+---
+# ClusterRoleBinding for Datadog
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-agent
+subjects:
+- kind: ServiceAccount
+  name: datadog-agent
+  namespace: monitoring
+---
+# Service for Datadog APM
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-apm
+  namespace: monitoring
+spec:
+  selector:
+    app: datadog-agent
+  ports:
+  - name: apm
+    port: 8126
+    targetPort: 8126
+    protocol: TCP
+  - name: dogstatsd
+    port: 8125
+    targetPort: 8125
+    protocol: UDP

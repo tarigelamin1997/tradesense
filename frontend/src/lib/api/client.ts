@@ -3,7 +3,7 @@ import { goto } from '$app/navigation';
 import type { ApiError, ApiResponse } from '$lib/types';
 
 // Use environment variable for API URL, fallback to empty string for Vite proxy
-const API_BASE_URL = browser ? (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '') : '';
+const API_BASE_URL = browser ? (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000') : '';
 
 interface RequestOptions extends RequestInit {
 	params?: Record<string, any>;
@@ -23,6 +23,11 @@ class ApiClient {
 
 	// Build URL with query params
 	private buildUrl(endpoint: string, params?: Record<string, any>): string {
+		// Ensure endpoint starts with /
+		if (!endpoint.startsWith('/')) {
+			endpoint = '/' + endpoint;
+		}
+		
 		const url = new URL(`${API_BASE_URL}${endpoint}`, window.location.origin);
 		
 		if (params) {
@@ -79,6 +84,8 @@ class ApiClient {
 			}
 		} else if (response.status === 429) {
 			// Rate limit hit
+			const retryAfter = response.headers.get('Retry-After');
+			error.retryAfter = retryAfter ? parseInt(retryAfter) : undefined;
 			window.dispatchEvent(new CustomEvent('api:rate-limit', { detail: error }));
 		}
 		
@@ -166,6 +173,16 @@ class ApiClient {
 					code: 'TIMEOUT',
 					statusCode: 0,
 					details: { timeout }
+				} as ApiError;
+			}
+			
+			// Network error (backend not running)
+			if (error instanceof TypeError && error.message.includes('fetch')) {
+				throw {
+					message: 'Unable to connect to server. Please ensure the backend is running.',
+					code: 'NETWORK_ERROR',
+					statusCode: 0,
+					details: { originalError: error.message }
 				} as ApiError;
 			}
 			

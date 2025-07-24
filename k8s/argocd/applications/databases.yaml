@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: databases
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tradesense
+  source:
+    repoURL: https://github.com/tarigelamin1997/tradesense.git
+    targetRevision: HEAD
+    path: k8s
+    directory:
+      include: "{postgres.yaml,redis.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tradesense
+  syncPolicy:
+    automated:
+      prune: false  # Don't auto-prune databases
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ApplyOutOfSyncOnly=true
+  # Don't delete databases on app deletion
+  finalizers: []

@@ -1,0 +1,38 @@
+# OpenTelemetry Dependencies for Distributed Tracing
+
+# Core OpenTelemetry packages
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-instrumentation==0.42b0
+
+# OTLP Exporter for sending traces to Tempo
+opentelemetry-exporter-otlp==1.21.0
+opentelemetry-exporter-otlp-proto-grpc==1.21.0
+opentelemetry-exporter-otlp-proto-http==1.21.0
+
+# Automatic instrumentation for frameworks
+opentelemetry-instrumentation-fastapi==0.42b0
+opentelemetry-instrumentation-sqlalchemy==0.42b0
+opentelemetry-instrumentation-redis==0.42b0
+opentelemetry-instrumentation-httpx==0.42b0
+opentelemetry-instrumentation-requests==0.42b0
+opentelemetry-instrumentation-logging==0.42b0
+opentelemetry-instrumentation-asyncio==0.42b0
+opentelemetry-instrumentation-psycopg2==0.42b0
+
+# Propagators for trace context
+opentelemetry-propagator-b3==1.21.0
+opentelemetry-propagator-jaeger==1.21.0
+
+# Semantic conventions
+opentelemetry-semantic-conventions==0.42b0
+
+# Utilities
+opentelemetry-util-http==0.42b0
+
+# For correlation with logs
+opentelemetry-instrumentation-structlog==0.42b0
+
+# For AWS X-Ray integration (optional)
+# opentelemetry-propagator-aws-xray==1.0.1
+# opentelemetry-sdk-extension-aws==2.0.1

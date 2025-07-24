@@ -1,0 +1,244 @@
+# Branch Protection Rules Configuration
+# This file documents the required branch protection settings
+# Apply these settings via GitHub UI or API
+
+branches:
+  main:
+    # Require pull request reviews before merging
+    required_pull_request_reviews:
+      required_approving_review_count: 2
+      dismiss_stale_reviews: true
+      require_code_owner_reviews: true
+      dismissal_restrictions:
+        users: ["cto", "vp-engineering"]
+        teams: ["senior-engineers"]
+    
+    # Require status checks to pass before merging
+    required_status_checks:
+      strict: true  # Require branches to be up to date before merging
+      contexts:
+        # CI/CD checks
+        - "continuous-integration/build"
+        - "continuous-integration/test-unit"
+        - "continuous-integration/test-integration"
+        - "continuous-integration/test-e2e"
+        
+        # Security checks
+        - "security/snyk"
+        - "security/trivy"
+        - "security/sonarcloud"
+        - "security/dependency-check"
+        
+        # Code quality
+        - "codecov/patch"
+        - "codecov/project"
+        - "linting/eslint"
+        - "linting/black"
+        
+        # Infrastructure validation
+        - "terraform/plan"
+        - "kubernetes/validate"
+    
+    # Enforce all configured restrictions for administrators
+    enforce_admins: true
+    
+    # Restrict who can push to this branch
+    restrictions:
+      users: []
+      teams: ["release-team"]
+      apps: ["dependabot", "github-actions"]
+    
+    # Allow force pushes (use with extreme caution)
+    allow_force_pushes: false
+    
+    # Allow deletions
+    allow_deletions: false
+    
+    # Require signed commits
+    required_signatures: true
+    
+    # Require conversation resolution before merging
+    required_conversation_resolution: true
+    
+    # Require deployments to succeed before merging
+    required_deployments:
+      - staging
+    
+    # Lock branch (for releases)
+    lock_branch: false
+    
+    # Allow bypass for specific users (emergency only)
+    bypass_pull_request_allowances:
+      users: ["cto"]
+      teams: []
+      apps: []
+
+  develop:
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: true
+      require_code_owner_reviews: true
+    
+    required_status_checks:
+      strict: true
+      contexts:
+        - "continuous-integration/build"
+        - "continuous-integration/test-unit"
+        - "security/snyk"
+        - "linting/eslint"
+        - "linting/black"
+    
+    enforce_admins: false
+    restrictions:
+      users: []
+      teams: ["developers", "senior-engineers"]
+    
+    allow_force_pushes: false
+    allow_deletions: false
+    required_signatures: false
+    required_conversation_resolution: true
+
+  release/*:
+    required_pull_request_reviews:
+      required_approving_review_count: 2
+      dismiss_stale_reviews: true
+      require_code_owner_reviews: true
+      dismissal_restrictions:
+        teams: ["release-team", "senior-engineers"]
+    
+    required_status_checks:
+      strict: true
+      contexts:
+        - "continuous-integration/build"
+        - "continuous-integration/test-unit"
+        - "continuous-integration/test-integration"
+        - "continuous-integration/test-e2e"
+        - "security/snyk"
+        - "security/trivy"
+        - "security/sonarcloud"
+    
+    enforce_admins: true
+    restrictions:
+      teams: ["release-team"]
+    
+    allow_force_pushes: false
+    allow_deletions: false
+    required_signatures: true
+    lock_branch: true
+
+  hotfix/*:
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: false
+      require_code_owner_reviews: true
+    
+    required_status_checks:
+      strict: false  # Allow merging without being up-to-date for emergencies
+      contexts:
+        - "continuous-integration/build"
+        - "continuous-integration/test-unit"
+        - "security/snyk"
+    
+    enforce_admins: false
+    bypass_pull_request_allowances:
+      users: ["cto", "vp-engineering"]
+      teams: ["senior-engineers"]
+
+# Additional Security Policies
+
+security_policies:
+  # Dependency Review Action
+  dependency_review:
+    enabled: true
+    fail_on_severity: "moderate"
+    allow_licenses:
+      - "MIT"
+      - "Apache-2.0"
+      - "BSD-3-Clause"
+      - "BSD-2-Clause"
+      - "ISC"
+    deny_licenses:
+      - "GPL-3.0"
+      - "AGPL-3.0"
+  
+  # Secret Scanning
+  secret_scanning:
+    enabled: true
+    push_protection: true
+    alert_notifications:
+      - security-team@tradesense.com
+  
+  # Code Scanning
+  code_scanning:
+    enabled: true
+    default_setup: true
+    languages:
+      - javascript
+      - typescript
+      - python
+    schedule:
+      frequency: "weekly"
+      day: "sunday"
+      time: "00:00"
+
+# Merge Settings
+merge_settings:
+  # Allowed merge methods
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
+  
+  # Default merge method
+  default_merge_method: "squash"
+  
+  # Auto-delete head branches
+  delete_branch_on_merge: true
+  
+  # Merge commit settings
+  merge_commit_title: "PR_TITLE"
+  merge_commit_message: "PR_BODY"
+  
+  # Squash commit settings
+  squash_commit_title: "PR_TITLE"
+  squash_commit_message: "PR_BODY"
+
+# Automation Rules
+automation:
+  # Auto-merge for Dependabot
+  dependabot_auto_merge:
+    enabled: true
+    allowed_update_types:
+      - "patch"
+      - "minor"
+    require_all_checks_pass: true
+    
+  # Stale PR management
+  stale_pr_management:
+    enabled: true
+    days_until_stale: 14
+    days_until_close: 7
+    exempt_labels:
+      - "work-in-progress"
+      - "on-hold"
+      - "needs-review"
+    stale_message: "This PR has been inactive for 14 days. It will be closed in 7 days if no further activity occurs."
+
+# Compliance Requirements
+compliance:
+  # Require specific file changes to be reviewed
+  required_reviews:
+    - files: ["**/*.sql", "**/migrations/**"]
+      teams: ["database-team"]
+    - files: ["**/*security*", "**/*auth*"]
+      teams: ["security-team"]
+    - files: ["**/terraform/**", "**/k8s/**"]
+      teams: ["platform-team"]
+  
+  # Audit log retention
+  audit_log_retention_days: 90
+  
+  # Compliance checks
+  required_compliance_checks:
+    - "License Compliance"
+    - "Security Compliance"
+    - "Code Quality Gates"

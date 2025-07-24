@@ -1,0 +1,138 @@
+# Flagger Helm Configuration
+# Progressive delivery operator for Kubernetes
+
+# Flagger settings
+image:
+  repository: ghcr.io/fluxcd/flagger
+  tag: 1.35.0
+  pullPolicy: IfNotPresent
+
+logLevel: info
+
+# Include CRDs in chart
+crd:
+  create: true
+
+# Prometheus URL for metrics
+metricsServer: http://prometheus-server.monitoring:80
+
+# Mesh provider
+meshProvider: istio
+
+# Slack notifications (optional)
+slack:
+  user: flagger
+  channel: tradesense-deployments
+  # webhookURL: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+
+# Mesh specific settings
+selectorLabels:
+  - app
+  - name
+  - app.kubernetes.io/name
+
+# Enable Prometheus metrics
+prometheus:
+  install: false  # We use existing Prometheus
+
+# Resources
+resources:
+  limits:
+    memory: 512Mi
+    cpu: 1000m
+  requests:
+    memory: 128Mi
+    cpu: 100m
+
+# Security context
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 10001
+
+# RBAC
+rbac:
+  create: true
+  # Restrict to specific namespaces
+  rules:
+    - apiGroups: [""]
+      resources: ["events", "configmaps", "secrets", "services", "pods"]
+      verbs: ["*"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "replicasets"]
+      verbs: ["*"]
+    - apiGroups: ["autoscaling"]
+      resources: ["horizontalpodautoscalers"]
+      verbs: ["*"]
+    - apiGroups: ["networking.istio.io"]
+      resources: ["virtualservices", "destinationrules"]
+      verbs: ["*"]
+    - apiGroups: ["flagger.app"]
+      resources: ["*"]
+      verbs: ["*"]
+
+# Node selector
+nodeSelector:
+  kubernetes.io/os: linux
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+
+# Service monitor for Prometheus Operator
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+
+# Webhook settings
+webhook:
+  enabled: true
+  type: confirm-promotion
+  url: http://flagger-loadtester.tradesense/
+  timeout: 60s
+  metadata:
+    type: "helm"
+    
+# Global canary analysis defaults
+canaryAnalysis:
+  # Interval between checks
+  interval: 30s
+  # Number of checks before rollback
+  threshold: 5
+  # Max traffic weight
+  maxWeight: 50
+  # Traffic increment step
+  stepWeight: 10
+  # Promotion increment step
+  stepWeightPromotion: 100
+  
+  # Default metrics
+  metrics:
+    - name: request-success-rate
+      thresholdRange:
+        min: 99
+      interval: 1m
+    - name: request-duration
+      thresholdRange:
+        max: 500
+      interval: 30s
+      
+  # Webhooks
+  webhooks:
+    - name: acceptance-test
+      type: pre-rollout
+      url: http://flagger-loadtester.tradesense/
+      timeout: 30s
+      metadata:
+        type: bash
+        cmd: "curl -sd 'test' http://backend-canary.tradesense:8000/health | grep ok"
+    - name: load-test
+      type: rollout
+      url: http://flagger-loadtester.tradesense/
+      timeout: 5s
+      metadata:
+        type: cmd
+        cmd: "hey -z 2m -q 100 -c 2 http://backend-canary.tradesense:8000/"

@@ -12,10 +12,15 @@
 	import EmailVerificationBanner from '$lib/components/EmailVerificationBanner.svelte';
 	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 	import FeedbackButton from '$lib/components/FeedbackButton.svelte';
+	import BackendStatus from '$lib/components/BackendStatus.svelte';
+	import SkipLinks from '$lib/components/SkipLinks.svelte';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import { trackPageVisit } from '$lib/utils/feedbackContext';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { websocket } from '$lib/stores/websocket';
 	import { requestNotificationPermission } from '$lib/stores/notifications';
+	import { ensureFocusVisible, manageFocus, registerCommonShortcuts } from '$lib/utils/accessibility';
+	import { _ } from 'svelte-i18n';
 	
 	$: authState = $authStore;
 	
@@ -26,6 +31,10 @@
 		
 		// Connect WebSocket
 		websocket.connect();
+		
+		// Setup accessibility features
+		ensureFocusVisible();
+		registerCommonShortcuts();
 		
 		// Request notification permission after user interaction
 		// We don't do it immediately to avoid annoying users
@@ -43,24 +52,28 @@
 	// Track page visits for feedback context
 	$: if ($page.url.pathname && browser) {
 		trackPageVisit($page.url.pathname);
+		// Manage focus for screen readers on route change
+		manageFocus();
 	}
 </script>
 
 <div class="app" class:authenticated={$isAuthenticated}>
-	<header>
-		<nav>
-			<a href="/" class="logo">TradeSense</a>
+	<SkipLinks />
+	<BackendStatus />
+	<header role="banner">
+		<nav id="navigation" aria-label="Main navigation">
+			<a href="/" class="logo" aria-label="{$_('common.app.name')} - Home">{$_('common.app.name')}</a>
 			<div class="nav-links">
 				{#if $isAuthenticated}
-					<a href="/dashboard">Dashboard</a>
+					<a href="/dashboard">{$_('common.nav.dashboard')}</a>
 					<a href="/dashboards">Custom Dashboards</a>
-					<a href="/tradelog">Trade Log</a>
-					<a href="/portfolio">Portfolio</a>
-					<a href="/upload">Import</a>
-					<a href="/journal">Journal</a>
-					<a href="/analytics">Analytics</a>
-					<a href="/ai-insights">AI Insights</a>
-					<a href="/playbook">Playbook</a>
+					<a href="/tradelog">{$_('common.nav.trades')}</a>
+					<a href="/portfolio">{$_('common.nav.portfolio')}</a>
+					<a href="/upload">{$_('common.nav.import')}</a>
+					<a href="/journal">{$_('common.nav.journal')}</a>
+					<a href="/analytics">{$_('common.nav.analytics')}</a>
+					<a href="/ai-insights">{$_('common.nav.aiInsights')}</a>
+					<a href="/playbook">{$_('common.nav.playbook')}</a>
 					<div class="nav-divider"></div>
 					<GlobalSearch />
 					<div class="nav-divider"></div>
@@ -68,11 +81,13 @@
 					<NotificationCenter />
 					<div class="nav-divider"></div>
 					<span class="username">{authState?.user?.name || authState?.user?.email || ''}</span>
-					<button on:click={handleLogout} class="logout-button">Logout</button>
+					<LanguageSwitcher />
+					<button on:click={handleLogout} class="logout-button" aria-label="{$_('common.nav.logout')} from {$_('common.app.name')}">{$_('common.nav.logout')}</button>
 				{:else}
 					<a href="/pricing">Pricing</a>
-					<a href="/login">Login</a>
-					<a href="/register" class="register-button">Sign Up</a>
+					<LanguageSwitcher />
+					<a href="/login">{$_('common.nav.login')}</a>
+					<a href="/register" class="register-button">{$_('common.nav.register')}</a>
 				{/if}
 			</div>
 		</nav>
@@ -82,7 +97,7 @@
 		<EmailVerificationBanner user={authState.user} />
 	{/if}
 
-	<main>
+	<main id="main-content" role="main">
 		<slot />
 	</main>
 	

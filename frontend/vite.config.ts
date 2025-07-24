@@ -10,10 +10,25 @@ export default defineConfig({
 		}
 	},
 	server: {
+		port: 3001,
 		proxy: {
 			'/api': {
 				target: 'http://localhost:8000',
 				changeOrigin: true,
+				configure: (proxy, options) => {
+					proxy.on('error', (err, req, res) => {
+						console.log('API proxy error:', err);
+					});
+				}
+			},
+			'/auth': {
+				target: 'http://localhost:8000',
+				changeOrigin: true,
+				configure: (proxy, options) => {
+					proxy.on('error', (err, req, res) => {
+						console.log('Auth proxy error:', err);
+					});
+				}
 			}
 		},
 		hmr: {
@@ -21,6 +36,6 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
-		include: ['axios']
+		exclude: ['axios'] // Remove axios from optimization since we're not using it
 	}
 });

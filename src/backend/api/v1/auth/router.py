@@ -2,12 +2,14 @@
 Authentication API routes
 """
 from datetime import timedelta, datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
+from typing import Optional
 import logging
 import traceback
+import os
 
 from core.db.session import get_db
 from core.rate_limiter import (
@@ -27,21 +29,22 @@ from services.email_service import EmailService
 router = APIRouter()
 
 class HTTPBearer401(HTTPBearer):
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
+    async def __call__(self, request: Request) -> Optional[HTTPAuthorizationCredentials]:
         try:
             return await super().__call__(request)
-        except HTTPException as exc:
-            if exc.status_code == 403:
-                raise HTTPException(status_code=401, detail="Not authenticated")
-            raise
+        except HTTPException:
+            # Don't raise, return None to allow cookie auth
+            return None
 
 security = HTTPBearer401()
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    auth_token: Optional[str] = Cookie(None, alias="auth-token"),
     db: Session = Depends(get_db)
 ) -> User:
-    """Get current authenticated user"""
+    """Get current authenticated user from cookie or bearer token"""
     auth_service = AuthService(db)
     
     credentials_exception = HTTPException(
@@ -50,7 +53,17 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    user_id = auth_service.verify_token(credentials.credentials)
+    # Try cookie first (more secure)
+    token = auth_token
+    
+    # Fallback to Authorization header (for API clients)
+    if not token and credentials:
+        token = credentials.credentials
+    
+    if not token:
+        raise credentials_exception
+    
+    user_id = auth_service.verify_token(token)
     if user_id is None:
         raise credentials_exception
     
@@ -145,6 +158,7 @@ async def register(
 @router.post("/login", response_model=None)
 async def login(
     request: Request,
+    response: Response,
     login_data: UserLogin,
     db: Session = Depends(get_db)
 ):
@@ -249,6 +263,18 @@ async def login(
         data={"sub": user.id}, expires_delta=access_token_expires
     )
     
+    # Set httpOnly cookie (CRITICAL for frontend compatibility)
+    response.set_cookie(
+        key="auth-token",
+        value=access_token,
+        httponly=True,
+        secure=os.getenv("ENVIRONMENT", "development") == "production",  # HTTPS only in production
+        samesite="lax",  # CSRF protection
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert minutes to seconds
+        path="/",
+        domain=None  # Let browser handle domain
+    )
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -342,8 +368,18 @@ async def change_password(
     return {"message": "Password changed successfully"}
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
-    """Logout user (client should remove token)"""
+async def logout(
+    response: Response,
+    current_user: User = Depends(get_current_user)
+):
+    """Logout user (clears httpOnly cookie)"""
+    # Clear the auth cookie
+    response.delete_cookie(
+        key="auth-token",
+        path="/",
+        secure=os.getenv("ENVIRONMENT", "development") == "production",
+        samesite="lax"
+    )
     return {"message": "Successfully logged out"}
 
 @router.post("/verify-email")
@@ -426,3 +462,8 @@ async def resend_verification(
         )
     
     return {"message": "Verification email sent"}
+
+
+# Include OAuth router
+from .oauth_router import router as oauth_router
+router.include_router(oauth_router)

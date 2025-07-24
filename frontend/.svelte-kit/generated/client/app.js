@@ -69,8 +69,7 @@ export const nodes = [
 	() => import('./nodes/62'),
 	() => import('./nodes/63'),
 	() => import('./nodes/64'),
-	() => import('./nodes/65'),
-	() => import('./nodes/66')
+	() => import('./nodes/65')
 ];
 
 export const server_loads = [0];
@@ -134,10 +133,9 @@ export const dictionary = {
 		"/test": [58],
 		"/tradelog": [61],
 		"/trades": [62],
-		"/trades/import": [63],
-		"/trades/new": [64],
-		"/upload": [65],
-		"/verify-email": [66]
+		"/trades/new": [63],
+		"/upload": [64],
+		"/verify-email": [65]
 	};
 
 export const hooks = {

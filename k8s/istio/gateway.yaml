@@ -1,0 +1,284 @@
+# Istio Gateway Configuration for TradeSense
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: tradesense-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "tradesense.com"
+    - "*.tradesense.com"
+    # Redirect HTTP to HTTPS
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "tradesense.com"
+    - "*.tradesense.com"
+    tls:
+      mode: SIMPLE
+      credentialName: tradesense-tls # Must be created in istio-system namespace
+---
+# Certificate for Gateway (example)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tradesense-tls
+  namespace: istio-system
+spec:
+  secretName: tradesense-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - tradesense.com
+  - "*.tradesense.com"
+---
+# VirtualService for Frontend
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend
+  namespace: tradesense
+spec:
+  hosts:
+  - tradesense.com
+  - www.tradesense.com
+  gateways:
+  - istio-system/tradesense-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: frontend
+        port:
+          number: 3000
+      weight: 100
+    # Add retry policy
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: gateway-error,connect-failure,refused-stream
+    # Add timeout
+    timeout: 30s
+    # Add fault injection for testing (disabled by default)
+    # fault:
+    #   delay:
+    #     percentage:
+    #       value: 0.1
+    #     fixedDelay: 5s
+    #   abort:
+    #     percentage:
+    #       value: 0.1
+    #     httpStatus: 503
+---
+# VirtualService for Backend API
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: backend
+  namespace: tradesense
+spec:
+  hosts:
+  - api.tradesense.com
+  gateways:
+  - istio-system/tradesense-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: backend
+        port:
+          number: 8000
+      weight: 100
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: gateway-error,connect-failure,refused-stream
+    timeout: 30s
+    # CORS configuration
+    corsPolicy:
+      allowOrigins:
+      - exact: https://tradesense.com
+      - exact: https://www.tradesense.com
+      allowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      allowHeaders:
+      - authorization
+      - content-type
+      - x-request-id
+      exposeHeaders:
+      - x-request-id
+      maxAge: "24h"
+      allowCredentials: true
+  - match:
+    - uri:
+        prefix: /health
+    route:
+    - destination:
+        host: backend
+        port:
+          number: 8000
+    timeout: 5s
+---
+# DestinationRule for Frontend
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: frontend
+  namespace: tradesense
+spec:
+  host: frontend
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+      splitExternalLocalOriginErrors: true
+---
+# DestinationRule for Backend
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: backend
+  namespace: tradesense
+spec:
+  host: backend
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+        h2UpgradePolicy: UPGRADE
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+      splitExternalLocalOriginErrors: true
+  subsets:
+  - name: stable
+    labels:
+      version: stable
+  - name: canary
+    labels:
+      version: canary
+---
+# Service Entry for External Services (Stripe)
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: stripe-api
+  namespace: tradesense
+spec:
+  hosts:
+  - api.stripe.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+# DestinationRule for Stripe with Circuit Breaker
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: stripe-api
+  namespace: tradesense
+spec:
+  host: api.stripe.com
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 10
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+---
+# PeerAuthentication for mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: tradesense
+spec:
+  mtls:
+    mode: STRICT
+---
+# AuthorizationPolicy for Backend
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: backend-authz
+  namespace: tradesense
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/tradesense/sa/frontend"]
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/ready", "/metrics"]
+---
+# RequestAuthentication for JWT
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-auth
+  namespace: tradesense
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  jwtRules:
+  - issuer: "https://auth.tradesense.com"
+    jwksUri: "https://auth.tradesense.com/.well-known/jwks.json"
+    audiences:
+    - "tradesense-api"
+    forwardOriginalToken: true

@@ -1,0 +1,398 @@
+# Disaster Recovery Runbook ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dr-runbook
+  namespace: tradesense
+data:
+  runbook.md: |
+    # TradeSense Disaster Recovery Runbook
+    
+    ## Table of Contents
+    1. [Emergency Contacts](#emergency-contacts)
+    2. [Disaster Scenarios](#disaster-scenarios)
+    3. [Recovery Procedures](#recovery-procedures)
+    4. [Testing Procedures](#testing-procedures)
+    5. [Post-Recovery](#post-recovery)
+    
+    ## Emergency Contacts
+    
+    | Role | Name | Phone | Email |
+    |------|------|-------|-------|
+    | Incident Commander | On-Call Lead | +1-XXX-XXX-XXXX | oncall@tradesense.com |
+    | Platform Lead | DevOps Team | +1-XXX-XXX-XXXX | platform@tradesense.com |
+    | Database Admin | DBA Team | +1-XXX-XXX-XXXX | dba@tradesense.com |
+    | Security Lead | Security Team | +1-XXX-XXX-XXXX | security@tradesense.com |
+    
+    ## Disaster Scenarios
+    
+    ### 1. Complete Cluster Failure
+    **Symptoms:**
+    - All nodes unreachable
+    - API server not responding
+    - Complete service outage
+    
+    **Recovery Time Objective (RTO):** 4 hours
+    **Recovery Point Objective (RPO):** 1 hour
+    
+    ### 2. Data Corruption
+    **Symptoms:**
+    - Database integrity errors
+    - Application data inconsistencies
+    - Backup validation failures
+    
+    **RTO:** 2 hours
+    **RPO:** 6 hours
+    
+    ### 3. Regional Outage
+    **Symptoms:**
+    - AWS region unavailable
+    - Network connectivity lost
+    - Multi-AZ failure
+    
+    **RTO:** 1 hour
+    **RPO:** 15 minutes
+    
+    ## Recovery Procedures
+    
+    ### Phase 1: Assessment (0-30 minutes)
+    
+    1. **Confirm the disaster**
+       ```bash
+       # Check cluster status
+       kubectl cluster-info
+       kubectl get nodes
+       kubectl get pods -A
+       
+       # Check AWS status
+       aws ec2 describe-instances --filters "Name=tag:Cluster,Values=tradesense-prod"
+       aws rds describe-db-instances
+       
+       # Check monitoring
+       curl -s http://prometheus.monitoring.svc.cluster.local:9090/api/v1/query?query=up
+       ```
+    
+    2. **Assess damage scope**
+       - Identify affected components
+       - Determine data loss extent
+       - Evaluate recovery options
+    
+    3. **Activate incident response**
+       - Page on-call team
+       - Open incident channel
+       - Start incident log
+    
+    ### Phase 2: Cluster Recovery (30 min - 2 hours)
+    
+    #### Option A: Restore existing cluster
+    ```bash
+    # 1. Restore master nodes
+    ./scripts/restore-masters.sh
+    
+    # 2. Restore etcd from backup
+    ETCDCTL_API=3 etcdctl snapshot restore \
+      s3://tradesense-backups/etcd/latest.db \
+      --data-dir=/var/lib/etcd-restore
+    
+    # 3. Restore worker nodes
+    ./scripts/restore-workers.sh
+    
+    # 4. Verify cluster health
+    kubectl get cs
+    kubectl get nodes
+    ```
+    
+    #### Option B: Create new cluster
+    ```bash
+    # 1. Provision new infrastructure
+    cd terraform/
+    terraform init
+    terraform plan -out=dr-plan
+    terraform apply dr-plan
+    
+    # 2. Install Kubernetes
+    eksctl create cluster -f configs/cluster-dr.yaml
+    
+    # 3. Restore from Velero backup
+    velero restore create dr-restore \
+      --from-backup daily-cluster-backup-20240115 \
+      --include-namespaces tradesense,monitoring,istio-system
+    ```
+    
+    ### Phase 3: Data Recovery (1-3 hours)
+    
+    #### PostgreSQL Recovery
+    ```bash
+    # 1. Create restore job
+    kubectl apply -f k8s/dr/restore-job.yaml
+    
+    # 2. Monitor restore progress
+    kubectl logs -f job/postgres-restore -n tradesense
+    
+    # 3. Validate data integrity
+    kubectl exec -it deploy/postgres -n tradesense -- psql -U postgres -c "
+      SELECT 'Users:', COUNT(*) FROM users
+      UNION ALL
+      SELECT 'Orders:', COUNT(*) FROM orders
+      UNION ALL
+      SELECT 'Trades:', COUNT(*) FROM trades;
+    "
+    
+    # 4. Update sequences
+    kubectl exec -it deploy/postgres -n tradesense -- psql -U postgres -f /scripts/fix-sequences.sql
+    ```
+    
+    #### Redis Recovery
+    ```bash
+    # 1. Restore Redis data
+    kubectl create job redis-restore-dr --from=cronjob/redis-backup -n tradesense
+    
+    # 2. Verify restoration
+    kubectl exec -it deploy/redis -n tradesense -- redis-cli DBSIZE
+    ```
+    
+    ### Phase 4: Application Recovery (2-4 hours)
+    
+    1. **Deploy core services**
+       ```bash
+       # Deploy in order of dependencies
+       kubectl apply -f k8s/databases/
+       kubectl wait --for=condition=ready pod -l app=postgres -n tradesense --timeout=300s
+       
+       kubectl apply -f k8s/backend/
+       kubectl wait --for=condition=ready pod -l app=backend -n tradesense --timeout=300s
+       
+       kubectl apply -f k8s/frontend/
+       ```
+    
+    2. **Restore configurations**
+       ```bash
+       # Apply ConfigMaps and Secrets
+       velero restore create config-restore \
+         --from-backup daily-cluster-backup-latest \
+         --include-resources configmaps,secrets
+       ```
+    
+    3. **Update DNS**
+       ```bash
+       # Update Route53 records
+       aws route53 change-resource-record-sets \
+         --hosted-zone-id Z1234567890ABC \
+         --change-batch file://dns-failover.json
+       ```
+    
+    ### Phase 5: Validation (3-4 hours)
+    
+    1. **Health checks**
+       ```bash
+       # Application health
+       curl https://api.tradesense.com/health
+       curl https://tradesense.com/
+       
+       # Database connectivity
+       kubectl exec deploy/backend -n tradesense -- python -c "
+       from app.database import test_connection
+       test_connection()
+       "
+       ```
+    
+    2. **Functional tests**
+       ```bash
+       # Run smoke tests
+       kubectl apply -f tests/smoke-tests.yaml
+       kubectl wait --for=condition=complete job/smoke-tests -n tradesense
+       
+       # Run integration tests
+       pytest tests/integration/ -m disaster_recovery
+       ```
+    
+    3. **Performance validation**
+       ```bash
+       # Load test
+       kubectl apply -f tests/load-test-dr.yaml
+       
+       # Check metrics
+       kubectl exec deploy/prometheus -n monitoring -- \
+         promtool query instant 'rate(http_requests_total[5m])'
+       ```
+    
+    ## Testing Procedures
+    
+    ### Monthly DR Drill
+    1. **Backup validation**
+       ```bash
+       # Test restore to staging
+       velero restore create test-restore \
+         --from-backup daily-cluster-backup-latest \
+         --namespace-mappings tradesense:tradesense-test
+       ```
+    
+    2. **Failover test**
+       ```bash
+       # Simulate region failure
+       kubectl apply -f k8s/chaos-mesh/experiments/region-failure.yaml
+       ```
+    
+    3. **Recovery time measurement**
+       - Document actual RTO
+       - Identify bottlenecks
+       - Update procedures
+    
+    ## Post-Recovery
+    
+    ### Immediate Actions
+    1. **Monitor stability**
+       - Watch error rates
+       - Check resource usage
+       - Monitor user reports
+    
+    2. **Communicate status**
+       - Update status page
+       - Notify customers
+       - Internal announcement
+    
+    3. **Document timeline**
+       - Incident timeline
+       - Actions taken
+       - Decisions made
+    
+    ### Follow-up Actions
+    1. **Post-mortem**
+       - Schedule within 48 hours
+       - No-blame analysis
+       - Action items
+    
+    2. **Backup verification**
+       ```bash
+       # Force new backup
+       velero backup create post-dr-backup \
+         --include-namespaces tradesense,monitoring
+       
+       # Verify backup
+       velero backup describe post-dr-backup --details
+       ```
+    
+    3. **Update documentation**
+       - Lessons learned
+       - Procedure updates
+       - Contact changes
+    
+    ## Automation Scripts
+    
+    ### Quick Recovery Script
+    ```bash
+    #!/bin/bash
+    # quick-recover.sh
+    
+    # Set recovery parameters
+    BACKUP_NAME=${1:-"latest"}
+    TARGET_NAMESPACE=${2:-"tradesense"}
+    
+    # Restore cluster state
+    echo "Starting disaster recovery..."
+    velero restore create "dr-$(date +%Y%m%d-%H%M%S)" \
+      --from-backup "$BACKUP_NAME" \
+      --include-namespaces "$TARGET_NAMESPACE"
+    
+    # Wait for restoration
+    kubectl wait --for=condition=ready pod -l app=postgres -n $TARGET_NAMESPACE --timeout=600s
+    kubectl wait --for=condition=ready pod -l app=backend -n $TARGET_NAMESPACE --timeout=600s
+    
+    # Run validation
+    kubectl apply -f tests/dr-validation.yaml
+    ```
+    
+    ## Important Notes
+    
+    1. **Always verify backups before recovery**
+    2. **Follow communication protocols**
+    3. **Document every action taken**
+    4. **Prioritize data integrity over speed**
+    5. **Escalate when needed**
+    
+    ## Appendix
+    
+    ### AWS CLI Commands
+    ```bash
+    # List recent snapshots
+    aws ec2 describe-snapshots --owner-ids self --query 'Snapshots[?StartTime>=`2024-01-01`]'
+    
+    # List RDS snapshots
+    aws rds describe-db-snapshots --db-instance-identifier tradesense-prod
+    
+    # List S3 backups
+    aws s3 ls s3://tradesense-backups/ --recursive --human-readable
+    ```
+    
+    ### Useful Kubernetes Commands
+    ```bash
+    # Get events
+    kubectl get events -A --sort-by='.lastTimestamp'
+    
+    # Check pod issues
+    kubectl describe pod -l app=backend -n tradesense
+    
+    # Force delete stuck resources
+    kubectl delete pod <pod-name> -n tradesense --grace-period=0 --force
+    ```
+---
+# DR automation scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dr-scripts
+  namespace: tradesense
+data:
+  validate-backup.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Validate latest Velero backup
+    LATEST_BACKUP=$(velero backup get -o json | jq -r '.items[0].metadata.name')
+    STATUS=$(velero backup get $LATEST_BACKUP -o json | jq -r '.status.phase')
+    
+    if [ "$STATUS" != "Completed" ]; then
+      echo "ERROR: Latest backup $LATEST_BACKUP status is $STATUS"
+      exit 1
+    fi
+    
+    # Check backup age
+    BACKUP_TIME=$(velero backup get $LATEST_BACKUP -o json | jq -r '.status.startTimestamp')
+    BACKUP_AGE=$(( $(date +%s) - $(date -d "$BACKUP_TIME" +%s) ))
+    MAX_AGE=86400  # 24 hours
+    
+    if [ $BACKUP_AGE -gt $MAX_AGE ]; then
+      echo "WARNING: Latest backup is older than 24 hours"
+    fi
+    
+    echo "Backup $LATEST_BACKUP is valid"
+  
+  test-restore.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Test restore to separate namespace
+    TEST_NS="dr-test-$(date +%Y%m%d%H%M%S)"
+    
+    # Create test namespace
+    kubectl create namespace $TEST_NS
+    
+    # Perform test restore
+    velero restore create test-restore-$TEST_NS \
+      --from-backup daily-cluster-backup-latest \
+      --namespace-mappings tradesense:$TEST_NS
+    
+    # Wait for restore
+    sleep 60
+    
+    # Validate restore
+    PODS=$(kubectl get pods -n $TEST_NS -o json | jq '.items | length')
+    if [ $PODS -gt 0 ]; then
+      echo "Test restore successful: $PODS pods restored"
+    else
+      echo "Test restore failed: no pods restored"
+      exit 1
+    fi
+    
+    # Cleanup
+    kubectl delete namespace $TEST_NS

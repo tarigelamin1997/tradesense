@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "TradeSense",
+    "tagline": "Trading Cerdas, Keputusan Lebih Baik"
+  },
+  "nav": {
+    "dashboard": "Dasbor",
+    "trades": "Log Perdagangan",
+    "portfolio": "Portofolio",
+    "analytics": "Analitik",
+    "journal": "Jurnal",
+    "playbook": "Panduan Strategi",
+    "aiInsights": "Wawasan AI",
+    "import": "Impor",
+    "settings": "Pengaturan",
+    "logout": "Keluar",
+    "login": "Masuk",
+    "register": "Daftar",
+    "profile": "Profil",
+    "billing": "Tagihan",
+    "support": "Dukungan"
+  },
+  "actions": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Ubah",
+    "create": "Buat",
+    "update": "Perbarui",
+    "submit": "Kirim",
+    "confirm": "Konfirmasi",
+    "back": "Kembali",
+    "next": "Selanjutnya",
+    "previous": "Sebelumnya",
+    "close": "Tutup",
+    "search": "Cari",
+    "filter": "Filter",
+    "sort": "Urutkan",
+    "export": "Ekspor",
+    "import": "Impor",
+    "download": "Unduh",
+    "upload": "Unggah",
+    "refresh": "Segarkan",
+    "retry": "Coba Lagi",
+    "loading": "Memuat...",
+    "processing": "Memproses..."
+  },
+  "status": {
+    "success": "Berhasil",
+    "error": "Kesalahan",
+    "warning": "Peringatan",
+    "info": "Informasi",
+    "pending": "Tertunda",
+    "active": "Aktif",
+    "inactive": "Tidak Aktif",
+    "online": "Daring",
+    "offline": "Luring",
+    "connected": "Terhubung",
+    "disconnected": "Terputus"
+  },
+  "time": {
+    "today": "Hari Ini",
+    "yesterday": "Kemarin",
+    "tomorrow": "Besok",
+    "thisWeek": "Minggu Ini",
+    "lastWeek": "Minggu Lalu",
+    "thisMonth": "Bulan Ini",
+    "lastMonth": "Bulan Lalu",
+    "thisYear": "Tahun Ini",
+    "lastYear": "Tahun Lalu",
+    "custom": "Kustom",
+    "from": "Dari",
+    "to": "Hingga",
+    "date": "Tanggal",
+    "time": "Waktu",
+    "dateTime": "Tanggal & Waktu"
+  },
+  "pagination": {
+    "showing": "Menampilkan {{from}} hingga {{to}} dari {{total}}",
+    "page": "Halaman {{current}} dari {{total}}",
+    "itemsPerPage": "Item per halaman",
+    "first": "Pertama",
+    "last": "Terakhir"
+  },
+  "errors": {
+    "general": "Terjadi kesalahan. Silakan coba lagi.",
+    "network": "Kesalahan jaringan. Periksa koneksi Anda.",
+    "notFound": "Halaman tidak ditemukan",
+    "unauthorized": "Anda tidak memiliki izin untuk melihat halaman ini",
+    "forbidden": "Akses ditolak",
+    "serverError": "Kesalahan server. Silakan coba lagi nanti.",
+    "timeout": "Permintaan habis waktu. Silakan coba lagi."
+  },
+  "confirmation": {
+    "title": "Apakah Anda yakin?",
+    "deleteMessage": "Tindakan ini tidak dapat dibatalkan.",
+    "logoutMessage": "Apakah Anda yakin ingin keluar?"
+  }
+}

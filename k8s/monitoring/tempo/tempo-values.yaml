@@ -1,0 +1,205 @@
+# Grafana Tempo Helm Chart Values
+tempo:
+  # Resource configuration
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  # Retention configuration
+  retention: 720h  # 30 days
+  
+  # Storage configuration
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: tradesense-tempo-traces
+        endpoint: s3.us-east-1.amazonaws.com
+        region: us-east-1
+        # Use IRSA for authentication
+        access_key: ""
+        secret_key: ""
+      
+      # Write Ahead Log
+      wal:
+        path: /var/tempo/wal
+      
+      # Local storage for blocks
+      local:
+        path: /var/tempo/blocks
+      
+      # Pool configuration
+      pool:
+        max_workers: 100
+        queue_depth: 10000
+  
+  # Compactor configuration
+  compactor:
+    compaction:
+      block_retention: 720h
+      compacted_block_retention: 1h
+      compaction_window: 1h
+      max_compaction_objects: 1000000
+      retention_concurrency: 10
+      v2_in_buffer_bytes: 5242880
+      v2_out_buffer_bytes: 20971520
+      v2_prefetch_traces_count: 1000
+  
+  # Query frontend
+  query_frontend:
+    search:
+      concurrent_jobs: 2000
+      target_bytes_per_job: 104857600
+      
+  # Ingester configuration
+  ingester:
+    lifecycler:
+      num_tokens: 512
+      heartbeat_period: 5s
+      join_after: 0s
+      min_ready_duration: 15s
+      interface_names:
+      - eth0
+      - en0
+    
+    # Trace limits
+    max_traces_per_user: 10000
+    max_bytes_per_trace: 50000000
+    
+  # Server configuration
+  server:
+    http_listen_port: 3100
+    grpc_listen_port: 9095
+    log_level: info
+    
+  # Metrics generation
+  metrics_generator:
+    registry:
+      external_labels:
+        source: tempo
+        cluster: tradesense
+    storage:
+      path: /var/tempo/generator/wal
+      remote_write:
+        - url: http://prometheus:9090/api/v1/write
+          send_exemplars: true
+    
+    # Service graphs
+    processor:
+      service_graphs:
+        enable: true
+        dimensions:
+        - service.namespace
+        - service.name
+        histogram_buckets: [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8]
+      
+      # Span metrics
+      span_metrics:
+        enable: true
+        dimensions:
+        - service.namespace
+        - service.name
+        - span.kind
+        - span.status
+        histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.02, 2.05, 4.10]
+  
+  # Multi-tenancy
+  multitenancy_enabled: false
+  
+  # Global overrides
+  overrides:
+    max_traces_per_user: 10000
+    max_bytes_per_trace: 50000000
+    ingestion_rate_limit_bytes: 20000000
+    ingestion_burst_size_bytes: 30000000
+    max_search_bytes_per_trace: 50000
+
+# Service configuration
+service:
+  type: ClusterIP
+  annotations: {}
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+
+# Persistence
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: gp3
+  accessModes:
+    - ReadWriteOnce
+
+# Pod configuration
+replicas: 3
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3100"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+    - ALL
+
+# Service Account
+serviceAccount:
+  create: true
+  name: tempo
+  annotations:
+    # For IRSA - replace with your actual role ARN
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/TempoRole
+
+# Affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - tempo
+        topologyKey: kubernetes.io/hostname
+
+# Resource limits
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2

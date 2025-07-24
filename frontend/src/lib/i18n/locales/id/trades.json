@@ -1,0 +1,81 @@
+{
+  "title": "Log Perdagangan",
+  "newTrade": "Perdagangan Baru",
+  "editTrade": "Edit Perdagangan",
+  "deleteTrade": "Hapus Perdagangan",
+  "importTrades": "Impor Perdagangan",
+  "exportTrades": "Ekspor Perdagangan",
+  "fields": {
+    "symbol": "Simbol",
+    "side": "Sisi",
+    "quantity": "Kuantitas",
+    "entryPrice": "Harga Masuk",
+    "exitPrice": "Harga Keluar",
+    "entryDate": "Tanggal Masuk",
+    "exitDate": "Tanggal Keluar",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "commission": "Komisi",
+    "fees": "Biaya",
+    "notes": "Catatan",
+    "tags": "Tag",
+    "strategy": "Strategi",
+    "status": "Status",
+    "pnl": "U&R",
+    "returnPercent": "Return %",
+    "riskReward": "Risiko/Imbalan"
+  },
+  "side": {
+    "buy": "Beli",
+    "sell": "Jual",
+    "long": "Long",
+    "short": "Short"
+  },
+  "status": {
+    "open": "Terbuka",
+    "closed": "Ditutup",
+    "pending": "Tertunda",
+    "cancelled": "Dibatalkan",
+    "partial": "Parsial"
+  },
+  "filters": {
+    "all": "Semua Perdagangan",
+    "open": "Perdagangan Terbuka",
+    "closed": "Perdagangan Tertutup",
+    "winners": "Menang",
+    "losers": "Kalah",
+    "today": "Hari Ini",
+    "thisWeek": "Minggu Ini",
+    "thisMonth": "Bulan Ini",
+    "dateRange": "Rentang Tanggal",
+    "symbol": "Berdasarkan Simbol",
+    "strategy": "Berdasarkan Strategi"
+  },
+  "actions": {
+    "view": "Lihat Detail",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "duplicate": "Duplikat",
+    "close": "Tutup Perdagangan",
+    "addToJournal": "Tambah ke Jurnal"
+  },
+  "summary": {
+    "totalTrades": "Total Perdagangan",
+    "openTrades": "Perdagangan Terbuka",
+    "closedTrades": "Perdagangan Tertutup",
+    "totalPnl": "Total U&R",
+    "winRate": "Tingkat Kemenangan",
+    "avgWin": "Rata-rata Menang",
+    "avgLoss": "Rata-rata Kalah",
+    "profitFactor": "Faktor Profit"
+  },
+  "messages": {
+    "tradeAdded": "Perdagangan berhasil ditambahkan",
+    "tradeUpdated": "Perdagangan berhasil diperbarui",
+    "tradeDeleted": "Perdagangan berhasil dihapus",
+    "tradeClosed": "Perdagangan berhasil ditutup",
+    "importSuccess": "{{count}} perdagangan berhasil diimpor",
+    "exportSuccess": "Perdagangan berhasil diekspor",
+    "deleteConfirm": "Apakah Anda yakin ingin menghapus perdagangan ini?"
+  }
+}

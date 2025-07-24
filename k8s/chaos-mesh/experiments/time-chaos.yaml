@@ -1,0 +1,48 @@
+# Time Chaos Experiments for TradeSense
+apiVersion: chaos-mesh.org/v1alpha1
+kind: TimeChaos
+metadata:
+  name: backend-time-skew
+  namespace: chaos-mesh
+spec:
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  timeOffset: "+5m"
+  duration: "10m"
+---
+# Clock desync between services
+apiVersion: chaos-mesh.org/v1alpha1
+kind: TimeChaos
+metadata:
+  name: frontend-backend-desync
+  namespace: chaos-mesh
+spec:
+  mode: fixed-percent
+  value: "50"
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: frontend
+  timeOffset: "-2m"
+  duration: "5m"
+---
+# Rapid time changes
+apiVersion: chaos-mesh.org/v1alpha1
+kind: TimeChaos
+metadata:
+  name: database-time-jump
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: postgres
+  timeOffset: "+1h"
+  duration: "30s"

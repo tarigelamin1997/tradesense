@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tradesense-frontend
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: frontend=tradesense/frontend:latest
+    argocd-image-updater.argoproj.io/frontend.update-strategy: latest
+spec:
+  project: tradesense
+  source:
+    repoURL: https://github.com/tarigelamin1997/tradesense.git
+    targetRevision: HEAD
+    path: k8s
+    kustomize:
+      images:
+      - tradesense/frontend:latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tradesense
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10

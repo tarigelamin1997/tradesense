@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "TradeSense",
+    "tagline": "Negociação Inteligente, Decisões Melhores"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "trades": "Registro de Operações",
+    "portfolio": "Portfólio",
+    "analytics": "Análises",
+    "journal": "Diário",
+    "playbook": "Estratégias",
+    "aiInsights": "Insights de IA",
+    "import": "Importar",
+    "settings": "Configurações",
+    "logout": "Sair",
+    "login": "Entrar",
+    "register": "Cadastrar-se",
+    "profile": "Perfil",
+    "billing": "Faturamento",
+    "support": "Suporte"
+  },
+  "actions": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "update": "Atualizar",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "close": "Fechar",
+    "search": "Pesquisar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "export": "Exportar",
+    "import": "Importar",
+    "download": "Baixar",
+    "upload": "Carregar",
+    "refresh": "Atualizar",
+    "retry": "Tentar novamente",
+    "loading": "Carregando...",
+    "processing": "Processando..."
+  },
+  "status": {
+    "success": "Sucesso",
+    "error": "Erro",
+    "warning": "Aviso",
+    "info": "Informação",
+    "pending": "Pendente",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "online": "Online",
+    "offline": "Offline",
+    "connected": "Conectado",
+    "disconnected": "Desconectado"
+  },
+  "time": {
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "tomorrow": "Amanhã",
+    "thisWeek": "Esta Semana",
+    "lastWeek": "Semana Passada",
+    "thisMonth": "Este Mês",
+    "lastMonth": "Mês Passado",
+    "thisYear": "Este Ano",
+    "lastYear": "Ano Passado",
+    "custom": "Personalizado",
+    "from": "De",
+    "to": "Até",
+    "date": "Data",
+    "time": "Hora",
+    "dateTime": "Data e Hora"
+  },
+  "pagination": {
+    "showing": "Mostrando {{from}} a {{to}} de {{total}}",
+    "page": "Página {{current}} de {{total}}",
+    "itemsPerPage": "Itens por página",
+    "first": "Primeira",
+    "last": "Última"
+  },
+  "errors": {
+    "general": "Algo deu errado. Por favor, tente novamente.",
+    "network": "Erro de rede. Por favor, verifique sua conexão.",
+    "notFound": "Página não encontrada",
+    "unauthorized": "Você não está autorizado a ver esta página",
+    "forbidden": "Acesso negado",
+    "serverError": "Erro no servidor. Por favor, tente novamente mais tarde.",
+    "timeout": "A solicitação expirou. Por favor, tente novamente."
+  },
+  "confirmation": {
+    "title": "Tem certeza?",
+    "deleteMessage": "Esta ação não pode ser desfeita.",
+    "logoutMessage": "Tem certeza que deseja sair?"
+  }
+}

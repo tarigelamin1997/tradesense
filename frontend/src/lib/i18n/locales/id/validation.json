@@ -1,0 +1,49 @@
+{
+  "required": "{{field}} wajib diisi",
+  "email": "Silakan masukkan alamat email yang valid",
+  "minLength": "{{field}} harus memiliki minimal {{min}} karakter",
+  "maxLength": "{{field}} tidak boleh melebihi {{max}} karakter",
+  "minValue": "{{field}} harus minimal {{min}}",
+  "maxValue": "{{field}} tidak boleh melebihi {{max}}",
+  "pattern": "Format {{field}} tidak valid",
+  "passwordStrength": {
+    "weak": "Kata sandi terlalu lemah",
+    "medium": "Kekuatan kata sandi sedang",
+    "strong": "Kata sandi kuat"
+  },
+  "passwordRequirements": {
+    "minLength": "Minimal 8 karakter",
+    "uppercase": "Satu huruf kapital",
+    "lowercase": "Satu huruf kecil",
+    "number": "Satu angka",
+    "special": "Satu karakter khusus"
+  },
+  "match": "{{field}} harus cocok dengan {{otherField}}",
+  "unique": "{{field}} harus unik",
+  "date": {
+    "invalid": "Tanggal tidak valid",
+    "future": "Tanggal harus di masa depan",
+    "past": "Tanggal harus di masa lalu",
+    "between": "Tanggal harus antara {{start}} dan {{end}}"
+  },
+  "number": {
+    "invalid": "Angka tidak valid",
+    "integer": "Harus berupa bilangan bulat",
+    "positive": "Harus berupa angka positif",
+    "negative": "Harus berupa angka negatif"
+  },
+  "file": {
+    "required": "Silakan pilih file",
+    "size": "Ukuran file tidak boleh melebihi {{max}}",
+    "type": "Jenis file tidak valid. Diperbolehkan: {{types}}"
+  },
+  "trades": {
+    "symbol": "Simbol wajib diisi",
+    "quantity": "Kuantitas harus lebih dari 0",
+    "price": "Harga harus lebih dari 0",
+    "entryPrice": "Harga masuk wajib diisi",
+    "exitPrice": "Harga keluar wajib diisi",
+    "stopLoss": "Stop loss harus kurang dari harga masuk",
+    "takeProfit": "Take profit harus lebih dari harga masuk"
+  }
+}

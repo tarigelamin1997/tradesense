@@ -1,0 +1,206 @@
+# Chaos Mesh Helm Configuration
+# Chaos engineering platform for Kubernetes
+
+# Control Manager configuration
+controllerManager:
+  # Enable leader election for HA
+  leaderElection:
+    enabled: true
+    leaseDuration: 15s
+  
+  # Webhook configuration
+  webhook:
+    enabled: true
+    timeoutSeconds: 5
+    failurePolicy: Fail
+  
+  # Resources
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+  
+  # Replica count for HA
+  replicaCount: 3
+  
+  # Pod disruption budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Chaos Daemon configuration
+chaosDaemon:
+  # Resources
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Runtime
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+  
+  # Privileged mode required for chaos experiments
+  privileged: true
+  
+  # DNS policy
+  dnsPolicy: ClusterFirstWithHostNet
+  
+  # Tolerations to run on all nodes
+  tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/control-plane
+    operator: Exists
+
+# Dashboard configuration
+dashboard:
+  enabled: true
+  
+  # Resources
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Replica count
+  replicaCount: 2
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 2333
+  
+  # Ingress configuration (optional)
+  ingress:
+    enabled: false
+    # className: nginx
+    # hosts:
+    #   - host: chaos.tradesense.com
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+    # tls:
+    #   - secretName: chaos-tls
+    #     hosts:
+    #       - chaos.tradesense.com
+
+# DNS Chaos configuration
+dnsServer:
+  enabled: true
+  
+  # Resources
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  
+  # Replica count
+  replicaCount: 3
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 53
+    targetPort: 53
+
+# Prometheus monitoring
+prometheus:
+  enabled: true
+  
+  # Service monitor for Prometheus Operator
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    labels:
+      prometheus: kube-prometheus
+    interval: 30s
+
+# Webhook certificates
+webhook:
+  certManager:
+    enabled: true
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Security policies
+podSecurityPolicy:
+  enabled: false # Deprecated in newer k8s versions
+
+# Timezone
+timezone: UTC
+
+# Image configuration
+images:
+  # Registry
+  registry: ghcr.io
+  
+  # Image tag
+  tag: v2.6.2
+  
+  # Pull policy
+  pullPolicy: IfNotPresent
+
+# Chaos experiments retention
+garbageCollection:
+  # Clean up finished experiments after 7 days
+  ttlSecondsAfterFinished: 604800
+
+# Feature gates
+featureGates:
+  - AllowHostNetworkTesting
+  - EnableProfilingWebhook
+
+# Additional environment variables
+env:
+  CHAOS_DAEMON_CPU_REQUEST: "100m"
+  CHAOS_DAEMON_MEMORY_REQUEST: "128Mi"
+  CHAOS_DAEMON_CPU_LIMIT: "500m"
+  CHAOS_DAEMON_MEMORY_LIMIT: "512Mi"
+
+# Admission webhook configuration
+admission:
+  patch:
+    enabled: true
+    image:
+      repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+      tag: v1.3.0
+
+# Monitoring configuration
+metrics:
+  address: ":10080"
+
+# Log level
+logLevel: info
+
+# Enable debug mode
+debug: false

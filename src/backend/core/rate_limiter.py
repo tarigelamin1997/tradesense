@@ -2,6 +2,7 @@
 Rate Limiting Module
 
 Provides rate limiting functionality to prevent abuse and brute force attacks.
+Now with Redis support for distributed rate limiting.
 """
 import time
 import asyncio
@@ -10,14 +11,22 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import logging
 
+# Import enhanced rate limiter with Redis support
+try:
+    from core.enhanced_rate_limiter import enhanced_rate_limiter, RateLimitConfig as EnhancedRateLimitConfig
+    REDIS_RATE_LIMITER_AVAILABLE = True
+except ImportError:
+    REDIS_RATE_LIMITER_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class RateLimiter:
-    """Simple in-memory rate limiter"""
+    """Hybrid rate limiter with Redis support and in-memory fallback"""
     
     def __init__(self):
         self.attempts: Dict[str, list] = defaultdict(list)
         self.locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        self.use_redis = REDIS_RATE_LIMITER_AVAILABLE
     
     async def is_allowed(
         self, 
@@ -36,6 +45,17 @@ class RateLimiter:
         Returns:
             Tuple of (is_allowed, remaining_attempts)
         """
+        # Use Redis rate limiter if available
+        if self.use_redis and enhanced_rate_limiter:
+            try:
+                return await enhanced_rate_limiter.check_rate_limit(
+                    key, max_attempts, window_seconds, "sliding_window"
+                )
+            except Exception as e:
+                logger.error(f"Redis rate limiter error, falling back to memory: {e}")
+                # Fall through to in-memory implementation
+        
+        # In-memory rate limiting
         async with self.locks[key]:
             now = time.time()
             window_start = now - window_seconds
@@ -59,6 +79,15 @@ class RateLimiter:
     
     async def record_attempt(self, key: str) -> None:
         """Record an attempt for rate limiting"""
+        # Use Redis rate limiter if available
+        if self.use_redis and enhanced_rate_limiter:
+            try:
+                # Redis rate limiter automatically records attempts during check_rate_limit
+                return
+            except Exception as e:
+                logger.error(f"Redis rate limiter error: {e}")
+        
+        # In-memory fallback
         async with self.locks[key]:
             self.attempts[key].append(time.time())
     
@@ -118,6 +147,16 @@ async def check_rate_limit(
     # Allow unlimited attempts only for test client (for unit tests)
     if "testclient" in key:
         return True, max_attempts
+    
+    # Use enhanced rate limiter if available
+    if REDIS_RATE_LIMITER_AVAILABLE and enhanced_rate_limiter:
+        try:
+            return await enhanced_rate_limiter.check_rate_limit(
+                key, max_attempts, window_seconds, "sliding_window"
+            )
+        except Exception as e:
+            logger.error(f"Enhanced rate limiter error, falling back: {e}")
+    
     return await rate_limiter.is_allowed(key, max_attempts, window_seconds)
 
 async def record_attempt(key: str) -> None:
@@ -126,5 +165,14 @@ async def record_attempt(key: str) -> None:
 
 async def reset_rate_limit(key: str) -> None:
     """Reset rate limit attempts for a given key (for testing)"""
+    # Try Redis first
+    if REDIS_RATE_LIMITER_AVAILABLE and enhanced_rate_limiter:
+        try:
+            if await enhanced_rate_limiter.reset_rate_limit(key):
+                return
+        except Exception as e:
+            logger.error(f"Enhanced rate limiter reset error: {e}")
+    
+    # In-memory fallback
     async with rate_limiter.locks[key]:
         rate_limiter.attempts[key] = [] 

@@ -29,6 +29,7 @@ origins = [
     "http://localhost:5173",
     "http://localhost:8000",
     "https://frontend-og3gd5s4j-tarig-ahmeds-projects.vercel.app",
+    "https://frontend-jj8nosjl0-tarig-ahmeds-projects.vercel.app",
     "https://frontend-*.vercel.app",
     "https://*.vercel.app",
     "https://tradesense.vercel.app",

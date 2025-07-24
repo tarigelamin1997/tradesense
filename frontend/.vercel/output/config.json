@@ -15,12 +15,20 @@
 			"dest": "/"
 		},
 		{
+			"src": "^/about/?(?:/__data.json)?$",
+			"dest": "/about"
+		},
+		{
 			"src": "^/account/security/?(?:/__data.json)?$",
 			"dest": "/account/security"
 		},
 		{
 			"src": "^/admin/?(?:/__data.json)?$",
 			"dest": "/admin"
+		},
+		{
+			"src": "^/admin/analytics/?(?:/__data.json)?$",
+			"dest": "/admin/analytics"
 		},
 		{
 			"src": "^/admin/backup/?(?:/__data.json)?$",
@@ -39,6 +47,14 @@
 			"dest": "/admin/feedback"
 		},
 		{
+			"src": "^/admin/settings/?(?:/__data.json)?$",
+			"dest": "/admin/settings"
+		},
+		{
+			"src": "^/admin/support/?(?:/__data.json)?$",
+			"dest": "/admin/support"
+		},
+		{
 			"src": "^/admin/users/?(?:/__data.json)?$",
 			"dest": "/admin/users"
 		},
@@ -55,6 +71,18 @@
 			"dest": "/analytics"
 		},
 		{
+			"src": "^/api/auth/login/?(?:/__data.json)?$",
+			"dest": "/api/auth/login"
+		},
+		{
+			"src": "^/api/auth/logout/?(?:/__data.json)?$",
+			"dest": "/api/auth/logout"
+		},
+		{
+			"src": "^/api/auth/refresh/?(?:/__data.json)?$",
+			"dest": "/api/auth/refresh"
+		},
+		{
 			"src": "^/api/debug/?(?:/__data.json)?$",
 			"dest": "/api/debug"
 		},
@@ -63,8 +91,20 @@
 			"dest": "/billing"
 		},
 		{
+			"src": "^/blog/?(?:/__data.json)?$",
+			"dest": "/blog"
+		},
+		{
 			"src": "^/change-password/?(?:/__data.json)?$",
 			"dest": "/change-password"
+		},
+		{
+			"src": "^/changelog/?(?:/__data.json)?$",
+			"dest": "/changelog"
+		},
+		{
+			"src": "^/contact/?(?:/__data.json)?$",
+			"dest": "/contact"
 		},
 		{
 			"src": "^/dashboards/?(?:/__data.json)?$",
@@ -83,6 +123,14 @@
 			"dest": "/debug"
 		},
 		{
+			"src": "^/docs/?(?:/__data.json)?$",
+			"dest": "/docs"
+		},
+		{
+			"src": "^/features/?(?:/__data.json)?$",
+			"dest": "/features"
+		},
+		{
 			"src": "^/forgot-password/?(?:/__data.json)?$",
 			"dest": "/forgot-password"
 		},
@@ -97,6 +145,10 @@
 		{
 			"src": "^/login/?(?:/__data.json)?$",
 			"dest": "/login"
+		},
+		{
+			"src": "^/onboarding/?(?:/__data.json)?$",
+			"dest": "/onboarding"
 		},
 		{
 			"src": "^/payment-success/?(?:/__data.json)?$",
@@ -127,6 +179,10 @@
 			"dest": "/reset-password"
 		},
 		{
+			"src": "^/roadmap/?(?:/__data.json)?$",
+			"dest": "/roadmap"
+		},
+		{
 			"src": "^/security/?(?:/__data.json)?$",
 			"dest": "/security"
 		},
@@ -135,8 +191,32 @@
 			"dest": "/settings"
 		},
 		{
+			"src": "^/settings/api/?(?:/__data.json)?$",
+			"dest": "/settings/api"
+		},
+		{
+			"src": "^/settings/danger-zone/?(?:/__data.json)?$",
+			"dest": "/settings/danger-zone"
+		},
+		{
+			"src": "^/settings/export/?(?:/__data.json)?$",
+			"dest": "/settings/export"
+		},
+		{
+			"src": "^/settings/integrations/?(?:/__data.json)?$",
+			"dest": "/settings/integrations"
+		},
+		{
+			"src": "^/settings/notifications/?(?:/__data.json)?$",
+			"dest": "/settings/notifications"
+		},
+		{
 			"src": "^/settings/privacy/?(?:/__data.json)?$",
 			"dest": "/settings/privacy"
+		},
+		{
+			"src": "^/status/?(?:/__data.json)?$",
+			"dest": "/status"
 		},
 		{
 			"src": "^/subscription/?(?:/__data.json)?$",
@@ -145,6 +225,18 @@
 		{
 			"src": "^/support/?(?:/__data.json)?$",
 			"dest": "/support"
+		},
+		{
+			"src": "^/support/kb/?(?:/__data.json)?$",
+			"dest": "/support/kb"
+		},
+		{
+			"src": "^/support/kb/([^/]+?)/([^/]+?)/?(?:/__data.json)?$",
+			"dest": "/support/kb/[id]/[slug]"
+		},
+		{
+			"src": "^/support/tickets/?(?:/__data.json)?$",
+			"dest": "/support/tickets"
 		},
 		{
 			"src": "^/terms/?(?:/__data.json)?$",

@@ -2,7 +2,7 @@
 
 export const index = 13;
 let component_cache;
-export const component = async () => component_cache ??= (await import('../entries/pages/ai-insights/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/13.BrkJLRX0.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/chunks/BPb2qfkA.js","_app/immutable/chunks/IHki7fMi.js","_app/immutable/chunks/BaPb1MTw.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/Bt-Xh7oU.js","_app/immutable/chunks/COKI2rXe.js","_app/immutable/chunks/yBtR4AKW.js","_app/immutable/chunks/Cizz9D3p.js","_app/immutable/chunks/CRYdEjN_.js","_app/immutable/chunks/D6w_Jmzs.js","_app/immutable/chunks/Exexrrot.js","_app/immutable/chunks/BXNpXYMZ.js","_app/immutable/chunks/BoHj4z7R.js","_app/immutable/chunks/B7N1w56-.js","_app/immutable/chunks/DT_GQsO_.js","_app/immutable/chunks/Ck9oK_w_.js","_app/immutable/chunks/C-Q_9tW3.js","_app/immutable/chunks/CUvu4rtn.js"];
-export const stylesheets = ["_app/immutable/assets/LoadingSkeleton.BhXFdFms.css","_app/immutable/assets/13.EuUBKpey.css"];
+export const component = async () => component_cache ??= (await import('../entries/pages/admin/feedback/_page.svelte.js')).default;
+export const imports = ["_app/immutable/nodes/13.D-_h2FaT.js","_app/immutable/chunks/BizRtQrO.js","_app/immutable/chunks/CEysSNcE.js","_app/immutable/chunks/IHki7fMi.js","_app/immutable/chunks/DwY6id0Q.js","_app/immutable/chunks/-74CPqXK.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/Bt-Xh7oU.js","_app/immutable/chunks/CMDLyNOv.js","_app/immutable/chunks/QuJ8ahAQ.js","_app/immutable/chunks/VdJCIZx6.js","_app/immutable/chunks/Bgjb91iz.js","_app/immutable/chunks/BWU4J-cg.js","_app/immutable/chunks/Bfu6YDSx.js","_app/immutable/chunks/DcCcJStO.js","_app/immutable/chunks/5WweqhTT.js","_app/immutable/chunks/skAg_FJw.js"];
+export const stylesheets = ["_app/immutable/assets/MetricCard.BhuE9Yks.css","_app/immutable/assets/13.DcPO0DCI.css"];
 export const fonts = [];

@@ -8,6 +8,6 @@
 	"experimentalResponseStreaming": true,
 	"framework": {
 		"slug": "sveltekit",
-		"version": "2.22.5"
+		"version": "2.25.2"
 	}
 }

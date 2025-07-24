@@ -1,35 +1,70 @@
-import { c as create_ssr_component, v as validate_component, h as compute_rest_props, m as missing_component } from "./ssr.js";
+import { c as compute_rest_props } from "./utils.js";
+import { c as create_ssr_component, v as validate_component, m as missing_component } from "./ssr.js";
 import { I as Icon$1, d as defaultAttributes } from "./Icon2.js";
+import { A as Activity, C as Copy, E as Eye_off } from "./eye-off.js";
+import { A as Archive } from "./archive.js";
 import { A as Arrow_left } from "./arrow-left.js";
 import { A as Arrow_right } from "./arrow-right.js";
-import { A as Arrow_up_down, F as Funnel } from "./funnel.js";
+import { A as Arrow_up_down } from "./arrow-up-down.js";
 import { B as Bell } from "./bell.js";
+import { B as Book_open } from "./book-open.js";
 import { B as Brain } from "./brain.js";
-import { C as Calendar, D as Dollar_sign, P as Percent, T as Trending_down } from "./trending-down.js";
+import { B as Bug, G as Git_commit_horizontal, P as Package } from "./package.js";
+import { C as Calculator, a as Chart_line, b as Chart_pie, c as Cloud } from "./cloud.js";
+import { C as Calendar } from "./calendar.js";
 import { C as Chart_bar } from "./chart-bar.js";
 import { C as Chart_column } from "./chart-column.js";
-import { C as Chart_no_axes_column, H as Hash, b as House, M as Menu, c as Message_square, S as Search, W as Wifi, a as Wifi_off } from "./wifi.js";
-import { C as Check, Z as Zap } from "./zap.js";
+import { C as Chart_no_axes_column, H as Hash, M as Menu, W as Wifi, a as Wifi_off } from "./wifi.js";
+import { C as Check } from "./check.js";
 import { C as Chevron_left } from "./chevron-left.js";
-import { C as Chevron_right, a as Credit_card, M as Moon, U as User } from "./user.js";
+import { C as Chevron_right } from "./chevron-right.js";
 import { C as Circle_alert } from "./circle-alert.js";
 import { C as Circle_check_big } from "./circle-check-big.js";
-import { C as Circle_check, K as Key, S as Server, T as Triangle_alert } from "./triangle-alert.js";
-import { C as Circle_x, F as File_json, I as Info, L as Loader, U as Upload } from "./upload.js";
+import { C as Circle_check, S as Server } from "./server.js";
+import { C as Circle, M as Map } from "./map.js";
+import { C as Circle_x } from "./circle-x.js";
+import { C as Clock } from "./clock.js";
+import { C as Code, V as Video } from "./video.js";
+import { C as Credit_card, M as Moon } from "./moon.js";
+import { D as Database, S as Save } from "./save.js";
+import { D as Dollar_sign, P as Percent, T as Trending_down } from "./trending-down.js";
 import { D as Download } from "./download.js";
+import { E as External_link, L as Link, S as Settings_2 } from "./settings-2.js";
 import { E as Eye } from "./eye.js";
+import { F as File_json, I as Info, L as Loader } from "./loader.js";
+import { F as File_question_mark, S as Server_crash } from "./server-crash.js";
 import { F as File_spreadsheet } from "./file-spreadsheet.js";
 import { F as File_text } from "./file-text.js";
+import { F as Funnel } from "./funnel.js";
 import { G as Globe } from "./globe.js";
+import { H as Heart } from "./heart.js";
+import { H as House } from "./house.js";
+import { K as Key } from "./key.js";
 import { L as Loader_circle } from "./loader-circle.js";
 import { L as Lock } from "./lock.js";
 import { M as Mail } from "./mail.js";
+import { M as Map_pin, P as Phone, S as Send } from "./send.js";
+import { M as Message_square } from "./message-square.js";
+import { M as Monitor, V as Volume_2 } from "./volume-2.js";
 import { P as Plus } from "./plus.js";
+import { P as Printer, S as Share_2, T as Thumbs_down } from "./thumbs-down.js";
 import { R as Refresh_cw } from "./refresh-cw.js";
+import { R as Rocket } from "./rocket.js";
+import { S as Search } from "./search.js";
+import { S as Settings } from "./settings.js";
 import { S as Shield } from "./shield.js";
+import { S as Smartphone } from "./smartphone.js";
 import { S as Sparkles } from "./sparkles.js";
+import { T as Target } from "./target.js";
+import { T as Thumbs_up } from "./thumbs-up.js";
+import { T as Trash_2 } from "./trash-2.js";
 import { T as Trending_up } from "./trending-up.js";
+import { T as Triangle_alert } from "./triangle-alert.js";
+import { U as Upload } from "./upload.js";
+import { U as User } from "./user.js";
+import { U as Users } from "./users.js";
 import { X } from "./x.js";
+import { Z as Zap } from "./zap.js";
 const A_arrow_down = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M3.5 13h6" }],
@@ -78,21 +113,6 @@ const Accessibility = create_ssr_component(($$result, $$props, $$bindings, slots
     ["path", { "d": "M13.76 17.5a5 5 0 0 0-6.88-6" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "accessibility" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Activity = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "activity" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -1280,32 +1300,6 @@ const Archive_x = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     ["path", { "d": "m9.5 12 5 5" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "archive-x" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Archive = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "rect",
-      {
-        "width": "20",
-        "height": "5",
-        "x": "2",
-        "y": "3",
-        "rx": "1"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"
-      }
-    ],
-    ["path", { "d": "M10 12h4" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "archive" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -3878,22 +3872,6 @@ const Book_open_text = create_ssr_component(($$result, $$props, $$bindings, slot
     }
   })}`;
 });
-const Book_open = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M12 7v14" }],
-    [
-      "path",
-      {
-        "d": "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "book-open" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Book_plus = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M12 7v6" }],
@@ -4722,36 +4700,6 @@ const Bug_off = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
   })}`;
 });
-const Bug = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "m8 2 1.88 1.88" }],
-    ["path", { "d": "M14.12 3.88 16 2" }],
-    [
-      "path",
-      {
-        "d": "M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"
-      }
-    ],
-    ["path", { "d": "M12 20v-9" }],
-    ["path", { "d": "M6.53 9C4.6 8.8 3 7.1 3 5" }],
-    ["path", { "d": "M6 13H2" }],
-    ["path", { "d": "M3 21c0-2.1 1.7-3.9 3.8-4" }],
-    ["path", { "d": "M20.97 5c0 2.1-1.6 3.8-3.5 4" }],
-    ["path", { "d": "M22 13h-4" }],
-    ["path", { "d": "M17.2 17c2.1.1 3.8 1.9 3.8 4" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "bug" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Bug_play = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -4990,50 +4938,6 @@ const Cake = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     ["path", { "d": "M17 4h.01" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "cake" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Calculator = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "rect",
-      {
-        "width": "16",
-        "height": "20",
-        "x": "4",
-        "y": "2",
-        "rx": "2"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "8",
-        "x2": "16",
-        "y1": "6",
-        "y2": "6"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "16",
-        "x2": "16",
-        "y1": "14",
-        "y2": "18"
-      }
-    ],
-    ["path", { "d": "M16 10h.01" }],
-    ["path", { "d": "M12 10h.01" }],
-    ["path", { "d": "M8 10h.01" }],
-    ["path", { "d": "M12 14h.01" }],
-    ["path", { "d": "M8 14h.01" }],
-    ["path", { "d": "M12 18h.01" }],
-    ["path", { "d": "M8 18h.01" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "calculator" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -6242,17 +6146,6 @@ const Chart_gantt = create_ssr_component(($$result, $$props, $$bindings, slots) 
     }
   })}`;
 });
-const Chart_line = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M3 3v16a2 2 0 0 0 2 2h16" }],
-    ["path", { "d": "m19 9-5 5-4-4-3 3" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "chart-line" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Chart_network = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "m13.11 7.664 1.78 2.672" }],
@@ -6399,22 +6292,6 @@ const Chart_scatter = create_ssr_component(($$result, $$props, $$bindings, slots
     ["path", { "d": "M3 3v16a2 2 0 0 0 2 2h16" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "chart-scatter" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Chart_pie = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"
-      }
-    ],
-    ["path", { "d": "M21.21 15.89A10 10 0 1 1 8 2.83" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "chart-pie" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -7338,14 +7215,6 @@ const Circle_user = create_ssr_component(($$result, $$props, $$bindings, slots) 
     }
   })}`;
 });
-const Circle = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [["circle", { "cx": "12", "cy": "12", "r": "10" }]];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "circle" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Circuit_board = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -7951,17 +7820,6 @@ const Clock_plus = create_ssr_component(($$result, $$props, $$bindings, slots) =
     }
   })}`;
 });
-const Clock = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M12 6v6l4 2" }],
-    ["circle", { "cx": "12", "cy": "12", "r": "10" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "clock" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Cloud_alert = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M12 12v4" }],
@@ -8312,21 +8170,6 @@ const Cloud_upload = create_ssr_component(($$result, $$props, $$bindings, slots)
     }
   })}`;
 });
-const Cloud = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "cloud" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Cloudy = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -8388,14 +8231,6 @@ const Code_xml = create_ssr_component(($$result, $$props, $$bindings, slots) => 
     ["path", { "d": "m14.5 4-5 16" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "code-xml" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Code = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [["path", { "d": "m16 18 6-6-6-6" }], ["path", { "d": "m8 6-6 6 6 6" }]];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "code" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -9093,32 +8928,6 @@ const Copy_slash = create_ssr_component(($$result, $$props, $$bindings, slots) =
     }
   })}`;
 });
-const Copy = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "rect",
-      {
-        "width": "14",
-        "height": "14",
-        "x": "8",
-        "y": "8",
-        "rx": "2",
-        "ry": "2"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "copy" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Copyleft = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["circle", { "cx": "12", "cy": "12", "r": "10" }],
@@ -9644,26 +9453,6 @@ const Database_zap = create_ssr_component(($$result, $$props, $$bindings, slots)
     ["path", { "d": "M3 12A9 3 0 0 0 14.59 14.87" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "database-zap" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Database = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "ellipse",
-      {
-        "cx": "12",
-        "cy": "5",
-        "rx": "9",
-        "ry": "3"
-      }
-    ],
-    ["path", { "d": "M3 5V19A9 3 0 0 0 21 19V5" }],
-    ["path", { "d": "M3 12A9 3 0 0 0 21 12" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "database" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -10913,23 +10702,6 @@ const Expand = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
   })}`;
 });
-const External_link = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M15 3h6v6" }],
-    ["path", { "d": "M10 14 21 3" }],
-    [
-      "path",
-      {
-        "d": "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "external-link" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Eye_closed = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "m15 18-.722-3.25" }],
@@ -10939,34 +10711,6 @@ const Eye_closed = create_ssr_component(($$result, $$props, $$bindings, slots) =
     ["path", { "d": "m9 18 .722-3.25" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "eye-closed" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Eye_off = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M14.084 14.158a3 3 0 0 1-4.242-4.242"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"
-      }
-    ],
-    ["path", { "d": "m2 2 20 20" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "eye-off" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -11872,28 +11616,6 @@ const File_plus = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     ["path", { "d": "M12 18v-6" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "file-plus" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const File_question_mark = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M12 17h.01" }],
-    [
-      "path",
-      {
-        "d": "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M9.1 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "file-question-mark" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -13984,34 +13706,6 @@ const Git_branch = create_ssr_component(($$result, $$props, $$bindings, slots) =
     }
   })}`;
 });
-const Git_commit_horizontal = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["circle", { "cx": "12", "cy": "12", "r": "3" }],
-    [
-      "line",
-      {
-        "x1": "3",
-        "x2": "9",
-        "y1": "12",
-        "y2": "12"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "15",
-        "x2": "21",
-        "y1": "12",
-        "y2": "12"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "git-commit-horizontal" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Git_commit_vertical = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M12 3v6" }],
@@ -15309,21 +15003,6 @@ const Heart_pulse = create_ssr_component(($$result, $$props, $$bindings, slots) 
     ]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "heart-pulse" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Heart = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "heart" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -17230,27 +16909,6 @@ const Link_2 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
   })}`;
 });
-const Link = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "link" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Linkedin = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -18293,22 +17951,6 @@ const Map_pin_x = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     }
   })}`;
 });
-const Map_pin = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
-      }
-    ],
-    ["circle", { "cx": "12", "cy": "10", "r": "3" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "map-pin" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Map_pinned = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -18345,23 +17987,6 @@ const Map_plus = create_ssr_component(($$result, $$props, $$bindings, slots) => 
     ["path", { "d": "M9 3.236v15" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "map-plus" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Map = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
-      }
-    ],
-    ["path", { "d": "M15 5.764v15" }],
-    ["path", { "d": "M9 3.236v15" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "map" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -19607,43 +19232,6 @@ const Monitor_x = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     }
   })}`;
 });
-const Monitor = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "rect",
-      {
-        "width": "20",
-        "height": "14",
-        "x": "2",
-        "y": "3",
-        "rx": "2"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "8",
-        "x2": "16",
-        "y1": "21",
-        "y2": "21"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "12",
-        "x2": "12",
-        "y1": "17",
-        "y2": "21"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "monitor" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Moon_star = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9" }],
@@ -20673,24 +20261,6 @@ const Package_x = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     ["path", { "d": "m17 13 5 5m-5 0 5-5" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "package-x" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Package = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
-      }
-    ],
-    ["path", { "d": "M12 22V12" }],
-    ["polyline", { "points": "3.29 7 12 12 20.71 7" }],
-    ["path", { "d": "m7.5 4.27 9 5.15" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "package" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -21739,21 +21309,6 @@ const Phone_outgoing = create_ssr_component(($$result, $$props, $$bindings, slot
     }
   })}`;
 });
-const Phone = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "phone" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Pi = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -22403,37 +21958,6 @@ const Printer_check = create_ssr_component(($$result, $$props, $$bindings, slots
     ]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "printer-check" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Printer = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"
-      }
-    ],
-    [
-      "rect",
-      {
-        "x": "6",
-        "y": "14",
-        "width": "12",
-        "height": "8",
-        "rx": "1"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "printer" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -23442,39 +22966,6 @@ const Ribbon = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
   })}`;
 });
-const Rocket = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "rocket" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Rocking_chair = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["polyline", { "points": "3.5 2 6.5 12.5 18 12.5" }],
@@ -24024,28 +23515,6 @@ const Save_off = create_ssr_component(($$result, $$props, $$bindings, slots) => 
     }
   })}`;
 });
-const Save = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"
-      }
-    ],
-    ["path", { "d": "M7 3v4a1 1 0 0 0 1 1h7" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "save" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Scale_3d = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M5 7v11a1 1 0 0 0 1 1h11" }],
@@ -24501,22 +23970,6 @@ const Send_to_back = create_ssr_component(($$result, $$props, $$bindings, slots)
     }
   })}`;
 });
-const Send = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"
-      }
-    ],
-    ["path", { "d": "m21.854 2.147-10.94 10.939" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "send" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Separator_horizontal = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "m16 16-4 4-4-4" }],
@@ -24582,30 +24035,6 @@ const Server_cog = create_ssr_component(($$result, $$props, $$bindings, slots) =
     }
   })}`;
 });
-const Server_crash = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M6 10H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M6 14H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"
-      }
-    ],
-    ["path", { "d": "M6 6h.01" }],
-    ["path", { "d": "M6 18h.01" }],
-    ["path", { "d": "m13 6-4 6h6l-4 6" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "server-crash" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Server_off = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -24636,35 +24065,6 @@ const Server_off = create_ssr_component(($$result, $$props, $$bindings, slots) =
     }
   })}`;
 });
-const Settings_2 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M14 17H5" }],
-    ["path", { "d": "M19 7h-9" }],
-    ["circle", { "cx": "17", "cy": "17", "r": "3" }],
-    ["circle", { "cx": "7", "cy": "7", "r": "3" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "settings-2" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Settings = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
-      }
-    ],
-    ["circle", { "cx": "12", "cy": "12", "r": "3" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "settings" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Shapes = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -24686,36 +24086,6 @@ const Shapes = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     ["circle", { "cx": "17.5", "cy": "17.5", "r": "3.5" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "shapes" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Share_2 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["circle", { "cx": "18", "cy": "5", "r": "3" }],
-    ["circle", { "cx": "6", "cy": "12", "r": "3" }],
-    ["circle", { "cx": "18", "cy": "19", "r": "3" }],
-    [
-      "line",
-      {
-        "x1": "8.59",
-        "x2": "15.42",
-        "y1": "13.51",
-        "y2": "17.49"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "15.41",
-        "x2": "8.59",
-        "y1": "6.51",
-        "y2": "10.49"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "share-2" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -25769,27 +25139,6 @@ const Smartphone_nfc = create_ssr_component(($$result, $$props, $$bindings, slot
     ]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "smartphone-nfc" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Smartphone = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "rect",
-      {
-        "width": "14",
-        "height": "20",
-        "x": "5",
-        "y": "2",
-        "rx": "2",
-        "ry": "2"
-      }
-    ],
-    ["path", { "d": "M12 18h.01" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "smartphone" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -28758,18 +28107,6 @@ const Tangent = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
   })}`;
 });
-const Target = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["circle", { "cx": "12", "cy": "12", "r": "10" }],
-    ["circle", { "cx": "12", "cy": "12", "r": "6" }],
-    ["circle", { "cx": "12", "cy": "12", "r": "2" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "target" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Telescope = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -29086,38 +28423,6 @@ const Thermometer = create_ssr_component(($$result, $$props, $$bindings, slots) 
     ]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "thermometer" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Thumbs_down = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M17 14V2" }],
-    [
-      "path",
-      {
-        "d": "M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "thumbs-down" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Thumbs_up = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M7 10v12" }],
-    [
-      "path",
-      {
-        "d": "M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "thumbs-up" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -29742,46 +29047,6 @@ const Transgender = create_ssr_component(($$result, $$props, $$bindings, slots) 
     ["circle", { "cx": "12", "cy": "12", "r": "4" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "transgender" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Trash_2 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "M3 6h18" }],
-    [
-      "path",
-      {
-        "d": "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "10",
-        "x2": "10",
-        "y1": "11",
-        "y2": "17"
-      }
-    ],
-    [
-      "line",
-      {
-        "x1": "14",
-        "x2": "14",
-        "y1": "11",
-        "y2": "17"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "trash-2" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -30832,24 +30097,6 @@ const Users_round = create_ssr_component(($$result, $$props, $$bindings, slots) 
     }
   })}`;
 });
-const Users = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-      }
-    ],
-    ["path", { "d": "M16 3.128a4 4 0 0 1 0 7.744" }],
-    ["path", { "d": "M22 21v-2a4 4 0 0 0-3-3.87" }],
-    ["circle", { "cx": "9", "cy": "7", "r": "4" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "users" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Utensils_crossed = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -31183,31 +30430,6 @@ const Video_off = create_ssr_component(($$result, $$props, $$bindings, slots) =>
     }
   })}`;
 });
-const Video = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"
-      }
-    ],
-    [
-      "rect",
-      {
-        "x": "2",
-        "y": "6",
-        "width": "14",
-        "height": "12",
-        "rx": "2"
-      }
-    ]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "video" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const View = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     [
@@ -31325,23 +30547,6 @@ const Volume_1 = create_ssr_component(($$result, $$props, $$bindings, slots) => 
     ["path", { "d": "M16 9a5 5 0 0 1 0 6" }]
   ];
   return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "volume-1" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Volume_2 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"
-      }
-    ],
-    ["path", { "d": "M16 9a5 5 0 0 1 0 6" }],
-    ["path", { "d": "M19.364 18.364a9 9 0 0 0 0-12.728" }]
-  ];
-  return `${validate_component(Icon$1, "Icon").$$render($$result, Object.assign({}, { name: "volume-2" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }

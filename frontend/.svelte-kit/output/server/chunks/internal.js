@@ -69,7 +69,11 @@ const Root = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
     $$rendered = `  ${constructors[1] ? `${validate_component(constructors[0] || missing_component, "svelte:component").$$render(
       $$result,
-      { data: data_0, this: components[0] },
+      {
+        data: data_0,
+        params: page.params,
+        this: components[0]
+      },
       {
         this: ($$value) => {
           components[0] = $$value;
@@ -80,7 +84,11 @@ const Root = create_ssr_component(($$result, $$props, $$bindings, slots) => {
         default: () => {
           return `${constructors[2] ? `${validate_component(constructors[1] || missing_component, "svelte:component").$$render(
             $$result,
-            { data: data_1, this: components[1] },
+            {
+              data: data_1,
+              params: page.params,
+              this: components[1]
+            },
             {
               this: ($$value) => {
                 components[1] = $$value;
@@ -91,7 +99,12 @@ const Root = create_ssr_component(($$result, $$props, $$bindings, slots) => {
               default: () => {
                 return `${validate_component(constructors[2] || missing_component, "svelte:component").$$render(
                   $$result,
-                  { data: data_2, form, this: components[2] },
+                  {
+                    data: data_2,
+                    form,
+                    params: page.params,
+                    this: components[2]
+                  },
                   {
                     this: ($$value) => {
                       components[2] = $$value;
@@ -104,7 +117,12 @@ const Root = create_ssr_component(($$result, $$props, $$bindings, slots) => {
             }
           )}` : `${validate_component(constructors[1] || missing_component, "svelte:component").$$render(
             $$result,
-            { data: data_1, form, this: components[1] },
+            {
+              data: data_1,
+              form,
+              params: page.params,
+              this: components[1]
+            },
             {
               this: ($$value) => {
                 components[1] = $$value;
@@ -117,7 +135,12 @@ const Root = create_ssr_component(($$result, $$props, $$bindings, slots) => {
       }
     )}` : `${validate_component(constructors[0] || missing_component, "svelte:component").$$render(
       $$result,
-      { data: data_0, form, this: components[0] },
+      {
+        data: data_0,
+        form,
+        params: page.params,
+        this: components[0]
+      },
       {
         this: ($$value) => {
           components[0] = $$value;
@@ -215,7 +238,7 @@ const options = {
 		<div class="error">
 			<span class="status">` + status + '</span>\n			<div class="message">\n				<h1>' + message + "</h1>\n			</div>\n		</div>\n	</body>\n</html>\n"
   },
-  version_hash: "1r0okgt"
+  version_hash: "1vh0nyv"
 };
 async function get_hooks() {
   let handle;

@@ -1,7 +1,8 @@
-import { c as create_ssr_component, a as subscribe, d as escape, e as each, b as add_attribute, v as validate_component } from "../../../chunks/ssr.js";
+import { s as subscribe } from "../../../chunks/utils.js";
+import { c as create_ssr_component, b as escape, e as each, a as add_attribute, v as validate_component } from "../../../chunks/ssr.js";
 import { p as page } from "../../../chunks/stores.js";
-import { g as goto } from "../../../chunks/client.js";
-import { a as authStore } from "../../../chunks/auth2.js";
+import { g as goto } from "../../../chunks/client2.js";
+import { a as authStore } from "../../../chunks/auth3.js";
 import { I as Icon } from "../../../chunks/Icon.js";
 const css = {
   code: ".admin-card{background-color:white;border-radius:0.5rem;box-shadow:0 1px 2px 0 rgba(0, 0, 0, 0.05);border:1px solid #e5e7eb;padding:1.5rem}.admin-table{min-width:100%;border-collapse:collapse}.admin-table > * > tr{border-bottom:1px solid #e5e7eb}.admin-table thead{background-color:#f9fafb}.admin-table th{padding:0.75rem 1.5rem;text-align:left;font-size:0.75rem;font-weight:500;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em}.admin-table td{padding:1rem 1.5rem;white-space:nowrap;font-size:0.875rem;color:#111827}",

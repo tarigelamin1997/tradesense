@@ -241,7 +241,7 @@
 							class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
 						>
 							<option value="">Select your experience level</option>
-							<option value="beginner">Beginner (< 1 year)</option>
+							<option value="beginner">Beginner (&lt; 1 year)</option>
 							<option value="intermediate">Intermediate (1-3 years)</option>
 							<option value="advanced">Advanced (3-5 years)</option>
 							<option value="expert">Expert (5+ years)</option>

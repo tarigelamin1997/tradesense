@@ -2,7 +2,7 @@
 
 export const index = 44;
 let component_cache;
-export const component = async () => component_cache ??= (await import('../entries/pages/upload/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/44.BF-5BMPw.js","_app/immutable/chunks/Lbc7qOuA.js","_app/immutable/chunks/IHki7fMi.js","_app/immutable/chunks/COKI2rXe.js","_app/immutable/chunks/rrxRWJDg.js","_app/immutable/chunks/BaPb1MTw.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/Bt-Xh7oU.js","_app/immutable/chunks/BPb2qfkA.js","_app/immutable/chunks/BiV8kiL4.js","_app/immutable/chunks/CEJcwZ0r.js","_app/immutable/chunks/BVoy4-16.js","_app/immutable/chunks/B5zPiAHL.js","_app/immutable/chunks/D9QBKBPx.js","_app/immutable/chunks/DNA3zxjK.js","_app/immutable/chunks/BUUhFWHX.js","_app/immutable/chunks/Q3UmE36f.js","_app/immutable/chunks/C4SabxlY.js","_app/immutable/chunks/CpvFwwJ8.js","_app/immutable/chunks/-mP7Un7Q.js","_app/immutable/chunks/CRYdEjN_.js"];
-export const stylesheets = ["_app/immutable/assets/44.BMxD_vt8.css"];
+export const component = async () => component_cache ??= (await import('../entries/pages/settings/_page.svelte.js')).default;
+export const imports = ["_app/immutable/nodes/44.BSE308HU.js","_app/immutable/chunks/BizRtQrO.js","_app/immutable/chunks/D0QH3NT1.js","_app/immutable/chunks/CEysSNcE.js","_app/immutable/chunks/IHki7fMi.js","_app/immutable/chunks/Bt-Xh7oU.js","_app/immutable/chunks/CNsmtZI0.js","_app/immutable/chunks/CMDLyNOv.js","_app/immutable/chunks/-74CPqXK.js","_app/immutable/chunks/C1FmrZbK.js","_app/immutable/chunks/BTaiyOO3.js","_app/immutable/chunks/DR1-ht0v.js","_app/immutable/chunks/CFd03T84.js","_app/immutable/chunks/FuTwU54X.js","_app/immutable/chunks/BS5cfN_p.js","_app/immutable/chunks/CaokxS2S.js","_app/immutable/chunks/CvT6G94N.js","_app/immutable/chunks/DFGn8VpF.js","_app/immutable/chunks/5WweqhTT.js","_app/immutable/chunks/BXGLHKGA.js","_app/immutable/chunks/Cp72IWUd.js","_app/immutable/chunks/DJ5azxNQ.js"];
+export const stylesheets = ["_app/immutable/assets/44.G4gBAzJP.css"];
 export const fonts = [];

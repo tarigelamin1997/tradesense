@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+.svelte-kit
+coverage
+package
+.env
+.env.*
+!.env.example
+static
+public
+package-lock.json
+pnpm-lock.yaml

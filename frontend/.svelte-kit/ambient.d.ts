@@ -28,6 +28,21 @@
 declare module '$env/static/private' {
 	export const VITE_API_BASE_URL: string;
 	export const VITE_API_URL: string;
+	export const VITE_APP_URL: string;
+	export const VITE_WS_URL: string;
+	export const VITE_STRIPE_PUBLISHABLE_KEY: string;
+	export const VITE_GA_TRACKING_ID: string;
+	export const VITE_MIXPANEL_TOKEN: string;
+	export const VITE_SENTRY_DSN: string;
+	export const VITE_SENTRY_ENVIRONMENT: string;
+	export const VITE_FEATURE_AI_INSIGHTS: string;
+	export const VITE_FEATURE_SOCIAL_TRADING: string;
+	export const VITE_FEATURE_PAPER_TRADING: string;
+	export const VITE_APP_VERSION: string;
+	export const VITE_APP_NAME: string;
+	export const VITE_SUPPORT_EMAIL: string;
+	export const VITE_CONTACT_EMAIL: string;
+	export const NODE_ENV: string;
 	export const LESSOPEN: string;
 	export const GITHUB_TOKEN_FRONTEND: string;
 	export const USER: string;
@@ -41,6 +56,7 @@ declare module '$env/static/private' {
 	export const npm_config_noproxy: string;
 	export const VIPSHOME: string;
 	export const HOME: string;
+	export const OLDPWD: string;
 	export const DESKTOP_SESSION: string;
 	export const GITHUB_TOKEN_QA: string;
 	export const npm_package_json: string;
@@ -111,7 +127,7 @@ declare module '$env/static/private' {
 	export const VTE_VERSION: string;
 	export const INIT_CWD: string;
 	export const EDITOR: string;
-	export const NODE_ENV: string;
+	export const VITE_USER_NODE_ENV: string;
 }
 
 /**
@@ -145,6 +161,21 @@ declare module '$env/dynamic/private' {
 	export const env: {
 		VITE_API_BASE_URL: string;
 		VITE_API_URL: string;
+		VITE_APP_URL: string;
+		VITE_WS_URL: string;
+		VITE_STRIPE_PUBLISHABLE_KEY: string;
+		VITE_GA_TRACKING_ID: string;
+		VITE_MIXPANEL_TOKEN: string;
+		VITE_SENTRY_DSN: string;
+		VITE_SENTRY_ENVIRONMENT: string;
+		VITE_FEATURE_AI_INSIGHTS: string;
+		VITE_FEATURE_SOCIAL_TRADING: string;
+		VITE_FEATURE_PAPER_TRADING: string;
+		VITE_APP_VERSION: string;
+		VITE_APP_NAME: string;
+		VITE_SUPPORT_EMAIL: string;
+		VITE_CONTACT_EMAIL: string;
+		NODE_ENV: string;
 		LESSOPEN: string;
 		GITHUB_TOKEN_FRONTEND: string;
 		USER: string;
@@ -158,6 +189,7 @@ declare module '$env/dynamic/private' {
 		npm_config_noproxy: string;
 		VIPSHOME: string;
 		HOME: string;
+		OLDPWD: string;
 		DESKTOP_SESSION: string;
 		GITHUB_TOKEN_QA: string;
 		npm_package_json: string;
@@ -228,7 +260,7 @@ declare module '$env/dynamic/private' {
 		VTE_VERSION: string;
 		INIT_CWD: string;
 		EDITOR: string;
-		NODE_ENV: string;
+		VITE_USER_NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;
 		[key: `${string}`]: string | undefined;
 	}

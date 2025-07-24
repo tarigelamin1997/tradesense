@@ -1,23 +1,71 @@
-import { c as create_ssr_component, a as subscribe, d as escape } from "../../chunks/ssr.js";
+import { s as subscribe } from "../../chunks/utils.js";
+import { c as create_ssr_component, v as validate_component, e as each, b as escape, a as add_attribute, m as missing_component } from "../../chunks/ssr.js";
 import { p as page } from "../../chunks/stores.js";
-const css = {
-  code: ".error-container.svelte-9zphht.svelte-9zphht{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;padding:2rem}h1.svelte-9zphht.svelte-9zphht{font-size:4rem;margin-bottom:1rem;color:#666}p.svelte-9zphht.svelte-9zphht{font-size:1.25rem;color:#666;margin-bottom:2rem}.ssr-error.svelte-9zphht.svelte-9zphht{background-color:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:1.5rem;margin-bottom:2rem;max-width:600px}.error-title.svelte-9zphht.svelte-9zphht{font-weight:600;color:#92400e;margin-bottom:0.5rem}.error-message.svelte-9zphht.svelte-9zphht{color:#78350f;margin-bottom:0.5rem}.error-recovery.svelte-9zphht.svelte-9zphht{color:#78350f;font-style:italic}.debug-info.svelte-9zphht.svelte-9zphht{margin:2rem 0;padding:1rem;background-color:#f3f4f6;border-radius:8px;max-width:800px;text-align:left}.debug-info.svelte-9zphht summary.svelte-9zphht{cursor:pointer;font-weight:500;margin-bottom:0.5rem}.debug-info.svelte-9zphht pre.svelte-9zphht{overflow-x:auto;font-size:0.875rem;margin-top:1rem}.actions.svelte-9zphht.svelte-9zphht{margin:2rem 0}.primary-action.svelte-9zphht.svelte-9zphht{background:#10b981;color:white;padding:0.75rem 1.5rem;border-radius:6px;text-decoration:none;border:none;cursor:pointer;font-size:1rem;transition:background 0.2s;display:inline-block}.primary-action.svelte-9zphht.svelte-9zphht:hover{background:#059669}.help-text.svelte-9zphht.svelte-9zphht{color:#6b7280;font-size:0.875rem;margin-top:1rem}",
-  map: `{"version":3,"file":"+error.svelte","sources":["+error.svelte"],"sourcesContent":["<script lang=\\"ts\\">import { page } from \\"$app/stores\\";\\nimport { browser } from \\"$app/environment\\";\\nimport { dev } from \\"$app/environment\\";\\nimport { onMount } from \\"svelte\\";\\nlet isSSRError = false;\\nlet errorCode = \\"\\";\\n$: {\\n  errorCode = $page.error?.code || \\"\\";\\n  isSSRError = errorCode?.startsWith(\\"SSR_\\");\\n}\\nonMount(() => {\\n  if (dev && $page.error) {\\n    console.error(\\"Client-side error:\\", $page.error);\\n  }\\n});\\n<\/script>\\n\\n<svelte:head>\\n\\t<title>{$page.status} - TradeSense</title>\\n</svelte:head>\\n\\n<div class=\\"error-container\\">\\n\\t<h1>{$page.status}</h1>\\n\\t\\n\\t{#if isSSRError}\\n\\t\\t<div class=\\"ssr-error\\">\\n\\t\\t\\t<p class=\\"error-title\\">Server Rendering Error</p>\\n\\t\\t\\t<p class=\\"error-message\\">The application encountered an issue during server-side rendering.</p>\\n\\t\\t\\t{#if browser}\\n\\t\\t\\t\\t<p class=\\"error-recovery\\">The page should work correctly now that it's loaded in your browser.</p>\\n\\t\\t\\t{/if}\\n\\t\\t</div>\\n\\t{:else}\\n\\t\\t<p>{$page.error?.message || 'An unexpected error occurred'}</p>\\n\\t{/if}\\n\\t\\n\\t{#if dev && ($page.error?.stack || errorCode)}\\n\\t\\t<details class=\\"debug-info\\">\\n\\t\\t\\t<summary>Debug Information (development only)</summary>\\n\\t\\t\\t{#if errorCode}\\n\\t\\t\\t\\t<p><strong>Error Code:</strong> {errorCode}</p>\\n\\t\\t\\t{/if}\\n\\t\\t\\t{#if $page.error?.stack}\\n\\t\\t\\t\\t<pre>{$page.error.stack}</pre>\\n\\t\\t\\t{/if}\\n\\t\\t</details>\\n\\t{/if}\\n\\t\\n\\t<div class=\\"actions\\">\\n\\t\\t{#if $page.status === 404}\\n\\t\\t\\t<a href=\\"/\\" class=\\"primary-action\\">Go to Dashboard</a>\\n\\t\\t{:else if isSSRError && browser}\\n\\t\\t\\t<button on:click={() => window.location.href = '/'} class=\\"primary-action\\">\\n\\t\\t\\t\\tGo to Dashboard\\n\\t\\t\\t</button>\\n\\t\\t{:else}\\n\\t\\t\\t<button on:click={() => browser && window.location.reload()} class=\\"primary-action\\">\\n\\t\\t\\t\\tTry Again\\n\\t\\t\\t</button>\\n\\t\\t{/if}\\n\\t</div>\\n\\t\\n\\t{#if $page.status === 500 && !isSSRError}\\n\\t\\t<p class=\\"help-text\\">If this error persists, please contact support.</p>\\n\\t{/if}\\n</div>\\n\\n<style>\\n\\t.error-container {\\n\\t\\tdisplay: flex;\\n\\t\\tflex-direction: column;\\n\\t\\talign-items: center;\\n\\t\\tjustify-content: center;\\n\\t\\tmin-height: 50vh;\\n\\t\\ttext-align: center;\\n\\t\\tpadding: 2rem;\\n\\t}\\n\\t\\n\\th1 {\\n\\t\\tfont-size: 4rem;\\n\\t\\tmargin-bottom: 1rem;\\n\\t\\tcolor: #666;\\n\\t}\\n\\t\\n\\tp {\\n\\t\\tfont-size: 1.25rem;\\n\\t\\tcolor: #666;\\n\\t\\tmargin-bottom: 2rem;\\n\\t}\\n\\t\\n\\t.ssr-error {\\n\\t\\tbackground-color: #fef3c7;\\n\\t\\tborder: 1px solid #f59e0b;\\n\\t\\tborder-radius: 8px;\\n\\t\\tpadding: 1.5rem;\\n\\t\\tmargin-bottom: 2rem;\\n\\t\\tmax-width: 600px;\\n\\t}\\n\\t\\n\\t.error-title {\\n\\t\\tfont-weight: 600;\\n\\t\\tcolor: #92400e;\\n\\t\\tmargin-bottom: 0.5rem;\\n\\t}\\n\\t\\n\\t.error-message {\\n\\t\\tcolor: #78350f;\\n\\t\\tmargin-bottom: 0.5rem;\\n\\t}\\n\\t\\n\\t.error-recovery {\\n\\t\\tcolor: #78350f;\\n\\t\\tfont-style: italic;\\n\\t}\\n\\t\\n\\t.debug-info {\\n\\t\\tmargin: 2rem 0;\\n\\t\\tpadding: 1rem;\\n\\t\\tbackground-color: #f3f4f6;\\n\\t\\tborder-radius: 8px;\\n\\t\\tmax-width: 800px;\\n\\t\\ttext-align: left;\\n\\t}\\n\\t\\n\\t.debug-info summary {\\n\\t\\tcursor: pointer;\\n\\t\\tfont-weight: 500;\\n\\t\\tmargin-bottom: 0.5rem;\\n\\t}\\n\\t\\n\\t.debug-info pre {\\n\\t\\toverflow-x: auto;\\n\\t\\tfont-size: 0.875rem;\\n\\t\\tmargin-top: 1rem;\\n\\t}\\n\\t\\n\\t.actions {\\n\\t\\tmargin: 2rem 0;\\n\\t}\\n\\t\\n\\t.primary-action {\\n\\t\\tbackground: #10b981;\\n\\t\\tcolor: white;\\n\\t\\tpadding: 0.75rem 1.5rem;\\n\\t\\tborder-radius: 6px;\\n\\t\\ttext-decoration: none;\\n\\t\\tborder: none;\\n\\t\\tcursor: pointer;\\n\\t\\tfont-size: 1rem;\\n\\t\\ttransition: background 0.2s;\\n\\t\\tdisplay: inline-block;\\n\\t}\\n\\t\\n\\t.primary-action:hover {\\n\\t\\tbackground: #059669;\\n\\t}\\n\\t\\n\\t.help-text {\\n\\t\\tcolor: #6b7280;\\n\\t\\tfont-size: 0.875rem;\\n\\t\\tmargin-top: 1rem;\\n\\t}\\n</style>"],"names":[],"mappings":"AAoEC,4CAAiB,CAChB,OAAO,CAAE,IAAI,CACb,cAAc,CAAE,MAAM,CACtB,WAAW,CAAE,MAAM,CACnB,eAAe,CAAE,MAAM,CACvB,UAAU,CAAE,IAAI,CAChB,UAAU,CAAE,MAAM,CAClB,OAAO,CAAE,IACV,CAEA,8BAAG,CACF,SAAS,CAAE,IAAI,CACf,aAAa,CAAE,IAAI,CACnB,KAAK,CAAE,IACR,CAEA,6BAAE,CACD,SAAS,CAAE,OAAO,CAClB,KAAK,CAAE,IAAI,CACX,aAAa,CAAE,IAChB,CAEA,sCAAW,CACV,gBAAgB,CAAE,OAAO,CACzB,MAAM,CAAE,GAAG,CAAC,KAAK,CAAC,OAAO,CACzB,aAAa,CAAE,GAAG,CAClB,OAAO,CAAE,MAAM,CACf,aAAa,CAAE,IAAI,CACnB,SAAS,CAAE,KACZ,CAEA,wCAAa,CACZ,WAAW,CAAE,GAAG,CAChB,KAAK,CAAE,OAAO,CACd,aAAa,CAAE,MAChB,CAEA,0CAAe,CACd,KAAK,CAAE,OAAO,CACd,aAAa,CAAE,MAChB,CAEA,2CAAgB,CACf,KAAK,CAAE,OAAO,CACd,UAAU,CAAE,MACb,CAEA,uCAAY,CACX,MAAM,CAAE,IAAI,CAAC,CAAC,CACd,OAAO,CAAE,IAAI,CACb,gBAAgB,CAAE,OAAO,CACzB,aAAa,CAAE,GAAG,CAClB,SAAS,CAAE,KAAK,CAChB,UAAU,CAAE,IACb,CAEA,yBAAW,CAAC,qBAAQ,CACnB,MAAM,CAAE,OAAO,CACf,WAAW,CAAE,GAAG,CAChB,aAAa,CAAE,MAChB,CAEA,yBAAW,CAAC,iBAAI,CACf,UAAU,CAAE,IAAI,CAChB,SAAS,CAAE,QAAQ,CACnB,UAAU,CAAE,IACb,CAEA,oCAAS,CACR,MAAM,CAAE,IAAI,CAAC,CACd,CAEA,2CAAgB,CACf,UAAU,CAAE,OAAO,CACnB,KAAK,CAAE,KAAK,CACZ,OAAO,CAAE,OAAO,CAAC,MAAM,CACvB,aAAa,CAAE,GAAG,CAClB,eAAe,CAAE,IAAI,CACrB,MAAM,CAAE,IAAI,CACZ,MAAM,CAAE,OAAO,CACf,SAAS,CAAE,IAAI,CACf,UAAU,CAAE,UAAU,CAAC,IAAI,CAC3B,OAAO,CAAE,YACV,CAEA,2CAAe,MAAO,CACrB,UAAU,CAAE,OACb,CAEA,sCAAW,CACV,KAAK,CAAE,OAAO,CACd,SAAS,CAAE,QAAQ,CACnB,UAAU,CAAE,IACb"}`
-};
+import "@sveltejs/kit/internal";
+import "../../chunks/exports.js";
+import "../../chunks/state.svelte.js";
+import { F as File_question_mark, S as Server_crash } from "../../chunks/server-crash.js";
+import { T as Triangle_alert } from "../../chunks/triangle-alert.js";
+import { S as Search } from "../../chunks/search.js";
+import { A as Arrow_left } from "../../chunks/arrow-left.js";
+import { H as House } from "../../chunks/house.js";
 const Error = create_ssr_component(($$result, $$props, $$bindings, slots) => {
+  let error;
+  let status;
   let $page, $$unsubscribe_page;
   $$unsubscribe_page = subscribe(page, (value) => $page = value);
-  let isSSRError = false;
-  let errorCode = "";
-  $$result.css.add(css);
-  {
+  const publicPages = [
+    { path: "/", label: "Home", icon: House },
+    { path: "/features", label: "Features" },
+    { path: "/pricing", label: "Pricing" },
+    { path: "/about", label: "About" },
+    { path: "/blog", label: "Blog" },
+    { path: "/contact", label: "Contact" },
+    { path: "/docs", label: "Documentation" }
+  ];
+  const authPages = [
+    { path: "/dashboard", label: "Dashboard" },
+    { path: "/trades", label: "Trade Log" },
+    { path: "/portfolio", label: "Portfolio" },
+    { path: "/analytics", label: "Analytics" },
+    { path: "/journal", label: "Journal" },
     {
-      errorCode = $page.error?.code || "";
-      isSSRError = errorCode?.startsWith("SSR_");
+      path: "/ai-insights",
+      label: "AI Insights"
     }
-  }
+  ];
+  const supportPages = [
+    {
+      path: "/support",
+      label: "Support Center"
+    },
+    {
+      path: "/support/kb",
+      label: "Knowledge Base"
+    },
+    { path: "/status", label: "System Status" }
+  ];
+  error = $page.error;
+  status = $page.status;
   $$unsubscribe_page();
-  return `${$$result.head += `<!-- HEAD_svelte-6sxjt0_START -->${$$result.title = `<title>${escape($page.status)} - TradeSense</title>`, ""}<!-- HEAD_svelte-6sxjt0_END -->`, ""} <div class="error-container svelte-9zphht"><h1 class="svelte-9zphht">${escape($page.status)}</h1> ${isSSRError ? `<div class="ssr-error svelte-9zphht"><p class="error-title svelte-9zphht" data-svelte-h="svelte-k7uyk1">Server Rendering Error</p> <p class="error-message svelte-9zphht" data-svelte-h="svelte-chsp42">The application encountered an issue during server-side rendering.</p> ${``}</div>` : `<p class="svelte-9zphht">${escape($page.error?.message || "An unexpected error occurred")}</p>`} ${``} <div class="actions svelte-9zphht">${$page.status === 404 ? `<a href="/" class="primary-action svelte-9zphht" data-svelte-h="svelte-14d1n7m">Go to Dashboard</a>` : `${`<button class="primary-action svelte-9zphht" data-svelte-h="svelte-vtvs8j">Try Again</button>`}`}</div> ${$page.status === 500 && !isSSRError ? `<p class="help-text svelte-9zphht" data-svelte-h="svelte-1jxzzuz">If this error persists, please contact support.</p>` : ``} </div>`;
+  return `<div class="min-h-screen bg-gray-50 dark:bg-gray-900"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">${status === 404 ? ` <div class="text-center"><div class="flex justify-center mb-8"><div class="relative">${validate_component(File_question_mark, "FileQuestion").$$render(
+    $$result,
+    {
+      class: "h-24 w-24 text-gray-400 dark:text-gray-600"
+    },
+    {},
+    {}
+  )} <div class="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full p-2">${validate_component(Triangle_alert, "AlertTriangle").$$render($$result, { class: "h-6 w-6 text-white" }, {}, {})}</div></div></div> <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4" data-svelte-h="svelte-bk3d2s">404</h1> <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4" data-svelte-h="svelte-3alolz">Page Not Found</h2> <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto" data-svelte-h="svelte-uwjox3">Sorry, we couldn&#39;t find the page you&#39;re looking for. It might have been moved, 
+					deleted, or the URL might be incorrect.</p>  <div class="max-w-md mx-auto mb-12"><form class="relative"><input type="text" name="search" placeholder="Search for pages..." class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"> <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">${validate_component(Search, "Search").$$render($$result, { class: "h-5 w-5" }, {}, {})}</button></form></div>  <div class="flex flex-wrap justify-center gap-4 mb-12"><button class="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">${validate_component(Arrow_left, "ArrowLeft").$$render($$result, { class: "h-4 w-4" }, {}, {})}
+						Go Back</button> <a href="/" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">${validate_component(House, "Home").$$render($$result, { class: "h-4 w-4" }, {}, {})}
+						Go to Home</a></div>  <div class="border-t border-gray-200 dark:border-gray-800 pt-12"><h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-8" data-svelte-h="svelte-mschcp">Here are some pages you might be looking for:</h3> <div class="grid md:grid-cols-3 gap-8 text-left max-w-4xl mx-auto"> <div><h4 class="font-medium text-gray-900 dark:text-white mb-4" data-svelte-h="svelte-7e5ol6">General</h4> <ul class="space-y-2">${each(publicPages, (page2) => {
+    return `<li><a${add_attribute("href", page2.path, 0)} class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2">${page2.icon ? `${validate_component(page2.icon || missing_component, "svelte:component").$$render($$result, { class: "h-4 w-4" }, {}, {})}` : ``} ${escape(page2.label)}</a> </li>`;
+  })}</ul></div>  <div><h4 class="font-medium text-gray-900 dark:text-white mb-4" data-svelte-h="svelte-1f7ihf6">Trading Platform</h4> <ul class="space-y-2">${each(authPages, (page2) => {
+    return `<li><a${add_attribute("href", page2.path, 0)} class="text-blue-600 dark:text-blue-400 hover:underline">${escape(page2.label)}</a> </li>`;
+  })}</ul></div>  <div><h4 class="font-medium text-gray-900 dark:text-white mb-4" data-svelte-h="svelte-1p4ugf0">Help &amp; Support</h4> <ul class="space-y-2">${each(supportPages, (page2) => {
+    return `<li><a${add_attribute("href", page2.path, 0)} class="text-blue-600 dark:text-blue-400 hover:underline">${escape(page2.label)}</a> </li>`;
+  })}</ul></div></div></div></div>` : `${status === 500 ? ` <div class="text-center"><div class="flex justify-center mb-8"><div class="relative">${validate_component(Server_crash, "ServerCrash").$$render($$result, { class: "h-24 w-24 text-red-500" }, {}, {})}</div></div> <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4" data-svelte-h="svelte-q6nh9l">500</h1> <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4" data-svelte-h="svelte-10d266z">Internal Server Error</h2> <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto" data-svelte-h="svelte-10ot2xz">Something went wrong on our end. We&#39;re working to fix it. 
+					Please try again in a few moments.</p> <div class="flex flex-wrap justify-center gap-4"><button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" data-svelte-h="svelte-bwmpai">Try Again</button> <a href="/" class="px-6 py-3 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors" data-svelte-h="svelte-qg4wpd">Go to Home</a></div> ${error?.message ? `<div class="mt-8 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg max-w-2xl mx-auto"><p class="text-sm text-red-600 dark:text-red-400">Error details: ${escape(error.message)}</p></div>` : ``}</div>` : ` <div class="text-center"><div class="flex justify-center mb-8">${validate_component(Triangle_alert, "AlertTriangle").$$render($$result, { class: "h-24 w-24 text-yellow-500" }, {}, {})}</div> <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4" data-svelte-h="svelte-l5ihmw">Oops! Something went wrong</h1> <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto" data-svelte-h="svelte-1w2x39t">An unexpected error occurred. Please try again or contact support if the problem persists.</p> <div class="flex flex-wrap justify-center gap-4"><button class="px-6 py-3 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors" data-svelte-h="svelte-m9ugbh">Go Back</button> <a href="/support" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" data-svelte-h="svelte-xk7i0n">Contact Support</a></div></div>`}`}</div> </div>`;
 });
 export {
   Error as default

@@ -1,6 +1,6 @@
 import { c as create_ssr_component, v as validate_component } from "../../../../chunks/ssr.js";
 import "../../../../chunks/ssr-safe.js";
-import { a as authStore } from "../../../../chunks/auth2.js";
+import { a as authStore } from "../../../../chunks/auth3.js";
 import { I as Icon } from "../../../../chunks/Icon.js";
 const css = {
   code: ".spinner.svelte-18k6mrr{width:2rem;height:2rem;border-width:4px;border-color:#c7d2fe;border-top-color:#4f46e5;border-radius:9999px;animation:spin 1s linear infinite}.form-input.svelte-18k6mrr,.form-select.svelte-18k6mrr,.form-textarea.svelte-18k6mrr{width:100%;border-radius:0.375rem;border-color:#d1d5db;box-shadow:0 1px 2px 0 rgba(0, 0, 0, 0.05)}.form-input.svelte-18k6mrr:focus,.form-select.svelte-18k6mrr:focus,.form-textarea.svelte-18k6mrr:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99, 102, 241, 0.1)}.btn.svelte-18k6mrr{padding:0.5rem 1rem;border-radius:0.375rem;font-weight:500;transition:background-color 0.15s ease-in-out, color 0.15s ease-in-out}.btn-primary.svelte-18k6mrr{background-color:#4f46e5;color:white}.btn-primary.svelte-18k6mrr:hover{background-color:#4338ca}.btn-secondary.svelte-18k6mrr{background-color:#e5e7eb;color:#1f2937}.btn-secondary.svelte-18k6mrr:hover{background-color:#d1d5db}.alert.svelte-18k6mrr{padding:1rem;border-radius:0.375rem}.alert-error.svelte-18k6mrr{background-color:#fef2f2;color:#991b1b;border:1px solid #fecaca}",

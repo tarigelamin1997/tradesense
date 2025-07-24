@@ -1,5 +1,11 @@
+import { A as AuthService } from "./auth.js";
 const handle = async ({ event, resolve }) => {
   console.log(`[${(/* @__PURE__ */ new Date()).toISOString()}] Handling request: ${event.request.method} ${event.url.pathname}`);
+  const token = AuthService.getAuthToken(event.cookies);
+  const user = AuthService.getUser(event.cookies);
+  event.locals.authToken = token;
+  event.locals.user = user;
+  event.locals.isAuthenticated = !!token && !!user;
   try {
     if (event.url.pathname === "/" || event.url.pathname.startsWith("/api")) {
       console.log("Environment check:", {

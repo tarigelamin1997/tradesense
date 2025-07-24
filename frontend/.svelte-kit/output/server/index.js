@@ -179,7 +179,7 @@ function redirect_response(status, location) {
 }
 function clarify_devalue_error(event, error) {
   if (error.path) {
-    return `Data returned from \`load\` while rendering ${event.route.id} is not serializable: ${error.message} (${error.path})`;
+    return `Data returned from \`load\` while rendering ${event.route.id} is not serializable: ${error.message} (${error.path}). If you need to serialize/deserialize custom types, use transport hooks: https://svelte.dev/docs/kit/hooks#Universal-hooks-transport.`;
   }
   if (error.path === "") {
     return `Data returned from \`load\` while rendering ${event.route.id} is not a plain object`;
@@ -3221,10 +3221,7 @@ class Server {
     this.#manifest = manifest;
   }
   /**
-   * @param {{
-   *   env: Record<string, string>;
-   *   read?: (file: string) => ReadableStream;
-   * }} opts
+   * @param {import('@sveltejs/kit').ServerInitOptions} opts
    */
   async init({ env, read }) {
     const prefixes = {
@@ -3241,7 +3238,34 @@ class Server {
     );
     set_safe_public_env(public_env2);
     if (read) {
-      set_read_implementation(read);
+      const wrapped_read = (file) => {
+        const result = read(file);
+        if (result instanceof ReadableStream) {
+          return result;
+        } else {
+          return new ReadableStream({
+            async start(controller) {
+              try {
+                const stream = await Promise.resolve(result);
+                if (!stream) {
+                  controller.close();
+                  return;
+                }
+                const reader = stream.getReader();
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  controller.enqueue(value);
+                }
+                controller.close();
+              } catch (error) {
+                controller.error(error);
+              }
+            }
+          });
+        }
+      };
+      set_read_implementation(wrapped_read);
     }
     await (init_promise ??= (async () => {
       try {

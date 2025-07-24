@@ -1,4 +1,4 @@
-import { c as create_ssr_component, v as validate_component, b as add_attribute, d as escape, e as each } from "../../../../chunks/ssr.js";
+import { c as create_ssr_component, v as validate_component, a as add_attribute, b as escape, e as each } from "../../../../chunks/ssr.js";
 import { a as api } from "../../../../chunks/ssr-safe.js";
 import { I as Icon } from "../../../../chunks/Icon.js";
 import "../../../../chunks/analytics.js";

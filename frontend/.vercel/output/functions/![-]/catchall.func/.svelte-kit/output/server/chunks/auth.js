@@ -1,93 +1,99 @@
-import { a as api } from "./ssr-safe.js";
-import { d as derived, w as writable } from "./index.js";
-function createAuthStore() {
-  const { subscribe, set, update } = writable({
-    user: null,
-    loading: false,
-    // Set to false by default for SSR
-    error: null
-  });
-  return {
-    subscribe,
-    async login(credentials) {
-      update((state) => ({ ...state, loading: true, error: null }));
-      try {
-        const response = await api.post("/api/v1/auth/login", {
-          username: credentials.username,
-          password: credentials.password
-        });
-        console.log("Login response:", response);
-        if (response.access_token) {
-          api.setAuthToken(response.access_token);
-          const userInfo = await api.get("/api/v1/auth/me");
-          update((state) => ({
-            ...state,
-            user: userInfo,
-            loading: false,
-            error: null
-          }));
-          return { access_token: response.access_token, token_type: "bearer", user: userInfo };
-        }
-        throw new Error("No access token received");
-      } catch (error) {
-        update((state) => ({
-          ...state,
-          user: null,
-          loading: false,
-          error: error.message || "Login failed"
-        }));
-        throw error;
-      }
-    },
-    async register(data) {
-      update((state) => ({ ...state, loading: true, error: null }));
-      try {
-        console.log("Attempting to register with:", data);
-        const registerResponse = await api.post("/api/v1/auth/register", data);
-        console.log("Registration successful:", registerResponse);
-        const loginResponse = await this.login({
-          username: data.username,
-          password: data.password
-        });
-        return loginResponse;
-      } catch (error) {
-        console.error("Registration error:", error);
-        let errorMessage = "Registration failed";
-        if (error.detail?.details?.message) {
-          errorMessage = error.detail.details.message;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        update((state) => ({
-          ...state,
-          user: null,
-          loading: false,
-          error: errorMessage
-        }));
-        throw error;
-      }
-    },
-    async logout() {
-      api.clearAuth();
-      set({ user: null, loading: false, error: null });
-    },
-    async checkAuth() {
-      {
-        set({ user: null, loading: false, error: null });
-        return;
-      }
-    },
-    clearError() {
-      update((state) => ({ ...state, error: null }));
+const AUTH_COOKIE_NAME = "tradesense_auth_token";
+const USER_COOKIE_NAME = "tradesense_user";
+const REFRESH_COOKIE_NAME = "tradesense_refresh_token";
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  // Use secure cookies in production
+  sameSite: "lax",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7
+  // 7 days
+};
+const USER_COOKIE_OPTIONS = {
+  httpOnly: false,
+  // User data can be read by client
+  secure: true,
+  sameSite: "lax",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7
+  // 7 days
+};
+class AuthService {
+  /**
+   * Set authentication cookies
+   */
+  static setAuthCookies(cookies, token, refreshToken, user) {
+    cookies.set(AUTH_COOKIE_NAME, token, COOKIE_OPTIONS);
+    cookies.set(REFRESH_COOKIE_NAME, refreshToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 60 * 60 * 24 * 30
+      // 30 days for refresh token
+    });
+    cookies.set(USER_COOKIE_NAME, JSON.stringify(user), USER_COOKIE_OPTIONS);
+  }
+  /**
+   * Get authentication token from cookies
+   */
+  static getAuthToken(cookies) {
+    return cookies.get(AUTH_COOKIE_NAME) || null;
+  }
+  /**
+   * Get refresh token from cookies
+   */
+  static getRefreshToken(cookies) {
+    return cookies.get(REFRESH_COOKIE_NAME) || null;
+  }
+  /**
+   * Get user data from cookies
+   */
+  static getUser(cookies) {
+    const userCookie = cookies.get(USER_COOKIE_NAME);
+    if (!userCookie) return null;
+    try {
+      return JSON.parse(userCookie);
+    } catch {
+      return null;
     }
-  };
+  }
+  /**
+   * Clear all authentication cookies
+   */
+  static clearAuthCookies(cookies) {
+    cookies.delete(AUTH_COOKIE_NAME, { path: "/" });
+    cookies.delete(REFRESH_COOKIE_NAME, { path: "/" });
+    cookies.delete(USER_COOKIE_NAME, { path: "/" });
+  }
+  /**
+   * Validate token format (basic validation)
+   */
+  static isValidTokenFormat(token) {
+    const parts = token.split(".");
+    return parts.length === 3 && parts.every((part) => part.length > 0);
+  }
+  /**
+   * Extract token expiry from JWT (without verification)
+   */
+  static getTokenExpiry(token) {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) return null;
+      return new Date(payload.exp * 1e3);
+    } catch {
+      return null;
+    }
+  }
+  /**
+   * Check if token is expired
+   */
+  static isTokenExpired(token) {
+    const expiry = this.getTokenExpiry(token);
+    if (!expiry) return true;
+    return expiry < /* @__PURE__ */ new Date();
+  }
 }
-const auth = createAuthStore();
-const isAuthenticated = derived(
-  auth,
-  ($auth) => !!$auth.user
-);
 export {
-  auth as a,
-  isAuthenticated as i
+  AuthService as A
 };

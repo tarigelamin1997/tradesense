@@ -1,5 +1,7 @@
 import { c as create_ssr_component, v as validate_component } from "../../../../chunks/ssr.js";
-import "../../../../chunks/client.js";
+import "@sveltejs/kit/internal";
+import "../../../../chunks/exports.js";
+import "../../../../chunks/state.svelte.js";
 import "../../../../chunks/ssr-safe.js";
 import { I as Icon } from "../../../../chunks/Icon.js";
 import "qrcode";

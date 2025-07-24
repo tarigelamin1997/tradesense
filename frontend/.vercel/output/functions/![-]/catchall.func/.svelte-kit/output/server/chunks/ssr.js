@@ -1,36 +1,4 @@
-function noop() {
-}
-function run(fn) {
-  return fn();
-}
-function blank_object() {
-  return /* @__PURE__ */ Object.create(null);
-}
-function run_all(fns) {
-  fns.forEach(run);
-}
-function is_function(thing) {
-  return typeof thing === "function";
-}
-function safe_not_equal(a, b) {
-  return a != a ? b == b : a !== b || a && typeof a === "object" || typeof a === "function";
-}
-function subscribe(store, ...callbacks) {
-  if (store == null) {
-    for (const callback of callbacks) {
-      callback(void 0);
-    }
-    return noop;
-  }
-  const unsub = store.subscribe(...callbacks);
-  return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
-}
-function compute_rest_props(props, keys) {
-  const rest = {};
-  keys = new Set(keys);
-  for (const k in props) if (!keys.has(k) && k[0] !== "$") rest[k] = props[k];
-  return rest;
-}
+import { r as run_all, b as blank_object } from "./utils.js";
 function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
   return new CustomEvent(type, { detail, bubbles, cancelable });
 }
@@ -245,31 +213,25 @@ function create_ssr_component(fn) {
   };
 }
 function add_attribute(name, value, boolean) {
-  if (value == null || boolean) return "";
-  const assignment = `="${escape(value, true)}"`;
+  if (value == null || boolean && !value) return "";
+  const assignment = boolean && value === true ? "" : `="${escape(value, true)}"`;
   return ` ${name}${assignment}`;
 }
 function style_object_to_string(style_object) {
   return Object.keys(style_object).filter((key) => style_object[key] != null && style_object[key] !== "").map((key) => `${key}: ${escape_attribute_value(style_object[key])};`).join(" ");
 }
 export {
-  subscribe as a,
-  add_attribute as b,
+  add_attribute as a,
+  escape as b,
   create_ssr_component as c,
-  escape as d,
+  spread as d,
   each as e,
-  safe_not_equal as f,
+  escape_object as f,
   getContext as g,
-  compute_rest_props as h,
-  is_function as i,
-  spread as j,
-  escape_object as k,
-  escape_attribute_value as l,
+  escape_attribute_value as h,
+  createEventDispatcher as i,
   missing_component as m,
-  noop as n,
   onDestroy as o,
-  createEventDispatcher as p,
-  run_all as r,
   setContext as s,
   validate_component as v
 };

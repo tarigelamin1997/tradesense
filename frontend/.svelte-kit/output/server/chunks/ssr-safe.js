@@ -1,5 +1,7 @@
 import { b as browser } from "./index2.js";
-import "./client.js";
+import "@sveltejs/kit/internal";
+import "./exports.js";
+import "./state.svelte.js";
 class SSRSafeApiClient {
   static instance = null;
   axiosInstance = null;

@@ -81,27 +81,6 @@ const Hash = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     }
   })}`;
 });
-const House = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"
-      }
-    ],
-    [
-      "path",
-      {
-        "d": "M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon, "Icon").$$render($$result, Object.assign({}, { name: "house" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
 const Menu = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   const iconNode = [
     ["path", { "d": "M4 12h16" }],
@@ -109,32 +88,6 @@ const Menu = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     ["path", { "d": "M4 6h16" }]
   ];
   return `${validate_component(Icon, "Icon").$$render($$result, Object.assign({}, { name: "menu" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Message_square = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    [
-      "path",
-      {
-        "d": "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-      }
-    ]
-  ];
-  return `${validate_component(Icon, "Icon").$$render($$result, Object.assign({}, { name: "message-square" }, $$props, { iconNode }), {}, {
-    default: () => {
-      return `${slots.default ? slots.default({}) : ``}`;
-    }
-  })}`;
-});
-const Search = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  const iconNode = [
-    ["path", { "d": "m21 21-4.34-4.34" }],
-    ["circle", { "cx": "11", "cy": "11", "r": "8" }]
-  ];
-  return `${validate_component(Icon, "Icon").$$render($$result, Object.assign({}, { name: "search" }, $$props, { iconNode }), {}, {
     default: () => {
       return `${slots.default ? slots.default({}) : ``}`;
     }
@@ -178,9 +131,6 @@ export {
   Chart_no_axes_column as C,
   Hash as H,
   Menu as M,
-  Search as S,
   Wifi as W,
-  Wifi_off as a,
-  House as b,
-  Message_square as c
+  Wifi_off as a
 };

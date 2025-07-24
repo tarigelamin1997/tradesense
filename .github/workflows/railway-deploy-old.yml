@@ -34,19 +34,16 @@ jobs:
         format: 'sarif'
         output: 'trivy-results.sarif'
         severity: 'CRITICAL,HIGH'
-      continue-on-error: true
     
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v2
       with:
         sarif_file: 'trivy-results.sarif'
-      if: always()
     
     - name: Run Gitleaks
       uses: gitleaks/gitleaks-action@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: true
 
   # Test all services
   test-services:
@@ -64,47 +61,34 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
-    - name: Check if service exists
-      id: check_service
-      run: |
-        if [ -d "./services/${{ matrix.service }}" ]; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-        fi
-    
     - name: Cache dependencies
-      if: steps.check_service.outputs.exists == 'true'
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ matrix.service }}-${{ hashFiles('**/requirements.txt') }}
     
     - name: Install dependencies
-      if: steps.check_service.outputs.exists == 'true'
       working-directory: ./services/${{ matrix.service }}
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
-        fi
+        pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov
-      continue-on-error: true
     
     - name: Run tests
-      if: steps.check_service.outputs.exists == 'true'
       working-directory: ./services/${{ matrix.service }}
       env:
         DATABASE_URL: sqlite:///./test.db
         REDIS_URL: redis://localhost:6379
         JWT_SECRET_KEY: test-secret-key
       run: |
-        if [ -d "tests" ]; then
-          pytest tests/ -v --cov=src --cov-report=xml || echo "Tests failed or no tests found"
-        else
-          echo "No tests directory found for ${{ matrix.service }}"
-        fi
-      continue-on-error: true
+        pytest tests/ -v --cov=src --cov-report=xml || echo "No tests found"
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./services/${{ matrix.service }}/coverage.xml
+        flags: ${{ matrix.service }}
+        name: ${{ matrix.service }}-coverage
 
   # Test frontend
   test-frontend:
@@ -124,29 +108,24 @@ jobs:
     - name: Install dependencies
       working-directory: ./frontend
       run: npm ci
-      continue-on-error: true
     
     - name: Run linting
       working-directory: ./frontend
-      run: npm run lint || echo "Linting failed or not configured"
-      continue-on-error: true
+      run: npm run lint
     
     - name: Run type check
       working-directory: ./frontend
-      run: npm run check || echo "Type check failed or not configured"
-      continue-on-error: true
+      run: npm run check
     
     - name: Run tests
       working-directory: ./frontend
-      run: npm run test:unit || echo "No unit tests configured"
-      continue-on-error: true
+      run: npm run test:unit || echo "No unit tests"
     
     - name: Build frontend
       working-directory: ./frontend
       env:
         VITE_API_URL: https://tradesense-gateway-production.up.railway.app
       run: npm run build
-      continue-on-error: true
 
   # Deploy to Railway (only on main branch)
   deploy-railway:
@@ -169,13 +148,8 @@ jobs:
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       run: |
-        if [ -d "services/${{ matrix.service }}" ]; then
-          cd services/${{ matrix.service }}
-          railway up --service tradesense-${{ matrix.service }} || echo "Deployment failed for ${{ matrix.service }}"
-        else
-          echo "Service directory not found: ${{ matrix.service }}"
-        fi
-      continue-on-error: true
+        cd services/${{ matrix.service }}
+        railway up --service tradesense-${{ matrix.service }}
 
   # Deploy frontend to Vercel
   deploy-vercel:
@@ -202,8 +176,7 @@ jobs:
         VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
         VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       run: |
-        vercel --prod --token $VERCEL_TOKEN || echo "Vercel deployment failed"
-      continue-on-error: true
+        vercel --prod --token $VERCEL_TOKEN
 
   # Health check after deployment
   health-check:
@@ -223,7 +196,6 @@ jobs:
           echo "Waiting for gateway... ($i/10)"
           sleep 30
         done
-      continue-on-error: true
     
     - name: Check All Services
       run: |
@@ -240,7 +212,6 @@ jobs:
           echo "Checking $service"
           curl -f "$service" || echo "Service not responding"
         done
-      continue-on-error: true
     
     - name: Check Frontend
       run: |
@@ -249,4 +220,35 @@ jobs:
         else
           echo "Frontend check failed"
         fi
-      continue-on-error: true
+    
+    - name: Send Deployment Notification
+      if: always()
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        if [ -n "$SLACK_WEBHOOK_URL" ]; then
+          STATUS="✅ Deployment successful"
+          COLOR="good"
+          
+          curl -X POST $SLACK_WEBHOOK_URL \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"TradeSense Deployment\",
+                \"text\": \"$STATUS\",
+                \"fields\": [
+                  {
+                    \"title\": \"Branch\",
+                    \"value\": \"${{ github.ref_name }}\",
+                    \"short\": true
+                  },
+                  {
+                    \"title\": \"Commit\",
+                    \"value\": \"${{ github.sha }}\",
+                    \"short\": true
+                  }
+                ]
+              }]
+            }"
+        fi

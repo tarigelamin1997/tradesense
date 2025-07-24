@@ -1,8 +1,18 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { AuthService } from '$lib/server/auth';
 
 // Add request handling with comprehensive logging
 export const handle: Handle = async ({ event, resolve }) => {
 	console.log(`[${new Date().toISOString()}] Handling request: ${event.request.method} ${event.url.pathname}`);
+	
+	// Extract auth information from cookies
+	const token = AuthService.getAuthToken(event.cookies);
+	const user = AuthService.getUser(event.cookies);
+	
+	// Add auth info to locals for server-side access
+	event.locals.authToken = token;
+	event.locals.user = user;
+	event.locals.isAuthenticated = !!token && !!user;
 	
 	try {
 		// Log environment variables (without sensitive data)

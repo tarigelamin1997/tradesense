@@ -1,0 +1,101 @@
+# Pre-commit hooks for security and code quality
+repos:
+  # Detect secrets in code
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock|
+            package-lock\.json|
+            yarn\.lock|
+            .*\.min\.js|
+            .*\.min\.css|
+            .*\.map|
+            \.secrets\.baseline|
+            .*test.*|
+            .*spec.*
+          )$
+
+  # Security checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # Python security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ['-c', '.bandit', '-r', 'src/backend/']
+        files: \.py$
+
+  # JavaScript/TypeScript security
+  - repo: https://github.com/eslint/eslint
+    rev: v8.56.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx|svelte)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.56.0
+          - eslint-plugin-security@1.7.1
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-json
+      - id: check-xml
+      - id: check-toml
+      - id: check-symlinks
+      - id: destroyed-symlinks
+
+  # Git commit message checks
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  # Prevent committing to main/master
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master']
+
+# Configuration
+default_language_version:
+  python: python3.9
+  node: 18.17.0
+
+exclude: |
+  (?x)^(
+    frontend/\.svelte-kit/|
+    frontend/node_modules/|
+    frontend/dist/|
+    frontend/build/|
+    .*\.min\.js|
+    .*\.min\.css|
+    venv/|
+    \.git/|
+    __pycache__/|
+    \.pytest_cache/|
+    \.mypy_cache/|
+    htmlcov/|
+    \.coverage|
+    .*\.egg-info/|
+    dist/|
+    build/
+  )$

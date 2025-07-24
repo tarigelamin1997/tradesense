@@ -1,0 +1,187 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  secrets-scan:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better secret detection
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install detect-secrets
+      run: |
+        pip install detect-secrets==1.4.0
+    
+    - name: Run secrets scan
+      run: |
+        # Scan all files
+        detect-secrets scan --all-files --force-use-all-plugins > .secrets.new
+        
+        # Compare with baseline if it exists
+        if [ -f .secrets.baseline ]; then
+          detect-secrets audit .secrets.baseline
+        fi
+    
+    - name: Check for new secrets
+      run: |
+        # Fail if new secrets are detected
+        if [ -f .secrets.baseline ]; then
+          if ! diff -q .secrets.baseline .secrets.new > /dev/null; then
+            echo "⚠️ New secrets detected! Please review and remove them."
+            exit 1
+          fi
+        fi
+
+  python-security:
+    name: Python Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install security tools
+      run: |
+        pip install bandit==1.7.5 safety==2.3.5 pip-audit==2.6.1
+    
+    - name: Run Bandit
+      run: |
+        bandit -r src/backend/ -f json -o bandit-report.json || true
+        if [ -f bandit-report.json ]; then
+          echo "## Bandit Security Report" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat bandit-report.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: Check Python dependencies
+      run: |
+        echo "## Dependency Security Check" >> $GITHUB_STEP_SUMMARY
+        safety check --json || true
+        pip-audit || true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: python-security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  javascript-security:
+    name: JavaScript Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Run npm audit
+      working-directory: ./frontend
+      run: |
+        echo "## NPM Audit Report" >> $GITHUB_STEP_SUMMARY
+        npm audit --production || true
+    
+    - name: Run ESLint security plugin
+      working-directory: ./frontend
+      run: |
+        npm install -D eslint eslint-plugin-security
+        npx eslint --ext .js,.jsx,.ts,.tsx,.svelte src/ || true
+
+  docker-security:
+    name: Docker Security Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check Python licenses
+      run: |
+        pip install pip-licenses
+        pip-licenses --summary --with-authors
+    
+    - name: Check JavaScript licenses
+      working-directory: ./frontend
+      run: |
+        npx license-checker --production --summary
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [secrets-scan, python-security, javascript-security]
+    if: always()
+    steps:
+    - name: Security scan summary
+      run: |
+        echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.secrets-scan.result }}" == "success" ]; then
+          echo "✅ **Secrets Scan**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Secrets Scan**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.python-security.result }}" == "success" ]; then
+          echo "✅ **Python Security**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Python Security**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.javascript-security.result }}" == "success" ]; then
+          echo "✅ **JavaScript Security**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **JavaScript Security**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi

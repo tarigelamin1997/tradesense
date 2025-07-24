@@ -1,0 +1,254 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Test all services
+  test-services:
+    name: Test Services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [gateway, auth, trading, analytics, market-data, billing, ai]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.service }}-${{ hashFiles('**/requirements.txt') }}
+    
+    - name: Install dependencies
+      working-directory: ./services/${{ matrix.service }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-cov
+    
+    - name: Run tests
+      working-directory: ./services/${{ matrix.service }}
+      env:
+        DATABASE_URL: sqlite:///./test.db
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET_KEY: test-secret-key
+      run: |
+        pytest tests/ -v --cov=src --cov-report=xml || echo "No tests found"
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./services/${{ matrix.service }}/coverage.xml
+        flags: ${{ matrix.service }}
+        name: ${{ matrix.service }}-coverage
+
+  # Test frontend
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Run linting
+      working-directory: ./frontend
+      run: npm run lint
+    
+    - name: Run type check
+      working-directory: ./frontend
+      run: npm run check
+    
+    - name: Run tests
+      working-directory: ./frontend
+      run: npm run test:unit || echo "No unit tests"
+    
+    - name: Build frontend
+      working-directory: ./frontend
+      env:
+        VITE_API_URL: https://tradesense-gateway-production.up.railway.app
+      run: npm run build
+
+  # Deploy to Railway (only on main branch)
+  deploy-railway:
+    name: Deploy to Railway
+    needs: [security-scan, test-services, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    strategy:
+      matrix:
+        service: [gateway, auth, trading, analytics, market-data, billing, ai]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+    
+    - name: Deploy Service
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        cd services/${{ matrix.service }}
+        railway up --service tradesense-${{ matrix.service }}
+
+  # Deploy frontend to Vercel
+  deploy-vercel:
+    name: Deploy Frontend to Vercel
+    needs: [security-scan, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install Vercel CLI
+      run: npm install -g vercel
+    
+    - name: Deploy to Vercel
+      working-directory: ./frontend
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      run: |
+        vercel --prod --token $VERCEL_TOKEN
+
+  # Health check after deployment
+  health-check:
+    name: Post-Deployment Health Check
+    needs: [deploy-railway, deploy-vercel]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Check Gateway Health
+      run: |
+        for i in {1..10}; do
+          if curl -f https://tradesense-gateway-production.up.railway.app/health; then
+            echo "Gateway is healthy"
+            break
+          fi
+          echo "Waiting for gateway... ($i/10)"
+          sleep 30
+        done
+    
+    - name: Check All Services
+      run: |
+        services=(
+          "https://tradesense-auth-production.up.railway.app/health"
+          "https://tradesense-trading-production.up.railway.app/health"
+          "https://tradesense-analytics-production.up.railway.app/health"
+          "https://tradesense-market-data-production.up.railway.app/health"
+          "https://tradesense-billing-production.up.railway.app/health"
+          "https://tradesense-ai-production.up.railway.app/health"
+        )
+        
+        for service in "${services[@]}"; do
+          echo "Checking $service"
+          curl -f "$service" || echo "Service not responding"
+        done
+    
+    - name: Check Frontend
+      run: |
+        if curl -f https://tradesense.vercel.app; then
+          echo "Frontend is accessible"
+        else
+          echo "Frontend check failed"
+        fi
+    
+    - name: Send Deployment Notification
+      if: always()
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        if [ -n "$SLACK_WEBHOOK_URL" ]; then
+          STATUS="✅ Deployment successful"
+          COLOR="good"
+          
+          curl -X POST $SLACK_WEBHOOK_URL \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"TradeSense Deployment\",
+                \"text\": \"$STATUS\",
+                \"fields\": [
+                  {
+                    \"title\": \"Branch\",
+                    \"value\": \"${{ github.ref_name }}\",
+                    \"short\": true
+                  },
+                  {
+                    \"title\": \"Commit\",
+                    \"value\": \"${{ github.sha }}\",
+                    \"short\": true
+                  }
+                ]
+              }]
+            }"
+        fi

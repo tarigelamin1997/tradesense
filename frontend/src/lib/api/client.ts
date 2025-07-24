@@ -1,229 +1,299 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import type { AxiosInstance, AxiosError } from 'axios';
+import type { ApiError, ApiResponse } from '$lib/types';
 
 // Use environment variable for API URL, fallback to empty string for Vite proxy
 const API_BASE_URL = browser ? (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '') : '';
-if (browser) {
-	console.log('API Base URL:', API_BASE_URL || 'Using Vite proxy');
-}
 
-export interface ApiError {
-	message: string;
-	status: number;
-	detail?: any;
+interface RequestOptions extends RequestInit {
+	params?: Record<string, any>;
+	timeout?: number;
 }
 
 class ApiClient {
-	private client: AxiosInstance = null as any;
-	private token: string | null = null;
-	private initialized = false;
+	private defaultHeaders: Record<string, string> = {
+		'Content-Type': 'application/json',
+	};
+	private requestInterceptors: Array<(config: RequestInit) => RequestInit> = [];
+	private responseInterceptors: Array<(response: Response) => Response | Promise<Response>> = [];
 
 	constructor() {
-		// Delay initialization until first use
+		this.setupInterceptors();
 	}
 
-	private async initialize() {
-		if (this.initialized || !browser) return;
+	// Build URL with query params
+	private buildUrl(endpoint: string, params?: Record<string, any>): string {
+		const url = new URL(`${API_BASE_URL}${endpoint}`, window.location.origin);
 		
-		// Dynamically import axios only in browser
-		const { default: axios } = await import('axios');
+		if (params) {
+			Object.entries(params).forEach(([key, value]) => {
+				if (value !== undefined && value !== null) {
+					url.searchParams.append(key, String(value));
+				}
+			});
+		}
 		
-		this.client = axios.create({
-			baseURL: API_BASE_URL,
-			timeout: 30000,
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+		return url.toString();
+	}
 
-		// Load token from localStorage on init (client-side only)
-		this.token = localStorage.getItem('authToken');
+	// Apply request interceptors
+	private applyRequestInterceptors(config: RequestInit): RequestInit {
+		return this.requestInterceptors.reduce((acc, interceptor) => interceptor(acc), config);
+	}
 
-		this.setupInterceptors();
-		this.initialized = true;
+	// Apply response interceptors
+	private async applyResponseInterceptors(response: Response): Promise<Response> {
+		for (const interceptor of this.responseInterceptors) {
+			response = await interceptor(response);
+		}
+		return response;
+	}
+
+	// Handle API errors
+	private async handleError(response: Response): Promise<never> {
+		let error: ApiError;
+		
+		try {
+			const data = await response.json();
+			error = {
+				message: data.message || data.detail || 'An error occurred',
+				code: data.code || 'UNKNOWN_ERROR',
+				statusCode: response.status,
+				details: data.details || data
+			};
+		} catch {
+			error = {
+				message: response.statusText || 'Network error',
+				code: 'NETWORK_ERROR',
+				statusCode: response.status,
+				details: {}
+			};
+		}
+
+		// Handle specific error codes
+		if (response.status === 401) {
+			// Trigger logout
+			window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+			if (browser) {
+				goto('/login');
+			}
+		} else if (response.status === 429) {
+			// Rate limit hit
+			window.dispatchEvent(new CustomEvent('api:rate-limit', { detail: error }));
+		}
+		
+		throw error;
 	}
 
 	private setupInterceptors() {
-		// Request interceptor to add auth token
-		this.client.interceptors.request.use(
-			(config) => {
-				if (browser) {
-					console.log('Making request to:', config.url);
-					console.log('Base URL:', config.baseURL);
-					console.log('Full URL:', config.baseURL + config.url);
-				}
-				if (this.token) {
-					config.headers.Authorization = `Bearer ${this.token}`;
-				}
-				return config;
+		// Add CSRF token to requests
+		this.requestInterceptors.push((config) => {
+			const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+			if (csrfToken && config.headers) {
+				(config.headers as Record<string, string>)['X-CSRF-Token'] = csrfToken;
+			}
+			return config;
+		});
+
+		// Add request ID for tracing
+		this.requestInterceptors.push((config) => {
+			if (config.headers) {
+				(config.headers as Record<string, string>)['X-Request-ID'] = crypto.randomUUID();
+			}
+			return config;
+		});
+	}
+
+	// Main request method
+	private async request<T>(
+		endpoint: string,
+		options: RequestOptions = {}
+	): Promise<T> {
+		if (!browser) {
+			throw new Error('API calls are not available during SSR');
+		}
+
+		const { params, timeout = 30000, ...fetchOptions } = options;
+		
+		// Build config
+		let config: RequestInit = {
+			...fetchOptions,
+			headers: {
+				...this.defaultHeaders,
+				...fetchOptions.headers,
 			},
-			(error) => {
-				return Promise.reject(error);
-			}
-		);
+			credentials: 'include', // Always include cookies for httpOnly auth
+		};
 
-		// Response interceptor for error handling
-		this.client.interceptors.response.use(
-			(response) => response,
-			async (error: AxiosError) => {
-				console.error('API Error:', {
-					url: error.config?.url,
-					method: error.config?.method,
-					status: error.response?.status,
-					statusText: error.response?.statusText,
-					data: error.response?.data,
-					message: error.message
-				});
-				
-				if (error.response?.status === 401) {
-					// Clear token and redirect to login
-					this.clearAuth();
-					if (browser) {
-						goto('/login');
-					}
+		// Apply request interceptors
+		config = this.applyRequestInterceptors(config);
+
+		// Create abort controller for timeout
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), timeout);
+		
+		try {
+			const response = await fetch(
+				this.buildUrl(endpoint, params),
+				{
+					...config,
+					signal: controller.signal
 				}
-				
-				// Transform error for consistent handling
-				const responseData = error.response?.data as any;
-				const apiError: ApiError = {
-					message: responseData?.detail || responseData?.message || error.message || 'An error occurred',
-					status: error.response?.status || 500,
-					detail: responseData
-				};
-				
-				return Promise.reject(apiError);
+			);
+
+			clearTimeout(timeoutId);
+
+			// Apply response interceptors
+			const processedResponse = await this.applyResponseInterceptors(response);
+
+			if (!processedResponse.ok) {
+				await this.handleError(processedResponse);
 			}
-		);
-	}
 
-	// Auth methods
-	setAuthToken(token: string) {
-		this.token = token;
-		if (browser) {
-			localStorage.setItem('authToken', token);
+			// Handle empty responses
+			if (processedResponse.status === 204) {
+				return {} as T;
+			}
+
+			const data = await processedResponse.json();
+			return data as T;
+		} catch (error: any) {
+			clearTimeout(timeoutId);
+			
+			if (error.name === 'AbortError') {
+				throw {
+					message: 'Request timeout',
+					code: 'TIMEOUT',
+					statusCode: 0,
+					details: { timeout }
+				} as ApiError;
+			}
+			
+			throw error;
 		}
 	}
 
-	clearAuth() {
-		this.token = null;
-		if (browser) {
-			localStorage.removeItem('authToken');
+	// HTTP methods
+	async get<T>(endpoint: string, params?: Record<string, any>, options?: RequestOptions): Promise<T> {
+		return this.request<T>(endpoint, {
+			...options,
+			method: 'GET',
+			params: { ...params, ...options?.params }
+		});
+	}
+
+	async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+		return this.request<T>(endpoint, {
+			...options,
+			method: 'POST',
+			body: data ? JSON.stringify(data) : undefined
+		});
+	}
+
+	async put<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+		return this.request<T>(endpoint, {
+			...options,
+			method: 'PUT',
+			body: data ? JSON.stringify(data) : undefined
+		});
+	}
+
+	async patch<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+		return this.request<T>(endpoint, {
+			...options,
+			method: 'PATCH',
+			body: data ? JSON.stringify(data) : undefined
+		});
+	}
+
+	async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+		return this.request<T>(endpoint, {
+			...options,
+			method: 'DELETE'
+		});
+	}
+
+	// File upload
+	async upload<T>(endpoint: string, file: File, additionalData?: Record<string, any>): Promise<T> {
+		const formData = new FormData();
+		formData.append('file', file);
+		
+		if (additionalData) {
+			Object.entries(additionalData).forEach(([key, value]) => {
+				formData.append(key, String(value));
+			});
 		}
-	}
 
-	isAuthenticated(): boolean {
-		return !!this.token;
-	}
-
-	getAuthToken(): string | null {
-		return this.token;
-	}
-
-	// API methods
-	async get<T>(url: string, params?: any): Promise<T> {
-		await this.initialize();
-		const response = await this.client.get<T>(url, { params });
-		return response.data;
-	}
-
-	async post<T>(url: string, data?: any, config?: any): Promise<T> {
-		await this.initialize();
-		const response = await this.client.post<T>(url, data, config);
-		return response.data;
-	}
-
-	async put<T>(url: string, data?: any): Promise<T> {
-		await this.initialize();
-		const response = await this.client.put<T>(url, data);
-		return response.data;
-	}
-
-	async patch<T>(url: string, data?: any): Promise<T> {
-		await this.initialize();
-		const response = await this.client.patch<T>(url, data);
-		return response.data;
-	}
-
-	async delete<T>(url: string): Promise<T> {
-		await this.initialize();
-		const response = await this.client.delete<T>(url);
-		return response.data;
+		return this.request<T>(endpoint, {
+			method: 'POST',
+			body: formData,
+			headers: {
+				// Remove Content-Type to let browser set it with boundary
+			}
+		});
 	}
 }
 
-// Export singleton instance with SSR-safe wrapper
-let apiInstance: ApiClient | null = null;
-
-// Create a mock API for SSR that returns safe defaults
-const ssrApi: Partial<ApiClient> = {
+// Create singleton instance
+export const api = browser ? new ApiClient() : {
 	get: () => Promise.reject(new Error('API not available during SSR')),
 	post: () => Promise.reject(new Error('API not available during SSR')),
 	put: () => Promise.reject(new Error('API not available during SSR')),
 	patch: () => Promise.reject(new Error('API not available during SSR')),
 	delete: () => Promise.reject(new Error('API not available during SSR')),
-	setAuthToken: () => {},
-	clearAuth: () => {},
-	getAuthToken: () => null,
-	isAuthenticated: () => false
+	upload: () => Promise.reject(new Error('API not available during SSR'))
 };
 
-// Export a simple wrapper that checks browser at call time
-export const api = {
-	get<T = any>(...args: Parameters<ApiClient['get']>): ReturnType<ApiClient['get']> {
-		if (!browser) return ssrApi.get!(...args);
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.get<T>(...args);
-	},
+// Export typed API methods for better DX
+export const tradingApi = {
+	// Trades
+	getTrades: (params?: Record<string, any>) => 
+		api.get<PaginatedResponse<Trade>>('/api/trades', params),
 	
-	post<T = any>(...args: Parameters<ApiClient['post']>): ReturnType<ApiClient['post']> {
-		if (!browser) return ssrApi.post!(...args);
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.post<T>(...args);
-	},
+	getTrade: (id: string) => 
+		api.get<Trade>(`/api/trades/${id}`),
 	
-	put<T = any>(...args: Parameters<ApiClient['put']>): ReturnType<ApiClient['put']> {
-		if (!browser) return ssrApi.put!(...args);
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.put<T>(...args);
-	},
+	createTrade: (trade: Partial<Trade>) => 
+		api.post<Trade>('/api/trades', trade),
 	
-	patch<T = any>(...args: Parameters<ApiClient['patch']>): ReturnType<ApiClient['patch']> {
-		if (!browser) return ssrApi.patch!(...args);
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.patch<T>(...args);
-	},
+	updateTrade: (id: string, updates: Partial<Trade>) => 
+		api.patch<Trade>(`/api/trades/${id}`, updates),
 	
-	delete<T = any>(...args: Parameters<ApiClient['delete']>): ReturnType<ApiClient['delete']> {
-		if (!browser) return ssrApi.delete!(...args);
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.delete<T>(...args);
-	},
+	deleteTrade: (id: string) => 
+		api.delete<void>(`/api/trades/${id}`),
+
+	// Analytics
+	getAnalytics: (params?: { startDate?: string; endDate?: string }) => 
+		api.get<Analytics>('/api/analytics', params),
 	
-	setAuthToken(token: string): void {
-		if (!browser) return;
-		if (!apiInstance) apiInstance = new ApiClient();
-		apiInstance.setAuthToken(token);
-	},
-	
-	clearAuth(): void {
-		if (!browser) return;
-		if (!apiInstance) apiInstance = new ApiClient();
-		apiInstance.clearAuth();
-	},
-	
-	getAuthToken(): string | null {
-		if (!browser) return null;
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.getAuthToken();
-	},
-	
-	isAuthenticated(): boolean {
-		if (!browser) return false;
-		if (!apiInstance) apiInstance = new ApiClient();
-		return apiInstance.isAuthenticated();
-	}
+	getPortfolio: () => 
+		api.get<Portfolio>('/api/portfolio'),
+
+	// Import
+	importCSV: (file: File) => 
+		api.upload<{ imported: number; failed: number }>('/api/import/csv', file),
 };
 
-// Export types
-export type { ApiClient };
+// Export auth API methods
+export const authApi = {
+	login: (email: string, password: string) => 
+		api.post<{ user: User }>('/api/auth/login', { email, password }),
+	
+	logout: () => 
+		api.post<void>('/api/auth/logout'),
+	
+	register: (data: { email: string; password: string; name: string }) => 
+		api.post<{ user: User }>('/api/auth/register', data),
+	
+	getCurrentUser: () => 
+		api.get<{ user: User }>('/api/auth/me'),
+	
+	updateProfile: (updates: Partial<User>) => 
+		api.patch<{ user: User }>('/api/auth/profile', updates),
+};
+
+// Import types
+import type { 
+	Trade, Analytics, Portfolio, User, 
+	PaginatedResponse 
+} from '$lib/types';

@@ -108,9 +108,106 @@ logs/
 *.dump
 *.sql.gz
 
-# Environment files
+# Environment files and secrets
 .env
 .env.*
+*.env
+env.*
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+
+# API Keys and Tokens
+*_token*
+*_secret*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*-key.json
+*-credentials.json
+*apikey*
+*api_key*
+*api-key*
+*.secret
+secrets/
+credentials/
+config/local/
+config/secrets/
+
+# Authentication files
+*.cert
+*.crt
+*.ca-bundle
+*.p7b
+*.p7c
+*.p7s
+auth/
+.auth/
+
+# Cloud provider credentials
+.aws/
+.gcp/
+.azure/
+*.serviceaccount.json
+kubeconfig
+.kube/
+
+# SSH Keys
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.ppk
+known_hosts
+authorized_keys
+
+# Database credentials
+*.pgpass
+.pgpass
+*.my.cnf
+.my.cnf
+mongod.conf
+
+# Agent/Bot directories
+.agents/
+agents/
+bots/
+.bots/
+
+# Sensitive configuration
+config/*local*
+config/*secret*
+config/*private*
+settings/*local*
+settings/*secret*
+settings/*private*
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+
+# Ansible
+*.vault
+vault_pass.txt
+ansible-vault/
+
+# Docker
+docker-compose.override.yml
+.dockerignore.local
+
+# Backup files that might contain secrets
+*.backup
+*.bak
+*.orig
+*.old
+backup-*
+backups/
 
 # Package lock files (optional, some prefer to commit these)
 # package-lock.json

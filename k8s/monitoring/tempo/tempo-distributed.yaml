@@ -1,0 +1,587 @@
+# Tempo Distributed Deployment Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-distributed-config
+  namespace: monitoring
+data:
+  tempo.yaml: |
+    auth_enabled: false
+    
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9095
+      log_level: info
+    
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+        jaeger:
+          protocols:
+            thrift_http:
+              endpoint: 0.0.0.0:14268
+            grpc:
+              endpoint: 0.0.0.0:14250
+            thrift_binary:
+              endpoint: 0.0.0.0:6831
+            thrift_compact:
+              endpoint: 0.0.0.0:6832
+        zipkin:
+          endpoint: 0.0.0.0:9411
+    
+    ingester:
+      lifecycler:
+        address: 127.0.0.1
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 3
+        final_sleep: 0s
+      max_traces_per_user: 100000
+      max_bytes_per_trace: 50000000
+    
+    compactor:
+      compaction:
+        block_retention: 720h
+        compacted_block_retention: 1h
+        compaction_window: 1h
+        max_compaction_objects: 1000000
+        retention_concurrency: 10
+    
+    storage:
+      trace:
+        backend: s3
+        s3:
+          bucket: tradesense-tempo-traces
+          endpoint: s3.us-east-1.amazonaws.com
+          region: us-east-1
+        wal:
+          path: /var/tempo/wal
+        local:
+          path: /var/tempo/blocks
+        pool:
+          max_workers: 100
+          queue_depth: 10000
+    
+    querier:
+      frontend_worker:
+        frontend_address: tempo-query-frontend:9095
+      max_concurrent_queries: 20
+      search:
+        query_timeout: 300s
+        prefer_self: 10
+        external_endpoints: []
+        external_hedge_requests_at: 8s
+        external_hedge_requests_up_to: 2
+    
+    query_frontend:
+      max_outstanding_per_tenant: 2000
+      search:
+        concurrent_jobs: 2000
+        target_bytes_per_job: 104857600
+    
+    overrides:
+      max_traces_per_user: 100000
+      max_bytes_per_trace: 50000000
+      ingestion_rate_limit_bytes: 20000000
+      ingestion_burst_size_bytes: 30000000
+      max_search_bytes_per_trace: 50000
+    
+    memberlist:
+      join_members:
+        - tempo-gossip-ring
+---
+# Distributor Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo-distributor
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: distributor
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/component: distributor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/component: distributor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tempo
+      containers:
+      - name: distributor
+        image: grafana/tempo:2.3.1
+        args:
+          - -target=distributor
+          - -config.file=/etc/tempo/tempo.yaml
+        ports:
+        - containerPort: 3100
+          name: http
+        - containerPort: 9095
+          name: grpc
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 14268
+          name: jaeger-http
+        - containerPort: 14250
+          name: jaeger-grpc
+        - containerPort: 6831
+          name: jaeger-thrift
+          protocol: UDP
+        - containerPort: 9411
+          name: zipkin
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-distributed-config
+---
+# Distributor Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-distributor
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: distributor
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3100
+    targetPort: 3100
+  - name: grpc
+    port: 9095
+    targetPort: 9095
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+  - name: otlp-http
+    port: 4318
+    targetPort: 4318
+  - name: jaeger-http
+    port: 14268
+    targetPort: 14268
+  - name: jaeger-grpc
+    port: 14250
+    targetPort: 14250
+  - name: jaeger-thrift
+    port: 6831
+    targetPort: 6831
+    protocol: UDP
+  - name: zipkin
+    port: 9411
+    targetPort: 9411
+  selector:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: distributor
+---
+# Ingester StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tempo-ingester
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: ingester
+spec:
+  replicas: 3
+  serviceName: tempo-ingester
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/component: ingester
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/component: ingester
+        tempo-gossip-member: "true"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tempo
+      containers:
+      - name: ingester
+        image: grafana/tempo:2.3.1
+        args:
+          - -target=ingester
+          - -config.file=/etc/tempo/tempo.yaml
+        ports:
+        - containerPort: 3100
+          name: http
+        - containerPort: 9095
+          name: grpc
+        - containerPort: 7946
+          name: memberlist
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+        - name: data
+          mountPath: /var/tempo
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-distributed-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gp3
+      resources:
+        requests:
+          storage: 10Gi
+---
+# Ingester Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-ingester
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: ingester
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: http
+    port: 3100
+    targetPort: 3100
+  - name: grpc
+    port: 9095
+    targetPort: 9095
+  selector:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: ingester
+---
+# Query Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo-query-frontend
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: query-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/component: query-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/component: query-frontend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tempo
+      containers:
+      - name: query-frontend
+        image: grafana/tempo:2.3.1
+        args:
+          - -target=query-frontend
+          - -config.file=/etc/tempo/tempo.yaml
+        ports:
+        - containerPort: 3100
+          name: http
+        - containerPort: 9095
+          name: grpc
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-distributed-config
+---
+# Query Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-query-frontend
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: query-frontend
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3100
+    targetPort: 3100
+  - name: grpc
+    port: 9095
+    targetPort: 9095
+  selector:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: query-frontend
+---
+# Querier Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo-querier
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: querier
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/component: querier
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/component: querier
+        tempo-gossip-member: "true"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tempo
+      containers:
+      - name: querier
+        image: grafana/tempo:2.3.1
+        args:
+          - -target=querier
+          - -config.file=/etc/tempo/tempo.yaml
+        ports:
+        - containerPort: 3100
+          name: http
+        - containerPort: 9095
+          name: grpc
+        - containerPort: 7946
+          name: memberlist
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-distributed-config
+---
+# Querier Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-querier
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: querier
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3100
+    targetPort: 3100
+  - name: grpc
+    port: 9095
+    targetPort: 9095
+  selector:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: querier
+---
+# Compactor StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tempo-compactor
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/component: compactor
+spec:
+  replicas: 1
+  serviceName: tempo-compactor
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/component: compactor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/component: compactor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tempo
+      containers:
+      - name: compactor
+        image: grafana/tempo:2.3.1
+        args:
+          - -target=compactor
+          - -config.file=/etc/tempo/tempo.yaml
+        ports:
+        - containerPort: 3100
+          name: http
+        - containerPort: 9095
+          name: grpc
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo
+        - name: data
+          mountPath: /var/tempo
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-distributed-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gp3
+      resources:
+        requests:
+          storage: 10Gi
+---
+# Gossip Ring Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo-gossip-ring
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: tempo
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+  - name: memberlist
+    port: 7946
+    targetPort: 7946
+  selector:
+    tempo-gossip-member: "true"

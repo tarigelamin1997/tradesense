@@ -1,0 +1,333 @@
+# OPA Policies ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  namespace: opa
+  labels:
+    openpolicyagent.org/policy: "true"
+data:
+  admission.rego: |
+    package kubernetes.admission
+    
+    import future.keywords.contains
+    import future.keywords.if
+    import future.keywords.in
+    
+    # Main deny rules
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      input.request.object.spec.containers[_].image
+      not starts_with(input.request.object.spec.containers[_].image, "tradesense/")
+      not is_allowed_image(input.request.object.spec.containers[_].image)
+      msg := "Only TradeSense images or explicitly allowed images are permitted"
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      input.request.object.spec.containers[_].securityContext.privileged
+      msg := "Privileged containers are not allowed"
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      input.request.object.spec.hostNetwork
+      msg := "Host network is not allowed"
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      input.request.object.spec.containers[_].securityContext.runAsUser == 0
+      msg := "Running as root (UID 0) is not allowed"
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      not container.resources.limits.memory
+      msg := sprintf("Container %v is missing memory limits", [container.name])
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      not container.resources.limits.cpu
+      msg := sprintf("Container %v is missing CPU limits", [container.name])
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      not container.livenessProbe
+      not is_job_pod
+      msg := sprintf("Container %v is missing liveness probe", [container.name])
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      not container.readinessProbe
+      not is_job_pod
+      msg := sprintf("Container %v is missing readiness probe", [container.name])
+    }
+    
+    # Require non-root security context
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      not input.request.object.spec.securityContext.runAsNonRoot
+      msg := "Pod must run as non-root user"
+    }
+    
+    # Enforce read-only root filesystem
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      not container.securityContext.readOnlyRootFilesystem
+      not is_exception_container(container.name)
+      msg := sprintf("Container %v must have read-only root filesystem", [container.name])
+    }
+    
+    # Block certain capabilities
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      container.securityContext.capabilities.add[_] == "SYS_ADMIN"
+      msg := "SYS_ADMIN capability is not allowed"
+    }
+    
+    # Enforce pod security standards
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      container.securityContext.allowPrivilegeEscalation
+      msg := sprintf("Container %v must not allow privilege escalation", [container.name])
+    }
+    
+    # Network policies
+    deny[msg] {
+      input.request.kind.kind == "Service"
+      input.request.object.spec.type == "NodePort"
+      not is_allowed_nodeport
+      msg := "NodePort services are not allowed"
+    }
+    
+    deny[msg] {
+      input.request.kind.kind == "Service"
+      input.request.object.spec.type == "LoadBalancer"
+      not has_required_annotations
+      msg := "LoadBalancer services must have required annotations"
+    }
+    
+    # Ingress rules
+    deny[msg] {
+      input.request.kind.kind == "Ingress"
+      not input.request.object.spec.tls
+      msg := "Ingress must use TLS"
+    }
+    
+    # ConfigMap and Secret rules
+    deny[msg] {
+      input.request.kind.kind in ["ConfigMap", "Secret"]
+      contains_sensitive_data
+      msg := "Sensitive data detected in ConfigMap/Secret"
+    }
+    
+    # Helper functions
+    is_allowed_image(image) {
+      allowed_registries := [
+        "docker.io/library/",
+        "gcr.io/",
+        "registry.k8s.io/",
+        "quay.io/",
+        "ghcr.io/"
+      ]
+      some registry in allowed_registries
+      starts_with(image, registry)
+    }
+    
+    is_job_pod {
+      input.request.object.metadata.labels["job-name"]
+    }
+    
+    is_exception_container(name) {
+      exception_containers := ["tempo", "falco", "filebeat"]
+      name in exception_containers
+    }
+    
+    is_allowed_nodeport {
+      input.request.object.metadata.labels["nodeport-allowed"] == "true"
+    }
+    
+    has_required_annotations {
+      required := ["service.beta.kubernetes.io/aws-load-balancer-type"]
+      all([input.request.object.metadata.annotations[key] | key := required[_]])
+    }
+    
+    contains_sensitive_data {
+      sensitive_patterns := [
+        "password",
+        "secret",
+        "token",
+        "key",
+        "api_key"
+      ]
+      input.request.object.data[key]
+      some pattern in sensitive_patterns
+      contains(lower(key), pattern)
+      not key in ["tls.key", "ssh-privatekey"]  # Common exceptions
+    }
+  
+  mutating.rego: |
+    package kubernetes.mutating
+    
+    import future.keywords.contains
+    import future.keywords.if
+    import future.keywords.in
+    
+    # Inject sidecar containers
+    patch[p] {
+      input.request.kind.kind == "Pod"
+      needs_sidecar
+      p := {
+        "op": "add",
+        "path": "/spec/containers/-",
+        "value": sidecar_container
+      }
+    }
+    
+    # Add default labels
+    patch[p] {
+      input.request.kind.kind in ["Pod", "Service", "Deployment"]
+      not input.request.object.metadata.labels.environment
+      p := {
+        "op": "add",
+        "path": "/metadata/labels/environment",
+        "value": "production"
+      }
+    }
+    
+    # Add security context if missing
+    patch[p] {
+      input.request.kind.kind == "Pod"
+      not input.request.object.spec.securityContext
+      p := {
+        "op": "add",
+        "path": "/spec/securityContext",
+        "value": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        }
+      }
+    }
+    
+    # Add resource limits if missing
+    patch[p] {
+      input.request.kind.kind == "Pod"
+      container_index := [i | input.request.object.spec.containers[i].name == name][0]
+      container := input.request.object.spec.containers[container_index]
+      not container.resources.limits
+      p := {
+        "op": "add",
+        "path": sprintf("/spec/containers/%d/resources/limits", [container_index]),
+        "value": {
+          "memory": "512Mi",
+          "cpu": "500m"
+        }
+      }
+    }
+    
+    # Helper functions
+    needs_sidecar {
+      input.request.object.metadata.labels["sidecar-injection"] == "enabled"
+      not has_sidecar
+    }
+    
+    has_sidecar {
+      input.request.object.spec.containers[_].name == "sidecar-proxy"
+    }
+    
+    sidecar_container := {
+      "name": "sidecar-proxy",
+      "image": "tradesense/sidecar:latest",
+      "resources": {
+        "limits": {
+          "memory": "128Mi",
+          "cpu": "100m"
+        },
+        "requests": {
+          "memory": "64Mi",
+          "cpu": "50m"
+        }
+      }
+    }
+  
+  authorization.rego: |
+    package kubernetes.authorization
+    
+    import future.keywords.contains
+    import future.keywords.if
+    import future.keywords.in
+    
+    # RBAC rules for TradeSense
+    default allow = false
+    
+    # Admin users can do anything
+    allow {
+      is_admin
+    }
+    
+    # Developers can manage their namespace
+    allow {
+      is_developer
+      input.request.namespace == developer_namespace
+      input.request.verb in ["get", "list", "watch", "create", "update", "patch"]
+    }
+    
+    # Read-only access for viewers
+    allow {
+      is_viewer
+      input.request.verb in ["get", "list", "watch"]
+    }
+    
+    # Service accounts
+    allow {
+      is_service_account
+      service_account_allowed
+    }
+    
+    # Helper functions
+    is_admin {
+      input.request.userInfo.groups[_] == "tradesense-admins"
+    }
+    
+    is_developer {
+      input.request.userInfo.groups[_] == "tradesense-developers"
+    }
+    
+    is_viewer {
+      input.request.userInfo.groups[_] == "tradesense-viewers"
+    }
+    
+    is_service_account {
+      starts_with(input.request.userInfo.username, "system:serviceaccount:")
+    }
+    
+    developer_namespace := namespace {
+      parts := split(input.request.userInfo.username, "@")
+      namespace := sprintf("dev-%s", [parts[0]])
+    }
+    
+    service_account_allowed {
+      # CI/CD service account
+      input.request.userInfo.username == "system:serviceaccount:argocd:argocd-server"
+    }
+    
+    service_account_allowed {
+      # Monitoring service account
+      input.request.userInfo.username == "system:serviceaccount:monitoring:prometheus"
+      input.request.verb in ["get", "list", "watch"]
+    }

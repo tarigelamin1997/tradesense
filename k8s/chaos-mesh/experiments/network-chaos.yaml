@@ -1,0 +1,138 @@
+# Network Chaos Experiments for TradeSense
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-network-delay
+  namespace: chaos-mesh
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  delay:
+    latency: "100ms"
+    correlation: "25"
+    jitter: "10ms"
+  duration: "5m"
+  direction: both
+---
+# Network packet loss
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-packet-loss
+  namespace: chaos-mesh
+spec:
+  action: loss
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  loss:
+    loss: "10"
+    correlation: "25"
+  duration: "3m"
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - tradesense
+      labelSelectors:
+        app: postgres
+---
+# Network partition between services
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: backend-redis-partition
+  namespace: chaos-mesh
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  direction: both
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - tradesense
+      labelSelectors:
+        app: redis
+  duration: "2m"
+---
+# Network bandwidth limitation
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: frontend-bandwidth-limit
+  namespace: chaos-mesh
+spec:
+  action: bandwidth
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: frontend
+  bandwidth:
+    rate: "1mbps"
+    limit: 20971520
+    buffer: 10000
+  duration: "5m"
+  direction: both
+---
+# DNS chaos - simulate DNS failures
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: external-dns-failure
+  namespace: chaos-mesh
+spec:
+  action: error
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  duration: "1m"
+  patterns:
+    - "api.stripe.com"
+    - "*.amazonaws.com"
+---
+# Network corruption
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: database-network-corruption
+  namespace: chaos-mesh
+spec:
+  action: corrupt
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  corrupt:
+    corrupt: "20"
+    correlation: "25"
+  duration: "3m"
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - tradesense
+      labelSelectors:
+        app: postgres

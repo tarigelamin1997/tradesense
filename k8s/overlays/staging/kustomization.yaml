@@ -1,0 +1,65 @@
+# Staging overlay for Kustomize
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tradesense-staging
+
+bases:
+  - ../../
+
+namePrefix: staging-
+
+# Staging-specific resources
+resources:
+  - namespace.yaml
+
+# Image management for staging
+images:
+  - name: tradesense/backend
+    newTag: staging
+  - name: tradesense/frontend
+    newTag: staging
+
+# Config for staging
+configMapGenerator:
+  - name: tradesense-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=staging
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+
+# Patches for staging
+patches:
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Ingress
+      name: tradesense-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.tradesense.com
+
+# Staging labels
+commonLabels:
+  environment: staging
+
+# Resource limits for staging
+replicas:
+  - name: backend
+    count: 1
+  - name: frontend
+    count: 1

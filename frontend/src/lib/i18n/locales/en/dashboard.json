@@ -1,0 +1,52 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome back, {{name}}!",
+  "overview": "Overview",
+  "recentActivity": "Recent Activity",
+  "quickActions": "Quick Actions",
+  "metrics": {
+    "totalTrades": "Total Trades",
+    "winRate": "Win Rate",
+    "profitLoss": "Profit/Loss",
+    "avgReturn": "Avg Return",
+    "totalVolume": "Total Volume",
+    "activeTrades": "Active Trades",
+    "todaysPL": "Today's P/L",
+    "weeklyPL": "Weekly P/L",
+    "monthlyPL": "Monthly P/L",
+    "yearlyPL": "Yearly P/L"
+  },
+  "charts": {
+    "performanceOverTime": "Performance Over Time",
+    "profitByStrategy": "Profit by Strategy",
+    "winLossDistribution": "Win/Loss Distribution",
+    "riskRewardRatio": "Risk/Reward Ratio",
+    "tradingVolume": "Trading Volume",
+    "topPerformers": "Top Performers",
+    "worstPerformers": "Worst Performers"
+  },
+  "widgets": {
+    "recentTrades": "Recent Trades",
+    "upcomingAlerts": "Upcoming Alerts",
+    "marketOverview": "Market Overview",
+    "newsAndAnalysis": "News & Analysis",
+    "openPositions": "Open Positions",
+    "watchlist": "Watchlist"
+  },
+  "empty": {
+    "noData": "No data available",
+    "noTrades": "No trades yet. Start by adding your first trade!",
+    "noAlerts": "No alerts set",
+    "noPositions": "No open positions"
+  },
+  "timeframes": {
+    "1d": "1 Day",
+    "1w": "1 Week",
+    "1m": "1 Month",
+    "3m": "3 Months",
+    "6m": "6 Months",
+    "1y": "1 Year",
+    "ytd": "YTD",
+    "all": "All Time"
+  }
+}

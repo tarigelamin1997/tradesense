@@ -1,0 +1,284 @@
+# Falco Helm Chart Values for Production
+image:
+  registry: docker.io
+  repository: falcosecurity/falco
+  tag: 0.36.2
+  pullPolicy: IfNotPresent
+
+# Driver configuration
+driver:
+  enabled: true
+  kind: ebpf  # Use eBPF instead of kernel module for better compatibility
+  ebpf:
+    # Attempt to download a prebuilt eBPF probe
+    path: ""
+    hostNetwork: true
+    leastPrivileged: false
+
+# Collectors for cloud environments
+collectors:
+  enabled: true
+  docker:
+    enabled: true
+    socket: /var/run/docker.sock
+  containerd:
+    enabled: true
+    socket: /run/containerd/containerd.sock
+  crio:
+    enabled: false
+    socket: /run/crio/crio.sock
+  kubernetes:
+    enabled: true
+    apiAuth: /var/run/secrets/kubernetes.io/serviceaccount/token
+    apiUrl: "https://$(KUBERNETES_SERVICE_HOST)"
+    enableNodeFilter: true
+
+# Falco configuration
+falco:
+  # Rules files
+  rules_file:
+    - /etc/falco/falco_rules.yaml
+    - /etc/falco/falco_rules.local.yaml
+    - /etc/falco/k8s_audit_rules.yaml
+    - /etc/falco/rules.d
+  
+  # Enable additional rules
+  load_plugins: []
+  
+  # JSON output for better parsing
+  json_output: true
+  json_include_output_property: true
+  json_include_tags_property: true
+  
+  # Log level
+  log_level: info
+  log_stderr: true
+  log_syslog: false
+  
+  # Priority level for rules
+  priority: warning
+  
+  # Buffered output
+  buffered_outputs: false
+  
+  # Syscall event drops
+  syscall_event_drops:
+    actions:
+      - log
+      - alert
+    rate: 0.03
+    max_burst: 10
+  
+  # Output configuration
+  outputs:
+    rate: 1
+    max_burst: 1000
+    # Throttle by rule to avoid spam
+    outputs_queue:
+      enabled: true
+      capacity: 10000
+  
+  # File output
+  file_output:
+    enabled: false
+    keep_alive: false
+    filename: ./events.txt
+  
+  # Stdout output
+  stdout_output:
+    enabled: true
+  
+  # Syslog output
+  syslog_output:
+    enabled: false
+  
+  # HTTP output for alerting
+  http_output:
+    enabled: true
+    url: "http://falco-exporter:2801/"
+  
+  # gRPC output
+  grpc:
+    enabled: true
+    bind_address: "0.0.0.0:5060"
+    threadiness: 8
+  
+  grpc_output:
+    enabled: false
+  
+  # Metadata enrichment
+  metadata_download:
+    max_mb: 100
+    chunk_wait_us: 1000
+    watch_freq_sec: 1
+
+# Falco rules customization
+customRules:
+  rules-tradesense.yaml: |
+    - rule: Unauthorized Process in Container
+      desc: Detect unauthorized process execution in containers
+      condition: >
+        spawned_process and container and container.image.repository in (tradesense/backend, tradesense/frontend)
+        and not proc.name in (python, node, npm, sh, bash)
+      output: >
+        Unauthorized process started in container (user=%user.name user_loginuid=%user.loginuid
+        command=%proc.cmdline container_id=%container.id image=%container.image.repository)
+      priority: WARNING
+      tags: [container, process, tradesense]
+    
+    - rule: Sensitive File Access
+      desc: Detect access to sensitive files
+      condition: >
+        open_read and container
+        and (fd.name startswith /etc/shadow or
+             fd.name startswith /etc/sudoers or
+             fd.name contains "id_rsa" or
+             fd.name contains ".env")
+        and not proc.name in (cat, less, grep)
+      output: >
+        Sensitive file opened for reading (user=%user.name user_loginuid=%user.loginuid
+        command=%proc.cmdline file=%fd.name container_id=%container.id image=%container.image.repository)
+      priority: WARNING
+      tags: [filesystem, secrets, tradesense]
+    
+    - rule: Container Shell Spawned
+      desc: Detect shell spawned in container
+      condition: >
+        spawned_process and container
+        and shell_procs and proc.tty != 0
+        and container.image.repository in (tradesense/backend, tradesense/frontend)
+      output: >
+        Shell spawned in container (user=%user.name user_loginuid=%user.loginuid
+        container_id=%container.id image=%container.image.repository shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline terminal=%proc.tty)
+      priority: NOTICE
+      tags: [container, shell, tradesense]
+    
+    - rule: Outbound Network Connection
+      desc: Detect outbound network connections from containers
+      condition: >
+        outbound and container
+        and container.image.repository in (tradesense/backend, tradesense/frontend)
+        and not (fd.sip in (trusted_ips) or
+                 fd.sport in (80, 443, 5432, 6379, 8000, 3000))
+      output: >
+        Outbound network connection from container (user=%user.name user_loginuid=%user.loginuid
+        command=%proc.cmdline connection=%fd.name container_id=%container.id image=%container.image.repository)
+      priority: NOTICE
+      tags: [network, tradesense]
+    
+    - list: trusted_ips
+      items: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+    
+    - list: shell_procs
+      items: [bash, sh, zsh, ksh, tcsh, fish, dash]
+
+# Falcosidekick integration
+falcosidekick:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: falcosecurity/falcosidekick
+    tag: 2.28.0
+  
+  config:
+    # Enable debug mode
+    debug: false
+    
+    # Output settings
+    customfields: "cluster:tradesense,environment:production"
+    
+    # Slack integration
+    slack:
+      webhookurl: ""  # Set your Slack webhook URL
+      channel: "#security-alerts"
+      username: "Falco"
+      outputformat: "all"
+      minimumpriority: "warning"
+      messageformat: |
+        :warning: *Falco Security Alert*
+        *Rule:* {{ .Rule }}
+        *Priority:* {{ .Priority }}
+        *Output:* {{ .Output }}
+        *Time:* {{ .Time }}
+        *Hostname:* {{ .Hostname }}
+        *Tags:* {{ range .Tags }}{{ . }} {{ end }}
+    
+    # Webhook for custom integrations
+    webhook:
+      address: ""
+      minimumpriority: "warning"
+    
+    # Prometheus metrics
+    prometheus:
+      enabled: true
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5060
+  targetPort: 5060
+  protocol: TCP
+  annotations: {}
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  labels:
+    release: prometheus
+
+# Resources
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations for node taints
+tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+
+# Pod Security Policy
+podSecurityPolicy:
+  create: true
+
+# Security context
+securityContext:
+  privileged: true
+  runAsUser: 0
+
+# Priority class
+priorityClassName: system-node-critical
+
+# Daemon set update strategy
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
+# Extra environment variables
+extraEnv:
+  - name: SKIP_KERNEL_MODULE_DOWNLOAD
+    value: "true"
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8765"
+  prometheus.io/path: "/metrics"

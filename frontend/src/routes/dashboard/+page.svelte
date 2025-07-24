@@ -16,6 +16,7 @@
 	import { get } from 'svelte/store';
 	import { logger } from '$lib/utils/logger';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import { _ } from 'svelte-i18n';
 	
 	let loading = true;
 	let error = '';
@@ -234,10 +235,10 @@
 	<!-- Welcome message for new users -->
 	<div class="dashboard">
 		<div class="welcome-container">
-			<h1>Welcome to TradeSense! 🎉</h1>
+			<h1>{$_('dashboard.welcome', { values: { name: 'TradeSense' } })} 🎉</h1>
 			<p>Start tracking your trades to see analytics and insights.</p>
 			<div class="welcome-actions">
-				<a href="/tradelog" class="primary-button">Add Your First Trade</a>
+				<a href="/tradelog" class="primary-button">{$_('trades.newTrade')}</a>
 				<button on:click={() => {
 					const { sampleStats, sampleEquityData, samplePnlData, sampleTrades } = generateSampleData();
 					stats = sampleStats;
@@ -247,7 +248,7 @@
 					tradeStore.setTrades(sampleTrades);
 					isNewUser = true;
 					usingSampleData = true;
-				}} class="secondary-button">View Demo Dashboard</button>
+				}} class="secondary-button">{$_('dashboard.viewDemo', { default: 'View Demo Dashboard' })}</button>
 			</div>
 		</div>
 	</div>
@@ -259,7 +260,7 @@
 		</div>
 		
 		<header class="dashboard-header">
-			<h1>Trading Dashboard</h1>
+			<h1>{$_('dashboard.title')}</h1>
 			<p>{usingSampleData ? '🎭 Demo Data' : `Last ${dateRange}`}</p>
 		</header>
 		
@@ -273,37 +274,37 @@
 		<!-- Date Range Selector -->
 		<div class="controls">
 			<select bind:value={dateRange} class="date-range-select">
-				<option value="7d">Last 7 days</option>
-				<option value="30d">Last 30 days</option>
-				<option value="90d">Last 90 days</option>
-				<option value="1y">Last year</option>
+				<option value="7d">{$_('dashboard.timeframes.1w')}</option>
+				<option value="30d">{$_('dashboard.timeframes.1m')}</option>
+				<option value="90d">{$_('dashboard.timeframes.3m')}</option>
+				<option value="1y">{$_('dashboard.timeframes.1y')}</option>
 			</select>
 			<button on:click={fetchData} class="refresh-button" disabled={loading}>
-				{loading ? 'Loading...' : 'Refresh'}
+				{loading ? $_('common.actions.loading') : $_('common.actions.refresh')}
 			</button>
 		</div>
 		
 		<!-- Metrics Grid -->
 		<div class="grid grid-cols-4">
 			<MetricCard 
-				title="Total P&L" 
+				title={$_('dashboard.metrics.profitLoss')} 
 				value={stats.totalPnl} 
 				format="currency"
 				trend={stats.totalPnlPercent}
 			/>
 			<MetricCard 
-				title="Win Rate" 
+				title={$_('dashboard.metrics.winRate')} 
 				value={stats.winRate} 
 				format="percent"
 				trend={stats.winRateChange}
 			/>
 			<MetricCard 
-				title="Total Trades" 
+				title={$_('dashboard.metrics.totalTrades')} 
 				value={stats.totalTrades} 
 				format="number"
 			/>
 			<MetricCard 
-				title="Current Streak" 
+				title={$_('dashboard.currentStreak', { default: 'Current Streak' })} 
 				value={stats.currentStreak.count} 
 				format="streak"
 				streakType={stats.currentStreak.type}
@@ -313,11 +314,11 @@
 		<!-- Charts Grid -->
 		<div class="grid grid-cols-2">
 			<div class="card">
-				<h2>Equity Curve</h2>
+				<h2>{$_('dashboard.charts.equityCurve', { default: 'Equity Curve' })}</h2>
 				<EquityChart data={equityData} />
 			</div>
 			<div class="card">
-				<h2>Daily P&L</h2>
+				<h2>{$_('dashboard.charts.dailyPL', { default: 'Daily P&L' })}</h2>
 				<PnLChart data={pnlData} />
 			</div>
 		</div>
@@ -327,7 +328,7 @@
 		
 		<!-- Recent Trades -->
 		<div class="card">
-			<h2>Recent Trades</h2>
+			<h2>{$_('dashboard.widgets.recentTrades')}</h2>
 			<TradeList trades={recentTrades} />
 		</div>
 	</div>

@@ -1,0 +1,45 @@
+# Kernel Chaos Experiments for TradeSense (Advanced)
+apiVersion: chaos-mesh.org/v1alpha1
+kind: KernelChaos
+metadata:
+  name: backend-syscall-failure
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  failKernRequest:
+    callchain:
+      - funcname: "sys_read"
+    failtype: 0  # ERRNO
+    headers:
+      - "linux/errno.h"
+    probability: 10
+    times: 100
+  duration: "5m"
+---
+# Memory allocation failures
+apiVersion: chaos-mesh.org/v1alpha1
+kind: KernelChaos
+metadata:
+  name: postgres-memory-allocation-failure
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: postgres
+  failKernRequest:
+    callchain:
+      - funcname: "__kmalloc"
+    failtype: 0
+    headers:
+      - "linux/errno.h"
+    probability: 5
+    times: 50
+  duration: "3m"

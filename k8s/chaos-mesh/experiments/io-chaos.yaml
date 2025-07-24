@@ -1,0 +1,80 @@
+# IO Chaos Experiments for TradeSense
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: postgres-io-delay
+  namespace: chaos-mesh
+spec:
+  action: latency
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: postgres
+  volumePath: /var/lib/postgresql/data
+  path: "/var/lib/postgresql/data/**/*"
+  delay: "100ms"
+  percent: 50
+  duration: "5m"
+---
+# IO errors on database
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: postgres-io-error
+  namespace: chaos-mesh
+spec:
+  action: fault
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: postgres
+  volumePath: /var/lib/postgresql/data
+  path: "/var/lib/postgresql/data/**/*"
+  errno: 5  # EIO (I/O error)
+  percent: 10
+  duration: "2m"
+---
+# Disk fill experiment
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: backend-disk-fill
+  namespace: chaos-mesh
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: backend
+  stressors:
+    io:
+      workers: 1
+      size: "1GB"
+      path: /tmp
+  duration: "5m"
+---
+# IO attribute override (slow writes)
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: redis-slow-writes
+  namespace: chaos-mesh
+spec:
+  action: attrOverride
+  mode: all
+  selector:
+    namespaces:
+      - tradesense
+    labelSelectors:
+      app: redis
+  volumePath: /data
+  path: "/data/**/*"
+  attr:
+    perm: 256  # Reduce permissions
+  percent: 100
+  duration: "3m"

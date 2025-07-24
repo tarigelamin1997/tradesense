@@ -1,0 +1,375 @@
+# Flagger Canary Configuration for TradeSense Backend
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: backend
+  namespace: tradesense
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  progressDeadlineSeconds: 600
+  service:
+    # Service port number
+    port: 8000
+    targetPort: 8000
+    # Gateway configuration
+    gateways:
+    - istio-system/tradesense-gateway
+    hosts:
+    - api.tradesense.com
+    trafficPolicy:
+      tls:
+        mode: DISABLE
+    match:
+    - uri:
+        prefix: /api
+    rewrite:
+      uri: /
+    retries:
+      attempts: 3
+      perTryTimeout: 1s
+      retryOn: gateway-error,connect-failure,refused-stream
+    corsPolicy:
+      allowOrigins:
+      - exact: https://tradesense.com
+      allowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      allowHeaders:
+      - authorization
+      - content-type
+      maxAge: "24h"
+      allowCredentials: true
+  analysis:
+    # Schedule interval
+    interval: 30s
+    # Number of iterations before promotion
+    iterations: 10
+    # Max traffic percentage routed to canary
+    maxWeight: 50
+    # Canary increment step
+    stepWeight: 10
+    # Promotion increment step
+    stepWeightPromotion: 100
+    # Analysis queries and thresholds
+    metrics:
+    - name: request-success-rate
+      templateRef:
+        name: request-success-rate
+        namespace: istio-system
+      thresholdRange:
+        min: 99
+      interval: 1m
+    - name: request-duration
+      templateRef:
+        name: request-duration
+        namespace: istio-system
+      thresholdRange:
+        max: 500
+      interval: 30s
+    - name: error-rate
+      templateRef:
+        name: error-rate
+        namespace: istio-system
+      thresholdRange:
+        max: 1
+      interval: 1m
+    # Webhooks for testing
+    webhooks:
+    - name: acceptance-test
+      type: pre-rollout
+      url: http://flagger-loadtester.tradesense/
+      timeout: 30s
+      metadata:
+        type: bash
+        cmd: "curl -sd 'test' http://backend-canary.tradesense:8000/health | grep ok"
+    - name: load-test
+      type: rollout
+      url: http://flagger-loadtester.tradesense/
+      timeout: 5s
+      metadata:
+        cmd: |
+          hey -z 2m -q 100 -c 2 \
+            -H "Authorization: Bearer ${TOKEN}" \
+            http://backend-canary.tradesense:8000/api/v1/markets
+    - name: smoke-test
+      type: pre-rollout
+      url: http://flagger-loadtester.tradesense/
+      timeout: 60s
+      metadata:
+        type: bash
+        cmd: |
+          curl -s http://backend-canary.tradesense:8000/health | grep ok && \
+          curl -s http://backend-canary.tradesense:8000/api/v1/status | jq -e '.status == "healthy"'
+    # Alerts
+    alerts:
+    - name: "on-rollback"
+      severity: warn
+      providerRef:
+        name: slack
+        namespace: flagger
+    - name: "on-promotion"
+      severity: info
+      providerRef:
+        name: slack
+        namespace: flagger
+---
+# Flagger Canary for Frontend
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: frontend
+  namespace: tradesense
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  progressDeadlineSeconds: 600
+  service:
+    port: 3000
+    targetPort: 3000
+    gateways:
+    - istio-system/tradesense-gateway
+    hosts:
+    - tradesense.com
+    - www.tradesense.com
+  analysis:
+    interval: 30s
+    iterations: 10
+    maxWeight: 50
+    stepWeight: 10
+    metrics:
+    - name: request-success-rate
+      templateRef:
+        name: request-success-rate
+        namespace: istio-system
+      thresholdRange:
+        min: 99
+      interval: 1m
+    - name: request-duration
+      templateRef:
+        name: request-duration
+        namespace: istio-system
+      thresholdRange:
+        max: 1000
+      interval: 30s
+    webhooks:
+    - name: smoke-test
+      type: pre-rollout
+      url: http://flagger-loadtester.tradesense/
+      timeout: 60s
+      metadata:
+        type: bash
+        cmd: |
+          curl -s http://frontend-canary.tradesense:3000/ | grep -E "<!DOCTYPE html>|<html"
+    - name: load-test
+      type: rollout
+      url: http://flagger-loadtester.tradesense/
+      metadata:
+        cmd: |
+          hey -z 1m -q 10 -c 2 http://frontend-canary.tradesense:3000/
+---
+# Metric templates for Flagger
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: request-success-rate
+  namespace: istio-system
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-server.monitoring:80
+  query: |
+    100 - sum(
+      rate(
+        istio_request_total{
+          reporter="destination",
+          destination_workload_namespace="{{ namespace }}",
+          destination_workload=~"{{ target }}",
+          response_code!~"5.."
+        }[{{ interval }}]
+      )
+    ) 
+    / 
+    sum(
+      rate(
+        istio_request_total{
+          reporter="destination",
+          destination_workload_namespace="{{ namespace }}",
+          destination_workload=~"{{ target }}"
+        }[{{ interval }}]
+      )
+    ) * 100
+---
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: request-duration
+  namespace: istio-system
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-server.monitoring:80
+  query: |
+    histogram_quantile(
+      0.99,
+      sum(
+        rate(
+          istio_request_duration_milliseconds_bucket{
+            reporter="destination",
+            destination_workload_namespace="{{ namespace }}",
+            destination_workload=~"{{ target }}"
+          }[{{ interval }}]
+        )
+      ) by (le)
+    )
+---
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: error-rate
+  namespace: istio-system
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-server.monitoring:80
+  query: |
+    100 * sum(
+      rate(
+        istio_request_total{
+          reporter="destination",
+          destination_workload_namespace="{{ namespace }}",
+          destination_workload=~"{{ target }}",
+          response_code=~"5.."
+        }[{{ interval }}]
+      )
+    )
+    /
+    sum(
+      rate(
+        istio_request_total{
+          reporter="destination",
+          destination_workload_namespace="{{ namespace }}",
+          destination_workload=~"{{ target }}"
+        }[{{ interval }}]
+      )
+    )
+---
+# AlertProvider for Slack notifications
+apiVersion: flagger.app/v1beta1
+kind: AlertProvider
+metadata:
+  name: slack
+  namespace: flagger
+spec:
+  type: slack
+  channel: tradesense-deployments
+  username: flagger
+  # secretRef:
+  #   name: slack-webhook
+  # webhook URL will be taken from the secret
+---
+# Flagger LoadTester deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flagger-loadtester
+  namespace: tradesense
+spec:
+  selector:
+    matchLabels:
+      app: flagger-loadtester
+  template:
+    metadata:
+      labels:
+        app: flagger-loadtester
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: flagger-loadtester
+      containers:
+      - name: loadtester
+        image: ghcr.io/fluxcd/flagger-loadtester:0.30.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+        command:
+        - ./loadtester
+        - -port=8080
+        - -log-level=info
+        - -timeout=1h
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: 1000m
+          requests:
+            memory: 128Mi
+            cpu: 100m
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flagger-loadtester
+  namespace: tradesense
+spec:
+  selector:
+    app: flagger-loadtester
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flagger-loadtester
+  namespace: tradesense
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flagger-loadtester
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list", "get"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flagger-loadtester
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flagger-loadtester
+subjects:
+- kind: ServiceAccount
+  name: flagger-loadtester
+  namespace: tradesense

@@ -1,0 +1,493 @@
+# Cost Monitoring Configuration for TradeSense
+# Implements Kubecost for Kubernetes cost allocation
+
+---
+# Kubecost Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubecost
+  labels:
+    name: kubecost
+---
+# Kubecost ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubecost-config
+  namespace: kubecost
+data:
+  # Product configuration
+  product-config.yaml: |
+    # AWS Integration
+    awsSpotDataRegion: us-east-1
+    awsSpotDataBucket: s3://tradesense-cost-data
+    awsSpotDataPrefix: spot-data-feed
+    awsAccountId: "${AWS_ACCOUNT_ID}"
+    
+    # Cost allocation
+    allocateIdleCosts: true
+    idleByNode: false
+    maxQueryConcurrency: 5
+    
+    # Cluster profile
+    clusterProfile: production
+    
+    # Currency
+    currencyCode: USD
+    
+    # Cost model coefficients
+    cpuCostPerHour: 0.031611
+    ramCostPerGBHour: 0.004237
+    gpuCostPerHour: 0.95
+    storageClassCostPerGBHour:
+      standard: 0.00013888889
+      ssd: 0.00027777778
+      premium-ssd: 0.00055555556
+    
+    # Network costs
+    networkCosts:
+      ZoneNetworkEgressCost: 0.01
+      RegionNetworkEgressCost: 0.01
+      InternetNetworkEgressCost: 0.12
+    
+    # Shared costs
+    sharedNamespaces:
+      - kube-system
+      - kube-public
+      - monitoring
+      - istio-system
+    sharedLabelNames:
+      - team
+      - department
+      - project
+    sharedLabelValues:
+      team:
+        - platform
+        - devops
+      department:
+        - engineering
+      project:
+        - infrastructure
+    
+    # Filters
+    kubecostNamespace: kubecost
+    kubecostDeployment: kubecost-cost-analyzer
+    
+    # Prometheus
+    prometheusEndpoint: http://prometheus-server.monitoring:80
+    
+    # Alerts
+    alerts:
+      - type: budget
+        threshold: 5000
+        window: 30d
+        aggregation: namespace
+        filter: 'namespace:"tradesense"'
+        ownerContact:
+          - engineering@tradesense.com
+      - type: recurringUpdate
+        window: weekly
+        aggregation: cluster
+        filter: '*'
+        ownerContact:
+          - platform@tradesense.com
+      - type: efficiency
+        threshold: 0.4
+        window: 3d
+        aggregation: cluster
+        filter: '*'
+        ownerContact:
+          - sre@tradesense.com
+
+  # Kubecost metrics config
+  metrics-config.yaml: |
+    # Custom cost allocation labels
+    allocation_labels:
+      - team
+      - environment
+      - app
+      - version
+      - cost-center
+      - project
+    
+    # Resource recommendations
+    recommendations:
+      cpuRequestSizeMultiplier: 1.1
+      memoryRequestSizeMultiplier: 1.1
+      cpuLimitSizeMultiplier: 1.5
+      memoryLimitSizeMultiplier: 1.5
+    
+    # Savings insights
+    savings:
+      rightsizing:
+        enabled: true
+        minSavings: 1.00
+        minDifference: 0.05
+      unclaimed:
+        enabled: true
+        minSize: 5
+      abandoned:
+        enabled: true
+        minAge: 168h
+
+---
+# Kubecost Helm Values
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubecost-helm-values
+  namespace: kubecost
+data:
+  values.yaml: |
+    # Kubecost Cost Analyzer
+    global:
+      prometheus:
+        enabled: false
+        fqdn: http://prometheus-server.monitoring:80
+      grafana:
+        enabled: false
+        domainName: grafana.monitoring.svc.cluster.local
+    
+    # Cost Analyzer
+    kubecostProductConfigs:
+      clusterName: "tradesense-prod"
+      currencyCode: "USD"
+      discount: 0  # Update with your AWS discount
+      defaultIdle: true
+      spot:
+        enabled: true
+        dataBucket: "s3://tradesense-cost-data"
+        dataRegion: "us-east-1"
+        projectID: "${AWS_ACCOUNT_ID}"
+    
+    # Resources
+    kubecostAnalyzer:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+    
+    # Persistence
+    persistentVolume:
+      enabled: true
+      size: 32Gi
+      storageClass: gp3
+    
+    # Service
+    service:
+      type: ClusterIP
+      port: 9090
+    
+    # Ingress
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/auth-type: basic
+        nginx.ingress.kubernetes.io/auth-secret: kubecost-auth
+      hosts:
+        - host: cost.tradesense.com
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: kubecost-tls
+          hosts:
+            - cost.tradesense.com
+    
+    # Notifications
+    notifications:
+      alertmanager:
+        enabled: true
+        fqdn: http://alertmanager.monitoring:9093
+      
+      # Slack notifications
+      slack:
+        enabled: true
+        webhook: "${SLACK_WEBHOOK_URL}"
+        channel: "#infrastructure-costs"
+    
+    # Reports
+    reporting:
+      valuesReporting: true
+      errorReporting: true
+      productAnalytics: true
+    
+    # Network costs
+    networkCosts:
+      enabled: true
+      config:
+        services:
+          amazon-web-services: true
+        
+    # Pod annotations for cost allocation
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9003"
+      prometheus.io/path: "/metrics"
+
+---
+# Cost Allocation Rules
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-allocation-rules
+  namespace: kubecost
+data:
+  rules.yaml: |
+    # Team-based allocation
+    teamAllocation:
+      - namespace: tradesense
+        team: trading
+        costCenter: "CC-001"
+        budget: 3000
+      - namespace: monitoring
+        team: platform
+        costCenter: "CC-002"
+        budget: 1000
+      - namespace: istio-system
+        team: platform
+        costCenter: "CC-002"
+        budget: 500
+    
+    # Shared cost distribution
+    sharedCosts:
+      - name: "Ingress Controllers"
+        namespace: ingress-nginx
+        splitBy: "requestCount"
+      - name: "Monitoring Stack"
+        namespace: monitoring
+        splitBy: "equal"
+        targets:
+          - tradesense
+          - default
+      - name: "Service Mesh"
+        namespace: istio-system
+        splitBy: "cpu"
+    
+    # Idle cost allocation
+    idleCosts:
+      strategy: "proportional"
+      includeNamespaces:
+        - tradesense
+        - monitoring
+      excludeNamespaces:
+        - kube-system
+        - kube-public
+
+---
+# Cost Reports CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cost-reports
+  namespace: kubecost
+spec:
+  schedule: "0 8 * * 1"  # Weekly on Monday at 8 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: kubecost-reporter
+          containers:
+          - name: cost-reporter
+            image: curlimages/curl:latest
+            env:
+            - name: KUBECOST_ENDPOINT
+              value: "http://kubecost-cost-analyzer:9090"
+            - name: SLACK_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: slack-webhook
+                  key: url
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Get weekly cost report
+              REPORT=$(curl -s "${KUBECOST_ENDPOINT}/model/allocation?window=7d&aggregate=namespace")
+              
+              # Format report
+              FORMATTED=$(echo $REPORT | jq -r '
+                "Weekly Cost Report\n" +
+                "==================\n" +
+                (.data[] | 
+                  "\(.name): $\(.totalCost | tonumber | floor)" 
+                ) | 
+                @sh
+              ')
+              
+              # Send to Slack
+              curl -X POST -H 'Content-type: application/json' \
+                --data "{\"text\":\"${FORMATTED}\"}" \
+                $SLACK_WEBHOOK
+          restartPolicy: OnFailure
+
+---
+# Cost Optimization Recommendations
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-optimization-policies
+  namespace: kubecost
+data:
+  policies.yaml: |
+    # Right-sizing policies
+    rightsizing:
+      - name: "Overprovisioned Pods"
+        description: "Pods using <50% of requested resources"
+        query: |
+          avg_over_time(
+            container_cpu_usage_seconds_total[7d]
+          ) / container_spec_cpu_quota < 0.5
+        recommendation: "Reduce CPU requests by 30%"
+        estimatedSavings: "$50/month per pod"
+      
+      - name: "Underutilized Nodes"
+        description: "Nodes with <30% utilization"
+        query: |
+          avg_over_time(
+            node_cpu_usage_percentage[7d]
+          ) < 30
+        recommendation: "Consolidate workloads or use smaller instance types"
+        estimatedSavings: "$200/month per node"
+    
+    # Spot instance opportunities
+    spotOpportunities:
+      - workload: "Development Environment"
+        currentCost: "$800/month"
+        spotCost: "$240/month"
+        savings: "70%"
+        risk: "Low - Non-production"
+      
+      - workload: "Batch Processing"
+        currentCost: "$500/month"
+        spotCost: "$150/month"
+        savings: "70%"
+        risk: "Low - Fault-tolerant workload"
+    
+    # Reserved instance recommendations
+    reservedInstances:
+      - instanceType: "m5.large"
+        currentCount: 10
+        monthlyOnDemand: "$768"
+        monthlyReserved: "$499"
+        savingsPercentage: "35%"
+        breakEvenMonths: 7
+        recommendation: "Purchase 1-year convertible RIs"
+    
+    # Unused resources
+    unusedResources:
+      - type: "Unattached EBS Volumes"
+        count: 5
+        monthlyCost: "$50"
+        action: "Delete or snapshot and delete"
+      
+      - type: "Idle Load Balancers"
+        count: 2
+        monthlyCost: "$36"
+        action: "Delete unused ALBs"
+      
+      - type: "Old Snapshots"
+        count: 50
+        monthlyCost: "$25"
+        action: "Implement lifecycle policy"
+
+---
+# ServiceAccount for cost reporting
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubecost-reporter
+  namespace: kubecost
+---
+# Role for cost reporting
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubecost-reporter
+  namespace: kubecost
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list"]
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubecost-reporter
+  namespace: kubecost
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubecost-reporter
+subjects:
+- kind: ServiceAccount
+  name: kubecost-reporter
+  namespace: kubecost
+
+---
+# Cost Alerts PrometheusRule
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cost-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+spec:
+  groups:
+  - name: cost.rules
+    interval: 1h
+    rules:
+    - alert: HighMonthlyCost
+      expr: |
+        kubecost_cluster_predicted_month_cost > 5000
+      for: 1h
+      labels:
+        severity: warning
+        team: platform
+      annotations:
+        summary: "Predicted monthly cost exceeds budget"
+        description: "Predicted cost for {{ $labels.cluster }}: ${{ $value }}"
+        
+    - alert: CostIncreaseAnomaly
+      expr: |
+        (kubecost_cluster_daily_cost - kubecost_cluster_daily_cost offset 1d) 
+        / kubecost_cluster_daily_cost offset 1d > 0.3
+      for: 2h
+      labels:
+        severity: warning
+        team: platform
+      annotations:
+        summary: "Daily cost increased by more than 30%"
+        description: "Cost increased from ${{ $labels.previous }} to ${{ $value }}"
+        
+    - alert: NamespaceOverBudget
+      expr: |
+        kubecost_namespace_monthly_cost > 
+        kubecost_namespace_monthly_budget
+      for: 6h
+      labels:
+        severity: warning
+        team: platform
+      annotations:
+        summary: "Namespace {{ $labels.namespace }} is over budget"
+        description: "Current spend: ${{ $value }}, Budget: ${{ $labels.budget }}"
+        
+    - alert: UntaggedResources
+      expr: |
+        kubecost_unallocated_cost_percentage > 20
+      for: 24h
+      labels:
+        severity: info
+        team: platform
+      annotations:
+        summary: "High percentage of untagged resources"
+        description: "{{ $value }}% of costs cannot be allocated to teams"

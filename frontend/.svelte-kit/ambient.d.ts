@@ -26,6 +26,7 @@
  * ```
  */
 declare module '$env/static/private' {
+	export const VITE_API_BASE_URL: string;
 	export const VITE_API_URL: string;
 	export const LESSOPEN: string;
 	export const GITHUB_TOKEN_FRONTEND: string;
@@ -38,6 +39,7 @@ declare module '$env/static/private' {
 	export const CLUTTER_DISABLE_MIPMAPPED_TEXT: string;
 	export const SHLVL: string;
 	export const npm_config_noproxy: string;
+	export const VIPSHOME: string;
 	export const HOME: string;
 	export const DESKTOP_SESSION: string;
 	export const GITHUB_TOKEN_QA: string;
@@ -109,13 +111,7 @@ declare module '$env/static/private' {
 	export const VTE_VERSION: string;
 	export const INIT_CWD: string;
 	export const EDITOR: string;
-	export const TEST: string;
-	export const VITEST: string;
 	export const NODE_ENV: string;
-	export const PROD: string;
-	export const DEV: string;
-	export const BASE_URL: string;
-	export const MODE: string;
 }
 
 /**
@@ -147,6 +143,7 @@ declare module '$env/static/public' {
  */
 declare module '$env/dynamic/private' {
 	export const env: {
+		VITE_API_BASE_URL: string;
 		VITE_API_URL: string;
 		LESSOPEN: string;
 		GITHUB_TOKEN_FRONTEND: string;
@@ -159,6 +156,7 @@ declare module '$env/dynamic/private' {
 		CLUTTER_DISABLE_MIPMAPPED_TEXT: string;
 		SHLVL: string;
 		npm_config_noproxy: string;
+		VIPSHOME: string;
 		HOME: string;
 		DESKTOP_SESSION: string;
 		GITHUB_TOKEN_QA: string;
@@ -230,13 +228,7 @@ declare module '$env/dynamic/private' {
 		VTE_VERSION: string;
 		INIT_CWD: string;
 		EDITOR: string;
-		TEST: string;
-		VITEST: string;
 		NODE_ENV: string;
-		PROD: string;
-		DEV: string;
-		BASE_URL: string;
-		MODE: string;
 		[key: `PUBLIC_${string}`]: undefined;
 		[key: `${string}`]: string | undefined;
 	}

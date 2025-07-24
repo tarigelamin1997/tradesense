@@ -1,0 +1,49 @@
+{
+  "required": "{{field}} is required",
+  "email": "Please enter a valid email address",
+  "minLength": "{{field}} must be at least {{min}} characters",
+  "maxLength": "{{field}} must not exceed {{max}} characters",
+  "minValue": "{{field}} must be at least {{min}}",
+  "maxValue": "{{field}} must not exceed {{max}}",
+  "pattern": "{{field}} format is invalid",
+  "passwordStrength": {
+    "weak": "Password is too weak",
+    "medium": "Password strength is medium",
+    "strong": "Password is strong"
+  },
+  "passwordRequirements": {
+    "minLength": "At least 8 characters",
+    "uppercase": "One uppercase letter",
+    "lowercase": "One lowercase letter",
+    "number": "One number",
+    "special": "One special character"
+  },
+  "match": "{{field}} must match {{otherField}}",
+  "unique": "{{field}} must be unique",
+  "date": {
+    "invalid": "Invalid date",
+    "future": "Date must be in the future",
+    "past": "Date must be in the past",
+    "between": "Date must be between {{start}} and {{end}}"
+  },
+  "number": {
+    "invalid": "Invalid number",
+    "integer": "Must be a whole number",
+    "positive": "Must be a positive number",
+    "negative": "Must be a negative number"
+  },
+  "file": {
+    "required": "Please select a file",
+    "size": "File size must not exceed {{max}}",
+    "type": "Invalid file type. Allowed: {{types}}"
+  },
+  "trades": {
+    "symbol": "Symbol is required",
+    "quantity": "Quantity must be greater than 0",
+    "price": "Price must be greater than 0",
+    "entryPrice": "Entry price is required",
+    "exitPrice": "Exit price is required",
+    "stopLoss": "Stop loss must be less than entry price",
+    "takeProfit": "Take profit must be greater than entry price"
+  }
+}

@@ -1,0 +1,55 @@
+# CODEOWNERS file for TradeSense
+# This file defines who is responsible for code review in different parts of the repository
+# Format: <pattern> <owner1> <owner2> ...
+
+# Default owners for all files
+* @tarigelamin1997
+
+# Frontend ownership
+/frontend/ @tarigelamin1997
+/frontend/src/components/ @tarigelamin1997
+/frontend/src/lib/api/ @tarigelamin1997
+/frontend/src/routes/ @tarigelamin1997
+
+# Backend services ownership
+/services/gateway/ @tarigelamin1997
+/services/auth/ @tarigelamin1997
+/services/trading/ @tarigelamin1997
+/services/analytics/ @tarigelamin1997
+/services/market-data/ @tarigelamin1997
+/services/billing/ @tarigelamin1997
+/services/ai/ @tarigelamin1997
+
+# Infrastructure and DevOps
+/.github/ @tarigelamin1997
+/scripts/ @tarigelamin1997
+/monitoring/ @tarigelamin1997
+/docs/ @tarigelamin1997
+
+# Security-sensitive files require additional review
+/services/auth/src/security/ @tarigelamin1997
+/services/*/src/middleware/security.py @tarigelamin1997
+/services/*/src/utils/crypto.py @tarigelamin1997
+*.env* @tarigelamin1997
+*secret* @tarigelamin1997
+
+# Database migrations require careful review
+/services/*/alembic/ @tarigelamin1997
+/services/*/migrations/ @tarigelamin1997
+
+# CI/CD configuration
+/.github/workflows/ @tarigelamin1997
+/Dockerfile* @tarigelamin1997
+/docker-compose*.yml @tarigelamin1997
+
+# Documentation that needs review
+/README.md @tarigelamin1997
+/CONTRIBUTING.md @tarigelamin1997
+/SECURITY.md @tarigelamin1997
+/docs/*.md @tarigelamin1997
+
+# Dependencies require security review
+/requirements*.txt @tarigelamin1997
+/package*.json @tarigelamin1997
+/poetry.lock @tarigelamin1997
+/Pipfile* @tarigelamin1997

@@ -239,14 +239,19 @@ export function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength - 3) + '...';
 }
 
+import { get } from 'svelte/store';
+import { locale as i18nLocale } from 'svelte-i18n';
+
 // Format currency safely
 export function formatCurrency(
   amount: number,
   currency = 'USD',
-  locale = 'en-US'
+  locale?: string
 ): string {
   try {
-    return new Intl.NumberFormat(locale, {
+    // Use provided locale or get from i18n store
+    const currentLocale = locale || get(i18nLocale) || 'en';
+    return new Intl.NumberFormat(currentLocale, {
       style: 'currency',
       currency
     }).format(amount);

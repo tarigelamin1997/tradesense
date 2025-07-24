@@ -1,0 +1,231 @@
+# Dependabot configuration for automated dependency updates
+# This ensures all dependencies are kept up-to-date with security patches
+
+version: 2
+
+# Define registries if using private packages
+registries:
+  npm-github:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{secrets.GITHUB_TOKEN}}
+
+updates:
+  # Frontend - npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    # Security updates
+    allow:
+      - dependency-type: "all"
+    # Auto-merge strategy
+    groups:
+      development-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "vite*"
+          - "vitest*"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "vite*"
+          - "vitest*"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "automated"
+    reviewers:
+      - "tradesense/frontend-team"
+    assignees:
+      - "frontend-lead"
+    milestone: 1
+
+  # Backend - Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    allow:
+      - dependency-type: "all"
+    # Group updates to reduce PR noise
+    groups:
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "black*"
+          - "flake8*"
+          - "mypy*"
+          - "pre-commit*"
+        update-types:
+          - "minor"
+          - "patch"
+      aws-dependencies:
+        patterns:
+          - "boto3*"
+          - "botocore*"
+        update-types:
+          - "minor"
+          - "patch"
+      api-dependencies:
+        patterns:
+          - "fastapi*"
+          - "pydantic*"
+          - "uvicorn*"
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
+    reviewers:
+      - "tradesense/backend-team"
+    assignees:
+      - "backend-lead"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "infrastructure"
+      - "automated"
+    reviewers:
+      - "tradesense/devops-team"
+      - "tradesense/security-team"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "ci/cd"
+      - "automated"
+    reviewers:
+      - "tradesense/devops-team"
+
+  # Terraform dependencies
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "terraform"
+      - "infrastructure"
+      - "automated"
+    reviewers:
+      - "tradesense/platform-team"
+      - "tradesense/security-team"
+
+  # Kubernetes - Monitor base images in k8s manifests
+  - package-ecosystem: "docker"
+    directory: "/k8s"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "kubernetes"
+      - "security"
+      - "automated"
+    reviewers:
+      - "tradesense/platform-team"
+      - "tradesense/security-team"
+
+# Security-specific configuration
+security-updates:
+  # Apply security updates immediately
+  open-pull-requests-limit: 20
+  
+  # Labels for security updates
+  labels:
+    - "security"
+    - "high-priority"
+    - "automated"
+  
+  # Notify security team
+  reviewers:
+    - "tradesense/security-team"
+  
+  # Auto-merge security patches
+  # (Requires GitHub Auto-merge to be enabled)
+  automerge:
+    - match:
+        dependency_type: "all"
+        update_type: "security:patch"
+    - match:
+        dependency_type: "production"
+        update_type: "security:minor"
+
+# Ignore specific dependencies
+ignore:
+  # Example: Dependencies that need manual updates
+  # - dependency-name: "aws-sdk"
+  #   versions: ["2.x"]
+  # - dependency-name: "node"
+  #   update-types: ["version-update:semver-major"]
+
+# Version update preferences
+version-update-preferences:
+  - package-ecosystem: "npm"
+    preferences:
+      versioning-strategy: "increase"
+  - package-ecosystem: "pip"
+    preferences:
+      versioning-strategy: "lockfile-only"

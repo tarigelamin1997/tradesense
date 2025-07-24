@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "TradeSense",
+    "tagline": "Trading Inteligente, Mejores Decisiones"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "trades": "Registro de Operaciones",
+    "portfolio": "Cartera",
+    "analytics": "Análisis",
+    "journal": "Diario",
+    "playbook": "Estrategias",
+    "aiInsights": "Insights IA",
+    "import": "Importar",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión",
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "profile": "Perfil",
+    "billing": "Facturación",
+    "support": "Soporte"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "update": "Actualizar",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "export": "Exportar",
+    "import": "Importar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "refresh": "Actualizar",
+    "retry": "Reintentar",
+    "loading": "Cargando...",
+    "processing": "Procesando..."
+  },
+  "status": {
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "pending": "Pendiente",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "online": "En línea",
+    "offline": "Fuera de línea",
+    "connected": "Conectado",
+    "disconnected": "Desconectado"
+  },
+  "time": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "tomorrow": "Mañana",
+    "thisWeek": "Esta Semana",
+    "lastWeek": "Semana Pasada",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "thisYear": "Este Año",
+    "lastYear": "Año Pasado",
+    "custom": "Personalizado",
+    "from": "Desde",
+    "to": "Hasta",
+    "date": "Fecha",
+    "time": "Hora",
+    "dateTime": "Fecha y Hora"
+  },
+  "pagination": {
+    "showing": "Mostrando {{from}} a {{to}} de {{total}}",
+    "page": "Página {{current}} de {{total}}",
+    "itemsPerPage": "Elementos por página",
+    "first": "Primera",
+    "last": "Última"
+  },
+  "errors": {
+    "general": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "network": "Error de red. Por favor, verifica tu conexión.",
+    "notFound": "Página no encontrada",
+    "unauthorized": "No estás autorizado para ver esta página",
+    "forbidden": "Acceso prohibido",
+    "serverError": "Error del servidor. Por favor, inténtalo más tarde.",
+    "timeout": "La solicitud expiró. Por favor, inténtalo de nuevo."
+  },
+  "confirmation": {
+    "title": "¿Estás seguro?",
+    "deleteMessage": "Esta acción no se puede deshacer.",
+    "logoutMessage": "¿Estás seguro de que quieres cerrar sesión?"
+  }
+}

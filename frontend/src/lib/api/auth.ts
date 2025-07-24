@@ -1,7 +1,8 @@
-import { api } from './ssr-safe';
+import { api as apiClient } from './client';
 import { writable, derived } from 'svelte/store';
 import type { Readable, Writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
 
 export interface User {
 	id: string;
@@ -56,19 +57,38 @@ function createAuthStore() {
 				console.log('Attempting login with username:', credentials.username);
 				
 				// Use the correct OAuth2 token endpoint with form data
-				const response = await api.post<any>('/auth/token', formData.toString(), {
+				const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/token`, {
+					method: 'POST',
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded'
-					}
+					},
+					body: formData.toString(),
+					credentials: 'include'
 				});
 				
-				console.log('Login response:', response);
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}));
+					throw new Error(errorData.detail || 'Login failed');
+				}
 				
-				if (response.access_token) {
-					api.setAuthToken(response.access_token);
-					
+				const data = await response.json();
+				console.log('Login response:', data);
+				
+				if (data.access_token) {
+					// Store token in httpOnly cookie is handled by backend
 					// Get user info after login
-					const userInfo = await api.get<User>('/auth/me');
+					const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/me`, {
+						headers: {
+							'Authorization': `Bearer ${data.access_token}`
+						},
+						credentials: 'include'
+					});
+					
+					if (!userResponse.ok) {
+						throw new Error('Failed to get user info');
+					}
+					
+					const userInfo = await userResponse.json();
 					
 					update(state => ({
 						...state,
@@ -77,16 +97,32 @@ function createAuthStore() {
 						error: null
 					}));
 					
-					return { access_token: response.access_token, token_type: 'bearer', user: userInfo };
+					return { 
+						access_token: data.access_token, 
+						token_type: 'bearer', 
+						user: userInfo, 
+						mfa_required: data.mfa_required, 
+						session_id: data.session_id, 
+						methods: data.methods 
+					};
 				}
 				
 				throw new Error('No access token received');
 			} catch (error: any) {
+				console.error('Login error:', error);
+				let errorMessage = 'Login failed';
+				
+				if (error.message && error.message.includes('fetch')) {
+					errorMessage = 'Unable to connect to server. Please ensure the backend is running on port 8000.';
+				} else if (error.message) {
+					errorMessage = error.message;
+				}
+				
 				update(state => ({
 					...state,
 					user: null,
 					loading: false,
-					error: error.message || 'Login failed'
+					error: errorMessage
 				}));
 				throw error;
 			}
@@ -98,8 +134,21 @@ function createAuthStore() {
 			try {
 				console.log('Attempting to register with:', data);
 				// Register just creates the user
-				const registerResponse = await api.post<any>('/auth/register', data);
-				console.log('Registration successful:', registerResponse);
+				const registerResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/register`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(data),
+					credentials: 'include'
+				});
+				
+				if (!registerResponse.ok) {
+					const errorData = await registerResponse.json().catch(() => ({}));
+					throw new Error(errorData.detail || 'Registration failed');
+				}
+				
+				console.log('Registration successful');
 				
 				// Now login to get the token
 				const loginResponse = await this.login({
@@ -131,8 +180,18 @@ function createAuthStore() {
 		},
 		
 		async logout() {
-			api.clearAuth();
+			try {
+				await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/logout`, {
+					method: 'POST',
+					credentials: 'include'
+				});
+			} catch (error) {
+				console.error('Logout error:', error);
+			}
 			set({ user: null, loading: false, error: null });
+			if (browser) {
+				goto('/login');
+			}
 		},
 		
 		async checkAuth() {
@@ -142,15 +201,18 @@ function createAuthStore() {
 				return;
 			}
 			
-			if (!api.isAuthenticated()) {
-				set({ user: null, loading: false, error: null });
-				return;
-			}
-			
 			update(state => ({ ...state, loading: true }));
 			
 			try {
-				const user = await api.get<User>('/auth/me');
+				const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/me`, {
+					credentials: 'include'
+				});
+				
+				if (!response.ok) {
+					throw new Error('Not authenticated');
+				}
+				
+				const user = await response.json();
 				update(state => ({
 					...state,
 					user,
@@ -158,7 +220,6 @@ function createAuthStore() {
 					error: null
 				}));
 			} catch (error) {
-				api.clearAuth();
 				set({ user: null, loading: false, error: null });
 			}
 		},
@@ -180,19 +241,19 @@ export const isAuthenticated: Readable<boolean> = derived(
 // Email verification and password reset API
 export const authApi = {
 	async verifyEmail(token: string) {
-		return api.post('/auth/verify-email', null, { params: { token } });
+		return apiClient.post('/auth/verify-email', null, { params: { token } });
 	},
 	
 	async resendVerification(email: string) {
-		return api.post('/auth/resend-verification', null, { params: { email } });
+		return apiClient.post('/auth/resend-verification', null, { params: { email } });
 	},
 	
 	async requestPasswordReset(email: string) {
-		return api.post('/auth/password-reset', { email });
+		return apiClient.post('/auth/password-reset', { email });
 	},
 	
 	async resetPassword(token: string, newPassword: string) {
-		return api.post('/auth/password-reset/confirm', {
+		return apiClient.post('/auth/password-reset/confirm', {
 			token,
 			new_password: newPassword
 		});

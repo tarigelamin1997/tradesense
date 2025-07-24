@@ -260,10 +260,6 @@
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"
 	],
-	"/trades/import": [
-		"src/routes/+layout.ts",
-		"src/routes/+layout.server.ts"
-	],
 	"/trades/new": [
 		"src/routes/+layout.ts",
 		"src/routes/+layout.server.ts"

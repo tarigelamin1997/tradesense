@@ -79,8 +79,16 @@ from core.exceptions import setup_exception_handlers
 from core.validation_middleware import setup_validation_middleware
 from core.async_manager import task_manager
 from core.security_headers import security_headers_middleware
-import logging
 from api.v1.public import public_router
+
+# Import structured logging and monitoring
+from core.logging_config import setup_logging, get_logger
+from core.logging_middleware import LoggingMiddleware
+from core.monitoring_enhanced import health_checker, tracer
+
+# Import configuration management
+from core.config_env import get_env_config, is_feature_enabled
+from core.config_validator import validate_configuration
 
 # Import post-deployment routers
 from api.admin import router as admin_router
@@ -95,17 +103,13 @@ os.makedirs('uploads', exist_ok=True)
 os.makedirs('temp', exist_ok=True)
 os.makedirs('reports', exist_ok=True)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/tradesense.log'),
-        logging.StreamHandler()
-    ]
+# Setup structured logging
+setup_logging(
+    log_level=os.getenv("LOG_LEVEL", "INFO"),
+    log_file=os.getenv("LOG_FILE", "logs/tradesense.log")
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application"""
@@ -118,24 +122,9 @@ def create_app() -> FastAPI:
         redoc_url="/api/redoc"
     )
 
-    # Setup CORS
-    from core.config import settings
-    # Split the comma-separated origins string into a list
-    cors_origins = [origin.strip() for origin in settings.cors_origins_str.split(",")]
-    # Add common localhost variations for development
-    if os.getenv("ENVIRONMENT", "development") != "production":
-        cors_origins.extend([
-            "http://localhost:3000",
-            "http://localhost:3001", 
-            "http://localhost:5173",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:3001",
-            "http://127.0.0.1:5173",
-            "http://0.0.0.0:3000",
-            "http://0.0.0.0:3001",
-        ])
-        # Remove duplicates
-        cors_origins = list(set(cors_origins))
+    # Setup CORS using environment configuration
+    env_config = get_env_config()
+    cors_origins = env_config.cors_origins
     print(f"CORS Origins configured: {cors_origins}")
     app.add_middleware(
         CORSMiddleware,
@@ -157,6 +146,9 @@ def create_app() -> FastAPI:
     setup_exception_handlers(app)
     setup_validation_middleware(app)
     
+    # Add logging middleware for structured logging
+    app.add_middleware(LoggingMiddleware)
+    
     # Add security headers middleware
     app.middleware("http")(security_headers_middleware)
 
@@ -166,9 +158,31 @@ def create_app() -> FastAPI:
         # Only start cleanup task in production or when explicitly enabled
         if os.getenv("ENABLE_TASK_CLEANUP", "false").lower() == "true":
             task_manager.start_cleanup_task()
-            print("🔄 Background task cleanup enabled")
+            logger.info("Background task cleanup enabled")
         else:
-            print("⚡ Fast startup mode - task cleanup disabled")
+            logger.info("Fast startup mode - task cleanup disabled")
+        
+        # Validate configuration
+        try:
+            config_valid = await validate_configuration()
+            if not config_valid and get_env_config().environment.value == "production":
+                logger.error("Configuration validation failed in production")
+                raise RuntimeError("Invalid configuration")
+        except Exception as e:
+            logger.error(f"Configuration validation error: {e}")
+            if get_env_config().environment.value == "production":
+                raise
+        
+        # Run initial health checks
+        logger.info("Running startup health checks...")
+        health_results = await health_checker.run_checks()
+        logger.info(f"Health check results: {health_results['status']}", 
+                   extra={"health_checks": health_results})
+    
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        logger.info("Shutting down TradeSense API...")
+        # Cleanup tasks if needed
 
     # Include routers with correct prefixes
     app.include_router(public_router, prefix="/api/v1")
@@ -208,6 +222,10 @@ def create_app() -> FastAPI:
     app.include_router(feature_flags_router, tags=["feature-flags"])
     app.include_router(reporting_router, tags=["reporting"])
     
+    # Secrets management router (admin only)
+    from api.v1.secrets.router import router as secrets_router
+    app.include_router(secrets_router, tags=["secrets"])
+    
     # A/B Testing router
     from api.experiments import router as experiments_router
     app.include_router(experiments_router, tags=["experiments"])
@@ -219,6 +237,14 @@ def create_app() -> FastAPI:
     # MFA router
     from api.mfa import router as mfa_router
     app.include_router(mfa_router, tags=["mfa"])
+    
+    # Enhanced monitoring router
+    from api.v1.monitoring.enhanced_router import router as monitoring_router
+    app.include_router(monitoring_router, prefix="/api/v1/monitoring", tags=["monitoring"])
+    
+    # Configuration management router
+    from api.v1.config.router import router as config_router
+    app.include_router(config_router, tags=["configuration"])
     
     # Alerts router
     from api.alerts import router as alerts_router

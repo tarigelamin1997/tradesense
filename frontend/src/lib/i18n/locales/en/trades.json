@@ -1,0 +1,81 @@
+{
+  "title": "Trade Log",
+  "newTrade": "New Trade",
+  "editTrade": "Edit Trade",
+  "deleteTrade": "Delete Trade",
+  "importTrades": "Import Trades",
+  "exportTrades": "Export Trades",
+  "fields": {
+    "symbol": "Symbol",
+    "side": "Side",
+    "quantity": "Quantity",
+    "entryPrice": "Entry Price",
+    "exitPrice": "Exit Price",
+    "entryDate": "Entry Date",
+    "exitDate": "Exit Date",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "commission": "Commission",
+    "fees": "Fees",
+    "notes": "Notes",
+    "tags": "Tags",
+    "strategy": "Strategy",
+    "status": "Status",
+    "pnl": "P&L",
+    "returnPercent": "Return %",
+    "riskReward": "Risk/Reward"
+  },
+  "side": {
+    "buy": "Buy",
+    "sell": "Sell",
+    "long": "Long",
+    "short": "Short"
+  },
+  "status": {
+    "open": "Open",
+    "closed": "Closed",
+    "pending": "Pending",
+    "cancelled": "Cancelled",
+    "partial": "Partial"
+  },
+  "filters": {
+    "all": "All Trades",
+    "open": "Open Trades",
+    "closed": "Closed Trades",
+    "winners": "Winners",
+    "losers": "Losers",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "dateRange": "Date Range",
+    "symbol": "By Symbol",
+    "strategy": "By Strategy"
+  },
+  "actions": {
+    "view": "View Details",
+    "edit": "Edit",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "close": "Close Trade",
+    "addToJournal": "Add to Journal"
+  },
+  "summary": {
+    "totalTrades": "Total Trades",
+    "openTrades": "Open Trades",
+    "closedTrades": "Closed Trades",
+    "totalPnl": "Total P&L",
+    "winRate": "Win Rate",
+    "avgWin": "Avg Win",
+    "avgLoss": "Avg Loss",
+    "profitFactor": "Profit Factor"
+  },
+  "messages": {
+    "tradeAdded": "Trade added successfully",
+    "tradeUpdated": "Trade updated successfully",
+    "tradeDeleted": "Trade deleted successfully",
+    "tradeClosed": "Trade closed successfully",
+    "importSuccess": "{{count}} trades imported successfully",
+    "exportSuccess": "Trades exported successfully",
+    "deleteConfirm": "Are you sure you want to delete this trade?"
+  }
+}

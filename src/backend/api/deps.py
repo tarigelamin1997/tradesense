@@ -1,13 +1,14 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Cookie, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from core.db.session import get_db
 from models.user import User
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import jwt
 from core.config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+# Make auto_error=False to allow cookie auth fallback
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 def verify_token(token: str) -> Dict[str, Any]:
@@ -31,10 +32,30 @@ def verify_token(token: str) -> Dict[str, Any]:
         )
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(
+    request: Request,
+    token_from_header: Optional[str] = Depends(oauth2_scheme),
+    token_from_cookie: Optional[str] = Cookie(None, alias="auth-token"),
+    db: Session = Depends(get_db)
+) -> User:
     """
-    Dependency to get current authenticated user from token
+    Dependency to get current authenticated user from cookie or bearer token
+    Prefers cookie (more secure) but falls back to header for API compatibility
     """
+    # Try cookie first (frontend uses this)
+    token = token_from_cookie
+    
+    # Fallback to Authorization header (mobile/API clients)
+    if not token and token_from_header:
+        token = token_from_header
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     try:
         payload = verify_token(token)
         if not payload:
@@ -66,6 +87,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             )
         
         return user
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -75,7 +98,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 get_current_active_user = get_current_user
 
 
-def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+def get_admin_user(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+) -> User:
     """
     Dependency to ensure current user is an admin
     """

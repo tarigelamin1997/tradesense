@@ -3,7 +3,7 @@ Multi-Factor Authentication API endpoints.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, validator
 import re
@@ -12,7 +12,7 @@ from core.db.session import get_db
 from api.deps import get_current_user
 from models.user import User
 from auth.mfa_service import mfa_service, MFAMethod
-from monitoring.metrics import security_metrics
+from monitoring.security_metrics import security_metrics
 import hashlib
 import secrets
 
@@ -73,12 +73,12 @@ class TrustDeviceRequest(BaseModel):
 
 
 @router.get("/status")
-async def get_mfa_status(
+def get_mfa_status(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Get MFA status for current user."""
-    devices = await mfa_service.list_mfa_devices(current_user, db)
+    devices = mfa_service.list_mfa_devices(current_user, db)
     
     return {
         "mfa_enabled": current_user.mfa_enabled,
@@ -89,18 +89,18 @@ async def get_mfa_status(
 
 
 @router.post("/totp/setup")
-async def setup_totp(
+def setup_totp(
     request: SetupTOTPRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Set up TOTP authentication."""
     # Check if already has active TOTP
-    devices = await mfa_service.list_mfa_devices(current_user, db)
+    devices = mfa_service.list_mfa_devices(current_user, db)
     if any(d["type"] == MFAMethod.TOTP and d["status"] == "active" for d in devices):
         raise HTTPException(400, "TOTP already configured")
     
-    result = await mfa_service.setup_totp(current_user, db)
+    result = mfa_service.setup_totp(current_user, db)
     
     # Track metric
     security_metrics.mfa_setup_started.labels(method=MFAMethod.TOTP).inc()
@@ -113,19 +113,19 @@ async def setup_totp(
 
 
 @router.post("/totp/verify")
-async def verify_totp_setup(
+def verify_totp_setup(
     request: VerifyTOTPSetupRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Verify TOTP setup."""
-    success = await mfa_service.verify_totp_setup(current_user, request.code, db)
+    success = mfa_service.verify_totp_setup(current_user, request.code, db)
     
     if not success:
         raise HTTPException(400, "Invalid verification code")
     
     # Get backup codes
-    backup_codes = await mfa_service.generate_backup_codes(current_user, db)
+    backup_codes = mfa_service.generate_backup_codes(current_user, db)
     
     return {
         "success": True,
@@ -136,18 +136,18 @@ async def verify_totp_setup(
 
 
 @router.post("/sms/setup")
-async def setup_sms(
+def setup_sms(
     request: SetupSMSRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Set up SMS authentication."""
     # Check if already has active SMS
-    devices = await mfa_service.list_mfa_devices(current_user, db)
+    devices = mfa_service.list_mfa_devices(current_user, db)
     if any(d["type"] == MFAMethod.SMS and d["status"] == "active" for d in devices):
         raise HTTPException(400, "SMS authentication already configured")
     
-    success = await mfa_service.setup_sms(current_user, request.phone_number, db)
+    success = mfa_service.setup_sms(current_user, request.phone_number, db)
     
     if not success:
         raise HTTPException(500, "Failed to send SMS verification code")
@@ -163,13 +163,13 @@ async def setup_sms(
 
 
 @router.post("/sms/verify")
-async def verify_sms_setup(
+def verify_sms_setup(
     request: VerifySMSSetupRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Verify SMS setup."""
-    success = await mfa_service.verify_sms_setup(current_user, request.code, db)
+    success = mfa_service.verify_sms_setup(current_user, request.code, db)
     
     if not success:
         raise HTTPException(400, "Invalid verification code")
@@ -181,50 +181,50 @@ async def verify_sms_setup(
 
 
 @router.post("/challenge")
-async def send_mfa_challenge(
+def send_mfa_challenge(
     request: MFAChallengeRequest,
     session_id: str,  # From login session
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Send MFA challenge during login."""
     # Get user from session
     from core.cache import redis_client
-    user_data = await redis_client.get(f"mfa_session:{session_id}")
+    user_data = redis_client.get(f"mfa_session:{session_id}")
     if not user_data:
         raise HTTPException(401, "Invalid session")
     
     user_id = user_data.get("user_id")
-    user = await db.get(User, user_id)
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(404, "User not found")
     
     # Send challenge
-    result = await mfa_service.send_mfa_challenge(user, request.method, db)
+    result = mfa_service.send_mfa_challenge(user, request.method, db)
     
     return result
 
 
 @router.post("/verify")
-async def verify_mfa(
+def verify_mfa(
     request: MFAVerificationRequest,
     session_id: str,  # From login session
     req: Request,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Verify MFA code during login."""
     # Get user from session
     from core.cache import redis_client
-    user_data = await redis_client.get(f"mfa_session:{session_id}")
+    user_data = redis_client.get(f"mfa_session:{session_id}")
     if not user_data:
         raise HTTPException(401, "Invalid session")
     
     user_id = user_data.get("user_id")
-    user = await db.get(User, user_id)
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(404, "User not found")
     
     # Verify code
-    is_valid, error_message = await mfa_service.verify_mfa_code(
+    is_valid, error_message = mfa_service.verify_mfa_code(
         user, request.method, request.code, db
     )
     
@@ -250,7 +250,7 @@ async def verify_mfa(
         trust_duration = request.trust_duration_days or 30
         expires_at = datetime.utcnow() + timedelta(days=trust_duration)
         
-        await db.execute(
+        db.execute(
             text("""
                 INSERT INTO mfa_trusted_devices (
                     user_id, device_fingerprint, device_name,
@@ -279,10 +279,10 @@ async def verify_mfa(
                 "expires_at": expires_at
             }
         )
-        await db.commit()
+        db.commit()
     
     # Clear MFA session
-    await redis_client.delete(f"mfa_session:{session_id}")
+    redis_client.delete(f"mfa_session:{session_id}")
     
     # Generate auth token
     from api.deps import create_access_token
@@ -297,14 +297,14 @@ async def verify_mfa(
 
 
 @router.post("/backup-codes/regenerate")
-async def regenerate_backup_codes(
+def regenerate_backup_codes(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Regenerate backup codes."""
     # Disable old codes
     from sqlalchemy import text
-    await db.execute(
+    db.execute(
         text("""
             UPDATE mfa_backup_codes
             SET status = 'disabled'
@@ -315,7 +315,7 @@ async def regenerate_backup_codes(
     )
     
     # Generate new codes
-    backup_codes = await mfa_service.generate_backup_codes(current_user, db)
+    backup_codes = mfa_service.generate_backup_codes(current_user, db)
     
     return {
         "backup_codes": backup_codes,
@@ -324,10 +324,10 @@ async def regenerate_backup_codes(
 
 
 @router.delete("/disable")
-async def disable_mfa(
+def disable_mfa(
     password: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Disable all MFA for user."""
     # Verify password
@@ -335,7 +335,7 @@ async def disable_mfa(
     if not verify_password(password, current_user.hashed_password):
         raise HTTPException(400, "Invalid password")
     
-    success = await mfa_service.disable_mfa(current_user, db)
+    success = mfa_service.disable_mfa(current_user, db)
     
     if not success:
         raise HTTPException(500, "Failed to disable MFA")
@@ -347,10 +347,10 @@ async def disable_mfa(
 
 
 @router.delete("/device")
-async def remove_mfa_device(
+def remove_mfa_device(
     request: RemoveMFADeviceRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Remove a specific MFA device."""
     # Verify password
@@ -359,7 +359,7 @@ async def remove_mfa_device(
         raise HTTPException(400, "Invalid password")
     
     # Check if this is the last active device
-    devices = await mfa_service.list_mfa_devices(current_user, db)
+    devices = mfa_service.list_mfa_devices(current_user, db)
     active_devices = [d for d in devices if d["status"] == "active" and d["id"] != request.device_id]
     
     if len(active_devices) == 0:
@@ -370,7 +370,7 @@ async def remove_mfa_device(
     
     # Remove device
     from sqlalchemy import text
-    result = await db.execute(
+    result = db.execute(
         text("""
             UPDATE mfa_devices
             SET status = 'disabled',
@@ -388,7 +388,7 @@ async def remove_mfa_device(
     if result.rowcount == 0:
         raise HTTPException(404, "Device not found")
     
-    await db.commit()
+    db.commit()
     
     # Track metric
     security_metrics.mfa_device_removed.inc()
@@ -400,14 +400,14 @@ async def remove_mfa_device(
 
 
 @router.get("/trusted-devices")
-async def list_trusted_devices(
+def list_trusted_devices(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """List trusted devices."""
     from sqlalchemy import text
     
-    result = await db.execute(
+    result = db.execute(
         text("""
             SELECT 
                 id, device_name, last_ip_address,
@@ -435,15 +435,15 @@ async def list_trusted_devices(
 
 
 @router.delete("/trusted-devices/{device_id}")
-async def remove_trusted_device(
+def remove_trusted_device(
     device_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Remove a trusted device."""
     from sqlalchemy import text
     
-    result = await db.execute(
+    result = db.execute(
         text("""
             DELETE FROM mfa_trusted_devices
             WHERE id = :device_id
@@ -458,7 +458,7 @@ async def remove_trusted_device(
     if result.rowcount == 0:
         raise HTTPException(404, "Device not found")
     
-    await db.commit()
+    db.commit()
     
     return {
         "success": True,
@@ -467,18 +467,18 @@ async def remove_trusted_device(
 
 
 @router.get("/admin/stats", dependencies=[Depends(get_current_user)])
-async def get_mfa_admin_stats(
-    db: AsyncSession = Depends(get_db)
+def get_mfa_admin_stats(
+    db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Get MFA statistics for admin dashboard."""
     from sqlalchemy import text
     
     # Get stats from view
-    result = await db.execute(text("SELECT * FROM mfa_admin_stats"))
+    result = db.execute(text("SELECT * FROM mfa_admin_stats"))
     stats = result.first()
     
     # Get recent events
-    events_result = await db.execute(
+    events_result = db.execute(
         text("""
             SELECT event_type, COUNT(*) as count
             FROM mfa_security_events
@@ -518,43 +518,3 @@ async def get_mfa_admin_stats(
         "recent_events": recent_events
     }
 
-
-# Add MFA metrics to security_metrics
-security_metrics.mfa_setup_started = Counter(
-    'tradesense_mfa_setup_started_total',
-    'MFA setup attempts started',
-    ['method']
-)
-
-security_metrics.mfa_enabled = Counter(
-    'tradesense_mfa_enabled_total',
-    'MFA enabled by users',
-    ['method']
-)
-
-security_metrics.mfa_disabled = Counter(
-    'tradesense_mfa_disabled_total',
-    'MFA disabled by users'
-)
-
-security_metrics.mfa_verifications = Counter(
-    'tradesense_mfa_verifications_total',
-    'MFA verification attempts',
-    ['method', 'result']
-)
-
-security_metrics.mfa_codes_sent = Counter(
-    'tradesense_mfa_codes_sent_total',
-    'MFA codes sent',
-    ['method']
-)
-
-security_metrics.backup_codes_used = Counter(
-    'tradesense_mfa_backup_codes_used_total',
-    'Backup codes used'
-)
-
-security_metrics.mfa_device_removed = Counter(
-    'tradesense_mfa_device_removed_total',
-    'MFA devices removed'
-)

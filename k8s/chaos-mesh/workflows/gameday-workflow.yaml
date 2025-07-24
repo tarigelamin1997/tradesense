@@ -1,0 +1,314 @@
+# Game Day Workflow - Comprehensive Chaos Testing
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: tradesense-gameday
+  namespace: chaos-mesh
+spec:
+  entry: entry
+  templates:
+    - name: entry
+      templateType: Serial
+      deadline: 1h
+      children:
+        - warm-up
+        - network-chaos-suite
+        - pod-chaos-suite
+        - stress-test-suite
+        - recovery-verification
+
+    # Phase 1: Warm-up and baseline
+    - name: warm-up
+      templateType: Parallel
+      children:
+        - baseline-load-test
+        - health-check
+
+    - name: baseline-load-test
+      templateType: Task
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: StressChaos
+        metadata:
+          name: baseline-cpu-load
+        spec:
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: backend
+          stressors:
+            cpu:
+              workers: 1
+              load: 20
+          duration: "5m"
+
+    - name: health-check
+      templateType: Suspend
+      deadline: 5m
+
+    # Phase 2: Network chaos
+    - name: network-chaos-suite
+      templateType: Serial
+      children:
+        - network-latency
+        - network-partition
+        - dns-failure
+
+    - name: network-latency
+      templateType: Task
+      deadline: 10m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: NetworkChaos
+        metadata:
+          name: progressive-latency
+        spec:
+          action: delay
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              tier: backend
+          delay:
+            latency: "200ms"
+            jitter: "50ms"
+          duration: "5m"
+
+    - name: network-partition
+      templateType: Task
+      deadline: 10m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: NetworkChaos
+        metadata:
+          name: redis-partition
+        spec:
+          action: partition
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: backend
+          direction: both
+          target:
+            mode: all
+            selector:
+              namespaces:
+                - tradesense
+              labelSelectors:
+                app: redis
+          duration: "3m"
+
+    - name: dns-failure
+      templateType: Task
+      deadline: 5m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: DNSChaos
+        metadata:
+          name: external-dns-chaos
+        spec:
+          action: error
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: backend
+          duration: "2m"
+          patterns:
+            - "*.stripe.com"
+
+    # Phase 3: Pod chaos
+    - name: pod-chaos-suite
+      templateType: Parallel
+      children:
+        - rolling-pod-failure
+        - container-kill
+
+    - name: rolling-pod-failure
+      templateType: Task
+      deadline: 15m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: PodChaos
+        metadata:
+          name: rolling-failure
+        spec:
+          action: pod-kill
+          mode: one
+          duration: "30s"
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: backend
+          scheduler:
+            cron: "@every 2m"
+
+    - name: container-kill
+      templateType: Task
+      deadline: 10m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: PodChaos
+        metadata:
+          name: sidecar-kill
+        spec:
+          action: container-kill
+          mode: fixed-percent
+          value: "33"
+          containerNames:
+            - istio-proxy
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: frontend
+          duration: "5m"
+
+    # Phase 4: Stress testing
+    - name: stress-test-suite
+      templateType: Parallel
+      children:
+        - cpu-stress
+        - memory-stress
+        - io-stress
+
+    - name: cpu-stress
+      templateType: Task
+      deadline: 10m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: StressChaos
+        metadata:
+          name: cpu-pressure
+        spec:
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: backend
+          stressors:
+            cpu:
+              workers: 4
+              load: 80
+          duration: "5m"
+
+    - name: memory-stress
+      templateType: Task
+      deadline: 10m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: StressChaos
+        metadata:
+          name: memory-pressure
+        spec:
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: backend
+          stressors:
+            memory:
+              workers: 2
+              size: "512MB"
+          duration: "5m"
+
+    - name: io-stress
+      templateType: Task
+      deadline: 10m
+      task:
+        apiVersion: chaos-mesh.org/v1alpha1
+        kind: IOChaos
+        metadata:
+          name: database-io-stress
+        spec:
+          action: latency
+          mode: all
+          selector:
+            namespaces:
+              - tradesense
+            labelSelectors:
+              app: postgres
+          volumePath: /var/lib/postgresql/data
+          path: "/var/lib/postgresql/data/**/*"
+          delay: "200ms"
+          percent: 50
+          duration: "5m"
+
+    # Phase 5: Recovery verification
+    - name: recovery-verification
+      templateType: Suspend
+      deadline: 10m
+
+---
+# Scheduled workflow for regular chaos testing
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: weekly-chaos-gameday
+  namespace: chaos-mesh
+spec:
+  schedule: "0 2 * * 6"  # Every Saturday at 2 AM
+  historyLimit: 5
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  workflow:
+    apiVersion: chaos-mesh.org/v1alpha1
+    kind: Workflow
+    metadata:
+      name: scheduled-gameday
+    spec:
+      entry: simple-gameday
+      templates:
+        - name: simple-gameday
+          templateType: Serial
+          deadline: 30m
+          children:
+            - network-test
+            - pod-test
+            - recovery-check
+
+        - name: network-test
+          templateType: Task
+          task:
+            apiVersion: chaos-mesh.org/v1alpha1
+            kind: NetworkChaos
+            metadata:
+              name: scheduled-network-delay
+            spec:
+              action: delay
+              mode: all
+              selector:
+                namespaces:
+                  - tradesense
+              delay:
+                latency: "100ms"
+              duration: "5m"
+
+        - name: pod-test
+          templateType: Task
+          task:
+            apiVersion: chaos-mesh.org/v1alpha1
+            kind: PodChaos
+            metadata:
+              name: scheduled-pod-failure
+            spec:
+              action: pod-failure
+              mode: fixed-percent
+              value: "25"
+              duration: "5m"
+              selector:
+                namespaces:
+                  - tradesense
+
+        - name: recovery-check
+          templateType: Suspend
+          deadline: 5m

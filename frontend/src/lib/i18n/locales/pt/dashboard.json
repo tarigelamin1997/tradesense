@@ -1,0 +1,52 @@
+{
+  "title": "Painel",
+  "welcome": "Bem-vindo de volta, {{name}}!",
+  "overview": "Visão Geral",
+  "recentActivity": "Atividade Recente",
+  "quickActions": "Ações Rápidas",
+  "metrics": {
+    "totalTrades": "Total de Operações",
+    "winRate": "Taxa de Acerto",
+    "profitLoss": "Lucro/Prejuízo",
+    "avgReturn": "Retorno Médio",
+    "totalVolume": "Volume Total",
+    "activeTrades": "Operações Ativas",
+    "todaysPL": "L/P de Hoje",
+    "weeklyPL": "L/P Semanal",
+    "monthlyPL": "L/P Mensal",
+    "yearlyPL": "L/P Anual"
+  },
+  "charts": {
+    "performanceOverTime": "Desempenho ao Longo do Tempo",
+    "profitByStrategy": "Lucro por Estratégia",
+    "winLossDistribution": "Distribuição de Ganhos/Perdas",
+    "riskRewardRatio": "Relação Risco/Retorno",
+    "tradingVolume": "Volume de Negociação",
+    "topPerformers": "Melhores Desempenhos",
+    "worstPerformers": "Piores Desempenhos"
+  },
+  "widgets": {
+    "recentTrades": "Operações Recentes",
+    "upcomingAlerts": "Alertas Próximos",
+    "marketOverview": "Visão Geral do Mercado",
+    "newsAndAnalysis": "Notícias e Análises",
+    "openPositions": "Posições Abertas",
+    "watchlist": "Lista de Observação"
+  },
+  "empty": {
+    "noData": "Sem dados disponíveis",
+    "noTrades": "Ainda sem operações. Comece adicionando sua primeira operação!",
+    "noAlerts": "Sem alertas configurados",
+    "noPositions": "Sem posições abertas"
+  },
+  "timeframes": {
+    "1d": "1 Dia",
+    "1w": "1 Semana",
+    "1m": "1 Mês",
+    "3m": "3 Meses",
+    "6m": "6 Meses",
+    "1y": "1 Ano",
+    "ytd": "Ano Atual",
+    "all": "Todo Período"
+  }
+}

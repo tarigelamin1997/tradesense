@@ -1,0 +1,227 @@
+# ArgoCD Helm Chart Values for Production
+global:
+  domain: argocd.tradesense.com
+  
+server:
+  replicas: 2
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Ingress configuration
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    hosts:
+      - argocd.tradesense.com
+    tls:
+      - secretName: argocd-tls
+        hosts:
+          - argocd.tradesense.com
+  
+  # RBAC configuration
+  rbacConfig:
+    policy.default: role:readonly
+    policy.csv: |
+      p, role:admin, applications, *, */*, allow
+      p, role:admin, clusters, *, *, allow
+      p, role:admin, repositories, *, *, allow
+      p, role:admin, certificates, *, *, allow
+      p, role:admin, projects, *, *, allow
+      p, role:admin, accounts, *, *, allow
+      p, role:admin, gpgkeys, *, *, allow
+      p, role:readonly, applications, get, */*, allow
+      p, role:readonly, clusters, get, *, allow
+      p, role:readonly, repositories, get, *, allow
+      p, role:readonly, certificates, get, *, allow
+      p, role:readonly, projects, get, *, allow
+      g, argocd-admins, role:admin
+      g, authenticated, role:readonly
+  
+  # Enable metrics
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: argocd
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+controller:
+  replicas: 1
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Enable metrics
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: argocd
+
+redis:
+  # Use Redis HA
+  ha:
+    enabled: true
+    replicas: 3
+    
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+repoServer:
+  replicas: 2
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  # Volume mounts for custom tools
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+  volumeMounts:
+    - mountPath: /usr/local/bin
+      name: custom-tools
+  
+  # Init containers to download custom tools
+  initContainers:
+    - name: download-tools
+      image: alpine:latest
+      command: [sh, -c]
+      args:
+        - |
+          wget -O /custom-tools/helm https://get.helm.sh/helm-v3.13.0-linux-amd64.tar.gz
+          tar -xf /custom-tools/helm -C /custom-tools
+          mv /custom-tools/linux-amd64/helm /custom-tools/
+          chmod +x /custom-tools/helm
+      volumeMounts:
+        - mountPath: /custom-tools
+          name: custom-tools
+
+dex:
+  enabled: true
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+applicationSet:
+  enabled: true
+  replicas: 2
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+notifications:
+  enabled: true
+  
+  # Slack notifications
+  notifiers:
+    service.slack: |
+      token: $slack-token
+      
+  subscriptions:
+    - recipients:
+        - slack:deployments
+      triggers:
+        - on-deployed
+        - on-health-degraded
+        - on-sync-failed
+  
+  templates:
+    template.app-deployed: |
+      message: |
+        {{if eq .serviceType "slack"}}:white_check_mark:{{end}} Application {{.app.metadata.name}} is now running new version.
+    template.app-health-degraded: |
+      message: |
+        {{if eq .serviceType "slack"}}:exclamation:{{end}} Application {{.app.metadata.name}} has degraded.
+    template.app-sync-failed: |
+      message: |
+        {{if eq .serviceType "slack"}}:exclamation:{{end}} Application {{.app.metadata.name}} sync is failed.
+
+configs:
+  params:
+    server.insecure: false
+    server.disable.auth: false
+    application.instanceLabelKey: argocd.argoproj.io/instance
+    
+  cm:
+    # Sync options
+    timeout.reconciliation: 180s
+    
+    # Repository credentials
+    repositories: |
+      - url: https://github.com/tarigelamin1997/tradesense.git
+        type: git
+    
+    # Resource customizations
+    resource.customizations: |
+      admissionregistration.k8s.io/MutatingWebhookConfiguration:
+        ignoreDifferences: |
+          jsonPointers:
+          - /webhooks/0/clientConfig/caBundle
+      admissionregistration.k8s.io/ValidatingWebhookConfiguration:
+        ignoreDifferences: |
+          jsonPointers:
+          - /webhooks/0/clientConfig/caBundle
+    
+    # Health checks
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
+  
+  secret:
+    # Create this secret separately with actual values
+    createSecret: false

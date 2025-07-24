@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/api/auth';
 	import MFAVerification from '$lib/components/MFAVerification.svelte';
+	import { _ } from 'svelte-i18n';
 	
 	let username = '';
 	let password = '';
@@ -38,7 +39,7 @@
 			} else if (err.message) {
 				error = err.message;
 			} else {
-				error = 'Login failed. Please check your credentials and try again.';
+				error = $_('auth.login.errors.invalidCredentials');
 			}
 		} finally {
 			loading = false;
@@ -60,7 +61,7 @@
 </script>
 
 <svelte:head>
-	<title>Login - TradeSense</title>
+	<title>{$_('auth.login.title')} - {$_('common.app.name')}</title>
 </svelte:head>
 
 {#if showMFA}
@@ -72,52 +73,52 @@
 	/>
 {:else}
 	<div class="auth-container">
-		<div class="auth-card">
-			<h1>Welcome Back</h1>
-			<p class="subtitle">Sign in to your TradeSense account</p>
+		<div class="auth-card" role="region" aria-labelledby="login-heading">
+			<h1 id="login-heading">{$_('auth.login.title')}</h1>
+			<p class="subtitle">{$_('auth.login.subtitle')}</p>
 			
 			{#if error}
-				<div class="error-message">
+				<div class="error-message" role="alert" aria-live="assertive">
 					{error}
 				</div>
 			{/if}
 			
 			<form on:submit={handleLogin}>
 				<div class="form-group">
-					<label for="username">Email or Username</label>
+					<label for="username">{$_('auth.login.email')}</label>
 					<input
 						id="username"
 						type="text"
 						bind:value={username}
 						required
-						placeholder="Enter your email or username"
+						placeholder={$_('auth.login.emailPlaceholder')}
 						disabled={loading}
 					/>
 				</div>
 				
 				<div class="form-group">
-					<label for="password">Password</label>
+					<label for="password">{$_('auth.login.password')}</label>
 					<input
 						id="password"
 						type="password"
 						bind:value={password}
 						required
-						placeholder="Enter your password"
+						placeholder={$_('auth.login.passwordPlaceholder')}
 						disabled={loading}
 					/>
 				</div>
 				
 				<div class="form-footer">
-					<a href="/forgot-password" class="forgot-password">Forgot password?</a>
+					<a href="/forgot-password" class="forgot-password">{$_('auth.login.forgotPassword')}</a>
 				</div>
 				
 				<button type="submit" class="submit-button" disabled={loading}>
-					{loading ? 'Signing in...' : 'Sign In'}
+					{loading ? $_('auth.login.submitting') : $_('auth.login.submit')}
 				</button>
 			</form>
 			
 			<div class="auth-footer">
-				<p>Don't have an account? <a href="/register">Sign up</a></p>
+				<p>{$_('auth.login.noAccount')} <a href="/register">{$_('auth.login.signUp')}</a></p>
 			</div>
 		</div>
 	</div>

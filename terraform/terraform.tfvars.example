@@ -1,0 +1,89 @@
+# Example Terraform variables file
+# Copy this to terraform.tfvars and fill in your values
+
+# Basic configuration
+aws_region   = "us-east-1"
+environment  = "production"
+project_name = "tradesense"
+owner_email  = "devops@tradesense.com"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+# EKS Configuration
+kubernetes_version = "1.28"
+
+node_groups = {
+  general = {
+    desired_size   = 3
+    min_size      = 3
+    max_size      = 10
+    instance_types = ["t3.large"]
+    
+    labels = {
+      role = "general"
+    }
+    taints = []
+    
+    disk_size = 100
+  }
+  
+  spot = {
+    desired_size   = 2
+    min_size      = 0
+    max_size      = 20
+    instance_types = ["t3.large", "t3a.large", "t3.xlarge", "t3a.xlarge"]
+    
+    labels = {
+      role = "spot"
+      workload = "batch"
+    }
+    taints = [{
+      key    = "spot"
+      value  = "true"
+      effect = "NoSchedule"
+    }]
+    
+    disk_size = 100
+  }
+}
+
+# RDS Configuration
+postgres_version         = "15.5"
+db_instance_class       = "db.r6g.large"
+db_allocated_storage    = 100
+db_max_allocated_storage = 1000
+db_name                 = "tradesense"
+db_username             = "tradesense_admin"
+
+# ElastiCache Configuration
+redis_version   = "7.0"
+cache_node_type = "cache.r6g.large"
+
+# CDN Configuration
+enable_cdn = true
+
+# Alerting Configuration
+alert_email_addresses = [
+  "devops@tradesense.com",
+  "oncall@tradesense.com"
+]
+
+# Cost Optimization
+enable_spot_instances = true
+spot_instance_pools   = 4
+
+# Backup Configuration
+backup_retention_days = 30
+
+# Security Configuration
+enable_waf = true
+allowed_ip_ranges = [
+  "10.0.0.0/8"    # Internal network
+]
+
+# Monitoring Configuration
+enable_enhanced_monitoring = true
+log_retention_days        = 30

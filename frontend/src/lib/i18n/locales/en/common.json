@@ -1,0 +1,99 @@
+{
+  "app": {
+    "name": "TradeSense",
+    "tagline": "Smart Trading, Better Decisions"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "trades": "Trade Log",
+    "portfolio": "Portfolio",
+    "analytics": "Analytics",
+    "journal": "Journal",
+    "playbook": "Playbook",
+    "aiInsights": "AI Insights",
+    "import": "Import",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Sign Up",
+    "profile": "Profile",
+    "billing": "Billing",
+    "support": "Support"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "export": "Export",
+    "import": "Import",
+    "download": "Download",
+    "upload": "Upload",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "processing": "Processing..."
+  },
+  "status": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "pending": "Pending",
+    "active": "Active",
+    "inactive": "Inactive",
+    "online": "Online",
+    "offline": "Offline",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "thisWeek": "This Week",
+    "lastWeek": "Last Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisYear": "This Year",
+    "lastYear": "Last Year",
+    "custom": "Custom",
+    "from": "From",
+    "to": "To",
+    "date": "Date",
+    "time": "Time",
+    "dateTime": "Date & Time"
+  },
+  "pagination": {
+    "showing": "Showing {{from}} to {{to}} of {{total}}",
+    "page": "Page {{current}} of {{total}}",
+    "itemsPerPage": "Items per page",
+    "first": "First",
+    "last": "Last"
+  },
+  "errors": {
+    "general": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Page not found",
+    "unauthorized": "You are not authorized to view this page",
+    "forbidden": "Access forbidden",
+    "serverError": "Server error. Please try again later.",
+    "timeout": "Request timed out. Please try again."
+  },
+  "confirmation": {
+    "title": "Are you sure?",
+    "deleteMessage": "This action cannot be undone.",
+    "logoutMessage": "Are you sure you want to log out?"
+  }
+}

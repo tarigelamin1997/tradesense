@@ -19,7 +19,7 @@ from redis import Redis
 
 from core.config_env import get_env_config, Environment
 from core.logging_config import get_logger
-from core.secrets_manager import get_secret
+# from core.secrets_manager import get_secret  # Disabled for local dev
 
 logger = get_logger(__name__)
 

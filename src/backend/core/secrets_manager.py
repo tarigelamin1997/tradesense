@@ -10,11 +10,12 @@ from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import boto3
-from azure.keyvault.secrets import SecretClient
-from azure.identity import DefaultAzureCredential
-from google.cloud import secretmanager
-import hvac  # HashiCorp Vault client
+# Cloud provider imports - commented out for local development
+# import boto3
+# from azure.keyvault.secrets import SecretClient
+# from azure.identity import DefaultAzureCredential
+# from google.cloud import secretmanager
+# import hvac  # HashiCorp Vault client
 
 from core.config import settings
 from sqlalchemy.orm import Session

@@ -15,6 +15,8 @@
 	import BackendStatus from '$lib/components/BackendStatus.svelte';
 	import SkipLinks from '$lib/components/SkipLinks.svelte';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import DebugPanel from '$lib/components/DebugPanel.svelte';
+	import CorsErrorBanner from '$lib/components/CorsErrorBanner.svelte';
 	import { trackPageVisit } from '$lib/utils/feedbackContext';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
 	import { websocket } from '$lib/stores/websocket';
@@ -59,6 +61,7 @@
 
 <div class="app" class:authenticated={$isAuthenticated}>
 	<SkipLinks />
+	<CorsErrorBanner />
 	<BackendStatus />
 	<header role="banner">
 		<nav id="navigation" aria-label="Main navigation">
@@ -108,6 +111,7 @@
 	<MobileNav />
 	<PWAInstallPrompt />
 	<FeedbackButton />
+	<DebugPanel />
 </div>
 
 <style>

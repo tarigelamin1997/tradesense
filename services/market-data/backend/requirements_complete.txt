@@ -1,0 +1,44 @@
+# Core dependencies
+fastapi==0.116.1
+uvicorn==0.35.0
+python-multipart==0.0.20
+pydantic==2.11.7
+pydantic-settings==2.10.1
+email-validator==2.2.0
+
+# Database
+sqlalchemy==2.0.41
+alembic==1.16.4
+psycopg2-binary==2.9.10
+
+# Authentication
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+PyJWT==2.10.1
+
+# Caching
+redis==6.2.0
+cachetools==6.1.0
+fakeredis==2.20.1
+
+# Data Analysis
+pandas==2.3.1
+numpy==2.3.1
+matplotlib==3.10.3
+seaborn==0.13.2
+plotly==6.2.0
+scikit-learn==1.7.0
+scipy==1.16.0
+
+# HTTP & API
+httpx==0.28.1
+requests==2.32.4
+
+# Payment
+stripe==12.3.0
+
+# Testing
+pytest==8.4.1
+
+# Utilities
+python-dotenv==1.1.1

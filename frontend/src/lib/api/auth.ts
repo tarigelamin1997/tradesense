@@ -54,10 +54,15 @@ function createAuthStore() {
 				formData.append('username', credentials.username);
 				formData.append('password', credentials.password);
 				
-				console.log('Attempting login with username:', credentials.username);
+				const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+				console.log('Attempting login to:', apiUrl);
+				console.log('Username:', credentials.username);
 				
 				// Use the correct OAuth2 token endpoint with form data
-				const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/token`, {
+				const loginUrl = `${apiUrl}/auth/token`;
+				console.log('Login URL:', loginUrl);
+				
+				const response = await fetch(loginUrl, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/x-www-form-urlencoded'
@@ -68,7 +73,8 @@ function createAuthStore() {
 				
 				if (!response.ok) {
 					const errorData = await response.json().catch(() => ({}));
-					throw new Error(errorData.detail || 'Login failed');
+					console.error('Login failed:', response.status, response.statusText, errorData);
+					throw new Error(errorData.detail || `Login failed: ${response.status} ${response.statusText}`);
 				}
 				
 				const data = await response.json();
@@ -77,7 +83,7 @@ function createAuthStore() {
 				if (data.access_token) {
 					// Store token in httpOnly cookie is handled by backend
 					// Get user info after login
-					const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/me`, {
+					const userResponse = await fetch(`${apiUrl}/auth/me`, {
 						headers: {
 							'Authorization': `Bearer ${data.access_token}`
 						},
@@ -110,10 +116,16 @@ function createAuthStore() {
 				throw new Error('No access token received');
 			} catch (error: any) {
 				console.error('Login error:', error);
+				console.error('Error details:', {
+					name: error.name,
+					message: error.message,
+					stack: error.stack
+				});
+				
 				let errorMessage = 'Login failed';
 				
-				if (error.message && error.message.includes('fetch')) {
-					errorMessage = 'Unable to connect to server. Please ensure the backend is running on port 8000.';
+				if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+					errorMessage = `Unable to connect to server at ${apiUrl}. Please check if the backend is running and CORS is configured.`;
 				} else if (error.message) {
 					errorMessage = error.message;
 				}
@@ -132,9 +144,15 @@ function createAuthStore() {
 			update(state => ({ ...state, loading: true, error: null }));
 			
 			try {
-				console.log('Attempting to register with:', data);
+				const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+				console.log('Attempting to register at:', apiUrl);
+				console.log('Registration data:', data);
+				
 				// Register just creates the user
-				const registerResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/register`, {
+				const registerUrl = `${apiUrl}/auth/register`;
+				console.log('Register URL:', registerUrl);
+				
+				const registerResponse = await fetch(registerUrl, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
@@ -145,7 +163,8 @@ function createAuthStore() {
 				
 				if (!registerResponse.ok) {
 					const errorData = await registerResponse.json().catch(() => ({}));
-					throw new Error(errorData.detail || 'Registration failed');
+					console.error('Registration failed:', registerResponse.status, registerResponse.statusText, errorData);
+					throw new Error(errorData.detail || `Registration failed: ${registerResponse.status} ${registerResponse.statusText}`);
 				}
 				
 				console.log('Registration successful');
@@ -181,7 +200,8 @@ function createAuthStore() {
 		
 		async logout() {
 			try {
-				await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/logout`, {
+				const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+				await fetch(`${apiUrl}/auth/logout`, {
 					method: 'POST',
 					credentials: 'include'
 				});
@@ -204,7 +224,8 @@ function createAuthStore() {
 			update(state => ({ ...state, loading: true }));
 			
 			try {
-				const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/me`, {
+				const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+				const response = await fetch(`${apiUrl}/auth/me`, {
 					credentials: 'include'
 				});
 				

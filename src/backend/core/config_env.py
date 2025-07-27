@@ -82,13 +82,13 @@ class CacheConfig(BaseModel):
     enabled: bool = True
     default_ttl_seconds: int = Field(default=300, ge=1)
     max_memory_mb: int = Field(default=512, ge=64)
-    eviction_policy: str = Field(default="lru", regex="^(lru|lfu|random)$")
+    eviction_policy: str = Field(default="lru", pattern="^(lru|lfu|random)$")
     compression: bool = False
 
 
 class LoggingConfig(BaseModel):
     """Logging configuration"""
-    level: str = Field(default="INFO", regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
+    level: str = Field(default="INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
     format: str = "json"
     include_traceback: bool = True
     log_requests: bool = True
@@ -162,7 +162,7 @@ class EnvironmentConfig(BaseModel):
     smtp_from_email: Optional[str] = None
     
     # External Services
-    market_data_provider: str = Field(default="alpha_vantage", regex="^(alpha_vantage|yahoo|polygon)$")
+    market_data_provider: str = Field(default="alpha_vantage", pattern="^(alpha_vantage|yahoo|polygon)$")
     market_data_cache_minutes: int = Field(default=15, ge=1, le=60)
 
 
@@ -209,7 +209,13 @@ DEVELOPMENT_CONFIG = EnvironmentConfig(
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:5173",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "https://frontend-og3gd5s4j-tarig-ahmeds-projects.vercel.app",
+        "https://frontend-jj8nosjl0-tarig-ahmeds-projects.vercel.app",
+        "https://frontend-*.vercel.app",
+        "https://*.vercel.app",
+        "https://tradesense.vercel.app",
+        "https://tradesense-*.vercel.app"
     ],
     docs_enabled=True
 )
@@ -330,7 +336,7 @@ TESTING_CONFIG = EnvironmentConfig(
     ),
     security=SecurityConfig(
         jwt_expire_minutes=5,
-        password_min_length=4,
+        password_min_length=6,  # Fixed to meet minimum requirement
         password_require_uppercase=False,
         password_require_lowercase=False,
         password_require_numbers=False,

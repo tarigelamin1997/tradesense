@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 import logging
 
 from core.config import settings
-from core.cache import get_redis_client
+from core.cache import redis_client as get_redis_client
 
 logger = logging.getLogger(__name__)
 

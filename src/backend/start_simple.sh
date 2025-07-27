@@ -7,6 +7,11 @@ echo "Environment: ${ENVIRONMENT:-development}"
 # Set Python path
 export PYTHONPATH=/app/src/backend:$PYTHONPATH
 
-# Skip all initialization - just start the server
-echo "🌐 Starting Uvicorn server directly..."
-exec python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Try minimal version first for debugging
+if [ -f "main_minimal.py" ]; then
+    echo "🔧 Using minimal backend for debugging..."
+    exec python main_minimal.py
+else
+    echo "🌐 Starting Uvicorn server directly..."
+    exec python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+fi

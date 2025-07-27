@@ -400,7 +400,9 @@ class ConfigurationManager:
         
         # CORS Origins
         if cors_origins := os.getenv("CORS_ORIGINS"):
-            config.cors_origins = [o.strip() for o in cors_origins.split(",")]
+            # Clean up any formatting issues (semicolons, newlines, etc.)
+            cors_origins = cors_origins.replace(";", ",").replace("\n", "").replace("\\n", "")
+            config.cors_origins = [o.strip() for o in cors_origins.split(",") if o.strip()]
         
         # Feature flags from environment
         for flag_name in config.feature_flags.model_fields:

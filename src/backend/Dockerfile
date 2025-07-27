@@ -39,9 +39,10 @@ ENV PYTHONPATH=/app/src/backend
 # Set environment variable for port (Railway provides this)
 ENV PORT=8000
 
-# Copy start script
+# Copy start scripts
 COPY src/backend/start.sh /app/src/backend/start.sh
-RUN chmod +x /app/src/backend/start.sh
+COPY src/backend/start_simple.sh /app/src/backend/start_simple.sh
+RUN chmod +x /app/src/backend/start.sh /app/src/backend/start_simple.sh
 
-# Run the application (no --reload in production)
-CMD ["/app/src/backend/start.sh"]
+# Run the application with simple start script
+CMD ["/app/src/backend/start_simple.sh"]

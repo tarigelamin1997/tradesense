@@ -19,19 +19,27 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS configuration
-cors_origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:5173",
-    "http://localhost:8000",
-    "https://frontend-og3gd5s4j-tarig-ahmeds-projects.vercel.app",
-    "https://frontend-jj8nosjl0-tarig-ahmeds-projects.vercel.app",
-    "https://frontend-*.vercel.app",
-    "https://*.vercel.app",
-    "https://tradesense.vercel.app",
-    "https://tradesense-*.vercel.app"
-]
+# CORS configuration from environment
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+if cors_origins_env:
+    # Parse from environment variable
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+    logger.info(f"CORS Origins from env: {cors_origins}")
+else:
+    # Default origins
+    cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "https://frontend-self-nu-47.vercel.app",
+        "https://frontend-og3gd5s4j-tarig-ahmeds-projects.vercel.app",
+        "https://frontend-jj8nosjl0-tarig-ahmeds-projects.vercel.app",
+        "https://frontend-7uz3djyzl-tarig-ahmeds-projects.vercel.app",
+        "https://tradesense.vercel.app",
+        "https://tradesense-*.vercel.app"
+    ]
+    logger.info(f"CORS Origins from defaults: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,

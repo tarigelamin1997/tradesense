@@ -9,13 +9,24 @@
 		if (!browser) return;
 		
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/docs`, {
-				method: 'HEAD',
-				mode: 'no-cors' // Use no-cors to avoid CORS errors
+			const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/health`, {
+				method: 'GET',
+				headers: {
+					'Accept': 'application/json'
+				}
 			});
-			backendStatus = 'online';
-			showBanner = false;
+			
+			if (response.ok) {
+				const data = await response.json();
+				backendStatus = data.status === 'healthy' ? 'online' : 'offline';
+				showBanner = backendStatus === 'offline';
+			} else {
+				console.error('Backend health check failed:', response.status, response.statusText);
+				backendStatus = 'offline';
+				showBanner = true;
+			}
 		} catch (error) {
+			console.error('Backend health check error:', error);
 			backendStatus = 'offline';
 			showBanner = true;
 		}
@@ -40,7 +51,7 @@
 					<line x1="12" y1="16" x2="12.01" y2="16"></line>
 				</svg>
 				<span class="message">
-					Backend server is not running. Please start the backend on port 8000.
+					Backend server is not accessible at {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}
 				</span>
 				<button on:click={() => showBanner = false} class="close-btn" aria-label="Close">
 					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -50,7 +61,7 @@
 				</button>
 			</div>
 			<div class="instructions">
-				Run: <code>cd backend && uvicorn main:app --reload</code>
+				Check console for details. Gateway status: {backendStatus}
 			</div>
 		</div>
 	</div>

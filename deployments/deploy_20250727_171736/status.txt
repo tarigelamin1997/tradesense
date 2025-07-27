@@ -1,0 +1,7 @@
+gateway: FAILED
+auth: FAILED
+trading: FAILED
+analytics: FAILED
+billing: FAILED
+market-data: FAILED
+ai: FAILED

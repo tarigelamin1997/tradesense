@@ -1,0 +1,63 @@
+{
+  "timestamp": "2025-07-12T21:24:06.935250",
+  "base_url": "http://localhost:8000",
+  "endpoints": {
+    "GET /health": {
+      "status": "\u2705 Working",
+      "message": "Health check active",
+      "response_time": 0.004110813140869141
+    },
+    "GET /api/health": {
+      "status": "\u2705 Working",
+      "message": "Health check active",
+      "response_time": 0.005361795425415039
+    },
+    "GET /api/v1/health": {
+      "status": "\u274c Broken",
+      "message": "Unexpected status code: 405",
+      "response_time": 0.003278493881225586
+    },
+    "GET /api/v1/health/db": {
+      "status": "\u274c Broken",
+      "message": "Unexpected status code: 404",
+      "response_time": 0.004023313522338867
+    },
+    "GET /api/v1/performance/metrics": {
+      "status": "\u2705 Working",
+      "message": "Health check active",
+      "response_time": 1.007610559463501
+    },
+    "POST /api/v1/auth/register": {
+      "status": "\u274c Broken",
+      "message": "Unexpected status code: 201",
+      "response_time": 0.31235313415527344
+    },
+    "POST /api/v1/auth/login": {
+      "status": "\u274c Broken",
+      "message": "Login failed",
+      "response_time": 0
+    },
+    "ALL /api/v1/trades": {
+      "status": "\u2753 Untested",
+      "message": "No auth token available",
+      "response_time": 0
+    },
+    "ALL /api/v1/analytics": {
+      "status": "\u2753 Untested",
+      "message": "No auth token available",
+      "response_time": 0
+    },
+    "ALL Other endpoints": {
+      "status": "\u2753 Untested",
+      "message": "No auth token available",
+      "response_time": 0
+    }
+  },
+  "summary": {
+    "total": 10,
+    "working": 3,
+    "partial": 0,
+    "broken": 4,
+    "untested": 3
+  }
+}

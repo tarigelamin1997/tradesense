@@ -1,0 +1,27 @@
+# Production-only dependencies
+gunicorn==21.2.0
+uvicorn[standard]==0.24.0
+prometheus-client==0.19.0
+python-json-logger==2.0.7
+sentry-sdk[fastapi]==1.39.1
+psutil==5.9.6
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography>=41.0.0,<43.0.0
+
+# Production optimizations
+orjson==3.9.10
+ujson==5.9.0
+python-multipart==0.0.6
+
+# Monitoring
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-instrumentation-fastapi==0.42b0
+opentelemetry-instrumentation-sqlalchemy==0.42b0
+
+# Additional production tools
+python-dotenv==1.0.0
+click==8.1.7

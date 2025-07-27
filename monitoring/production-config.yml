@@ -1,0 +1,42 @@
+services:
+  - name: gateway
+    url: https://tradesense-gateway-production.up.railway.app
+    interval: 30s
+    timeout: 10s
+    alerts:
+      - type: down
+        threshold: 2
+        channels: [slack, pagerduty]
+      - type: slow_response
+        threshold: 1000ms
+        channels: [slack]
+  
+  - name: auth
+    url: https://tradesense-auth-production.up.railway.app
+    interval: 30s
+    critical: true
+    
+  - name: trading
+    url: https://tradesense-trading-production.up.railway.app
+    interval: 30s
+    critical: true
+
+alerts:
+  slack:
+    webhook: ${SLACK_WEBHOOK_URL}
+    channel: "#production-alerts"
+  
+  pagerduty:
+    api_key: ${PAGERDUTY_API_KEY}
+    service_id: ${PAGERDUTY_SERVICE_ID}
+
+metrics:
+  - name: error_rate
+    query: rate(http_requests_total{status=~"5.."}[5m])
+    threshold: 0.01
+    severity: critical
+    
+  - name: response_time_p95
+    query: histogram_quantile(0.95, http_request_duration_seconds_bucket)
+    threshold: 1.0
+    severity: warning

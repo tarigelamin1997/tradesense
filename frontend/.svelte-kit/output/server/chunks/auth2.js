@@ -17,8 +17,12 @@ function createAuthStore() {
         const formData = new URLSearchParams();
         formData.append("username", credentials.username);
         formData.append("password", credentials.password);
-        console.log("Attempting login with username:", credentials.username);
-        const response = await fetch(`${"https://tradesense-backend-production.up.railway.app"}/auth/token`, {
+        const apiUrl2 = "http://localhost:8000";
+        console.log("Attempting login to:", apiUrl2);
+        console.log("Username:", credentials.username);
+        const loginUrl = `${apiUrl2}/auth/token`;
+        console.log("Login URL:", loginUrl);
+        const response = await fetch(loginUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -28,12 +32,13 @@ function createAuthStore() {
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || "Login failed");
+          console.error("Login failed:", response.status, response.statusText, errorData);
+          throw new Error(errorData.detail || `Login failed: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
         console.log("Login response:", data);
         if (data.access_token) {
-          const userResponse = await fetch(`${"https://tradesense-backend-production.up.railway.app"}/auth/me`, {
+          const userResponse = await fetch(`${apiUrl2}/auth/me`, {
             headers: {
               "Authorization": `Bearer ${data.access_token}`
             },
@@ -61,9 +66,14 @@ function createAuthStore() {
         throw new Error("No access token received");
       } catch (error) {
         console.error("Login error:", error);
+        console.error("Error details:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
         let errorMessage = "Login failed";
-        if (error.message && error.message.includes("fetch")) {
-          errorMessage = "Unable to connect to server. Please ensure the backend is running on port 8000.";
+        if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+          errorMessage = `Unable to connect to server at ${apiUrl}. Please check if the backend is running and CORS is configured.`;
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -79,8 +89,12 @@ function createAuthStore() {
     async register(data) {
       update((state) => ({ ...state, loading: true, error: null }));
       try {
-        console.log("Attempting to register with:", data);
-        const registerResponse = await fetch(`${"https://tradesense-backend-production.up.railway.app"}/auth/register`, {
+        const apiUrl2 = "http://localhost:8000";
+        console.log("Attempting to register at:", apiUrl2);
+        console.log("Registration data:", data);
+        const registerUrl = `${apiUrl2}/auth/register`;
+        console.log("Register URL:", registerUrl);
+        const registerResponse = await fetch(registerUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -90,7 +104,8 @@ function createAuthStore() {
         });
         if (!registerResponse.ok) {
           const errorData = await registerResponse.json().catch(() => ({}));
-          throw new Error(errorData.detail || "Registration failed");
+          console.error("Registration failed:", registerResponse.status, registerResponse.statusText, errorData);
+          throw new Error(errorData.detail || `Registration failed: ${registerResponse.status} ${registerResponse.statusText}`);
         }
         console.log("Registration successful");
         const loginResponse = await this.login({
@@ -119,7 +134,8 @@ function createAuthStore() {
     },
     async logout() {
       try {
-        await fetch(`${"https://tradesense-backend-production.up.railway.app"}/auth/logout`, {
+        const apiUrl2 = "http://localhost:8000";
+        await fetch(`${apiUrl2}/auth/logout`, {
           method: "POST",
           credentials: "include"
         });

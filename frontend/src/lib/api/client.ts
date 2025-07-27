@@ -2,8 +2,8 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import type { ApiError, ApiResponse } from '$lib/types';
 
-// Use environment variable for API URL, fallback to empty string for Vite proxy
-const API_BASE_URL = browser ? (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000') : '';
+// Use environment variable for API URL, fallback to production URL
+const API_BASE_URL = browser ? (import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://tradesense-gateway-production.up.railway.app') : '';
 
 interface RequestOptions extends RequestInit {
 	params?: Record<string, any>;

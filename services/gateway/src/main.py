@@ -41,6 +41,9 @@ else:
     ]
     logger.info(f"CORS Origins from defaults: {cors_origins}")
 
+# Debug print
+print(f"[GATEWAY DEBUG] CORS configured with origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,

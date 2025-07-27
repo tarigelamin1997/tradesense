@@ -1,6 +1,27 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": ".svelte-kit/output",
-  "installCommand": "npm install",
-  "framework": "sveltekit"
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://tradesense-gateway-production.up.railway.app/api/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
 }

@@ -464,6 +464,7 @@ async def resend_verification(
     return {"message": "Verification email sent"}
 
 
-# Include OAuth router
-from .oauth_router import router as oauth_router
-router.include_router(oauth_router)
+# Include OAuth router - temporarily disabled for deployment
+# TODO: Fix OAuth imports and re-enable
+# from .oauth_router import router as oauth_router
+# router.include_router(oauth_router)

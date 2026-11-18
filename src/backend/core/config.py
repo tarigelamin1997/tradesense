@@ -52,6 +52,27 @@ def get_database_url():
     # Default local database for development only
     return "postgresql://postgres:postgres@localhost/tradesense"
 
+
+def _resolve_jwt_secret() -> str:
+    """One signing key for all JWT fields.
+
+    Previously each field generated its own random fallback, so tokens signed
+    with one field could not be verified with another when no key was set.
+    """
+    value = os.getenv("JWT_SECRET_KEY") or os.getenv("SECRET_KEY")
+    if value:
+        return value
+    import logging
+    logging.getLogger(__name__).warning(
+        "JWT_SECRET_KEY/SECRET_KEY not set; using an ephemeral random key. "
+        "Tokens will not survive restarts or work across replicas."
+    )
+    return secrets.token_urlsafe(32)
+
+
+_JWT_SECRET = _resolve_jwt_secret()
+
+
 class Settings(BaseSettings):
     # Database
     database_url: str = get_database_url()
@@ -59,9 +80,9 @@ class Settings(BaseSettings):
     sqlite_database_url: Optional[str] = "sqlite:///./tradesense.db"  # Keep SQLite as fallback
     
     # Security - Generate defaults if not provided
-    secret_key: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))
-    jwt_secret: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))  # Legacy field
-    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))
+    secret_key: str = _JWT_SECRET
+    jwt_secret: str = _JWT_SECRET  # Legacy field
+    jwt_secret_key: str = _JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30  # Legacy field
     jwt_access_token_expire_minutes: int = 30

@@ -159,7 +159,7 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: tradesense-postgres-exporter
     environment:
-      DATA_SOURCE_NAME: "postgresql://tradesense_user:2ca9bfcf1a40257caa7b4be903c7fe22@tradesense-postgres:5432/tradesense?sslmode=disable"
+      DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN:?set POSTGRES_EXPORTER_DSN}"
     ports:
       - "9187:9187"
     networks:

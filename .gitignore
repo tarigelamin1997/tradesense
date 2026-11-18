@@ -118,6 +118,8 @@ env.*
 .env.test
 .env.production
 .env.staging
+!.env.example
+!**/.env.example
 
 # API Keys and Tokens
 *_token*

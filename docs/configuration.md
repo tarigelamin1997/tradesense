@@ -42,7 +42,7 @@ openssl rand -hex 32
 
 | Variable | Purpose |
 |---|---|
-| `JWT_SECRET_KEY` | HMAC key used to sign and verify access tokens. Secret. |
+| `JWT_SECRET_KEY` | HMAC key used to sign and verify access tokens. Secret. If unset, a random per-process key is used (tokens break on restart) and a critical error is logged. |
 
 ### analytics / ai
 
@@ -66,6 +66,7 @@ openssl rand -hex 32
 | `STRIPE_PRICE_BASIC` | Stripe Price ID for the Basic plan |
 | `STRIPE_PRICE_PRO` | Stripe Price ID for the Pro plan |
 | `STRIPE_PRICE_PREMIUM` | Stripe Price ID for the Premium plan |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret of the Stripe webhook endpoint (`whsec_…`). Required: without it all webhooks are rejected. Secret. |
 
 ---
 

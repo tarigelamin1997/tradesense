@@ -118,6 +118,8 @@ env.*
 .env.test
 .env.production
 .env.staging
+!.env.example
+!**/.env.example
 
 # API Keys and Tokens
 *_token*
@@ -145,7 +147,8 @@ config/secrets/
 *.p7b
 *.p7c
 *.p7s
-auth/
+# root-level credential folder only (a bare "auth/" also ignored services/auth and every auth module)
+/auth/
 .auth/
 
 # Cloud provider credentials

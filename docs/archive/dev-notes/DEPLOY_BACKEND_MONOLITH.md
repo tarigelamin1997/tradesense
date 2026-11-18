@@ -30,8 +30,8 @@ Go to your Railway project and set these variables:
 
 ```bash
 # Required
-SECRET_KEY=81mLWBLYitjqAy6o7fA8l4HtayOjpS_INXTrpnp1ttA
-JWT_SECRET_KEY=rBKId5tLARpQ5n4s_uQq1fuWAx4zbzK60RtYUCQ4OYQ
+SECRET_KEY=<REDACTED>
+JWT_SECRET_KEY=<REDACTED>
 
 # CORS
 CORS_ORIGINS=https://frontend-7uz3djyzl-tarig-ahmeds-projects.vercel.app,https://tradesense.vercel.app,http://localhost:3000,http://localhost:3001

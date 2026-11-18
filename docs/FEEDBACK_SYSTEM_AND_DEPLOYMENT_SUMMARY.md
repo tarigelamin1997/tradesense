@@ -134,4 +134,4 @@ The feedback system transforms every user into a collaborator, making TradeSense
 
 ---
 
-*Ready to deploy? Follow the [RAPID_DEPLOYMENT_GUIDE.md](../RAPID_DEPLOYMENT_GUIDE.md) and go live today!*
+*Ready to deploy? Follow the [deployment guide](deployment.md) and go live today!*

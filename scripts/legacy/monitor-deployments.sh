@@ -63,7 +63,7 @@ while true; do
     echo ""
     echo "Once services are UP:"
     echo "1. Configure databases and env vars"
-    echo "2. Run: ./test-railway-flow.sh"
+    echo "2. Run: scripts/legacy/test-railway-flow.sh"
     
     sleep 30
 done

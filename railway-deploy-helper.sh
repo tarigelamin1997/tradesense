@@ -56,8 +56,8 @@ echo "4. Copy and paste the following environment variables:"
 echo ""
 echo "========== COPY EVERYTHING BELOW THIS LINE =========="
 cat << 'EOF'
-JWT_SECRET_KEY=REDACTED
-SECRET_KEY=REDACTED
+JWT_SECRET_KEY=<generate: openssl rand -hex 32>
+SECRET_KEY=<generate: openssl rand -hex 32>
 CORS_ORIGINS_STR=http://localhost:3000
 ADMIN_EMAIL=support@tradesense.ai
 STRIPE_SECRET_KEY=sk_test_your_key_here

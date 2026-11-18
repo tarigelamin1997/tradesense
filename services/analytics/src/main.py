@@ -121,19 +121,27 @@ async def verify_token(authorization: str = Header(None)):
     
     token = authorization.split(" ")[1]
     
-    # Verify with auth service
-    async with httpx.AsyncClient() as client:
-        try:
+    # Verify with auth service (token in header, never in the URL)
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 f"{AUTH_SERVICE_URL}/auth/verify",
-                params={"token": token}
+                headers={"Authorization": f"Bearer {token}"},
             )
+            if response.status_code == 422:
+                # Auth service not yet upgraded to header-based verification
+                response = await client.post(
+                    f"{AUTH_SERVICE_URL}/auth/verify", params={"token": token}
+                )
+            response.raise_for_status()
             data = response.json()
-            if not data.get("valid"):
-                raise HTTPException(status_code=401, detail="Invalid token")
-            return data.get("username")
-        except:
-            raise HTTPException(status_code=503, detail="Auth service unavailable")
+    except (httpx.HTTPError, ValueError) as e:
+        logger.error(f"Auth service verification failed: {e}")
+        raise HTTPException(status_code=503, detail="Auth service unavailable")
+
+    if not data.get("valid"):
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return data.get("username")
 
 # Helper functions
 async def get_user_trades(username: str, token: str):

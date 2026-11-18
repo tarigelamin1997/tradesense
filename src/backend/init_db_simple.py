@@ -9,7 +9,9 @@ from sqlalchemy import create_engine, text, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 
 # Database URL
-DATABASE_URL = 'postgresql://tradesense_user:REDACTED@localhost:5433/tradesense'
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    raise SystemExit('Set DATABASE_URL (see docs/configuration.md)')
 
 print("🚀 Initializing TradeSense PostgreSQL Database...")
 print("=" * 50)

@@ -27,8 +27,8 @@ echo -e "${GREEN}✅ Project directory verified${NC}"
 
 # Set environment variables
 echo -e "\n${YELLOW}📝 Setting environment variables...${NC}"
-railway variables --set "JWT_SECRET_KEY=REDACTED" \
-    --set "SECRET_KEY=REDACTED" \
+railway variables --set "JWT_SECRET_KEY=${JWT_SECRET_KEY:?export JWT_SECRET_KEY first (openssl rand -hex 32)}" \
+    --set "SECRET_KEY=${SECRET_KEY:?export SECRET_KEY first (openssl rand -hex 32)}" \
     --set "CORS_ORIGINS_STR=http://localhost:3000" \
     --set "ADMIN_EMAIL=support@tradesense.ai" \
     --set "ENVIRONMENT=production" \

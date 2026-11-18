@@ -105,7 +105,7 @@ services:
   siege:
     build:
       context: .
-      dockerfile: Dockerfile.siege
+      dockerfile: deployments/legacy/docker/Dockerfile.siege
     volumes:
       - ./tests/performance/urls.txt:/urls.txt
     command: -c 50 -t 60s -f /urls.txt

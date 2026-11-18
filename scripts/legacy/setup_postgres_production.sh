@@ -156,7 +156,7 @@ PG_PASSWORD=$DB_PASSWORD
 EOF
 
 # Create database optimization script
-cat > optimize_postgres.sql <<'EOF'
+cat > scripts/legacy/optimize_postgres.sql <<'EOF'
 -- Performance optimization for TradeSense
 
 -- Indexes for trades table
@@ -210,7 +210,7 @@ else
 fi
 
 # Create backup script
-cat > backup_postgres.sh <<'EOF'
+cat > scripts/legacy/backup_postgres.sh <<'EOF'
 #!/bin/bash
 # PostgreSQL backup script
 
@@ -230,7 +230,7 @@ gzip "$BACKUP_DIR/tradesense_$TIMESTAMP.sql"
 echo "Backup created: $BACKUP_DIR/tradesense_$TIMESTAMP.dump"
 EOF
 
-chmod +x backup_postgres.sh
+chmod +x scripts/legacy/backup_postgres.sh
 
 # Summary
 echo ""
@@ -250,12 +250,12 @@ echo "  postgresql://$DB_USER:$DB_PASSWORD@localhost:5433/$DB_NAME"
 echo ""
 echo "📁 Files created:"
 echo "  - .env.production (database configuration)"
-echo "  - optimize_postgres.sql (performance indexes)"
-echo "  - backup_postgres.sh (backup script)"
+echo "  - scripts/legacy/optimize_postgres.sql (performance indexes)"
+echo "  - scripts/legacy/backup_postgres.sh (backup script)"
 echo ""
 echo "🚀 Next steps:"
 echo "  1. Run migrations: cd src/backend && alembic upgrade head"
-echo "  2. Apply optimizations: psql -U $DB_USER -d $DB_NAME -f optimize_postgres.sql"
+echo "  2. Apply optimizations: psql -U $DB_USER -d $DB_NAME -f scripts/legacy/optimize_postgres.sql"
 echo "  3. Update your application to use PostgreSQL"
 echo ""
 if [ "$USE_DOCKER" = true ]; then

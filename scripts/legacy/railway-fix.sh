@@ -25,7 +25,7 @@ case $choice in
     1)
         echo "Deploying with simple Dockerfile..."
         # Update railway.toml
-        sed -i 's/dockerfilePath = .*/dockerfilePath = "Dockerfile.railway"/' railway.toml
+        sed -i 's#dockerfilePath = .*#dockerfilePath = "deployments/legacy/docker/Dockerfile.railway"#' railway.toml
         git add railway.toml
         git commit -m "fix: Use simple Dockerfile" --no-verify
         git push

@@ -16,7 +16,7 @@ fi
 
 # Run validation first
 echo -e "\n📋 Running pre-deployment validation..."
-if ./railway-validate.sh; then
+if scripts/legacy/railway-validate.sh; then
     echo -e "\n✅ Validation passed!"
 else
     echo -e "\n❌ Validation failed - fix errors before deploying"
@@ -54,5 +54,5 @@ echo "Monitor progress at: https://railway.app/dashboard"
 echo ""
 echo "Next steps:"
 echo "1. Check Railway dashboard for deployment status"
-echo "2. Run ./railway-status.sh to check health"
+echo "2. Run scripts/legacy/railway-status.sh to check health"
 echo "3. Check logs with: railway logs"

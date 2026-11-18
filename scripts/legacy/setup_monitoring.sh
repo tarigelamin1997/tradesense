@@ -60,7 +60,7 @@ EOF
 
 # Step 3: Create docker-compose for monitoring
 echo -e "\n${YELLOW}3. Creating monitoring docker-compose...${NC}"
-cat > docker-compose.monitoring.yml << 'EOF'
+cat > deployments/legacy/compose/docker-compose.monitoring.yml << 'EOF'
 version: '3.8'
 
 services:
@@ -271,8 +271,8 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/home/user/tradesense
-ExecStart=/usr/local/bin/docker-compose -f docker-compose.monitoring.yml up -d
-ExecStop=/usr/local/bin/docker-compose -f docker-compose.monitoring.yml down
+ExecStart=/usr/local/bin/docker-compose --project-directory . -f deployments/legacy/compose/docker-compose.monitoring.yml up -d
+ExecStop=/usr/local/bin/docker-compose --project-directory . -f deployments/legacy/compose/docker-compose.monitoring.yml down
 StandardOutput=journal
 
 [Install]
@@ -283,7 +283,7 @@ echo -e "\n${GREEN}✅ Monitoring setup complete!${NC}"
 echo -e "\n${YELLOW}Next steps:${NC}"
 echo "1. Update monitoring/prometheus/prometheus.yml with your admin token"
 echo "2. Start the monitoring stack:"
-echo "   docker compose -f docker-compose.monitoring.yml up -d"
+echo "   docker compose --project-directory . -f deployments/legacy/compose/docker-compose.monitoring.yml up -d"
 echo "3. Access services:"
 echo "   - Prometheus: http://localhost:9090"
 echo "   - Grafana: http://localhost:3000 (admin/tradesense123)"

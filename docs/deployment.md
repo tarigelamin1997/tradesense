@@ -53,6 +53,7 @@ Pull requests run the scan and test jobs only; nothing deploys until merge to `m
    | Service | Variables |
    |---|---|
    | auth | `DATABASE_URL`, `JWT_SECRET_KEY` |
+   | billing | also `STRIPE_SECRET_KEY`, `STRIPE_PRICE_*`, `STRIPE_WEBHOOK_SECRET` |
    | trading, analytics, billing, ai | `DATABASE_URL`, `AUTH_SERVICE_URL` (+ service-specific keys) |
    | market-data | `REDIS_URL` |
    | gateway | `CORS_ORIGINS` and every `*_SERVICE_URL` |
@@ -140,6 +141,6 @@ Then sign up and log in through the frontend and confirm the dashboard loads tra
 - [ ] Unique, randomly generated `JWT_SECRET_KEY` / `SECRET_KEY` (≥ 32 bytes), set only in Railway
 - [ ] `ENVIRONMENT=production` (enables `Secure` cookies)
 - [ ] `CORS_ORIGINS` lists only real frontend origins
-- [ ] Stripe live secret key and `STRIPE_PRICE_*` IDs set on billing; `/billing/webhook` registered in Stripe
+- [ ] Stripe live secret key, `STRIPE_PRICE_*` IDs and `STRIPE_WEBHOOK_SECRET` set on billing; `/billing/webhook` registered in Stripe
 - [ ] Postgres backups enabled in Railway
 - [ ] All `/health` endpoints green after deploy

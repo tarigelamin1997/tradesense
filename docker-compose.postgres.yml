@@ -8,8 +8,8 @@ services:
       - ./src/backend:/app
       - ./requirements.txt:/app/requirements.txt
     environment:
-      DATABASE_URL: postgresql://tradesense_user:REDACTED@172.17.0.1:5433/tradesense
-      JWT_SECRET_KEY: REDACTED
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env}
     command: |
       bash -c "
         echo 'Installing dependencies...' &&

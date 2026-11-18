@@ -13,8 +13,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Set environment variables
 os.environ['REDIS_URL'] = 'redis://localhost:6379/0'
-os.environ['DATABASE_URL'] = 'postgresql://tradesense_user:REDACTED@localhost:5433/tradesense'
-os.environ['JWT_SECRET_KEY'] = 'REDACTED'
+if not os.environ.get('DATABASE_URL'):
+    if __name__ == '__main__':
+        raise SystemExit('Set DATABASE_URL in your environment or .env (see docs/configuration.md)')
+    import pytest
+    pytest.skip('Set DATABASE_URL in your environment or .env (see docs/configuration.md)', allow_module_level=True)
+if not os.environ.get('JWT_SECRET_KEY'):
+    if __name__ == '__main__':
+        raise SystemExit('Set JWT_SECRET_KEY in your environment or .env (see docs/configuration.md)')
+    import pytest
+    pytest.skip('Set JWT_SECRET_KEY in your environment or .env (see docs/configuration.md)', allow_module_level=True)
 
 from core.cache import cache_manager, cache_response, invalidate_user_cache
 

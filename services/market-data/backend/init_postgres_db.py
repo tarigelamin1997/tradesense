@@ -12,8 +12,10 @@ backend_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, backend_dir)
 
 # Set environment variable before importing
-os.environ['DATABASE_URL'] = 'postgresql://tradesense_user:REDACTED@localhost:5433/tradesense'
-os.environ['JWT_SECRET_KEY'] = 'REDACTED'
+if not os.environ.get('DATABASE_URL'):
+    raise SystemExit('Set DATABASE_URL in your environment or .env (see docs/configuration.md)')
+if not os.environ.get('JWT_SECRET_KEY'):
+    raise SystemExit('Set JWT_SECRET_KEY in your environment or .env (see docs/configuration.md)')
 os.environ['DEBUG'] = 'False'
 
 print("🚀 Initializing TradeSense PostgreSQL Database...")

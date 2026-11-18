@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, String, Float, DateTime, Boolean, Integer
@@ -133,19 +133,27 @@ async def verify_token(authorization: str = Header(None)):
     
     token = authorization.split(" ")[1]
     
-    # Verify with auth service
-    async with httpx.AsyncClient() as client:
-        try:
+    # Verify with auth service (token in header, never in the URL)
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 f"{AUTH_SERVICE_URL}/auth/verify",
-                params={"token": token}
+                headers={"Authorization": f"Bearer {token}"},
             )
+            if response.status_code == 422:
+                # Auth service not yet upgraded to header-based verification
+                response = await client.post(
+                    f"{AUTH_SERVICE_URL}/auth/verify", params={"token": token}
+                )
+            response.raise_for_status()
             data = response.json()
-            if not data.get("valid"):
-                raise HTTPException(status_code=401, detail="Invalid token")
-            return data.get("username")
-        except:
-            raise HTTPException(status_code=503, detail="Auth service unavailable")
+    except (httpx.HTTPError, ValueError) as e:
+        logger.error(f"Auth service verification failed: {e}")
+        raise HTTPException(status_code=503, detail="Auth service unavailable")
+
+    if not data.get("valid"):
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return data.get("username")
 
 # Helper functions
 def get_plan_features(plan: str) -> List[str]:
@@ -329,14 +337,34 @@ async def cancel_subscription(
         logger.error(f"Stripe error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
 @app.post("/billing/webhook")
-async def stripe_webhook(request: dict, db: Session = Depends(get_db)):
-    """Handle Stripe webhooks"""
-    # In production, verify webhook signature
-    event_type = request.get("type")
+async def stripe_webhook(
+    request: Request,
+    stripe_signature: Optional[str] = Header(None, alias="Stripe-Signature"),
+    db: Session = Depends(get_db),
+):
+    """Handle Stripe webhooks. Only events signed by Stripe are accepted."""
+    if not STRIPE_WEBHOOK_SECRET:
+        logger.error("STRIPE_WEBHOOK_SECRET is not set; rejecting webhook")
+        raise HTTPException(status_code=503, detail="Webhook endpoint not configured")
+    if not stripe_signature:
+        raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
+
+    payload = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(payload, stripe_signature, STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        logger.warning("Rejected webhook with invalid Stripe signature")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    event_type = event["type"]
     
     if event_type == "checkout.session.completed":
-        session = request["data"]["object"]
+        session = event["data"]["object"]
         
         # Create subscription record
         subscription = Subscription(
@@ -353,7 +381,7 @@ async def stripe_webhook(request: dict, db: Session = Depends(get_db)):
         db.commit()
         
     elif event_type == "invoice.payment_succeeded":
-        invoice = request["data"]["object"]
+        invoice = event["data"]["object"]
         
         # Record payment
         payment = Payment(

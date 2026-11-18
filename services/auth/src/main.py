@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, Header, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -10,6 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 import uvicorn
 import logging
+from typing import Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -58,7 +59,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Security setup
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    # Never fall back to a known string: that would let anyone forge tokens.
+    # A random per-process key keeps the service up, but tokens stop
+    # validating after every restart, so set JWT_SECRET_KEY in production.
+    import secrets
+    SECRET_KEY = secrets.token_urlsafe(32)
+    logging.getLogger(__name__).critical(
+        "JWT_SECRET_KEY is not set; using an ephemeral random key. Set it in the environment."
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -217,22 +227,23 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@app.get("/auth/debug/check-user")
-async def check_user_exists(email: str, db: Session = Depends(get_db)):
-    """Debug endpoint to check if a user exists - REMOVE IN PRODUCTION"""
-    user = db.query(User).filter(User.email == email).first()
-    if user:
-        return {
-            "exists": True,
-            "email": user.email,
-            "username": user.username,
-            "created_at": user.created_at.isoformat()
-        }
-    return {"exists": False}
-
 @app.post("/auth/verify")
-async def verify_token(token: str):
-    """Verify a JWT token - used by other services"""
+async def verify_token(
+    authorization: Optional[str] = Header(None),
+    token: Optional[str] = None,
+):
+    """Verify a JWT token - used by other services.
+
+    The token is read from the `Authorization: Bearer <token>` header.
+    The `token` query parameter is accepted only for backward compatibility
+    with services not yet redeployed; it will be removed.
+    """
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ", 1)[1]
+    elif token:
+        logger.warning("Deprecated: token passed to /auth/verify as query parameter")
+    if not token:
+        return {"valid": False}
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")

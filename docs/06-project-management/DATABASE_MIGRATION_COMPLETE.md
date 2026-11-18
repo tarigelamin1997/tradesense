@@ -36,7 +36,7 @@ Host: localhost
 Port: 5433
 Database: tradesense
 User: tradesense_user
-Password: 2ca9bfcf1a40257caa7b4be903c7fe22
+Password: <REDACTED>
 ```
 
 ### Tables Created (20 total)
@@ -95,7 +95,7 @@ docker start tradesense-postgres
 
 ### Connect to Database
 ```bash
-PGPASSWORD=2ca9bfcf1a40257caa7b4be903c7fe22 psql -h localhost -p 5433 -U tradesense_user -d tradesense
+PGPASSWORD=<REDACTED> psql -h localhost -p 5433 -U tradesense_user -d tradesense
 ```
 
 ### Check Database Status

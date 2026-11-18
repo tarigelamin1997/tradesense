@@ -30,5 +30,5 @@ railway up --detach
 echo ""
 echo "✅ Fix deployed!"
 echo ""
-echo "Check status with: ./quick-check.sh"
-echo "Monitor with: ./monitor-deployment.sh"
+echo "Check status with: scripts/legacy/quick-check.sh"
+echo "Monitor with: scripts/legacy/monitor-deployment.sh"

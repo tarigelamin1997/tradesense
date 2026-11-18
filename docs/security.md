@@ -102,7 +102,7 @@ Every user-owned record (trades, portfolios, journal entries, playbooks, analyti
 
 - Secrets live only in Railway / Vercel environment settings and GitHub Actions secrets.
 - `.env.example` documents variable names with empty values; real `.env` files must stay untracked.
-- CI runs **Gitleaks** and **Trivy** on every push and pull request (`.github/workflows/railway-deploy.yml`, `security-scan.yml`), plus **CodeQL** static analysis.
+- CI runs **Gitleaks** on the commits of every push and pull request and fails the build on a finding (`.github/workflows/pipeline.yml`), plus **CodeQL** static analysis (`codeql.yml`) and dependency review on pull requests.
 - A pre-commit setup (`setup-secret-scanning.sh`) adds local secret detection before commits.
 - Any secret that is ever committed is treated as compromised and rotated; deleting it in a later commit does not remove it from git history.
 

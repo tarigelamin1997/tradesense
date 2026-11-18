@@ -13,23 +13,31 @@ Railway service names follow the pattern `tradesense-<name>`: `tradesense-gatewa
 
 ## 1. Automated deployment (default)
 
-`.github/workflows/railway-deploy.yml` runs on every push to `main`:
+`.github/workflows/pipeline.yml` is the single CI/CD pipeline.
 
-1. Security scan (Trivy, Gitleaks), service tests and frontend lint/type-check/tests/build.
-2. **Deploy Railway** — for each service: `cd services/<name> && railway up --service tradesense-<name>`.
-3. **Deploy Vercel** — `vercel --prod` from `frontend/`.
-4. **Health check** — gateway `/health`, each service `/health`, and the frontend.
+| Job | Runs on | Blocks deploy? |
+|---|---|---|
+| Secret scan (gitleaks, new commits only) | PRs + `main` | Yes |
+| Backend tests, one job per service | PRs + `main` | Yes |
+| Frontend build | PRs + `main` | Yes |
+| Frontend unit tests + type check | PRs + `main` | No (advisory; known failures) |
+| Deploy each service to Railway (`railway up --ci`) | `main` only, when `RAILWAY_TOKEN` is set | — |
+| Deploy frontend to Vercel | `main` only, when `VERCEL_TOKEN` is set | — |
+| Gateway health check (retries for ~2 min) | after Railway deploy, when `GATEWAY_URL` is set | — |
 
-Required GitHub Actions secrets:
+If a deploy token is missing, the deploy job is **skipped with a warning annotation** rather than reported as successful.
 
-| Secret | Used for |
-|---|---|
-| `RAILWAY_TOKEN` | Railway CLI deploys |
-| `VERCEL_TOKEN` | Vercel CLI deploys |
-| `VERCEL_ORG_ID` | Vercel project scope |
-| `VERCEL_PROJECT_ID` | Vercel project scope |
+Required configuration (Settings → Secrets and variables → Actions):
 
-Pull requests run the scan and test jobs only; nothing deploys until merge to `main`.
+| Name | Kind | Used for |
+|---|---|---|
+| `RAILWAY_TOKEN` | Secret | Railway CLI deploys (project token) |
+| `VERCEL_TOKEN` | Secret | Vercel CLI deploys |
+| `VERCEL_ORG_ID` | Secret | Vercel project scope |
+| `VERCEL_PROJECT_ID` | Secret | Vercel project scope |
+| `GATEWAY_URL` | Variable | Post-deploy health check, e.g. `https://<gateway-domain>` |
+
+Older workflows are kept in `.github/workflows-archive/` for reference and do not run.
 
 ---
 

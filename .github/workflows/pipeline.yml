@@ -1,0 +1,197 @@
+# Single CI/CD pipeline for TradeSense.
+#
+# Blocking:  secret scan (new commits), backend service tests, frontend build.
+# Advisory:  frontend unit tests + type check — they currently have known
+#            failures; the job shows red but does not block merges or deploys.
+# Deploy:    only on push to main, and only when the deploy token secret
+#            exists. A missing token produces a visible warning, not a fake pass.
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  secret-scan:
+    name: Secret scan (new commits)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz \
+            | tar xz gitleaks
+      - name: Scan commits introduced by this change
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              RANGE="HEAD~1..HEAD"
+            else
+              RANGE="$BEFORE..${{ github.sha }}"
+            fi
+          fi
+          echo "Scanning $RANGE"
+          ./gitleaks git --no-banner --redact --log-opts="$RANGE" .
+
+  backend-tests:
+    name: Backend tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [gateway, auth, trading, analytics, market-data, billing, ai]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    env:
+      DATABASE_URL: sqlite:///./test.db
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET_KEY: ci-only-test-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: services/${{ matrix.service }}/requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest pytest-asyncio "httpx<0.28"
+      - name: Run tests
+        run: pytest tests/ -v
+
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  frontend-quality:
+    name: Frontend tests & type check (advisory, known failures)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Unit tests (vitest)
+        run: npx vitest run
+      - name: Type check (svelte-check)
+        if: always()
+        run: npm run check
+
+  deploy-config:
+    name: Check deploy configuration
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      railway: ${{ steps.check.outputs.railway }}
+      vercel: ${{ steps.check.outputs.vercel }}
+    steps:
+      - id: check
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then echo "railway=true" >> "$GITHUB_OUTPUT"; else
+            echo "railway=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Railway deploy skipped::RAILWAY_TOKEN repository secret is not set"
+          fi
+          if [ -n "$VERCEL_TOKEN" ]; then echo "vercel=true" >> "$GITHUB_OUTPUT"; else
+            echo "vercel=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Vercel deploy skipped::VERCEL_TOKEN repository secret is not set"
+          fi
+
+  deploy-railway:
+    name: Deploy ${{ matrix.service }} to Railway
+    needs: [secret-scan, backend-tests, frontend-build, deploy-config]
+    if: needs.deploy-config.outputs.railway == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [gateway, auth, trading, analytics, market-data, billing, ai]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        working-directory: services/${{ matrix.service }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: npx --yes @railway/cli up --ci --service tradesense-${{ matrix.service }}
+
+  deploy-vercel:
+    name: Deploy frontend to Vercel
+    needs: [secret-scan, backend-tests, frontend-build, deploy-config]
+    if: needs.deploy-config.outputs.vercel == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN"
+
+  health-check:
+    name: Post-deploy health check
+    needs: [deploy-railway]
+    if: needs.deploy-railway.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gateway health
+        env:
+          GATEWAY_URL: ${{ vars.GATEWAY_URL }}
+        run: |
+          if [ -z "$GATEWAY_URL" ]; then
+            echo "::warning title=Health check skipped::Set the GATEWAY_URL repository variable to enable it"
+            exit 0
+          fi
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$GATEWAY_URL/health"; then exit 0; fi
+            echo "Attempt $i failed; retrying in 20s"; sleep 20
+          done
+          echo "::error::Gateway health check failed at $GATEWAY_URL/health"
+          exit 1

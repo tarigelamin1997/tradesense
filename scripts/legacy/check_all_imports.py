@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 # Add backend to path
-backend_path = Path(__file__).parent / "src" / "backend"
+backend_path = Path(__file__).resolve().parents[2] / "src" / "backend"
 sys.path.insert(0, str(backend_path))
 
 print("🔍 Checking all imports in TradeSense backend...")

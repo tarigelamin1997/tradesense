@@ -74,6 +74,8 @@ services/         Production microservices: gateway, auth, trading, analytics,
 src/backend/      Consolidated FastAPI backend used for local development
 tests/            Backend test suites
 docs/             Documentation (start with the links below)
+scripts/          Developer and ops scripts (scripts/legacy/ = unmaintained, kept for reference)
+deployments/      Deployment configs (deployments/legacy/ = earlier Docker/Compose variants)
 infra/, k8s/, terraform/, monitoring/   Infrastructure and observability configs
 ```
 

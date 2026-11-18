@@ -63,7 +63,7 @@ Production runs as independently deployable FastAPI services behind a single gat
 | Data | PostgreSQL 15, Redis 7 |
 | Integrations | Stripe (billing), OpenAI (AI insights) |
 | Hosting | Vercel (frontend), Railway (services + managed Postgres/Redis) |
-| CI/CD | GitHub Actions (tests, CodeQL, Trivy, Gitleaks, Railway deploy) |
+| CI/CD | GitHub Actions: tests, Gitleaks, CodeQL, Railway + Vercel deploy |
 
 ## Repository layout
 

@@ -233,3 +233,10 @@ dmypy.json
 .pyre/
 .vercel
 src/backend/app/core/database.py
+
+# Generated output and local backups (removed from tracking 2026-11)
+frontend/.svelte-kit/
+test_venv/
+cleanup_safety_backup/
+repository_backup_*/
+logs/

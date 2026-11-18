@@ -71,6 +71,8 @@ Older workflows are kept in `.github/workflows-archive/` for reference and do no
 
 ### 2.2 Vercel (frontend)
 
+> **Automatic Git deployments are currently paused.** `vercel.json` (root) and `frontend/vercel.json` set `"git": {"deploymentEnabled": false}`, so pushes and pull requests do not trigger Vercel builds. To resume, remove that block from both files. CI deploys via the Vercel CLI are unaffected by this setting and run only when `VERCEL_TOKEN` is set.
+
 1. Import the GitHub repository in Vercel.
 2. Project settings:
 

@@ -40,8 +40,8 @@
    - Click your backend service → "Variables" → "RAW Editor"
    - Paste this (Railway auto-provides DATABASE_URL and REDIS_URL):
    ```env
-   JWT_SECRET_KEY=REDACTED
-   SECRET_KEY=REDACTED
+   JWT_SECRET_KEY=<REDACTED>
+   SECRET_KEY=<REDACTED>
    CORS_ORIGINS_STR=http://localhost:3000
    ADMIN_EMAIL=your-email@example.com
    STRIPE_SECRET_KEY=sk_test_your_key_here

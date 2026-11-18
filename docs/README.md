@@ -2,6 +2,19 @@
 
 Welcome to the TradeSense documentation. This hub provides comprehensive guides, technical references, and project information for developers, operators, and stakeholders.
 
+## Core documentation
+
+Start here — these are maintained and reflect the current system:
+
+| Doc | Contents |
+|---|---|
+| [architecture.md](architecture.md) | Services, data ownership, request flow, design decisions |
+| [deployment.md](deployment.md) | Railway + Vercel deployment, verification, operations |
+| [configuration.md](configuration.md) | Environment variables by service (names and purpose only) |
+| [security.md](security.md) | Authentication design, per-user data isolation, secrets |
+
+Historical engineering notes are kept in [archive/dev-notes/](archive/dev-notes/README.md) for reference.
+
 ## 🚀 Quick Links
 
 - [Getting Started](01-overview/QUICK_START.md) - Quick setup guide

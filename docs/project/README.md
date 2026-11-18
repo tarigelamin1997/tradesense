@@ -66,5 +66,5 @@ sample data from `sample_data/futures_sample.csv`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](../../LICENSE)
 

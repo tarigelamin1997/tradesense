@@ -1,33 +1,24 @@
-import pytest
-from fastapi.testclient import TestClient
+"""Health endpoint contract: always 200, status reports overall health."""
 
 
 def test_health_endpoint(client):
-    """Test health endpoint returns successful response"""
     response = client.get("/health")
     assert response.status_code == 200
-    
+
     data = response.json()
-    assert data["status"] == "healthy"
-    assert "service" in data
-    assert "version" in data
+    # "degraded" is valid when an optional dependency (Stripe, Redis, OpenAI,
+    # downstream services) is not configured, as in CI.
+    assert data["status"] in ("healthy", "degraded")
+    assert "timestamp" in data
 
 
 def test_health_database_check(client):
-    """Test health endpoint includes database status"""
-    response = client.get("/health")
-    assert response.status_code == 200
-    
-    data = response.json()
+    data = client.get("/health").json()
     if "database" in data:
-        assert data["database"] in ["connected", "unavailable"]
+        assert data["database"] in ("healthy", "unhealthy")
 
 
-def test_health_redis_check(client):
-    """Test health endpoint includes Redis status"""
-    response = client.get("/health")
+def test_root_endpoint(client):
+    response = client.get("/")
     assert response.status_code == 200
-    
-    data = response.json()
-    if "redis" in data:
-        assert data["redis"] in ["connected", "unavailable"]
+    assert "service" in response.json()

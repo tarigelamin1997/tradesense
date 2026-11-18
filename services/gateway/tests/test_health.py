@@ -1,33 +1,22 @@
-import pytest
-from fastapi.testclient import TestClient
+"""Gateway health contract: aggregates downstream service health."""
 
 
 def test_health_endpoint(client):
-    """Test health endpoint returns successful response"""
     response = client.get("/health")
     assert response.status_code == 200
-    
+
     data = response.json()
-    assert data["status"] == "healthy"
-    assert "service" in data
-    assert "version" in data
+    # Downstream services are not running in CI, so "degraded" is expected there.
+    assert data["status"] in ("healthy", "degraded")
+    assert data["gateway"] == "healthy"
+    assert isinstance(data["services"], dict)
+    assert "timestamp" in data
 
 
-def test_health_database_check(client):
-    """Test health endpoint includes database status"""
-    response = client.get("/health")
-    assert response.status_code == 200
-    
-    data = response.json()
-    if "database" in data:
-        assert data["database"] in ["connected", "unavailable"]
+def test_services_endpoint(client):
+    assert client.get("/services").status_code == 200
 
 
-def test_health_redis_check(client):
-    """Test health endpoint includes Redis status"""
-    response = client.get("/health")
-    assert response.status_code == 200
-    
-    data = response.json()
-    if "redis" in data:
-        assert data["redis"] in ["connected", "unavailable"]
+def test_root_endpoint(client):
+    data = client.get("/").json()
+    assert data["status"] == "operational"

@@ -9,6 +9,8 @@ export default defineConfig({
 		globals: true,
 		setupFiles: ['./src/tests/setup.ts'],
 		include: ['src/**/*.{test,spec}.{js,ts}'],
+		// Playwright specs run via `npm run test:e2e`, not vitest
+		exclude: ['node_modules/**', 'src/tests/e2e/**'],
 		coverage: {
 			reporter: ['text', 'json', 'html'],
 			exclude: [
